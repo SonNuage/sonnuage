@@ -1,3 +1,4 @@
+using Localify.Contracts.Localization;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
@@ -187,11 +188,11 @@ public sealed partial class YtDlp(YoutubeTools tools, FfmpegLocator ffmpeg, Yout
         foreach (var signedIn in modes)
         {
             var run = await TryRunAsync(["--no-playlist", "--no-warnings", "--list-formats", WatchUrl(videoId)], null, ListTimeout, signedIn, ct);
-            sb.AppendLine(modes.Length == 1 ? "Formats proposés :" : signedIn ? "Connecté (cookies) :" : "Sans les cookies :");
+            sb.AppendLine(Tx.Key(modes.Length == 1 ? "errors.yt.formatsAvailable" : signedIn ? "errors.yt.formatsSignedIn" : "errors.yt.formatsAnonymous"));
             var lines = run.Output.Replace("\r", "").Split('\n');
             var heading = Array.FindIndex(lines, l => l.StartsWith("[info] Available formats", StringComparison.Ordinal));
-            sb.AppendLine(run.Failure is { } f ? $"(liste impossible : {f.Message})"
-                : heading < 0 ? "(aucune table)"
+            sb.AppendLine(run.Failure is { } f ? Tx.Key("errors.yt.formatsFailed", ("message", f.Message))
+                : heading < 0 ? Tx.Key("errors.yt.formatsNoTable")
                 : string.Join('\n', lines.Skip(heading + 1)).TrimEnd());
             sb.AppendLine();
         }
@@ -210,7 +211,7 @@ public sealed partial class YtDlp(YoutubeTools tools, FfmpegLocator ffmpeg, Yout
     /// <param name="signedIn">Avec les cookies, s'il y en a.</param>
     private async Task<Run> TryRunAsync(List<string> args, Action<string>? onLine, TimeSpan timeout, bool signedIn, CancellationToken ct)
     {
-        var exe = tools.YtDlp ?? throw new YtDlpException(YtDlpFailure.Other, "yt-dlp introuvable : installez-le ou utilisez « Mettre à jour yt-dlp » dans l'admin.");
+        var exe = tools.YtDlp ?? throw new YtDlpException(YtDlpFailure.Other, Tx.Key("errors.yt.missing"));
         var start = new ProcessStartInfo(exe)
         {
             RedirectStandardOutput = true,
@@ -226,7 +227,7 @@ public sealed partial class YtDlp(YoutubeTools tools, FfmpegLocator ffmpeg, Yout
         if (cookies is not null) { start.ArgumentList.Add("--cookies"); start.ArgumentList.Add(cookies); }
         foreach (var a in args) start.ArgumentList.Add(a);
 
-        using var process = Process.Start(start) ?? throw new YtDlpException(YtDlpFailure.Other, "Impossible de lancer yt-dlp.");
+        using var process = Process.Start(start) ?? throw new YtDlpException(YtDlpFailure.Other, Tx.Key("errors.yt.cannotStart"));
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeoutCts.CancelAfter(timeout);
         using var kill = timeoutCts.Token.Register(() =>
@@ -253,7 +254,7 @@ public sealed partial class YtDlp(YoutubeTools tools, FfmpegLocator ffmpeg, Yout
         await Task.WhenAll(readOut, readErr);
 
         ct.ThrowIfCancellationRequested();
-        if (timeoutCts.IsCancellationRequested) throw new YtDlpException(YtDlpFailure.Other, "yt-dlp n'a pas terminé à temps.");
+        if (timeoutCts.IsCancellationRequested) throw new YtDlpException(YtDlpFailure.Other, Tx.Key("errors.yt.timeout"));
         if (process.ExitCode == 0) return new Run(stdout.ToString(), null, cookies is not null);
 
         var error = string.Join('\n', stderr.ToString().Split('\n').Where(l => l.StartsWith("ERROR", StringComparison.Ordinal))).Trim();
@@ -263,8 +264,8 @@ public sealed partial class YtDlp(YoutubeTools tools, FfmpegLocator ffmpeg, Yout
         var message = Shorten(error);
         if (kind == YtDlpFailure.NeedsAccount)
             message += cookies is null
-                ? " — Ajoutez dans les réglages les cookies d'un compte YouTube (majeur) qui y a accès."
-                : " — Les cookies enregistrés ne suffisent pas : compte mineur, non membre ou session expirée ?";
+                ? Tx.Key("errors.yt.addCookies")
+                : Tx.Key("errors.yt.cookiesInsufficient");
         return new Run(stdout.ToString(), new YtDlpException(kind, message), cookies is not null);
     }
 

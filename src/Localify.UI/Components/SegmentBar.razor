@@ -11,5 +11,5 @@
 
     private double Total => Segments.Sum(s => s.Value);
     private string Grow(double v) => (Total == 0 ? 0 : v / Total * 1000).ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
-    private string Share(double v) => Total == 0 ? "" : (v * 100 / Total).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',') + " %";
+    private string Share(double v) => Total == 0 ? "" : Format.Percent(v * 100 / Total);
 }

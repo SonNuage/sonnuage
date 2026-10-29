@@ -4,7 +4,7 @@
 @inject UiState Ui
 @inject NavigationManager Nav
 
-<PageTitle>@(_playlist?.Playlist.Name ?? "Playlist") · Localify</PageTitle>
+<PageTitle>@(_playlist?.Playlist.Name ?? L["common.playlist"]) · Localify</PageTitle>
 
 <Loader Loading="_playlist is null && _error is null" Error="@_error" OnRetry="LoadAsync">
     @if (_playlist is { } p)
@@ -13,39 +13,39 @@
             <header class="hero">
                 <Cover AlbumId="p.Playlist.CoverAlbumId" HasCover="p.Playlist.CoverAlbumId is not null" Size="600" Class="hero-cover" Seed="@p.Playlist.Name" />
                 <div class="hero-meta">
-                    <span class="eyebrow">Playlist</span>
+                    <span class="eyebrow">@L["common.playlist"]</span>
                     @if (_editing)
                     {
                         <form class="inline-form" @onsubmit="SaveAsync" @onsubmit:preventDefault="true">
                             <input class="input large" @bind="_name" maxlength="200" required />
-                            <input class="input" @bind="_description" placeholder="Description (facultatif)" maxlength="1000" />
-                            <button class="btn primary" type="submit">Enregistrer</button>
-                            <button class="btn" type="button" @onclick="() => _editing = false">Annuler</button>
+                            <input class="input" @bind="_description" placeholder="@L["playlist.descriptionPlaceholder"]" maxlength="1000" />
+                            <button class="btn primary" type="submit">@L["common.save"]</button>
+                            <button class="btn" type="button" @onclick="() => _editing = false">@L["common.cancel"]</button>
                         </form>
                     }
                     else
                     {
-                        <h1 @onclick="StartEdit" class="editable" title="Renommer">@p.Playlist.Name</h1>
+                        <h1 @onclick="StartEdit" class="editable" title="@L["playlist.rename"]">@p.Playlist.Name</h1>
                         @if (!string.IsNullOrWhiteSpace(p.Playlist.Description))
                         {
                             <p class="muted">@p.Playlist.Description</p>
                         }
                     }
-                    <p>@Format.Plural(p.Playlist.TrackCount, "titre", "titres"), @Format.LongDuration(p.Playlist.DurationSeconds)</p>
+                    <p>@L["common.tracks", ("count", p.Playlist.TrackCount)], @Format.LongDuration(p.Playlist.DurationSeconds)</p>
                 </div>
             </header>
 
             <div class="actions">
-                <button class="play-btn large" title="Lire" disabled="@(_tracks.Count == 0)" @onclick="() => Player.PlayAsync(_tracks, 0, shuffle: false)"><Icon Name="play" Size="32" /></button>
-                <button class="icon-btn" title="Lecture aléatoire" disabled="@(_tracks.Count == 0)" @onclick="() => Player.PlayAsync(_tracks, -1, shuffle: true)"><Icon Name="shuffle" Size="28" /></button>
-                <button class="icon-btn" title="Renommer" @onclick="StartEdit"><Icon Name="edit" Size="24" /></button>
-                <button class="icon-btn" title="@(_reorder ? "Terminer" : "Réordonner")" @onclick="() => _reorder = !_reorder"><Icon Name="@(_reorder ? "close" : "up")" Size="24" /></button>
-                <button class="icon-btn danger" title="Supprimer la playlist" @onclick="() => _confirmDelete = true"><Icon Name="delete" Size="24" /></button>
+                <button class="play-btn large" title="@L["common.play"]" disabled="@(_tracks.Count == 0)" @onclick="() => Player.PlayAsync(_tracks, 0, shuffle: false)"><Icon Name="play" Size="32" /></button>
+                <button class="icon-btn" title="@L["player.shuffle"]" disabled="@(_tracks.Count == 0)" @onclick="() => Player.PlayAsync(_tracks, -1, shuffle: true)"><Icon Name="shuffle" Size="28" /></button>
+                <button class="icon-btn" title="@L["playlist.rename"]" @onclick="StartEdit"><Icon Name="edit" Size="24" /></button>
+                <button class="icon-btn" title="@(_reorder ? L["playlist.done"] : L["playlist.reorder"])" @onclick="() => _reorder = !_reorder"><Icon Name="@(_reorder ? "close" : "up")" Size="24" /></button>
+                <button class="icon-btn danger" title="@L["playlist.delete"]" @onclick="() => _confirmDelete = true"><Icon Name="delete" Size="24" /></button>
             </div>
 
             @if (_tracks.Count == 0)
             {
-                <p class="empty">Playlist vide. Ajoutez des titres depuis un album ou la recherche (menu ⋮ → « Ajouter à une playlist »).</p>
+                <p class="empty">@L["playlist.empty"]</p>
             }
             else if (_reorder)
             {
@@ -57,24 +57,24 @@
                         <li @key="e.EntryId">
                             <span class="track-title">@e.Track.Title</span>
                             <span class="track-sub">@e.Track.ArtistName</span>
-                            <button class="icon-btn" disabled="@(index == 0)" @onclick="() => MoveAsync(index, index - 1)" title="Monter"><Icon Name="up" /></button>
-                            <button class="icon-btn" disabled="@(index == p.Entries.Count - 1)" @onclick="() => MoveAsync(index, index + 1)" title="Descendre"><Icon Name="down" /></button>
+                            <button class="icon-btn" disabled="@(index == 0)" @onclick="() => MoveAsync(index, index - 1)" title="@L["playlist.moveUp"]"><Icon Name="up" /></button>
+                            <button class="icon-btn" disabled="@(index == p.Entries.Count - 1)" @onclick="() => MoveAsync(index, index + 1)" title="@L["playlist.moveDown"]"><Icon Name="down" /></button>
                         </li>
                     }
                 </ol>
             }
             else
             {
-                <TrackList Tracks="_tracks" ShowCover="true" OnRemove="RemoveAsync" RemoveLabel="Retirer de la playlist"
+                <TrackList Tracks="_tracks" ShowCover="true" OnRemove="RemoveAsync" RemoveLabel="@L["playlist.removeFrom"]"
                            KeySelector="i => p.Entries[i].EntryId" />
             }
         </div>
 
-        <Modal @bind-Open="_confirmDelete" Title="Supprimer la playlist ?">
+        <Modal @bind-Open="_confirmDelete" Title="@L["playlist.deleteConfirm"]">
             <ChildContent><p>« @p.Playlist.Name » sera supprimée. Les titres restent dans la bibliothèque.</p></ChildContent>
             <Footer>
-                <button class="btn" @onclick="() => _confirmDelete = false">Annuler</button>
-                <button class="btn danger" @onclick="DeleteAsync">Supprimer</button>
+                <button class="btn" @onclick="() => _confirmDelete = false">@L["common.cancel"]</button>
+                <button class="btn danger" @onclick="DeleteAsync">@L["common.delete"]</button>
             </Footer>
         </Modal>
     }
@@ -107,12 +107,12 @@
         try
         {
             _playlist = await Api.PlaylistAsync(Id);
-            if (_playlist is null) _error = "Playlist introuvable.";
+            if (_playlist is null) _error = L["playlist.notFound"];
             else _tracks = _playlist.Entries.Select(e => e.Track).ToList();
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
-            _error = ex.Message;
+            _error = L.Server(ex.Message);
         }
     }
 
@@ -165,7 +165,7 @@
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
-            Ui.Notify(ex.Message, true);
+            Ui.Notify(L.Server(ex.Message), true);
         }
     }
 }

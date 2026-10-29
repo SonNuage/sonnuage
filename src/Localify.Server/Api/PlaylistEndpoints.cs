@@ -1,3 +1,4 @@
+using Localify.Contracts.Localization;
 using Localify.Contracts;
 using Localify.Server.Auth;
 using Localify.Server.Data;
@@ -36,7 +37,7 @@ public static class PlaylistEndpoints
 
         g.MapPost("/", async (CreatePlaylistRequest req, HttpContext http, LocalifyDbContext db, CancellationToken ct) =>
         {
-            if (string.IsNullOrWhiteSpace(req.Name)) return Results.Problem("Nom requis.", statusCode: 400);
+            if (string.IsNullOrWhiteSpace(req.Name)) return Results.Problem(Tx.Key("errors.nameRequired"), statusCode: 400);
             var playlist = new Playlist { OwnerId = http.User.UserId(), Name = req.Name.Trim(), Description = req.Description?.Trim() };
             db.Playlists.Add(playlist);
             if (req.TrackIds is { Count: > 0 } ids)
@@ -55,7 +56,7 @@ public static class PlaylistEndpoints
             if (playlist is null) return Results.NotFound();
             if (req.Name is { } name)
             {
-                if (string.IsNullOrWhiteSpace(name)) return Results.Problem("Nom requis.", statusCode: 400);
+                if (string.IsNullOrWhiteSpace(name)) return Results.Problem(Tx.Key("errors.nameRequired"), statusCode: 400);
                 playlist.Name = name.Trim();
             }
             if (req.Description is not null) playlist.Description = req.Description.Trim();
@@ -77,7 +78,7 @@ public static class PlaylistEndpoints
             if (playlist is null) return Results.NotFound();
             var entries = await db.PlaylistEntries.Where(e => e.PlaylistId == id).OrderBy(e => e.Position).ToListAsync(ct);
             var valid = await ValidTrackIdsAsync(db, req.TrackIds, ct);
-            if (entries.Count + valid.Count > MaxEntries) return Results.Problem($"Une playlist est limitée à {MaxEntries} titres.", statusCode: 400);
+            if (entries.Count + valid.Count > MaxEntries) return Results.Problem(Tx.Key("errors.playlistLimit", ("max", MaxEntries)), statusCode: 400);
 
             var insertAt = Math.Clamp(req.Position ?? entries.Count, 0, entries.Count);
             var added = valid.Select(t => new PlaylistEntry { PlaylistId = id, TrackId = t }).ToList();

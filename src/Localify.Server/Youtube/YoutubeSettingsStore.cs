@@ -1,3 +1,4 @@
+using Localify.Contracts.Localization;
 using System.Text.Json;
 using Localify.Contracts;
 using Microsoft.Extensions.Options;
@@ -45,9 +46,9 @@ public sealed class YoutubeSettingsStore
 
     public (YoutubeSettingsDto? Settings, string? Error) Save(YoutubeSettingsDto s)
     {
-        if (s.SyncIntervalHours is < 0 or > 24 * 7) return (null, "Intervalle de synchronisation : entre 0 (jamais) et 168 heures.");
-        if (s.AudioFormat is not ("original" or "mp3")) return (null, "Format audio : « original » ou « mp3 ».");
-        if (s.AutoAcceptThreshold is < 0 or > 1) return (null, "Seuil d'acceptation : entre 0 et 1.");
+        if (s.SyncIntervalHours is < 0 or > 24 * 7) return (null, Tx.Key("errors.yt.syncInterval"));
+        if (s.AudioFormat is not ("original" or "mp3")) return (null, Tx.Key("errors.yt.audioFormat"));
+        if (s.AutoAcceptThreshold is < 0 or > 1) return (null, Tx.Key("errors.yt.threshold"));
         var clean = s with { AcoustIdKey = string.IsNullOrWhiteSpace(s.AcoustIdKey) ? null : s.AcoustIdKey.Trim() };
         lock (_lock)
         {
@@ -73,7 +74,7 @@ public sealed class YoutubeSettingsStore
             var domain = fields[0].Replace("#HttpOnly_", "").TrimStart('.');
             return domain is "youtube.com" or "google.com" || domain.EndsWith(".youtube.com", StringComparison.Ordinal) || domain.EndsWith(".google.com", StringComparison.Ordinal);
         }).ToList();
-        if (kept.Count == 0) return "Aucun cookie youtube.com trouvé : exportez les cookies au format Netscape (cookies.txt) depuis un navigateur connecté à YouTube.";
+        if (kept.Count == 0) return Tx.Key("errors.yt.noCookies");
         File.WriteAllText(_cookiesPath, "# Netscape HTTP Cookie File\n" + string.Join('\n', kept) + "\n");
         return null;
     }

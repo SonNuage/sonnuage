@@ -95,7 +95,13 @@ builder.Services.Configure<ForwardedHeadersOptions>(o =>
     o.KnownProxies.Clear();
 });
 
-builder.Services.AddProblemDetails();
+// Messages d'erreur dans la langue du client (Accept-Language, envoyé par l'interface) : voir Tx.
+builder.Services.AddProblemDetails(o => o.CustomizeProblemDetails = ctx =>
+{
+    var language = Localify.Contracts.Localization.Translations.Instance.Resolve(ctx.HttpContext.Request.Headers.AcceptLanguage.ToString());
+    var t = Localify.Contracts.Localization.Translations.Instance;
+    if (ctx.ProblemDetails.Detail is { } detail) ctx.ProblemDetails.Detail = Localify.Contracts.Localization.Tx.Translate(t, language, detail);
+});
 builder.Services.AddHealthChecks().AddDbContextCheck<LocalifyDbContext>();
 builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 // Morceaux d'upload de 8 Mo + marge.

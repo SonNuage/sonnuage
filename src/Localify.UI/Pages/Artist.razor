@@ -3,7 +3,7 @@
 @inject IPlayer Player
 @inject UiState Ui
 
-<PageTitle>@(_artist?.Artist.Name ?? "Artiste") · Localify</PageTitle>
+<PageTitle>@(_artist?.Artist.Name ?? L["common.artist"]) · Localify</PageTitle>
 
 <Loader Loading="_artist is null && _error is null" Error="@_error" OnRetry="LoadAsync">
     @if (_artist is { } a)
@@ -12,19 +12,19 @@
             <header class="hero">
                 <Cover AlbumId="a.Artist.CoverAlbumId" HasCover="a.Artist.CoverAlbumId is not null" Size="600" Class="hero-cover round" Round="true" Seed="@a.Artist.Name" />
                 <div class="hero-meta">
-                    <span class="eyebrow">Artiste</span>
+                    <span class="eyebrow">@L["common.artist"]</span>
                     <h1>@a.Artist.Name</h1>
-                    <p>@Format.Plural(a.Artist.AlbumCount, "album", "albums") · @Format.Plural(a.Artist.TrackCount, "titre", "titres")</p>
+                    <p>@L["common.albums", ("count", a.Artist.AlbumCount)] · @L["common.tracks", ("count", a.Artist.TrackCount)]</p>
                 </div>
             </header>
 
             <div class="actions">
-                <button class="play-btn large" title="Tout lire" @onclick="() => PlayAllAsync(false)"><Icon Name="play" Size="32" /></button>
-                <button class="icon-btn" title="Lecture aléatoire" @onclick="() => PlayAllAsync(true)"><Icon Name="shuffle" Size="28" /></button>
+                <button class="play-btn large" title="@L["artist.playAll"]" @onclick="() => PlayAllAsync(false)"><Icon Name="play" Size="32" /></button>
+                <button class="icon-btn" title="@L["player.shuffle"]" @onclick="() => PlayAllAsync(true)"><Icon Name="shuffle" Size="28" /></button>
             </div>
 
             <section>
-                <h2>Discographie</h2>
+                <h2>@L["artist.discography"]</h2>
                 <AlbumGrid Albums="a.Albums" ShowArtist="false" />
             </section>
         </div>
@@ -52,11 +52,11 @@
         try
         {
             _artist = await Api.ArtistAsync(Id);
-            if (_artist is null) _error = "Artiste introuvable.";
+            if (_artist is null) _error = L["artist.notFound"];
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
-            _error = ex.Message;
+            _error = L.Server(ex.Message);
         }
     }
 
@@ -69,7 +69,7 @@
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
-            Ui.Notify(ex.Message, true);
+            Ui.Notify(L.Server(ex.Message), true);
         }
     }
 }

@@ -1,3 +1,4 @@
+using Localify.Contracts.Localization;
 using System.Collections.Concurrent;
 using Localify.Contracts;
 using Localify.Server.Library;
@@ -21,8 +22,8 @@ public sealed class UploadService(IOptions<LocalifyOptions> options, MetadataRea
     {
         Cleanup();
         var name = SafeFileName(req.FileName);
-        if (!LibraryFiles.IsAudio(name)) return (null, "Format audio non reconnu.");
-        if (req.Size is <= 0 or > MaxFileSize) return (null, "Taille de fichier invalide.");
+        if (!LibraryFiles.IsAudio(name)) return (null, Tx.Key("errors.upload.unknownFormat"));
+        if (req.Size is <= 0 or > MaxFileSize) return (null, Tx.Key("errors.upload.badSize"));
 
         Directory.CreateDirectory(options.Value.UploadTempPath);
         var session = new UploadSession(Guid.NewGuid(), name, req.Size, req.ArtistHint, req.AlbumHint,
@@ -36,11 +37,11 @@ public sealed class UploadService(IOptions<LocalifyOptions> options, MetadataRea
 
     public async Task<(UploadSessionDto? Session, string? Error)> AppendAsync(Guid id, long offset, Stream body, CancellationToken ct)
     {
-        if (!_sessions.TryGetValue(id, out var s)) return (null, "Session d'upload inconnue ou expirée.");
+        if (!_sessions.TryGetValue(id, out var s)) return (null, Tx.Key("errors.upload.unknownSession"));
         await s.Lock.WaitAsync(ct);
         try
         {
-            if (offset != s.Received) return (s.ToDto(), $"Offset attendu : {s.Received}.");
+            if (offset != s.Received) return (s.ToDto(), Tx.Key("errors.upload.offset", ("offset", s.Received)));
 
             await using var file = new FileStream(s.TempPath, FileMode.Open, FileAccess.Write, FileShare.None, 81920, useAsync: true);
             file.Seek(s.Received, SeekOrigin.Begin);
@@ -53,7 +54,7 @@ public sealed class UploadService(IOptions<LocalifyOptions> options, MetadataRea
                 if (written > ChunkSize || s.Received + written > s.Size)
                 {
                     file.SetLength(s.Received);
-                    return (s.ToDto(), "Morceau trop grand.");
+                    return (s.ToDto(), Tx.Key("errors.upload.chunkTooLarge"));
                 }
                 await file.WriteAsync(buffer.AsMemory(0, read), ct);
             }
@@ -70,8 +71,8 @@ public sealed class UploadService(IOptions<LocalifyOptions> options, MetadataRea
     /// <summary>Range le fichier complet dans <c>Uploads/Artiste/Album/</c> d'après ses tags (ou les indications du formulaire).</summary>
     public (string? Path, string? Error) Complete(Guid id)
     {
-        if (!_sessions.TryGetValue(id, out var s)) return (null, "Session d'upload inconnue ou expirée.");
-        if (s.Received != s.Size) return (null, $"Fichier incomplet : {s.Received}/{s.Size} octets.");
+        if (!_sessions.TryGetValue(id, out var s)) return (null, Tx.Key("errors.upload.unknownSession"));
+        if (s.Received != s.Size) return (null, Tx.Key("errors.upload.incomplete", ("received", s.Received), ("size", s.Size)));
 
         var meta = metadata.Read(s.TempPath, options.Value.UploadTempPath);
         var artist = FirstReal(meta.AlbumArtist, s.ArtistHint) ?? "Artiste inconnu";

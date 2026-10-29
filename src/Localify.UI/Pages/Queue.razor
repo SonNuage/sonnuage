@@ -2,20 +2,20 @@
 @implements IDisposable
 @inject IPlayer Player
 
-<PageTitle>File d'attente · Localify</PageTitle>
+<PageTitle>@L["nav.queue"] · Localify</PageTitle>
 
 <div class="page">
     <header class="page-header">
-        <h1>File d'attente</h1>
+        <h1>@L["nav.queue"]</h1>
     </header>
 
     @if (State.Current is null)
     {
-        <p class="empty">Rien en cours de lecture.</p>
+        <p class="empty">@L["queue.nothing"]</p>
     }
     else
     {
-        <h2>En cours</h2>
+        <h2>@L["queue.current"]</h2>
         <ol class="queue-list">
             <li class="queue-item playing">
                 <Cover AlbumId="State.Current.AlbumId" HasCover="State.Current.HasCover" Size="96" Class="cover-sm" Seed="@State.Current.AlbumTitle" />
@@ -27,7 +27,7 @@
             </li>
         </ol>
 
-        <h2>À suivre @(State.Shuffle ? "(aléatoire)" : "")</h2>
+        <h2>@L["queue.next"] @(State.Shuffle ? L["queue.shuffled"] : "")</h2>
         <ol class="queue-list">
             @for (var i = State.CurrentIndex + 1; i < State.Queue.Count; i++)
             {
@@ -39,13 +39,13 @@
                         <span class="track-sub">@t.ArtistName · @t.AlbumTitle</span>
                     </button>
                     <span class="track-dur">@Format.Duration(t.DurationSeconds)</span>
-                    <button class="icon-btn" title="Retirer" @onclick="() => Player.RemoveAtAsync(index)"><Icon Name="close" Size="18" /></button>
+                    <button class="icon-btn" title="@L["common.remove"]" @onclick="() => Player.RemoveAtAsync(index)"><Icon Name="close" Size="18" /></button>
                 </li>
             }
         </ol>
         @if (State.CurrentIndex + 1 >= State.Queue.Count)
         {
-            <p class="muted">Fin de la file@(State.Repeat == RepeatMode.All ? " : la lecture reprendra au début" : "").</p>
+            <p class="muted">@L[State.Repeat == RepeatMode.All ? "queue.endRepeat" : "queue.end"]</p>
         }
     }
 </div>

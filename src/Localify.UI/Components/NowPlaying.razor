@@ -7,16 +7,16 @@
 {
     <div class="now-playing">
         <header class="np-header">
-            <button class="icon-btn" title="Réduire" @onclick="() => Ui.SetNowPlayingOpen(false)"><Icon Name="down" Size="28" /></button>
+            <button class="icon-btn" title="@L["player.collapse"]" @onclick="() => Ui.SetNowPlayingOpen(false)"><Icon Name="down" Size="28" /></button>
             @if (Player is IConnectPlayer { IsRemote: true } connect)
             {
-                <button class="np-context pb-remote" title="Faire jouer la musique ici" @onclick="connect.PlayHereAsync">Dans un autre onglet · <span class="strong">Lire ici</span></button>
+                <button class="np-context pb-remote" title="@L["player.remote.title"]" @onclick="connect.PlayHereAsync">@L["player.remote.elsewhereShort"] · <span class="strong">@L["player.remote.playHere"]</span></button>
             }
             else
             {
-                <span class="np-context">En cours de lecture</span>
+                <span class="np-context">@L["player.nowPlaying"]</span>
             }
-            <button class="icon-btn" title="File d'attente" @onclick='() => Go("queue")'><Icon Name="queue" /></button>
+            <button class="icon-btn" title="@L["nav.queue"]" @onclick='() => Go("queue")'><Icon Name="queue" /></button>
         </header>
 
         <div class="np-cover">
@@ -28,13 +28,13 @@
                 <a class="np-title" href="album/@track.AlbumId" @onclick='() => Ui.SetNowPlayingOpen(false)'>@track.Title</a>
                 <a class="np-artist" href="artist/@track.ArtistId" @onclick='() => Ui.SetNowPlayingOpen(false)'>@track.ArtistName</a>
             </div>
-            <button class="icon-btn fav @(track.IsFavorite ? "on" : "")" title="Favori" @onclick="() => Ui.ToggleFavoriteAsync(track)">
+            <button class="icon-btn fav @(track.IsFavorite ? "on" : "")" title="@L["common.favorite"]" @onclick="() => Ui.ToggleFavoriteAsync(track)">
                 <Icon Name="@(track.IsFavorite ? "heart" : "heart-outline")" Size="28" />
             </button>
         </div>
 
         <div class="np-seek">
-            <input type="range" class="slider" min="0" max="@Max" step="any" value="@Position" style="@Pct(Position, Max)" @onchange="SeekAsync" aria-label="Position" />
+            <input type="range" class="slider" min="0" max="@Max" step="any" value="@Position" style="@Pct(Position, Max)" @onchange="SeekAsync" aria-label="@L["player.position"]" />
             <div class="np-times">
                 <span>@Format.Duration(State.PositionSeconds)</span>
                 <span>@Format.Duration(State.DurationSeconds)</span>
@@ -42,11 +42,11 @@
         </div>
 
         <div class="np-controls">
-            <button class="icon-btn @(State.Shuffle ? "on" : "")" title="Lecture aléatoire" @onclick="() => Player.SetShuffleAsync(!State.Shuffle)"><Icon Name="shuffle" /></button>
-            <button class="icon-btn" title="Précédent" @onclick="Player.PreviousAsync"><Icon Name="previous" Size="36" /></button>
-            <button class="play-btn large @(State.IsBuffering ? "buffering" : "")" @onclick="Player.TogglePlayAsync"><Icon Name="@(State.IsPlaying ? "pause" : "play")" Size="36" /></button>
-            <button class="icon-btn" title="Suivant" @onclick="Player.NextAsync"><Icon Name="next" Size="36" /></button>
-            <button class="icon-btn @(State.Repeat != RepeatMode.Off ? "on" : "")" title="Répéter" @onclick="CycleRepeatAsync">
+            <button class="icon-btn @(State.Shuffle ? "on" : "")" title="@L["player.shuffle"]" @onclick="() => Player.SetShuffleAsync(!State.Shuffle)"><Icon Name="shuffle" /></button>
+            <button class="icon-btn" title="@L["player.previous"]" @onclick="Player.PreviousAsync"><Icon Name="previous" Size="36" /></button>
+            <button class="play-btn large @(State.IsBuffering ? "buffering" : "")" title="@(State.IsPlaying ? L["player.pause"] : L["player.play"])" @onclick="Player.TogglePlayAsync"><Icon Name="@(State.IsPlaying ? "pause" : "play")" Size="36" /></button>
+            <button class="icon-btn" title="@L["player.next"]" @onclick="Player.NextAsync"><Icon Name="next" Size="36" /></button>
+            <button class="icon-btn @(State.Repeat != RepeatMode.Off ? "on" : "")" title="@L["player.repeat"]" @onclick="CycleRepeatAsync">
                 <Icon Name="@(State.Repeat == RepeatMode.One ? "repeat-one" : "repeat")" />
             </button>
         </div>

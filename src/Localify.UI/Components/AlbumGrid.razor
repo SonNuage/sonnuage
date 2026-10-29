@@ -8,7 +8,7 @@
         <a class="card" href="album/@album.Id" @key="album.Id">
             <div class="card-cover">
                 <Cover AlbumId="album.Id" HasCover="album.HasCover" Seed="@album.Title" />
-                <button class="card-play" title="Lire" @onclick="() => PlayAsync(album)" @onclick:preventDefault="true" @onclick:stopPropagation="true">
+                <button class="card-play" title="@L["common.play"]" @onclick="() => PlayAsync(album)" @onclick:preventDefault="true" @onclick:stopPropagation="true">
                     <Icon Name="play" Size="28" />
                 </button>
             </div>
@@ -31,7 +31,7 @@
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
-            Ui.Notify(ex.Message, true);
+            Ui.Notify(L.Server(ex.Message), true);
         }
     }
 }

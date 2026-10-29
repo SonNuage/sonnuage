@@ -1,3 +1,4 @@
+using Localify.Contracts.Localization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading.Channels;
@@ -96,9 +97,9 @@ public sealed class YoutubeImporter(
     public async Task<string?> ApplyAsync(LocalifyDbContext db, Guid itemId, MetadataCandidateDto candidate, CancellationToken ct)
     {
         var item = await db.YoutubeItems.Include(i => i.Track).FirstOrDefaultAsync(i => i.Id == itemId, ct);
-        if (item?.Track is not { } track) return "Import introuvable ou pas encore terminé.";
-        if (string.IsNullOrWhiteSpace(candidate.Title) || string.IsNullOrWhiteSpace(candidate.Artist)) return "Titre et artiste sont obligatoires.";
-        if (!File.Exists(track.FilePath)) return "Le fichier du morceau a disparu.";
+        if (item?.Track is not { } track) return Tx.Key("errors.yt.notFound");
+        if (string.IsNullOrWhiteSpace(candidate.Title) || string.IsNullOrWhiteSpace(candidate.Artist)) return Tx.Key("errors.yt.titleArtistRequired");
+        if (!File.Exists(track.FilePath)) return Tx.Key("errors.yt.fileGone");
 
         var newPath = await writer.WriteAsync(track.FilePath, candidate, item.VideoId, item.ThumbnailUrl, ct, async target =>
         {

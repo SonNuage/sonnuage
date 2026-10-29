@@ -4,17 +4,17 @@
 @inject UiState Ui
 @inject NavigationManager Nav
 
-<PageTitle>Bibliothèque · Localify</PageTitle>
+<PageTitle>@L["nav.library"] · Localify</PageTitle>
 
 <div class="page">
     <header class="page-header">
-        <h1>Bibliothèque</h1>
+        <h1>@L["nav.library"]</h1>
     </header>
 
     <div class="tabs">
-        <a class="tab @(Current == "playlists" ? "active" : "")" href="library/playlists">Playlists</a>
-        <a class="tab @(Current == "albums" ? "active" : "")" href="library/albums">Albums</a>
-        <a class="tab @(Current == "artists" ? "active" : "")" href="library/artists">Artistes</a>
+        <a class="tab @(Current == "playlists" ? "active" : "")" href="library/playlists">@L["library.playlists"]</a>
+        <a class="tab @(Current == "albums" ? "active" : "")" href="library/albums">@L["library.albums"]</a>
+        <a class="tab @(Current == "artists" ? "active" : "")" href="library/artists">@L["library.artists"]</a>
     </div>
 
     @switch (Current)
@@ -23,18 +23,18 @@
             <div class="list">
                 <a class="list-item" href="favorites">
                     <span class="chip-icon liked large"><Icon Name="heart" /></span>
-                    <div><span class="list-title">Titres likés</span><span class="list-sub">Playlist automatique</span></div>
+                    <div><span class="list-title">@L["nav.likedSongs"]</span><span class="list-sub">@L["library.autoPlaylist"]</span></div>
                 </a>
                 @foreach (var p in Ui.Playlists)
                 {
                     <a class="list-item" href="playlist/@p.Id">
                         <Cover AlbumId="p.CoverAlbumId" HasCover="p.CoverAlbumId is not null" Size="96" Class="cover-sm" Seed="@p.Name" />
-                        <div><span class="list-title">@p.Name</span><span class="list-sub">@Format.Plural(p.TrackCount, "titre", "titres")</span></div>
+                        <div><span class="list-title">@p.Name</span><span class="list-sub">@L["common.tracks", ("count", p.TrackCount)]</span></div>
                     </a>
                 }
                 <button class="list-item" @onclick="CreatePlaylistAsync">
                     <span class="chip-icon large"><Icon Name="add" /></span>
-                    <div><span class="list-title">Nouvelle playlist</span></div>
+                    <div><span class="list-title">@L["nav.newPlaylist"]</span></div>
                 </button>
             </div>
             break;
@@ -42,10 +42,10 @@
         case "albums":
             <div class="toolbar">
                 <select class="input" value="@_sort" @onchange="ChangeSortAsync">
-                    <option value="recent">Ajout récent</option>
-                    <option value="title">Titre</option>
-                    <option value="artist">Artiste</option>
-                    <option value="year">Année</option>
+                    <option value="recent">@L["library.sort.recent"]</option>
+                    <option value="title">@L["library.sort.title"]</option>
+                    <option value="artist">@L["library.sort.artist"]</option>
+                    <option value="year">@L["library.sort.year"]</option>
                 </select>
                 <input class="input" type="search" placeholder="Filtrer…" @bind="_filter" @bind:event="oninput" @bind:after="ReloadAsync" />
             </div>
@@ -53,7 +53,7 @@
                 <AlbumGrid Albums="_albums" />
                 @if (_albums.Count < _total)
                 {
-                    <div class="more"><button class="btn" @onclick="LoadMoreAsync" disabled="@_loading">Afficher plus</button></div>
+                    <div class="more"><button class="btn" @onclick="LoadMoreAsync" disabled="@_loading">@L["common.showMore"]</button></div>
                 }
             </Loader>
             break;
@@ -69,13 +69,13 @@
                         <a class="card" href="artist/@a.Id" @key="a.Id">
                             <div class="card-cover round"><Cover AlbumId="a.CoverAlbumId" HasCover="a.CoverAlbumId is not null" Round="true" Seed="@a.Name" /></div>
                             <span class="card-title">@a.Name</span>
-                            <span class="card-sub">@Format.Plural(a.AlbumCount, "album", "albums")</span>
+                            <span class="card-sub">@L["common.albums", ("count", a.AlbumCount)]</span>
                         </a>
                     }
                 </div>
                 @if (_artists.Count < _total)
                 {
-                    <div class="more"><button class="btn" @onclick="LoadMoreAsync" disabled="@_loading">Afficher plus</button></div>
+                    <div class="more"><button class="btn" @onclick="LoadMoreAsync" disabled="@_loading">@L["common.showMore"]</button></div>
                 }
             </Loader>
             break;
@@ -139,7 +139,7 @@
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
-            _error = ex.Message;
+            _error = L.Server(ex.Message);
         }
         finally
         {
@@ -149,7 +149,7 @@
 
     private async Task CreatePlaylistAsync()
     {
-        var created = await Ui.CreatePlaylistAsync($"Ma playlist n° {Ui.Playlists.Count + 1}", null);
+        var created = await Ui.CreatePlaylistAsync(L["nav.defaultPlaylistName", ("number", Ui.Playlists.Count + 1)], null);
         if (created is not null) Nav.NavigateTo($"playlist/{created.Id}");
     }
 }

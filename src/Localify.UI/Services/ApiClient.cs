@@ -15,6 +15,7 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
 {
     // ---- Bibliothèque ----
     public Task<ServerInfoDto?> InfoAsync() => GetAsync<ServerInfoDto>("api/info");
+    public Task<UserDto?> SetLanguageAsync(string? language) => SendAsync<UserDto>(HttpMethod.Put, "api/auth/language", new SetLanguageRequest(language));
     public Task<HomeDto?> HomeAsync() => GetAsync<HomeDto>("api/home");
     public Task<PagedResult<AlbumDto>?> AlbumsAsync(string sort, int offset, int limit, string? q = null) =>
         GetAsync<PagedResult<AlbumDto>>($"api/albums?sort={sort}&offset={offset}&limit={limit}{Q(q)}");
@@ -192,19 +193,21 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     private async Task<HttpResponseMessage> SendCoreAsync(Func<HttpRequestMessage> build, bool retry = true)
     {
         var http = httpFactory.CreateClient("localify");
-        http.BaseAddress = endpoint.BaseAddress ?? throw new ApiException(0, "Adresse du serveur non configurée.");
+        http.BaseAddress = endpoint.BaseAddress ?? throw new ApiException(0, Text("errors.serverNotConfigured"));
 
-        var token = await auth.GetAccessTokenAsync() ?? throw new ApiException(HttpStatusCode.Unauthorized, "Session expirée.");
+        var token = await auth.GetAccessTokenAsync() ?? throw new ApiException(HttpStatusCode.Unauthorized, Text("errors.sessionExpired"));
         var request = build();
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        Localize(request);
         var response = await http.SendAsync(request);
 
         if (response.StatusCode == HttpStatusCode.Unauthorized && retry)
         {
             response.Dispose();
-            token = await auth.GetAccessTokenAsync(forceRefresh: true) ?? throw new ApiException(HttpStatusCode.Unauthorized, "Session expirée.");
+            token = await auth.GetAccessTokenAsync(forceRefresh: true) ?? throw new ApiException(HttpStatusCode.Unauthorized, Text("errors.sessionExpired"));
             request = build();
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            Localize(request);
             response = await http.SendAsync(request);
         }
         return response;
@@ -217,14 +220,23 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
         try
         {
             var problem = await response.Content.ReadFromJsonAsync<ProblemPayload>(JsonDefaults.Options);
-            message = problem?.Detail ?? problem?.Title ?? response.ReasonPhrase ?? "Erreur";
+            message = problem?.Detail ?? problem?.Title ?? response.ReasonPhrase ?? Text("errors.generic");
         }
         catch (Exception)
         {
-            message = response.ReasonPhrase ?? $"Erreur {(int)response.StatusCode}";
+            message = response.ReasonPhrase ?? Text("errors.http", ("status", (int)response.StatusCode));
         }
         throw new ApiException(response.StatusCode, message);
     }
 
     private sealed record ProblemPayload(string? Title, string? Detail);
+
+    /// <summary>Le serveur répond (messages d'erreur) dans la langue de l'interface.</summary>
+    internal static void Localize(HttpRequestMessage request)
+    {
+        if (Localizer.Current is { } l) request.Headers.AcceptLanguage.ParseAdd(l.Language);
+    }
+
+    private static string Text(string key, params (string, object?)[] args) =>
+        Localizer.Current?[key, args] ?? Localify.Contracts.Localization.Translations.Instance.Get("en", key, args);
 }

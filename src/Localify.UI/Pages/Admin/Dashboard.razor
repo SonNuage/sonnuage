@@ -4,32 +4,32 @@
 @inject ApiClient Api
 @inject UiState Ui
 
-<PageTitle>Administration · Localify</PageTitle>
+<PageTitle>@L["admin.title"] · Localify</PageTitle>
 
 <div class="page">
-    <header class="page-header"><h1>Administration</h1></header>
+    <header class="page-header"><h1>@L["admin.title"]</h1></header>
     <AdminNav>
         <Loader Loading="_stats is null && _error is null" Error="@_error" OnRetry="LoadAsync">
             @if (_dashboard is { } d)
             {
                 <div class="stats">
-                    <div class="stat"><span class="stat-value">@N(d.Artists)</span><span class="stat-label">artistes</span></div>
-                    <div class="stat"><span class="stat-value">@N(d.Albums)</span><span class="stat-label">albums</span></div>
-                    <div class="stat"><span class="stat-value">@N(d.Tracks)</span><span class="stat-label">titres</span></div>
-                    <div class="stat"><span class="stat-value">@N(d.Playlists)</span><span class="stat-label">playlists</span></div>
-                    <div class="stat"><span class="stat-value">@N(d.Users)</span><span class="stat-label">utilisateurs</span></div>
+                    <div class="stat"><span class="stat-value">@N(d.Artists)</span><span class="stat-label">@L["dash.stat.artists"]</span></div>
+                    <div class="stat"><span class="stat-value">@N(d.Albums)</span><span class="stat-label">@L["dash.stat.albums"]</span></div>
+                    <div class="stat"><span class="stat-value">@N(d.Tracks)</span><span class="stat-label">@L["dash.stat.tracks"]</span></div>
+                    <div class="stat"><span class="stat-value">@N(d.Playlists)</span><span class="stat-label">@L["dash.stat.playlists"]</span></div>
+                    <div class="stat"><span class="stat-value">@N(d.Users)</span><span class="stat-label">@L["dash.stat.users"]</span></div>
                     @if (_youtube is { } yt && yt.Queued + yt.Failed + yt.NeedsReview > 0)
                     {
                         <a class="stat" href="admin/youtube">
                             <span class="stat-value">@yt.Queued</span>
-                            <span class="stat-label">imports YouTube en attente@(yt.NeedsReview > 0 ? $" · {yt.NeedsReview} à vérifier" : "")@(yt.Failed > 0 ? $" · {yt.Failed} en échec" : "")</span>
+                            <span class="stat-label">@L["dash.yt.queued"]@(yt.NeedsReview > 0 ? L["dash.yt.review", ("count", yt.NeedsReview)] : "")@(yt.Failed > 0 ? L["dash.yt.failed", ("count", yt.Failed)] : "")</span>
                         </a>
                     }
                 </div>
 
                 <div class="dash-grid">
                     <section class="panel viz">
-                        <h2>Durée totale</h2>
+                        <h2>@L["dash.totalDuration"]</h2>
                         @{ var totalSeconds = d.Sources.Sum(s => s.DurationSeconds); }
                         <p class="viz-hero">@Hours(totalSeconds)</p>
                         <SegmentBar Segments="d.Sources.Where(s => s.Tracks > 0).Select(s => (s.Source, s.DurationSeconds)).ToList()" />
@@ -40,7 +40,7 @@
                                     <span class="swatch" style="background: var(--series-@s.Source)"></span>
                                     <span class="strong">@SourceLabel(s.Source)</span>
                                     <span>@Hours(s.DurationSeconds)</span>
-                                    <span class="muted">@Format.Plural(s.Tracks, "titre", "titres") · moy. @Format.Duration(s.DurationSeconds / s.Tracks)</span>
+                                    <span class="muted">@L["common.tracks", ("count", s.Tracks)] · @L["dash.average", ("duration", Format.Duration(s.DurationSeconds / s.Tracks))]</span>
                                 </li>
                             }
                         </ul>
@@ -49,8 +49,8 @@
                     @if (d.Storage is { } st)
                     {
                         <section class="panel viz">
-                            <h2>Stockage</h2>
-                            <p class="viz-hero">@Format.Bytes(st.FreeBytes) <span class="muted viz-hero-sub">libres sur @Format.Bytes(st.TotalBytes) (@st.Disk)</span></p>
+                            <h2>@L["dash.storage"]</h2>
+                            <p class="viz-hero">@Format.Bytes(st.FreeBytes) <span class="muted viz-hero-sub">@L["dash.freeOf", ("total", Format.Bytes(st.TotalBytes)), ("disk", st.Disk)]</span></p>
                             <SegmentBar Segments="st.Slices.Where(s => s.Bytes > 0).Select(s => (s.Key, (double)s.Bytes)).ToList()" />
                             <ul class="viz-legend rows">
                                 @foreach (var s in st.Slices.Where(s => s.Bytes > 0 || s.Key is "youtube" or "upload"))
@@ -69,17 +69,17 @@
 
                 <section class="panel viz">
                     <div class="viz-head">
-                        <h2>Historique des ajouts</h2>
+                        <h2>@L["dash.history"]</h2>
                         <div class="row">
-                            <div class="segmented" role="group" aria-label="Période">
-                                @foreach (var (key, label) in Ranges)
+                            <div class="segmented" role="group" aria-label="@L["dash.period"]">
+                                @foreach (var key in Ranges)
                                 {
-                                    <button class="@(d.HistoryRange == key ? "on" : null)" @onclick="() => SetRangeAsync(key)">@label</button>
+                                    <button class="@(d.HistoryRange == key ? "on" : null)" @onclick="() => SetRangeAsync(key)">@L["dash.range." + key]</button>
                                 }
                             </div>
-                            <div class="segmented" role="group" aria-label="Échelle">
-                                <button class="@(!_log ? "on" : null)" @onclick="() => _log = false">Linéaire</button>
-                                <button class="@(_log ? "on" : null)" @onclick="() => _log = true">Log</button>
+                            <div class="segmented" role="group" aria-label="@L["dash.scale"]">
+                                <button class="@(!_log ? "on" : null)" @onclick="() => _log = false">@L["dash.linear"]</button>
+                                <button class="@(_log ? "on" : null)" @onclick="() => _log = true">@L["dash.log"]</button>
                             </div>
                         </div>
                     </div>
@@ -91,10 +91,10 @@
                     </ul>
                     @RenderHistory(d.History, d.HistoryRange)
                     <details class="viz-table">
-                        <summary>Voir le tableau</summary>
+                        <summary>@L["dash.showTable"]</summary>
                         <div class="table-wrap">
                             <table class="table">
-                                <thead><tr><th>Période</th>@foreach (var s in Sources) { <th>@SourceLabel(s)</th> }<th>Total</th></tr></thead>
+                                <thead><tr><th>@L["dash.period"]</th>@foreach (var s in Sources) { <th>@SourceLabel(s)</th> }<th>@L["common.total"]</th></tr></thead>
                                 <tbody>
                                     @foreach (var b in d.History.Where(b => b.Library + b.Upload + b.Youtube > 0))
                                     {
@@ -110,18 +110,18 @@
             @if (_stats is { } stats)
             {
                 <section class="panel">
-                    <h2>Analyse de la bibliothèque</h2>
+                    <h2>@L["dash.scan.title"]</h2>
                     @if (stats.Scan.Running)
                     {
-                        <p><span class="spinner inline"></span> Analyse en cours : @stats.Scan.FilesSeen fichiers vus, @stats.Scan.Added ajoutés, @stats.Scan.Updated mis à jour.</p>
+                        <p><span class="spinner inline"></span> @L["dash.scan.running", ("seen", stats.Scan.FilesSeen), ("added", stats.Scan.Added), ("updated", stats.Scan.Updated)]</p>
                     }
                     else
                     {
                         <p>
-                            Dernière analyse : @(stats.Scan.LastFinishedAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "jamais")
+                            @L["dash.scan.last", ("date", stats.Scan.LastFinishedAt is { } last ? L.DateTime(last) : L["common.never"])]
                             @if (stats.Scan.LastFinishedAt is not null)
                             {
-                                <span> — @stats.Scan.FilesSeen fichiers, @stats.Scan.Added ajoutés, @stats.Scan.Updated mis à jour, @stats.Scan.Removed retirés.</span>
+                                <span>@L["dash.scan.lastStats", ("seen", stats.Scan.FilesSeen), ("added", stats.Scan.Added), ("updated", stats.Scan.Updated), ("removed", stats.Scan.Removed)]</span>
                             }
                         </p>
                     }
@@ -129,11 +129,11 @@
                     {
                         <p class="form-error">@err</p>
                     }
-                    <p class="muted">Recherche : @SearchLabel(stats.SearchEngine) · cache de transcodage : @Format.Bytes(stats.TranscodeCacheBytes)</p>
-                    <p class="muted">Les changements sur disque sont détectés automatiquement. L'analyse complète est incrémentale : seuls les fichiers modifiés sont relus.</p>
+                    <p class="muted">@L["dash.search", ("engine", SearchLabel(stats.SearchEngine)), ("cache", Format.Bytes(stats.TranscodeCacheBytes))]</p>
+                    <p class="muted">@L["dash.scan.hint"]</p>
                     <div class="row">
-                        <button class="btn primary" disabled="@stats.Scan.Running" @onclick="ScanAsync"><Icon Name="refresh" Size="18" /> Analyser maintenant</button>
-                        <button class="btn" @onclick="ClearCacheAsync"><Icon Name="delete" Size="18" /> Vider le cache de transcodage</button>
+                        <button class="btn primary" disabled="@stats.Scan.Running" @onclick="ScanAsync"><Icon Name="refresh" Size="18" /> @L["dash.scan.now"]</button>
+                        <button class="btn" @onclick="ClearCacheAsync"><Icon Name="delete" Size="18" /> @L["dash.clearCache"]</button>
                     </div>
                 </section>
             }
@@ -143,11 +143,7 @@
 
 @code {
     private static readonly string[] Sources = ["library", "upload", "youtube"];
-    private static readonly (string Key, string Label)[] Ranges = [("day", "Jour"), ("week", "Semaine"), ("month", "Mois"), ("year", "Année"), ("all", "Tout")];
-    // Le client WebAssembly tourne en globalisation invariante : noms français écrits ici.
-    private static readonly string[] Months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
-    private static readonly string[] ShortMonths = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
-    private static readonly string[] Days = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+    private static readonly string[] Ranges = ["day", "week", "month", "year", "all"];
 
     private LibraryStatsDto? _stats;
     private DashboardDto? _dashboard;
@@ -185,7 +181,7 @@
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
-            _error = ex.Message;
+            _error = L.Server(ex.Message);
         }
     }
 
@@ -206,7 +202,7 @@
     private async Task ClearCacheAsync()
     {
         await Api.AdminClearCacheAsync();
-        Ui.Notify("Cache de transcodage vidé");
+        Ui.Notify(L["dash.cacheCleared"]);
         await LoadAsync();
     }
 
@@ -228,7 +224,7 @@
             : NiceTicks(max);
         var labelEvery = Math.Max(1, (int)Math.Ceiling(buckets.Count / 8.0));
         <div class="viz-plot">
-            <svg viewBox="0 0 @W @H" class="viz-svg" role="img" aria-label="Morceaux ajoutés par période et par provenance">
+            <svg viewBox="0 0 @W @H" class="viz-svg" role="img" aria-label="@L["dash.historyAria"]">
                 @foreach (var t in ticks)
                 {
                     var y = H - Bottom - Height(t);
@@ -276,7 +272,7 @@
                     {
                         <div class="viz-tip-row"><span class="swatch" style="background: var(--series-@s)"></span>@SourceLabel(s)<span class="viz-tip-value">@Count(b, s)</span></div>
                     }
-                    <div class="viz-tip-row strong">Total<span class="viz-tip-value">@(b.Library + b.Upload + b.Youtube)</span></div>
+                    <div class="viz-tip-row strong">@L["common.total"]<span class="viz-tip-value">@(b.Library + b.Upload + b.Youtube)</span></div>
                 </div>
             }
         </div>
@@ -304,41 +300,34 @@
         _ => b.Youtube,
     };
 
-    private static string BucketLabel(DateTimeOffset d, string range, bool full) => range switch
+    // Noms de mois et de jours fournis par le fichier de langue (le client WebAssembly tourne en globalisation invariante).
+    private string BucketLabel(DateTimeOffset d, string range, bool full)
     {
-        "day" => full ? $"{Days[(int)d.DayOfWeek]} {d.Day} {Months[d.Month - 1]}, {d.Hour:00} h" : $"{d.Hour:00}h",
-        "year" => full ? $"{Months[d.Month - 1]} {d.Year}" : ShortMonths[d.Month - 1],
-        "all" when d.Month == 1 && d.Day == 1 && full => d.Year.ToString(),
-        "all" => full ? $"{Months[d.Month - 1]} {d.Year}" : $"{d.Month:00}/{d.Year % 100:00}",
-        _ => full ? $"{Days[(int)d.DayOfWeek]} {d.Day} {Months[d.Month - 1]} {d.Year}" : $"{d.Day:00}/{d.Month:00}",
-    };
+        (string, object?)[] parts =
+        [
+            ("weekday", L.Format.Day(d.DayOfWeek)), ("month", L.Format.Month(d.Month)), ("d", d.Day.ToString()),
+            ("dd", d.Day.ToString("00")), ("MM", d.Month.ToString("00")), ("yyyy", d.Year.ToString()),
+            ("yy", (d.Year % 100).ToString("00")), ("HH", d.Hour.ToString("00")),
+        ];
+        return range switch
+        {
+            "day" => L[full ? "dash.bucket.hour" : "dash.bucket.hourShort", parts],
+            "year" => full ? L["dash.bucket.month", parts] : L.Format.ShortMonth(d.Month),
+            "all" when d.Month == 1 && d.Day == 1 && full => d.Year.ToString(),
+            "all" => L[full ? "dash.bucket.month" : "dash.bucket.monthShort", parts],
+            _ => L[full ? "dash.bucket.day" : "dash.bucket.dayShort", parts],
+        };
+    }
 
-    internal static string SourceLabel(string source) => source switch
-    {
-        "library" => "Bibliothèque",
-        "upload" => "Envois",
-        "youtube" => "YouTube",
-        _ => source,
-    };
+    private string SourceLabel(string source) => L.Has("dash.source." + source) ? L["dash.source." + source] : source;
 
-    private static string SliceLabel(string key) => key switch
-    {
-        "cache" => "Caches",
-        "other" => "Autres fichiers du disque",
-        "free" => "Libre",
-        _ => SourceLabel(key),
-    };
+    private string SliceLabel(string key) => L.Has("dash.slice." + key) ? L["dash.slice." + key] : SourceLabel(key);
 
-    private static string Hours(double seconds) => seconds >= 3600 ? $"{seconds / 3600:0.#} h".Replace('.', ',') : Format.LongDuration(seconds);
-    private static string Percent(long part, long total) => total == 0 ? "" : (part * 100.0 / total).ToString("0.0", CultureInfo.InvariantCulture).Replace('.', ',') + " %";
-    private static string N(int n) => n.ToString("#,0", CultureInfo.InvariantCulture).Replace(',', ' ');
+    private string Hours(double seconds) => seconds >= 3600 ? L["format.hoursShort", ("value", L.Number(seconds / 3600, 1))] : Format.LongDuration(seconds);
+    private static string Percent(long part, long total) => total == 0 ? "" : Format.Percent(part * 100.0 / total);
+    private string N(int n) => L.Number(n);
     private static string F(double v) => v.ToString("0.##", CultureInfo.InvariantCulture);
 
-    private static string SearchLabel(string engine) => engine switch
-    {
-        "elasticsearch" => "Elasticsearch (tolérance aux fautes, suggestions)",
-        "indexing" => "Elasticsearch, indexation initiale en cours (recherche en base en attendant)",
-        "degraded" => "Elasticsearch injoignable, recherche en base en attendant son retour",
-        _ => "en base (aucun Elasticsearch configuré)",
-    };
+    private string SearchLabel(string engine) =>
+        L[engine is "elasticsearch" or "indexing" or "degraded" ? "dash.searchEngine." + engine : "dash.searchEngine.database"];
 }

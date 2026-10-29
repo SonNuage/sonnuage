@@ -3,12 +3,12 @@
 @inject ApiClient Api
 @inject NavigationManager Nav
 
-<PageTitle>Rechercher · Localify</PageTitle>
+<PageTitle>@L["nav.search"] · Localify</PageTitle>
 
 <div class="page">
     <div class="search-box">
         <Icon Name="search" />
-        <input class="input" type="search" placeholder="Artistes, albums, titres…" value="@_query" @oninput="OnInput" autofocus
+        <input class="input" type="search" placeholder="@L["search.placeholder"]" value="@_query" @oninput="OnInput" autofocus
                list="search-suggestions" autocomplete="off" />
         <datalist id="search-suggestions">
             @foreach (var s in _suggestions)
@@ -26,30 +26,30 @@
     {
         @if (r.Correction is { } fix)
         {
-            <p class="muted">Vouliez-vous dire <a href="search?q=@Uri.EscapeDataString(fix)" @onclick="() => UseCorrectionAsync(fix)" @onclick:preventDefault="true"><strong>@fix</strong></a> ?</p>
+            <p class="muted">@L["search.didYouMean"] <a href="search?q=@Uri.EscapeDataString(fix)" @onclick="() => UseCorrectionAsync(fix)" @onclick:preventDefault="true"><strong>@fix</strong></a> ?</p>
         }
         @if (r.Artists.Count + r.Albums.Count + r.Tracks.Count == 0)
         {
-            <p class="empty">Aucun résultat pour « @_query ».</p>
+            <p class="empty">@L["search.noResults", ("query", _query)]</p>
         }
         @if (r.Tracks.Count > 0)
         {
             <section>
-                <h2>Titres</h2>
+                <h2>@L["search.tracks"]</h2>
                 <TrackList Tracks="r.Tracks" ShowCover="true" />
             </section>
         }
         @if (r.Artists.Count > 0)
         {
             <section>
-                <h2>Artistes</h2>
+                <h2>@L["search.artists"]</h2>
                 <div class="grid">
                     @foreach (var a in r.Artists)
                     {
                         <a class="card" href="artist/@a.Id">
                             <div class="card-cover round"><Cover AlbumId="a.CoverAlbumId" HasCover="a.CoverAlbumId is not null" Round="true" Seed="@a.Name" /></div>
                             <span class="card-title">@a.Name</span>
-                            <span class="card-sub">Artiste</span>
+                            <span class="card-sub">@L["common.artist"]</span>
                         </a>
                     }
                 </div>
@@ -58,7 +58,7 @@
         @if (r.Albums.Count > 0)
         {
             <section>
-                <h2>Albums</h2>
+                <h2>@L["search.albums"]</h2>
                 <AlbumGrid Albums="r.Albums" />
             </section>
         }
@@ -133,7 +133,7 @@
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
-            _error = ex.Message;
+            _error = L.Server(ex.Message);
         }
     }
 

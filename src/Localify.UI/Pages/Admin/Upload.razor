@@ -2,24 +2,24 @@
 @inject ApiClient Api
 @inject UiState Ui
 
-<PageTitle>Ajouter des œuvres · Localify</PageTitle>
+<PageTitle>@L["admin.tabs.upload"] · Localify</PageTitle>
 
 <div class="page">
-    <header class="page-header"><h1>Administration</h1></header>
+    <header class="page-header"><h1>@L["admin.title"]</h1></header>
     <AdminNav>
         <section class="panel">
-            <h2>Ajouter des œuvres</h2>
+            <h2>@L["admin.tabs.upload"]</h2>
             <p class="muted">
-                Les fichiers sont rangés par artiste et album d'après leurs tags. Pour des fichiers sans tags, indiquez l'artiste et l'album ci-dessous.
-                Les envois se font par morceaux de 8 Mo et reprennent après une coupure réseau.
+                @L["upload.intro"]
+                @L["upload.resumable"]
             </p>
             <div class="form-grid">
-                <label class="field"><span>Artiste (si absent des tags)</span><input class="input" @bind="_artist" /></label>
-                <label class="field"><span>Album (si absent des tags)</span><input class="input" @bind="_album" /></label>
+                <label class="field"><span>@L["upload.artistHint"]</span><input class="input" @bind="_artist" /></label>
+                <label class="field"><span>@L["upload.albumHint"]</span><input class="input" @bind="_album" /></label>
             </div>
             <label class="dropzone @(_busy ? "disabled" : "")">
                 <Icon Name="upload" Size="40" />
-                <span>Glissez des fichiers audio ici ou cliquez pour choisir</span>
+                <span>@L["upload.drop"]</span>
                 <small>MP3, FLAC, WAV, OGG, Opus, M4A, AAC, WMA, AIFF…</small>
                 <InputFile OnChange="OnFilesSelected" multiple accept="audio/*,.flac,.wav,.mp3,.ogg,.opus,.m4a,.aac,.wma,.aiff,.aif,.ape,.wv" disabled="@_busy" />
             </label>
@@ -28,7 +28,7 @@
         @if (_items.Count > 0)
         {
             <section class="panel">
-                <h2>Envois</h2>
+                <h2>@L["upload.list"]</h2>
                 <ul class="upload-list">
                     @foreach (var item in _items)
                     {
@@ -73,13 +73,13 @@
         public int Percent => Size == 0 ? 0 : (int)(Sent * 100 / Size);
     }
 
-    private static string StatusLabel(UploadItem i) => i.Status switch
+    private string StatusLabel(UploadItem i) => i.Status switch
     {
-        UploadStatus.Pending => "en attente",
+        UploadStatus.Pending => L["upload.status.pending"],
         UploadStatus.Uploading => $"{i.Percent} %",
-        UploadStatus.Processing => "analyse…",
-        UploadStatus.Done => "ajouté",
-        _ => i.Error ?? "échec",
+        UploadStatus.Processing => L["upload.status.processing"],
+        UploadStatus.Done => L["upload.status.done"],
+        _ => i.Error ?? L["upload.status.failed"],
     };
 
     private async Task OnFilesSelected(InputFileChangeEventArgs e)
@@ -94,14 +94,14 @@
         }
         _busy = false;
         var ok = batch.Count(i => i.Status == UploadStatus.Done);
-        Ui.Notify($"{ok}/{batch.Count} fichier(s) ajouté(s)", ok < batch.Count);
+        Ui.Notify(L["upload.summary", ("ok", ok), ("total", batch.Count)], ok < batch.Count);
     }
 
     private async Task UploadAsync(UploadItem item)
     {
         if (item.Size > MaxFileSize)
         {
-            Fail(item, "fichier trop volumineux");
+            Fail(item, L["upload.tooLarge"]);
             return;
         }
 
@@ -112,12 +112,12 @@
         }
         catch (ApiException ex)
         {
-            Fail(item, ex.Message);
+            Fail(item, L.Server(ex.Message));
             return;
         }
         if (session is null)
         {
-            Fail(item, "session refusée");
+            Fail(item, L["upload.sessionRefused"]);
             return;
         }
 
@@ -145,7 +145,7 @@
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException or IOException)
         {
-            Fail(item, ex.Message);
+            Fail(item, L.Server(ex.Message));
             try { await Api.AdminCancelUploadAsync(session.Id); } catch (Exception) { }
         }
     }
@@ -158,7 +158,7 @@
             try
             {
                 var s = await Api.AdminUploadChunkAsync(id, offset, chunk);
-                if (s is null) throw new ApiException(System.Net.HttpStatusCode.NotFound, "session expirée");
+                if (s is null) throw new ApiException(System.Net.HttpStatusCode.NotFound, L["upload.sessionExpired"]);
                 if (s.Received == offset + chunk.Length) return s.Received;
                 // Le serveur a un autre offset : il a déjà tout ou partie de ce morceau.
                 if (s.Received > offset && s.Received <= offset + chunk.Length)
@@ -169,7 +169,7 @@
                     offset = s.Received;
                     continue;
                 }
-                throw new ApiException(System.Net.HttpStatusCode.Conflict, "désynchronisation de l'envoi");
+                throw new ApiException(System.Net.HttpStatusCode.Conflict, L["upload.desync"]);
             }
             catch (HttpRequestException) when (attempt < MaxRetries)
             {

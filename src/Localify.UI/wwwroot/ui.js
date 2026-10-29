@@ -1,3 +1,5 @@
+// Petits utilitaires d'interface partagés web/Android.
+
 // Remplissage des curseurs (lecture, volume) jusqu'au pouce, y compris pendant qu'on le fait glisser,
 // avant même que Blazor ne réaffiche la valeur.
 (() => {
@@ -11,3 +13,9 @@
     if (e.target instanceof HTMLInputElement && e.target.classList.contains('slider')) fill(e.target);
   });
 })();
+
+// Langue : celles du navigateur ou du téléphone, et l'attribut lang du document (lecteurs d'écran, césure).
+window.localify = {
+  languages: () => (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language]).join(','),
+  setLanguage: (code) => { document.documentElement.lang = code; },
+};

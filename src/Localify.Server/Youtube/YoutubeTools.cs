@@ -1,3 +1,4 @@
+using Localify.Contracts.Localization;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
@@ -64,7 +65,7 @@ public sealed class YoutubeTools(IOptions<LocalifyOptions> options, IHttpClientF
         var sums = await http.GetStringAsync(release + "SHA2-256SUMS", ct);
         var expected = sums.Split('\n').Select(l => l.Trim().Split(' ', 2, StringSplitOptions.RemoveEmptyEntries))
             .FirstOrDefault(p => p.Length == 2 && p[1].Trim() == asset)?[0]
-            ?? throw new InvalidOperationException($"Somme de contrôle de {asset} absente de la release yt-dlp.");
+            ?? throw new InvalidOperationException(Tx.Key("errors.yt.checksumMissing", ("asset", asset)));
         var bytes = await http.GetByteArrayAsync(release + asset, ct);
         Verify(bytes, expected, asset);
         await InstallAsync(bytes, Windows ? "yt-dlp.exe" : "yt-dlp", ct);
@@ -86,7 +87,7 @@ public sealed class YoutubeTools(IOptions<LocalifyOptions> options, IHttpClientF
         // « hash  fichier » sous Linux/macOS, sortie de Get-FileHash (« Hash : … ») pour Windows.
         var expected = System.Text.RegularExpressions.Regex.Match(await http.GetStringAsync(url + ".sha256sum", ct), @"\b[0-9a-fA-F]{64}\b") is { Success: true } m
             ? m.Value
-            : throw new InvalidOperationException($"Somme de contrôle de {asset} illisible.");
+            : throw new InvalidOperationException(Tx.Key("errors.yt.checksumUnreadable", ("asset", asset)));
         var zip = await http.GetByteArrayAsync(url, ct);
         Verify(zip, expected, asset);
         using var archive = new ZipArchive(new MemoryStream(zip));
@@ -100,7 +101,7 @@ public sealed class YoutubeTools(IOptions<LocalifyOptions> options, IHttpClientF
     {
         var actual = Convert.ToHexStringLower(SHA256.HashData(bytes));
         if (!string.Equals(actual, expectedHex, StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException($"{asset} : somme SHA-256 inattendue, téléchargement refusé.");
+            throw new InvalidOperationException(Tx.Key("errors.yt.checksumMismatch", ("asset", asset)));
     }
 
     /// <summary>Écrit à côté puis remplace, pour ne jamais laisser un exécutable à moitié écrit.</summary>

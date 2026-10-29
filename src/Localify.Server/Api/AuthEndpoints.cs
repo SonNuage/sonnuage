@@ -1,4 +1,5 @@
 using Localify.Contracts;
+using Localify.Contracts.Localization;
 using Localify.Server.Auth;
 using Localify.Server.Data;
 
@@ -15,7 +16,7 @@ public static class AuthEndpoints
         g.MapPost("/login", async (LoginRequest req, UserService users, TokenService tokens, CancellationToken ct) =>
         {
             var user = await users.ValidateAsync(req.Username ?? "", req.Password ?? "", ct);
-            if (user is null) return Results.Problem("Identifiants invalides.", statusCode: StatusCodes.Status401Unauthorized);
+            if (user is null) return Results.Problem(Tx.Key("errors.auth.invalid"), statusCode: StatusCodes.Status401Unauthorized);
             return Results.Ok(await tokens.IssueAsync(user, Truncate(req.DeviceName, 100), null, ct));
         }).RequireRateLimiting(LoginRateLimit).AllowAnonymous();
 
@@ -23,7 +24,7 @@ public static class AuthEndpoints
         {
             var result = await tokens.RefreshAsync(req.RefreshToken ?? "", ct);
             return result is null
-                ? Results.Problem("Session expirée.", statusCode: StatusCodes.Status401Unauthorized)
+                ? Results.Problem(Tx.Key("errors.sessionExpired"), statusCode: StatusCodes.Status401Unauthorized)
                 : Results.Ok(result);
         }).RequireRateLimiting(LoginRateLimit).AllowAnonymous();
 
@@ -39,14 +40,26 @@ public static class AuthEndpoints
             return user is null ? Results.Unauthorized() : Results.Ok(user.ToDto());
         }).RequireAuthorization();
 
+        g.MapPut("/language", async (SetLanguageRequest req, HttpContext http, LocalifyDbContext db, CancellationToken ct) =>
+        {
+            var user = await db.Users.FindAsync([http.User.UserId()], ct);
+            if (user is null) return Results.Unauthorized();
+            var language = string.IsNullOrWhiteSpace(req.Language) ? null : req.Language.Trim();
+            if (language is not null && !Translations.Instance.IsAvailable(language))
+                return Results.Problem(Tx.Key("errors.unknownLanguage", ("language", language)), statusCode: StatusCodes.Status400BadRequest);
+            user.Language = language;
+            await db.SaveChangesAsync(ct);
+            return Results.Ok(user.ToDto());
+        }).RequireAuthorization();
+
         g.MapPost("/password", async (ChangePasswordRequest req, HttpContext http, LocalifyDbContext db, UserService users, CancellationToken ct) =>
         {
             var user = await db.Users.FindAsync([http.User.UserId()], ct);
             if (user is null) return Results.Unauthorized();
             if (await users.ValidateAsync(user.Username, req.CurrentPassword, ct) is null)
-                return Results.Problem("Mot de passe actuel incorrect.", statusCode: StatusCodes.Status400BadRequest);
+                return Results.Problem(Tx.Key("errors.auth.wrongPassword"), statusCode: StatusCodes.Status400BadRequest);
             if (req.NewPassword.Length < UserService.MinPasswordLength)
-                return Results.Problem($"Mot de passe : {UserService.MinPasswordLength} caractères minimum.", statusCode: StatusCodes.Status400BadRequest);
+                return Results.Problem(Tx.Key("errors.passwordMin", ("min", UserService.MinPasswordLength)), statusCode: StatusCodes.Status400BadRequest);
             await users.SetPasswordAsync(user, req.NewPassword, ct);
             return Results.NoContent();
         }).RequireAuthorization();

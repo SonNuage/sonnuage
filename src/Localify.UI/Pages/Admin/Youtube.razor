@@ -7,41 +7,41 @@
 <PageTitle>YouTube · Localify</PageTitle>
 
 <div class="page">
-    <header class="page-header"><h1>Administration</h1></header>
+    <header class="page-header"><h1>@L["admin.title"]</h1></header>
     <AdminNav>
         @if (_status is { } st)
         {
             @if (st.Tools.YtDlp is null)
             {
                 <div class="notice warn">
-                    <span>yt-dlp n'est pas installé sur le serveur.</span>
-                    <button class="btn primary" disabled="@_updating" @onclick="() => UpdateToolsAsync(true)">@(_updating ? "Installation…" : "Installer yt-dlp et Deno")</button>
+                    <span>@L["yt.notInstalled"]</span>
+                    <button class="btn primary" disabled="@_updating" @onclick="() => UpdateToolsAsync(true)">@(_updating ? L["yt.installing"] : L["yt.install"])</button>
                 </div>
             }
             @if (st.HoldUntil is { } until && until > DateTimeOffset.Now)
             {
                 <div class="notice warn">
-                    <span>YouTube refuse les téléchargements pour l'instant : reprise automatique à @until.ToLocalTime().ToString("HH:mm").
-                        @if (!st.HasCookies) { <span> Ajouter les cookies d'un compte YouTube (Réglages) évite le plus souvent ce blocage.</span> }
-                        <span class="muted small">@st.HoldReason</span></span>
-                    <button class="btn" @onclick="ResumeAsync">Reprendre maintenant</button>
+                    <span>@L["yt.hold", ("time", until.ToLocalTime().ToString("HH:mm"))]
+                        @if (!st.HasCookies) { <span>@L["yt.holdCookies"]</span> }
+                        <span class="muted small">@L.Server(st.HoldReason ?? "")</span></span>
+                    <button class="btn" @onclick="ResumeAsync">@L["yt.resumeNow"]</button>
                 </div>
             }
             @if (st.Current is { } cur)
             {
                 <div class="notice">
                     <span class="spinner inline"></span>
-                    <span class="grow"><span class="strong">@cur.Title</span> — @StageLabel(cur.Stage)@(cur.Percent is { } p ? $" {p:0} %" : "")</span>
+                    <span class="grow"><span class="strong">@cur.Title</span> — @StageLabel(cur.Stage)@(cur.Percent is { } p ? " " + L["format.percent", ("value", L.Number(p))] : "")</span>
                     @if (cur.Percent is { } pc) { <progress max="100" value="@pc.ToString(CultureInfo.InvariantCulture)"></progress> }
                 </div>
             }
         }
 
         <div class="tabs sub">
-            @foreach (var (key, label) in Tabs)
+            @foreach (var key in Tabs)
             {
                 <button class="tab @(_tab == key ? "active" : null)" @onclick="() => SwitchAsync(key)">
-                    @label
+                    @L["yt.tab." + key]
                     @if (key == "queue" && _status is { } s && s.Queued + s.NeedsReview + s.Failed > 0)
                     {
                         <span class="badge">@(s.Queued + s.NeedsReview + s.Failed)</span>
@@ -68,22 +68,22 @@
     </AdminNav>
 </div>
 
-<Modal Open="_formatsItem is not null" OpenChanged="v => { if (!v) _formatsItem = null; }" Title="Formats proposés">
+<Modal Open="_formatsItem is not null" OpenChanged="v => { if (!v) _formatsItem = null; }" Title="@L["yt.formats.title"]">
     <ChildContent>
         @if (_formatsItem is { } fi)
         {
             <p class="strong">@fi.Title</p>
-            <p class="muted small">YouTube ne propose aucun des formats audio demandés. Choisissez un identifiant (colonne ID) ou un sélecteur yt-dlp pour cette seule tentative : « 140 » (AAC), « 251 » (Opus), « 18 » (vidéo 360p dont seul l'audio sera gardé), ou « 251/140/18 ».</p>
-            <pre class="formats-table">@(_formats ?? "Aucune liste relevée : relancez une fois l'import pour la récupérer.")</pre>
+            <p class="muted small">@L["yt.formats.hint"]</p>
+            <pre class="formats-table">@(_formats is { } formats ? L.Server(formats) : L["yt.formats.none"])</pre>
             <div class="row">
-                <input class="input mono grow" placeholder="ex. 140/18" @bind="_format" @bind:event="oninput" aria-label="Format yt-dlp" />
-                <button class="btn primary" disabled="@string.IsNullOrWhiteSpace(_format)" @onclick="RetryWithFormatAsync">Réessayer avec ce format</button>
+                <input class="input mono grow" placeholder="@L["yt.formats.placeholder"]" @bind="_format" @bind:event="oninput" aria-label="@L["yt.formats.aria"]" />
+                <button class="btn primary" disabled="@string.IsNullOrWhiteSpace(_format)" @onclick="RetryWithFormatAsync">@L["yt.formats.retry"]</button>
             </div>
         }
     </ChildContent>
 </Modal>
 
-<Modal Open="_review is not null" OpenChanged="v => { if (!v) _review = null; }" Title="Vérifier les métadonnées">
+<Modal Open="_review is not null" OpenChanged="v => { if (!v) _review = null; }" Title="@L["yt.review.title"]">
     <ChildContent>
         @if (_review is { } r)
         {
@@ -91,10 +91,10 @@
                 <img class="cover-sm" src="@r.Item.ThumbnailUrl" alt="" loading="lazy" />
                 <div class="grow">
                     <div class="strong">@r.Item.Title</div>
-                    <div class="muted small">@r.Item.Channel · @Format.Duration(r.Item.DurationSeconds ?? 0) · <a href="https://www.youtube.com/watch?v=@r.Item.VideoId" target="_blank" rel="noopener noreferrer">voir la vidéo</a></div>
+                    <div class="muted small">@r.Item.Channel · @Format.Duration(r.Item.DurationSeconds ?? 0) · <a href="https://www.youtube.com/watch?v=@r.Item.VideoId" target="_blank" rel="noopener noreferrer">@L["yt.review.watch"]</a></div>
                 </div>
             </div>
-            <h3 class="small muted">Propositions</h3>
+            <h3 class="small muted">@L["yt.review.candidates"]</h3>
             <ul class="candidates">
                 @foreach (var c in r.Candidates)
                 {
@@ -102,41 +102,41 @@
                         <span class="score @(c.Score >= 0.8 ? "good" : c.Score >= 0.5 ? "mid" : "low")">@((c.Score * 100).ToString("0"))</span>
                         <span class="grow">
                             <span class="strong">@c.Title</span> — @c.Artist
-                            <span class="muted small block">@c.Album@(c.Year is { } y ? $" ({y})" : "")@(c.TrackNumber is { } n ? $" · piste {n}" : "") · @SourceLabel(c.Source)</span>
+                            <span class="muted small block">@c.Album@(c.Year is { } y ? $" ({y})" : "")@(c.TrackNumber is { } n ? " · " + L["yt.review.trackNo", ("number", n)] : "") · @SourceLabel(c.Source)</span>
                         </span>
                     </li>
                 }
             </ul>
             <form class="inline-form" @onsubmit="() => SearchMusicBrainzAsync(r)" @onsubmit:preventDefault="true">
-                <input class="input" placeholder="Titre" @bind="r.SearchTitle" />
-                <input class="input" placeholder="Artiste" @bind="r.SearchArtist" />
+                <input class="input" placeholder="@L["editor.title"]" @bind="r.SearchTitle" />
+                <input class="input" placeholder="@L["editor.artist"]" @bind="r.SearchArtist" />
                 <button class="btn" type="submit" disabled="@r.Searching"><Icon Name="search" Size="18" /> MusicBrainz</button>
             </form>
-            <h3 class="small muted">Métadonnées appliquées</h3>
+            <h3 class="small muted">@L["yt.review.applied"]</h3>
             <div class="form-grid">
-                <label class="field"><span>Titre</span><input class="input" @bind="r.Edit.Title" /></label>
-                <label class="field"><span>Artiste</span><input class="input" @bind="r.Edit.Artist" /></label>
-                <label class="field"><span>Album</span><input class="input" @bind="r.Edit.Album" /></label>
-                <label class="field"><span>Artiste de l'album</span><input class="input" @bind="r.Edit.AlbumArtist" /></label>
-                <label class="field"><span>Piste</span><input class="input" type="number" min="1" @bind="r.Edit.TrackNumber" /></label>
-                <label class="field"><span>Année</span><input class="input" type="number" @bind="r.Edit.Year" /></label>
-                <label class="field"><span>Genre</span><input class="input" @bind="r.Edit.Genre" /></label>
+                <label class="field"><span>@L["editor.title"]</span><input class="input" @bind="r.Edit.Title" /></label>
+                <label class="field"><span>@L["editor.artist"]</span><input class="input" @bind="r.Edit.Artist" /></label>
+                <label class="field"><span>@L["editor.album"]</span><input class="input" @bind="r.Edit.Album" /></label>
+                <label class="field"><span>@L["editor.albumArtist"]</span><input class="input" @bind="r.Edit.AlbumArtist" /></label>
+                <label class="field"><span>@L["yt.review.track"]</span><input class="input" type="number" min="1" @bind="r.Edit.TrackNumber" /></label>
+                <label class="field"><span>@L["editor.year"]</span><input class="input" type="number" @bind="r.Edit.Year" /></label>
+                <label class="field"><span>@L["editor.genre"]</span><input class="input" @bind="r.Edit.Genre" /></label>
             </div>
         }
     </ChildContent>
     <Footer>
         @if (_review is { } r)
         {
-            <button class="btn" @onclick="() => AcceptAsync(r)">Garder l'actuel</button>
-            <button class="btn primary" disabled="@r.Applying" @onclick="() => ApplyAsync(r)">@(r.Applying ? "Application…" : "Appliquer")</button>
+            <button class="btn" @onclick="() => AcceptAsync(r)">@L["yt.review.keep"]</button>
+            <button class="btn primary" disabled="@r.Applying" @onclick="() => ApplyAsync(r)">@(r.Applying ? L["yt.review.applying"] : L["yt.review.apply"])</button>
         }
     </Footer>
 </Modal>
 
 @code {
-    private static readonly (string, string)[] Tabs = [("explore", "Explorer"), ("queue", "File d'attente"), ("subs", "Abonnements"), ("settings", "Réglages")];
-    private static readonly (string? Status, bool Review, string Label)[] Filters =
-        [(null, false, "Tout"), ("Queued", false, "En cours"), (null, true, "À vérifier"), ("Failed", false, "En échec"), ("Done", false, "Importés"), ("Skipped", false, "Ignorés")];
+    private static readonly string[] Tabs = ["explore", "queue", "subs", "settings"];
+    private static readonly (string? Status, bool Review, string Key)[] Filters =
+        [(null, false, "all"), ("Queued", false, "queued"), (null, true, "review"), ("Failed", false, "failed"), ("Done", false, "done"), ("Skipped", false, "skipped")];
 
     private string _tab = "explore";
     private YoutubeStatusDto? _status;
@@ -183,7 +183,7 @@
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
-            Ui.Notify(ex.Message, true);
+            Ui.Notify(L.Server(ex.Message), true);
             return default;
         }
     }
@@ -198,7 +198,7 @@
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
-            Ui.Notify(ex.Message, true);
+            Ui.Notify(L.Server(ex.Message), true);
             return false;
         }
     }
@@ -223,19 +223,19 @@
     {
         <section class="panel">
             <form class="inline-form" @onsubmit="SearchAsync" @onsubmit:preventDefault="true">
-                <input class="input" placeholder="Rechercher, ou coller l'adresse d'une vidéo, d'une playlist ou d'une chaîne" @bind="_query" />
+                <input class="input" placeholder="@L["yt.explore.placeholder"]" @bind="_query" />
                 <div class="segmented" role="group" aria-label="Source">
                     <button type="button" class="@(_music ? "on" : null)" @onclick="() => _music = true">YouTube Music</button>
                     <button type="button" class="@(!_music ? "on" : null)" @onclick="() => _music = false">YouTube</button>
                 </div>
-                <button class="btn primary" type="submit" disabled="@(_searching || string.IsNullOrWhiteSpace(_query))"><Icon Name="search" Size="18" /> Chercher</button>
+                <button class="btn primary" type="submit" disabled="@(_searching || string.IsNullOrWhiteSpace(_query))"><Icon Name="search" Size="18" /> @L["yt.explore.search"]</button>
             </form>
-            <p class="muted small">YouTube Music donne les meilleures métadonnées (titre, artistes, album). Les titres importés sont reconnus via MusicBrainz, puis rangés avec leur pochette dans la bibliothèque. Importez uniquement ce que vous avez le droit de conserver.</p>
+            <p class="muted small">@L["yt.explore.hint"]</p>
         </section>
 
         @if (_searching)
         {
-            <div class="empty"><span class="spinner inline"></span> Recherche sur YouTube…</div>
+            <div class="empty"><span class="spinner inline"></span> @L["yt.explore.searching"]</div>
         }
         else if (_listing is { } l)
         {
@@ -243,23 +243,23 @@
                 <div class="viz-head">
                     <div>
                         <h2>@l.Title</h2>
-                        <span class="muted small">@Format.Plural(l.Entries.Count, "vidéo", "vidéos")@(l.Channel is { } ch ? $" · {ch}" : "")</span>
+                        <span class="muted small">@L["common.videos", ("count", l.Entries.Count)]@(l.Channel is { } ch ? $" · {ch}" : "")</span>
                     </div>
                     <div class="row">
-                        <button class="btn" @onclick="ToggleAll">@(_selected.Count == Importable(l).Count() ? "Tout désélectionner" : "Tout sélectionner")</button>
-                        <button class="btn primary" disabled="@(_selected.Count == 0)" @onclick="ImportAsync"><Icon Name="add" Size="18" /> Importer (@_selected.Count)</button>
+                        <button class="btn" @onclick="ToggleAll">@(_selected.Count == Importable(l).Count() ? L["yt.explore.deselectAll"] : L["yt.explore.selectAll"])</button>
+                        <button class="btn primary" disabled="@(_selected.Count == 0)" @onclick="ImportAsync"><Icon Name="add" Size="18" /> @L["yt.explore.import", ("count", _selected.Count)]</button>
                     </div>
                 </div>
                 @if (l.Kind == "playlist" && l.Url.StartsWith("https://"))
                 {
                     <div class="inline-form">
-                        <label class="row small"><input type="checkbox" @bind="_isAlbum" /> C'est un album</label>
+                        <label class="row small"><input type="checkbox" @bind="_isAlbum" /> @L["yt.explore.isAlbum"]</label>
                         @if (_isAlbum)
                         {
-                            <input class="input" placeholder="Nom de l'album" @bind="_albumHint" />
+                            <input class="input" placeholder="@L["yt.explore.albumName"]" @bind="_albumHint" />
                         }
-                        <button class="btn" @onclick="() => SubscribeAsync(l.Url, false)">S'abonner (nouveautés seulement)</button>
-                        <button class="btn" @onclick="() => SubscribeAsync(l.Url, true)">S'abonner et tout importer</button>
+                        <button class="btn" @onclick="() => SubscribeAsync(l.Url, false)">@L["yt.explore.subscribeNew"]</button>
+                        <button class="btn" @onclick="() => SubscribeAsync(l.Url, true)">@L["yt.explore.subscribeAll"]</button>
                     </div>
                 }
                 <ul class="yt-list">
@@ -267,14 +267,14 @@
                     {
                         var known = v.ImportStatus is not null and not "Failed" and not "Skipped";
                         <li class="@(known ? "known" : null)">
-                            <input type="checkbox" checked="@_selected.Contains(v.VideoId)" disabled="@known" @onchange="() => Toggle(v.VideoId)" aria-label="Sélectionner @v.Title" />
+                            <input type="checkbox" checked="@_selected.Contains(v.VideoId)" disabled="@known" @onchange="() => Toggle(v.VideoId)" aria-label="@L["yt.explore.select", ("title", v.Title)]" />
                             <img class="yt-thumb" src="@v.ThumbnailUrl" alt="" loading="lazy" />
                             <span class="grow">
                                 <span class="strong">@v.Title</span>
                                 <span class="muted small block">@v.Channel@(v.DurationSeconds is { } dur ? $" · {Format.Duration(dur)}" : "")</span>
                             </span>
                             @if (v.ImportStatus is { } status) { <span class="badge @StatusClass(status)">@StatusLabel(status)</span> }
-                            <a class="icon-btn" href="https://www.youtube.com/watch?v=@v.VideoId" target="_blank" rel="noopener noreferrer" title="Ouvrir sur YouTube"><Icon Name="play" Size="18" /></a>
+                            <a class="icon-btn" href="https://www.youtube.com/watch?v=@v.VideoId" target="_blank" rel="noopener noreferrer" title="@L["yt.explore.open"]"><Icon Name="play" Size="18" /></a>
                         </li>
                     }
                 </ul>
@@ -314,7 +314,9 @@
         var videos = _listing.Entries.Where(v => _selected.Contains(v.VideoId)).ToList();
         var result = await Run(() => Api.YoutubeImportAsync(new YoutubeImportRequest(videos, _isAlbum ? _albumHint : null)));
         if (result is null) return;
-        Ui.Notify(result.AlreadyKnown > 0 ? $"{result.Queued} ajoutée(s) à la file, {result.AlreadyKnown} déjà connue(s)" : $"{result.Queued} ajoutée(s) à la file d'import");
+        Ui.Notify(result.AlreadyKnown > 0
+            ? L["yt.explore.queuedKnown", ("queued", result.Queued), ("known", result.AlreadyKnown)]
+            : L["yt.explore.queued", ("queued", result.Queued)]);
         _listing = _listing with { Entries = _listing.Entries.Select(v => _selected.Contains(v.VideoId) ? v with { ImportStatus = "Queued" } : v).ToList() };
         _selected = [];
         await RefreshStatusAsync();
@@ -322,7 +324,7 @@
 
     private async Task SubscribeAsync(string url, bool importExisting)
     {
-        if (await Run(() => Api.YoutubeSubscribeAsync(new CreateSubscriptionRequest(url, _isAlbum, importExisting)), "Abonnement créé"))
+        if (await Run(() => Api.YoutubeSubscribeAsync(new CreateSubscriptionRequest(url, _isAlbum, importExisting)), L["yt.subs.created"]))
             await RefreshStatusAsync();
     }
 
@@ -336,24 +338,24 @@
     private RenderFragment Queue => __builder =>
     {
         <div class="toolbar">
-            <div class="segmented" role="group" aria-label="Filtre">
+            <div class="segmented" role="group" aria-label="@L["yt.filterAria"]">
                 @for (var i = 0; i < Filters.Length; i++)
                 {
                     var index = i;
-                    <button class="@(_filter == index ? "on" : null)" @onclick="() => SetFilterAsync(index)">@Filters[i].Label</button>
+                    <button class="@(_filter == index ? "on" : null)" @onclick="() => SetFilterAsync(index)">@L["yt.filter." + Filters[i].Key]</button>
                 }
             </div>
-            <input class="input" placeholder="Filtrer par titre ou chaîne" @bind="_itemQuery" @bind:event="oninput" @bind:after="LoadItemsAsync" />
+            <input class="input" placeholder="@L["yt.queue.filterPlaceholder"]" @bind="_itemQuery" @bind:event="oninput" @bind:after="LoadItemsAsync" />
             @if (_status?.Failed > 0)
             {
-                <button class="btn" @onclick="RetryFailedAsync"><Icon Name="refresh" Size="18" /> Relancer les échecs</button>
+                <button class="btn" @onclick="RetryFailedAsync"><Icon Name="refresh" Size="18" /> @L["yt.queue.retryFailed"]</button>
             }
         </div>
         @if (_items is { } pg)
         {
             @if (pg.Items.Count == 0)
             {
-                <div class="empty">Rien ici pour l'instant. Utilisez l'onglet Explorer pour importer des titres.</div>
+                <div class="empty">@L["yt.queue.empty"]</div>
             }
             <ul class="yt-list">
                 @foreach (var item in pg.Items)
@@ -364,40 +366,40 @@
                             @if (item.TrackTitle is not null)
                             {
                                 <span class="strong">@item.TrackTitle</span><span> — @item.TrackArtist</span>
-                                <span class="muted small block">@item.TrackAlbum · depuis « @item.Title »</span>
+                                <span class="muted small block">@item.TrackAlbum · @L["yt.queue.from", ("title", item.Title)]</span>
                             }
                             else
                             {
                                 <span class="strong">@item.Title</span>
-                                <span class="muted small block">@item.Channel@(item.SubscriptionTitle is { } sub ? $" · abonnement « {sub} »" : "")</span>
+                                <span class="muted small block">@item.Channel@(item.SubscriptionTitle is { } sub ? " · " + L["yt.queue.subscription", ("name", sub)] : "")</span>
                             }
-                            @if (item.Error is { } err && item.Status != "Done") { <span class="form-error small block">@err</span> }
+                            @if (item.Error is { } err && item.Status != "Done") { <span class="form-error small block">@L.Server(err)</span> }
                         </span>
                         @if (item.NeedsReview && item.Status == "Done")
                         {
-                            <button class="badge warn clickable" @onclick="() => OpenReviewAsync(item)">à vérifier @Confidence(item)</button>
+                            <button class="badge warn clickable" @onclick="() => OpenReviewAsync(item)">@L["yt.queue.toReview"] @Confidence(item)</button>
                         }
                         else
                         {
-                            <span class="badge @StatusClass(item.Status)" title="@(item.MatchSource is { } src ? $"{SourceLabel(src)}, confiance {Confidence(item)}" : null)">@StatusLabel(item.Status)</span>
+                            <span class="badge @StatusClass(item.Status)" title="@(item.MatchSource is { } src ? L["yt.queue.match", ("source", SourceLabel(src)), ("confidence", Confidence(item))] : null)">@StatusLabel(item.Status)</span>
                         }
                         <span class="row-actions">
                             @if (item.Status == "Done")
                             {
-                                <button class="icon-btn" title="Modifier les métadonnées" @onclick="() => OpenReviewAsync(item)"><Icon Name="edit" Size="18" /></button>
-                                @if (item.AlbumId is { } album) { <a class="icon-btn" href="album/@album" title="Voir l'album"><Icon Name="album" Size="18" /></a> }
+                                <button class="icon-btn" title="@L["yt.queue.editMetadata"]" @onclick="() => OpenReviewAsync(item)"><Icon Name="edit" Size="18" /></button>
+                                @if (item.AlbumId is { } album) { <a class="icon-btn" href="album/@album" title="@L["track.goToAlbum"]"><Icon Name="album" Size="18" /></a> }
                             }
                             @if (item.Status is "Failed" && item.Error?.Contains("format", StringComparison.OrdinalIgnoreCase) == true)
                             {
-                                <button class="icon-btn" title="Formats proposés, réessayer avec un autre" @onclick="() => OpenFormatsAsync(item)"><Icon Name="settings" Size="18" /></button>
+                                <button class="icon-btn" title="@L["yt.queue.formats"]" @onclick="() => OpenFormatsAsync(item)"><Icon Name="settings" Size="18" /></button>
                             }
                             @if (item.Status is "Failed" or "Skipped")
                             {
-                                <button class="icon-btn" title="Importer / réessayer" @onclick="() => RetryAsync(item)"><Icon Name="refresh" Size="18" /></button>
+                                <button class="icon-btn" title="@L["yt.queue.retry"]" @onclick="() => RetryAsync(item)"><Icon Name="refresh" Size="18" /></button>
                             }
                             @if (item.Status is not ("Downloading" or "Processing"))
                             {
-                                <button class="icon-btn" title="@(item.TrackId is null ? "Retirer de la liste" : "Supprimer le morceau importé")" @onclick="() => DeleteAsync(item)"><Icon Name="delete" Size="18" /></button>
+                                <button class="icon-btn" title="@(item.TrackId is null ? L["yt.queue.removeItem"] : L["yt.queue.deleteTrack"])" @onclick="() => DeleteAsync(item)"><Icon Name="delete" Size="18" /></button>
                             }
                         </span>
                     </li>
@@ -405,7 +407,7 @@
             </ul>
             @if (pg.Total > pg.Items.Count)
             {
-                <div class="more"><button class="btn" @onclick="MoreAsync">Afficher plus (@pg.Items.Count / @pg.Total)</button></div>
+                <div class="more"><button class="btn" @onclick="MoreAsync">@L["common.showMore"] (@pg.Items.Count / @pg.Total)</button></div>
             }
         }
     };
@@ -456,7 +458,7 @@
     private async Task RetryWithFormatAsync()
     {
         if (_formatsItem is not { } item) return;
-        if (await Run(() => Api.YoutubeRetryAsync(item.Id, _format), "Import relancé"))
+        if (await Run(() => Api.YoutubeRetryAsync(item.Id, _format), L["yt.queue.retried"]))
         {
             _formatsItem = null;
             await LoadItemsAsync();
@@ -465,13 +467,13 @@
 
     private async Task RetryFailedAsync()
     {
-        await Run(Api.YoutubeRetryFailedAsync, "Échecs remis dans la file");
+        await Run(Api.YoutubeRetryFailedAsync, L["yt.queue.failedRequeued"]);
         await LoadItemsAsync();
     }
 
     private async Task DeleteAsync(YoutubeItemDto item)
     {
-        await Run(() => Api.YoutubeDeleteItemAsync(item.Id, deleteTrack: true), item.TrackId is null ? null : "Morceau supprimé");
+        await Run(() => Api.YoutubeDeleteItemAsync(item.Id, deleteTrack: true), item.TrackId is null ? null : L["yt.queue.trackDeleted"]);
         await LoadItemsAsync();
         await RefreshStatusAsync();
     }
@@ -526,7 +528,7 @@
         var found = await Run(() => Api.YoutubeMusicBrainzAsync(r.SearchTitle!, r.SearchArtist, r.Item.DurationSeconds)) ?? [];
         r.Candidates = found.Concat(r.Candidates).DistinctBy(c => (c.Title, c.Artist, c.Album)).Take(15).ToList();
         if (found.Count > 0) Select(r, found[0]);
-        else Ui.Notify("Aucun résultat sur MusicBrainz", true);
+        else Ui.Notify(L["yt.review.noResults"], true);
         r.Searching = false;
     }
 
@@ -540,7 +542,7 @@
             s is not null && s.Title == e.Title && s.Artist == e.Artist && sameRelease ? s.Source : "manuel",
             s?.Title == e.Title ? s?.RecordingId : null, sameRelease ? s!.ReleaseId : null, sameRelease ? s!.ReleaseGroupId : null);
         r.Applying = true;
-        if (await Run(() => Api.YoutubeApplyAsync(r.Item.Id, candidate), "Métadonnées appliquées"))
+        if (await Run(() => Api.YoutubeApplyAsync(r.Item.Id, candidate), L["yt.review.applied"]))
         {
             _review = null;
             await LoadItemsAsync();
@@ -568,35 +570,35 @@
     private RenderFragment Subscriptions => __builder =>
     {
         <section class="panel">
-            <h2>Nouvel abonnement</h2>
+            <h2>@L["yt.subs.new"]</h2>
             <form class="inline-form" @onsubmit="AddSubscriptionAsync" @onsubmit:preventDefault="true">
-                <input class="input" placeholder="Adresse d'une playlist, d'un album YouTube Music ou d'une chaîne" @bind="_subUrl" required />
-                <label class="row small"><input type="checkbox" @bind="_subAlbum" /> Album</label>
-                <label class="row small"><input type="checkbox" @bind="_subExisting" /> Importer les vidéos existantes</label>
-                <button class="btn primary" type="submit">S'abonner</button>
+                <input class="input" placeholder="@L["yt.subs.placeholder"]" @bind="_subUrl" required />
+                <label class="row small"><input type="checkbox" @bind="_subAlbum" /> @L["editor.album"]</label>
+                <label class="row small"><input type="checkbox" @bind="_subExisting" /> @L["yt.subs.importExisting"]</label>
+                <button class="btn primary" type="submit">@L["yt.subs.subscribe"]</button>
             </form>
-            <p class="muted small">Les nouvelles vidéos sont importées à chaque synchronisation (intervalle dans les Réglages).</p>
+            <p class="muted small">@L["yt.subs.hint"]</p>
         </section>
         @if (_subs is { Count: > 0 } subs)
         {
             <div class="table-wrap">
                 <table class="table">
-                    <thead><tr><th>Abonnement</th><th>Importés</th><th>Dernière synchro</th><th>Actif</th><th></th></tr></thead>
+                    <thead><tr><th>@L["yt.subs.colName"]</th><th>@L["yt.subs.colImported"]</th><th>@L["yt.subs.colLastSync"]</th><th>@L["yt.subs.colEnabled"]</th><th></th></tr></thead>
                     <tbody>
                         @foreach (var s in subs)
                         {
                             <tr @key="s.Id">
                                 <td>
                                     <a href="@s.Url" target="_blank" rel="noopener noreferrer" class="strong">@s.Title</a>
-                                    @if (s.IsAlbum) { <span class="badge">album</span> }
-                                    @if (s.LastError is { } err) { <div class="form-error small">@err</div> }
+                                    @if (s.IsAlbum) { <span class="badge">@L["yt.subs.album"]</span> }
+                                    @if (s.LastError is { } err) { <div class="form-error small">@L.Server(err)</div> }
                                 </td>
                                 <td>@s.Done / @s.Items</td>
-                                <td>@(s.LastSyncedAt?.ToLocalTime().ToString("dd/MM HH:mm") ?? "jamais")</td>
-                                <td><input type="checkbox" checked="@s.Enabled" @onchange="e => ToggleSubscriptionAsync(s, e.Value is true)" aria-label="Actif" /></td>
+                                <td>@(s.LastSyncedAt is { } synced ? L.DateTime(synced) : L["common.never"])</td>
+                                <td><input type="checkbox" checked="@s.Enabled" @onchange="e => ToggleSubscriptionAsync(s, e.Value is true)" aria-label="@L["yt.subs.colEnabled"]" /></td>
                                 <td class="row-actions">
-                                    <button class="icon-btn" title="Synchroniser maintenant" disabled="@(_syncing == s.Id)" @onclick="() => SyncAsync(s)"><Icon Name="refresh" Size="18" /></button>
-                                    <button class="icon-btn" title="Se désabonner (les morceaux importés restent)" @onclick="() => UnsubscribeAsync(s)"><Icon Name="delete" Size="18" /></button>
+                                    <button class="icon-btn" title="@L["yt.subs.syncNow"]" disabled="@(_syncing == s.Id)" @onclick="() => SyncAsync(s)"><Icon Name="refresh" Size="18" /></button>
+                                    <button class="icon-btn" title="@L["yt.subs.unsubscribe"]" @onclick="() => UnsubscribeAsync(s)"><Icon Name="delete" Size="18" /></button>
                                 </td>
                             </tr>
                         }
@@ -606,7 +608,7 @@
         }
         else if (_subs is not null)
         {
-            <div class="empty">Aucun abonnement.</div>
+            <div class="empty">@L["yt.subs.none"]</div>
         }
     };
 
@@ -614,7 +616,7 @@
 
     private async Task AddSubscriptionAsync()
     {
-        if (await Run(() => Api.YoutubeSubscribeAsync(new CreateSubscriptionRequest(_subUrl.Trim(), _subAlbum, _subExisting)), "Abonnement créé"))
+        if (await Run(() => Api.YoutubeSubscribeAsync(new CreateSubscriptionRequest(_subUrl.Trim(), _subAlbum, _subExisting)), L["yt.subs.created"]))
         {
             _subUrl = "";
             await LoadSubscriptionsAsync();
@@ -630,14 +632,14 @@
     private async Task SyncAsync(YoutubeSubscriptionDto s)
     {
         _syncing = s.Id;
-        await Run(() => Api.YoutubeSyncSubscriptionAsync(s.Id), "Synchronisé");
+        await Run(() => Api.YoutubeSyncSubscriptionAsync(s.Id), L["yt.subs.synced"]);
         _syncing = null;
         await LoadSubscriptionsAsync();
     }
 
     private async Task UnsubscribeAsync(YoutubeSubscriptionDto s)
     {
-        await Run(() => Api.YoutubeDeleteSubscriptionAsync(s.Id), "Abonnement supprimé");
+        await Run(() => Api.YoutubeDeleteSubscriptionAsync(s.Id), L["yt.subs.deleted"]);
         await LoadSubscriptionsAsync();
     }
 
@@ -649,39 +651,39 @@
     private RenderFragment Settings => __builder =>
     {
         <section class="panel">
-            <h2>Outils</h2>
+            <h2>@L["yt.tools.title"]</h2>
             <p>
-                yt-dlp : <span class="strong">@(_status?.Tools.YtDlp ?? "absent")</span><span class="sep">·</span>
-                Deno : <span class="strong">@(_status?.Tools.Deno ?? "absent")</span><span class="sep">·</span>
-                fpcalc (AcoustID) : <span class="strong">@(_status?.Tools.Fpcalc ?? "absent")</span>
+                yt-dlp : <span class="strong">@(_status?.Tools.YtDlp ?? L["yt.tools.missing"])</span><span class="sep">·</span>
+                Deno : <span class="strong">@(_status?.Tools.Deno ?? L["yt.tools.missing"])</span><span class="sep">·</span>
+                fpcalc (AcoustID) : <span class="strong">@(_status?.Tools.Fpcalc ?? L["yt.tools.missing"])</span>
             </p>
-            <p class="muted small">YouTube change souvent : quand les imports échouent sans raison, commencez par mettre yt-dlp à jour. Les binaires viennent des releases officielles GitHub, sommes SHA-256 vérifiées.</p>
+            <p class="muted small">@L["yt.tools.hint"]</p>
             <div class="row">
-                <button class="btn primary" disabled="@_updating" @onclick="() => UpdateToolsAsync(false)"><Icon Name="refresh" Size="18" /> @(_updating ? "Mise à jour…" : "Mettre à jour yt-dlp")</button>
-                <button class="btn" disabled="@_updating" @onclick="() => UpdateToolsAsync(true)">Mettre à jour yt-dlp et Deno</button>
+                <button class="btn primary" disabled="@_updating" @onclick="() => UpdateToolsAsync(false)"><Icon Name="refresh" Size="18" /> @(_updating ? L["yt.tools.updating"] : L["yt.tools.update"])</button>
+                <button class="btn" disabled="@_updating" @onclick="() => UpdateToolsAsync(true)">@L["yt.tools.updateAll"]</button>
             </div>
         </section>
 
         <section class="panel">
-            <h2>Cookies YouTube</h2>
-            <p>@(_status?.HasCookies == true ? $"Cookies enregistrés le {_status.CookiesUpdatedAt?.ToLocalTime():dd/MM/yyyy HH:mm}." : "Aucun cookie enregistré.")</p>
-            <p class="muted small">Si YouTube demande de « confirmer que vous n'êtes pas un robot », exportez les cookies d'un navigateur connecté à YouTube au format Netscape (cookies.txt, par exemple avec l'extension « Get cookies.txt LOCALLY ») et collez-les ici. Seuls les cookies youtube.com / google.com sont gardés ; ils ne quittent pas le serveur. Un compte secondaire est préférable.</p>
+            <h2>@L["yt.cookies.title"]</h2>
+            <p>@(_status?.HasCookies == true ? L["yt.cookies.saved", ("date", _status.CookiesUpdatedAt is { } cu ? L.DateTime(cu) : "")] : L["yt.cookies.none"])</p>
+            <p class="muted small">@L["yt.cookies.hint"]</p>
             <textarea class="input mono" rows="4" placeholder="# Netscape HTTP Cookie File" @bind="_cookies"></textarea>
             <div class="row" style="margin-top: .6rem">
                 <InputFile OnChange="LoadCookiesFileAsync" accept=".txt,text/plain" />
-                <button class="btn primary" disabled="@string.IsNullOrWhiteSpace(_cookies)" @onclick="SaveCookiesAsync">Enregistrer</button>
+                <button class="btn primary" disabled="@string.IsNullOrWhiteSpace(_cookies)" @onclick="SaveCookiesAsync">@L["common.save"]</button>
                 @if (_status?.HasCookies == true)
                 {
-                    <button class="btn danger" @onclick="DeleteCookiesAsync">Supprimer</button>
+                    <button class="btn danger" @onclick="DeleteCookiesAsync">@L["common.delete"]</button>
                 }
             </div>
-            <p class="muted small">Avec les cookies d'un compte majeur, les vidéos réservées aux personnes connectées ou aux adultes se téléchargent aussi : chaque import est d'abord tenté connecté.</p>
+            <p class="muted small">@L["yt.cookies.adult"]</p>
             @if (_settings is { } cs)
             {
                 <label class="row small">
                     <input type="checkbox" checked="@cs.RetryWithoutCookies"
                            @onchange="async e => { _settings = cs with { RetryWithoutCookies = e.Value is true }; await SaveSettingsAsync(); }" />
-                    Réessayer sans les cookies quand, connecté, YouTube ne propose pas le format audio demandé
+                    @L["yt.cookies.retryWithout"]
                 </label>
             }
         </section>
@@ -689,36 +691,36 @@
         @if (_settings is { } s)
         {
             <section class="panel">
-                <h2>Import</h2>
+                <h2>@L["yt.settings.import"]</h2>
                 <div class="form-grid">
                     <label class="field">
-                        <span>Synchronisation des abonnements</span>
+                        <span>@L["yt.settings.sync"]</span>
                         <select class="input" value="@s.SyncIntervalHours" @onchange="e => _settings = s with { SyncIntervalHours = int.Parse(e.Value!.ToString()!) }">
                             @foreach (var h in new[] { 0, 1, 3, 6, 12, 24, 72, 168 })
                             {
-                                <option value="@h">@(h == 0 ? "jamais (manuelle)" : h < 24 ? $"toutes les {h} h" : h == 24 ? "chaque jour" : $"tous les {h / 24} jours")</option>
+                                <option value="@h">@(h == 0 ? L["yt.settings.syncNever"] : h < 24 ? L["yt.settings.syncHours", ("count", h)] : h == 24 ? L["yt.settings.syncDaily"] : L["yt.settings.syncDays", ("count", h / 24)])</option>
                             }
                         </select>
                     </label>
                     <label class="field">
-                        <span>Format audio</span>
+                        <span>@L["yt.settings.audioFormat"]</span>
                         <select class="input" value="@s.AudioFormat" @onchange="e => _settings = s with { AudioFormat = e.Value!.ToString()! }">
-                            <option value="original">Original (Opus / AAC, sans réencodage)</option>
-                            <option value="mp3">MP3 (compatibilité maximale)</option>
+                            <option value="original">@L["yt.settings.original"]</option>
+                            <option value="mp3">@L["yt.settings.mp3"]</option>
                         </select>
                     </label>
                     <label class="field">
-                        <span>Seuil d'acceptation automatique : @((s.AutoAcceptThreshold * 100).ToString("0")) %</span>
+                        <span>@L["yt.settings.threshold", ("value", L["format.percent", ("value", L.Number(s.AutoAcceptThreshold * 100))])]</span>
                         <input type="range" min="0.5" max="1" step="0.05" value="@s.AutoAcceptThreshold.ToString(CultureInfo.InvariantCulture)"
                                @onchange="e => _settings = s with { AutoAcceptThreshold = double.Parse(e.Value!.ToString()!, CultureInfo.InvariantCulture) }" />
                     </label>
                     <label class="field">
-                        <span>Clé d'API AcoustID (facultatif)</span>
+                        <span>@L["yt.settings.acoustid"]</span>
                         <input class="input" value="@s.AcoustIdKey" placeholder="acoustid.org/new-application" @onchange="e => _settings = s with { AcoustIdKey = e.Value?.ToString() }" />
                     </label>
                 </div>
-                <p class="muted small">Avec une clé AcoustID (gratuite) et fpcalc sur le serveur, chaque titre est aussi reconnu à son empreinte sonore : fiable même quand le titre de la vidéo ne dit rien. Sous le seuil, l'import est rangé mais signalé « à vérifier ».</p>
-                <button class="btn primary" @onclick="SaveSettingsAsync">Enregistrer</button>
+                <p class="muted small">@L["yt.settings.acoustidHint"]</p>
+                <button class="btn primary" @onclick="SaveSettingsAsync">@L["common.save"]</button>
             </section>
         }
 
@@ -743,7 +745,7 @@
 
     private async Task SaveCookiesAsync()
     {
-        if (await Run(() => Api.YoutubeSaveCookiesAsync(_cookies), "Cookies enregistrés"))
+        if (await Run(() => Api.YoutubeSaveCookiesAsync(_cookies), L["yt.cookies.savedToast"]))
         {
             _cookies = "";
             await RefreshStatusAsync();
@@ -752,7 +754,7 @@
 
     private async Task DeleteCookiesAsync()
     {
-        await Run(Api.YoutubeDeleteCookiesAsync, "Cookies supprimés");
+        await Run(Api.YoutubeDeleteCookiesAsync, L["yt.cookies.deleted"]);
         await RefreshStatusAsync();
     }
 
@@ -761,22 +763,15 @@
         if (_settings is { } s && await Run(() => Api.YoutubeSaveSettingsAsync(s)) is { } saved)
         {
             _settings = saved;
-            Ui.Notify("Réglages enregistrés");
+            Ui.Notify(L["yt.settings.saved"]);
         }
     }
 
     // ---------- Libellés ----------
 
-    private static string StatusLabel(string status) => status switch
-    {
-        "Queued" => "en attente",
-        "Downloading" => "téléchargement",
-        "Processing" => "traitement",
-        "Done" => "importé",
-        "Failed" => "échec",
-        "Skipped" => "ignoré",
-        _ => status,
-    };
+    private string StatusLabel(string status) => Label("yt.status." + status, status);
+
+    private string Label(string key, string fallback) => L.Has(key) ? L[key] : fallback;
 
     private static string StatusClass(string status) => status switch
     {
@@ -786,23 +781,9 @@
         _ => "",
     };
 
-    private static string StageLabel(string stage) => stage switch
-    {
-        "download" => "téléchargement",
-        "metadata" => "recherche des métadonnées",
-        "tagging" => "tags et pochette",
-        _ => stage,
-    };
+    private string StageLabel(string stage) => Label("yt.stage." + stage, stage);
 
-    private static string SourceLabel(string source) => source switch
-    {
-        "musicbrainz" => "MusicBrainz",
-        "acoustid" => "empreinte AcoustID",
-        "youtube-music" => "YouTube Music",
-        "titre" => "titre de la vidéo",
-        "manuel" => "saisie manuelle",
-        _ => source,
-    };
+    private string SourceLabel(string source) => Label("yt.source." + source, source);
 
-    private static string Confidence(YoutubeItemDto item) => item.MatchConfidence is { } c ? $"{c * 100:0} %" : "";
+    private string Confidence(YoutubeItemDto item) => item.MatchConfidence is { } c ? L["format.percent", ("value", L.Number(c * 100))] : "";
 }

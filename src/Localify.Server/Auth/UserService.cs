@@ -1,3 +1,4 @@
+using Localify.Contracts.Localization;
 using Localify.Contracts;
 using Localify.Server.Data;
 using Microsoft.AspNetCore.Identity;
@@ -36,11 +37,11 @@ public sealed class UserService(LocalifyDbContext db, IPasswordHasher<User> hash
     public async Task<(User? User, string? Error)> CreateAsync(string username, string password, string role, CancellationToken ct)
     {
         username = username.Trim();
-        if (username.Length is < 2 or > 64) return (null, "Nom d'utilisateur : 2 à 64 caractères.");
-        if (password.Length < MinPasswordLength) return (null, $"Mot de passe : {MinPasswordLength} caractères minimum.");
-        if (role is not (Roles.Admin or Roles.User)) return (null, "Rôle inconnu.");
+        if (username.Length is < 2 or > 64) return (null, Tx.Key("errors.users.usernameLength"));
+        if (password.Length < MinPasswordLength) return (null, Tx.Key("errors.passwordMin", ("min", MinPasswordLength)));
+        if (role is not (Roles.Admin or Roles.User)) return (null, Tx.Key("errors.unknownRole"));
         var normalized = Normalize(username);
-        if (await db.Users.AnyAsync(u => u.NormalizedUsername == normalized, ct)) return (null, "Ce nom d'utilisateur existe déjà.");
+        if (await db.Users.AnyAsync(u => u.NormalizedUsername == normalized, ct)) return (null, Tx.Key("errors.users.exists"));
 
         var user = new User { Username = username, NormalizedUsername = normalized, Role = role };
         user.PasswordHash = hasher.HashPassword(user, password);

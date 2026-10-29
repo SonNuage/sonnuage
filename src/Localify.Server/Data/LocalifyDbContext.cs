@@ -46,6 +46,7 @@ public sealed class LocalifyDbContext(DbContextOptions<LocalifyDbContext> option
         {
             e.HasIndex(x => x.NormalizedUsername).IsUnique();
             e.Property(x => x.Username).HasMaxLength(64);
+            e.Property(x => x.Language).HasMaxLength(16);
         });
 
         b.Entity<RefreshToken>(e =>

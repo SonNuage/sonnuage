@@ -5,7 +5,7 @@ namespace Localify.UI.Services;
 public sealed record Toast(Guid Id, string Message, bool IsError);
 
 /// <summary>État d'interface partagé : notifications, liste des playlists (menu « ajouter à… »), favoris.</summary>
-public sealed class UiState(ApiClient api, IPlayer player)
+public sealed class UiState(ApiClient api, IPlayer player, Localizer L)
 {
     private readonly List<Toast> _toasts = [];
 
@@ -52,12 +52,12 @@ public sealed class UiState(ApiClient api, IPlayer player)
         {
             await api.SetFavoriteAsync(track.Id, updated.IsFavorite);
             player.UpdateTrack(updated);
-            Notify(updated.IsFavorite ? "Ajouté aux favoris" : "Retiré des favoris");
+            Notify(L[updated.IsFavorite ? "toast.favoriteAdded" : "toast.favoriteRemoved"]);
             return updated;
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
-            Notify(ex.Message, true);
+            Notify(L.Server(ex.Message), true);
             return track;
         }
     }
@@ -67,13 +67,13 @@ public sealed class UiState(ApiClient api, IPlayer player)
         try
         {
             await api.AddToPlaylistAsync(playlistId, trackIds);
-            var name = Playlists.FirstOrDefault(p => p.Id == playlistId)?.Name ?? "la playlist";
-            Notify(trackIds.Count == 1 ? $"Ajouté à {name}" : $"{trackIds.Count} titres ajoutés à {name}");
+            var name = Playlists.FirstOrDefault(p => p.Id == playlistId)?.Name ?? L["toast.thePlaylist"];
+            Notify(trackIds.Count == 1 ? L["toast.addedTo", ("name", name)] : L["toast.addedManyTo", ("count", trackIds.Count), ("name", name)]);
             await RefreshPlaylistsAsync();
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
-            Notify(ex.Message, true);
+            Notify(L.Server(ex.Message), true);
         }
     }
 
@@ -82,20 +82,23 @@ public sealed class UiState(ApiClient api, IPlayer player)
         try
         {
             var created = await api.CreatePlaylistAsync(name, trackIds);
-            Notify($"Playlist « {name} » créée");
+            Notify(L["toast.playlistCreated", ("name", name)]);
             await RefreshPlaylistsAsync();
             return created;
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
-            Notify(ex.Message, true);
+            Notify(L.Server(ex.Message), true);
             return null;
         }
     }
 }
 
+/// <summary>Durées et tailles dans la langue de l'interface.</summary>
 public static class Format
 {
+    private static Localizer? L => Localizer.Current;
+
     public static string Duration(double seconds)
     {
         if (seconds <= 0 || double.IsNaN(seconds) || double.IsInfinity(seconds)) return "0:00";
@@ -106,17 +109,25 @@ public static class Format
     public static string LongDuration(double seconds)
     {
         var t = TimeSpan.FromSeconds(seconds);
-        return t.TotalHours >= 1 ? $"{(int)t.TotalHours} h {t.Minutes:00} min" : $"{t.Minutes} min";
+        if (L is not { } l) return t.TotalHours >= 1 ? $"{(int)t.TotalHours} h {t.Minutes:00} min" : $"{t.Minutes} min";
+        return t.TotalHours >= 1
+            ? l["format.hoursMinutes", ("hours", (int)t.TotalHours), ("minutes", t.Minutes.ToString("00"))]
+            : l["format.minutes", ("minutes", t.Minutes)];
     }
 
-    public static string Bytes(long bytes) => bytes switch
-    {
-        >= 1L << 40 => $"{bytes / (double)(1L << 40):0.0} To",
-        >= 1L << 30 => $"{bytes / (double)(1L << 30):0.0} Go",
-        >= 1L << 20 => $"{bytes / (double)(1L << 20):0.0} Mo",
-        >= 1L << 10 => $"{bytes / 1024d:0} Ko",
-        _ => $"{bytes} o",
-    };
+    public static string Percent(double value) =>
+        L is { } l ? l["format.percent", ("value", l.Number(value, 1))] : $"{value:0.0} %";
 
-    public static string Plural(int n, string singular, string plural) => $"{n} {(n > 1 ? plural : singular)}";
+    public static string Bytes(long bytes)
+    {
+        var (unit, value, decimals) = bytes switch
+        {
+            >= 1L << 40 => ("tb", bytes / (double)(1L << 40), 1),
+            >= 1L << 30 => ("gb", bytes / (double)(1L << 30), 1),
+            >= 1L << 20 => ("mb", bytes / (double)(1L << 20), 1),
+            >= 1L << 10 => ("kb", bytes / 1024d, 0),
+            _ => ("b", (double)bytes, 0),
+        };
+        return L is { } l ? l[$"format.bytes.{unit}", ("value", l.Number(value, decimals))] : $"{value:0.#} {unit}";
+    }
 }

@@ -4,7 +4,7 @@
         <div class="modal" role="dialog" aria-modal="true" @onclick:stopPropagation="true">
             <header class="modal-header">
                 <h2>@Title</h2>
-                <button class="icon-btn" title="Fermer" @onclick="Close"><Icon Name="close" /></button>
+                <button class="icon-btn" title="@L["common.close"]" @onclick="Close"><Icon Name="close" /></button>
             </header>
             <div class="modal-body">@ChildContent</div>
             @if (Footer is not null)

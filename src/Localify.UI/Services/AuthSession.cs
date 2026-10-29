@@ -101,7 +101,7 @@ public sealed class AuthSession
     {
         await _accounts.LoadAsync();
         var server = _accounts.IsMultiAccount ? _accounts.LoginServer : _endpoint.BaseAddress;
-        if (server is null) return "Adresse du serveur non configurée.";
+        if (server is null) return Text("errors.serverNotConfigured");
 
         using var http = CreateClient(server);
         HttpResponseMessage response;
@@ -111,12 +111,12 @@ public sealed class AuthSession
         }
         catch (HttpRequestException ex)
         {
-            return $"Serveur injoignable : {ex.Message}";
+            return Text("login.unreachable", ("message", ex.Message));
         }
-        if ((int)response.StatusCode == 429) return "Trop de tentatives, réessayez dans une minute.";
-        if (!response.IsSuccessStatusCode) return "Identifiants invalides.";
+        if ((int)response.StatusCode == 429) return Text("login.tooManyAttempts");
+        if (!response.IsSuccessStatusCode) return Text("login.invalid");
         var tokens = await response.Content.ReadFromJsonAsync<TokenResponse>(JsonDefaults.Options);
-        if (tokens is null) return "Réponse du serveur invalide.";
+        if (tokens is null) return Text("login.invalid");
 
         if (!_accounts.IsMultiAccount)
         {
@@ -230,6 +230,15 @@ public sealed class AuthSession
         await _store.SetAsync(slot.Key, tokens is null ? null : JsonSerializer.Serialize(tokens, JsonDefaults.Options));
         Changed?.Invoke();
     }
+
+    /// <summary>Après un changement du compte (langue préférée…) : la session garde l'utilisateur à jour.</summary>
+    public async Task UpdateUserAsync(UserDto user)
+    {
+        if (Current is { Tokens: { } t } slot && t.User.Id == user.Id) await SetAsync(slot, t with { User = user });
+    }
+
+    private static string Text(string key, params (string, object?)[] args) =>
+        Localizer.Current?[key, args] ?? Localify.Contracts.Localization.Translations.Instance.Get("en", key, args);
 
     private Slot SlotFor(Account account)
     {

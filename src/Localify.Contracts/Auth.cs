@@ -22,6 +22,9 @@ public sealed record TokenResponse(
     DateTimeOffset MediaTokenExpiresAt,
     UserDto User);
 
-public sealed record UserDto(Guid Id, string Username, string Role, DateTimeOffset CreatedAt);
+// Language : langue préférée de l'interface (code d'un fichier de traduction), null = celle de l'appareil.
+public sealed record UserDto(Guid Id, string Username, string Role, DateTimeOffset CreatedAt, string? Language = null);
+
+public sealed record SetLanguageRequest(string? Language);
 
 public sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword);

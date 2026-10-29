@@ -50,6 +50,11 @@ shm_size = 268435456          # 256 Mo : le build Android (D8/R8) en profite
 puis `docker restart gitlab-runner`. Le runner doit apparaître en vert dans Settings → CI/CD → Runners ;
 relancer le pipeline bloqué (**Pipelines → Run pipeline** ou **Retry**).
 
+Au premier pipeline, l'image de build Android n'existe pas encore dans le registre : **Run pipeline** avec la
+variable `BUILD_ANDROID_SDK` = `1` la construit (une fois, ~15 min) avant le job `android-apk`.
+
+Sur homelab, le runner est dans `/home/selfhost/stacks/localify-runner` (conteneur `localify-gitlab-runner`).
+
 ## 3. Points d'attention
 
 **Elasticsearch dans les tests.** Le job `server-test` démarre un Elasticsearch en service. Sur l'hôte du runner :

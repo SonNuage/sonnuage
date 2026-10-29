@@ -28,6 +28,25 @@ Le plan de refonte et les choix d'architecture sont dans [docs/PLAN.md](docs/PLA
 - **Admin** (`/admin`) : tableau de bord (provenance des titres, historique des ajouts, disque), rescan,
   envoi d'albums par morceaux de 8 Mo (reprise possible), import depuis YouTube, édition des tags et pochettes,
   gestion des comptes.
+- **Langues** : français et anglais ; chaque compte choisit sa langue (Réglages), sinon celle du navigateur ou du téléphone.
+
+## Traductions
+
+Les textes de l'interface et les messages du serveur sont dans `src/Localify.Contracts/Localization/{code}.json`
+(un fichier par langue, embarqué dans l'assembly et découvert automatiquement). **Ajouter une langue** :
+
+1. copier `en.json` en `de.json` (code ISO 639-1) et traduire les valeurs, sans toucher aux clés ;
+2. remplir `_meta` : `name` (nom affiché dans le sélecteur, dans la langue elle-même), séparateurs décimal et
+   de milliers, noms des mois et des jours ;
+3. si les pluriels de la langue ne suivent pas la règle anglaise (`one` pour 1, sinon `other`), ajouter sa règle
+   dans `PluralRules` ([Translations.cs](src/Localify.Contracts/Localization/Translations.cs)) ;
+4. `dotnet test` : un test vérifie que chaque langue a exactement les clés et les variables (`{count}`, `{name}`…) de l'anglais.
+
+Une clé absente retombe sur l'anglais. Format des valeurs : variables nommées `{name}`, pluriels en objet
+`{ "one": "…", "other": "…" }` (catégories CLDR) choisis par la variable `count`. Côté Razor :
+`@L["home.recentlyAdded"]`, `@L["common.tracks", ("count", n)]`, `L.Date(date)`. Côté serveur, un message
+destiné à l'utilisateur s'écrit `Tx.Key("errors.nameRequired")` : il est traduit selon `Accept-Language` dans les
+`ProblemDetails`, ou à l'affichage (`L.Server(texte)`) quand il est stocké, comme les erreurs d'import YouTube.
 
 ## Import depuis YouTube
 

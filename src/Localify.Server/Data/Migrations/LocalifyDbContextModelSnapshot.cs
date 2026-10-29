@@ -376,6 +376,10 @@ namespace Localify.Server.Data.Migrations
                     b.Property<long>("CreatedAt")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Language")
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("NormalizedUsername")
                         .IsRequired()
                         .HasColumnType("TEXT");

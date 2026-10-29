@@ -1,3 +1,4 @@
+using Localify.Contracts.Localization;
 using System.Text.Json;
 using Localify.Contracts;
 using Localify.Server.Auth;
@@ -64,7 +65,7 @@ public static class YoutubeEndpoints
             }
             catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or IOException or UnauthorizedAccessException)
             {
-                return Results.Problem($"Mise à jour impossible : {ex.Message}", statusCode: 502);
+                return Results.Problem(Tx.Key("errors.yt.updateFailed", ("message", ex.Message)), statusCode: 502);
             }
         });
 
@@ -81,7 +82,7 @@ public static class YoutubeEndpoints
 
         ext.MapPost("/imports", async (YoutubeImportRequest req, YoutubeImporter importer, LocalifyDbContext db, CancellationToken ct) =>
             req.Videos is not { Count: > 0 and <= 1000 }
-                ? Results.Problem("Entre 1 et 1000 vidéos par demande.", statusCode: 400)
+                ? Results.Problem(Tx.Key("errors.yt.batchSize"), statusCode: 400)
                 : Results.Ok(await importer.EnqueueAsync(db, req.Videos, string.IsNullOrWhiteSpace(req.AlbumHint) ? null : req.AlbumHint.Trim(), null, ct)));
 
         MapItems(g);
@@ -128,10 +129,10 @@ public static class YoutubeEndpoints
         {
             var item = await db.YoutubeItems.FirstOrDefaultAsync(i => i.Id == id, ct);
             if (item is null) return Results.NotFound();
-            if (item.Status is not (YoutubeItemStatus.Failed or YoutubeItemStatus.Skipped)) return Results.Problem("Seuls les imports en échec ou ignorés se relancent.", statusCode: 409);
+            if (item.Status is not (YoutubeItemStatus.Failed or YoutubeItemStatus.Skipped)) return Results.Problem(Tx.Key("errors.yt.retryOnlyFailed"), statusCode: 409);
             if (!string.IsNullOrWhiteSpace(format))
             {
-                if (!YtDlp.IsValidFormat(format.Trim())) return Results.Problem("Format yt-dlp invalide (ex. « 140 », « bestaudio », « 251/140 »).", statusCode: 400);
+                if (!YtDlp.IsValidFormat(format.Trim())) return Results.Problem(Tx.Key("errors.yt.badFormat"), statusCode: 400);
                 importer.UseFormatOnce(item.Id, format.Trim());
             }
             item.Status = YoutubeItemStatus.Queued;
@@ -162,7 +163,7 @@ public static class YoutubeEndpoints
         {
             var item = await db.YoutubeItems.Include(i => i.Track).FirstOrDefaultAsync(i => i.Id == id, ct);
             if (item is null) return Results.NotFound();
-            if (item.Status is YoutubeItemStatus.Downloading or YoutubeItemStatus.Processing) return Results.Problem("Import en cours.", statusCode: 409);
+            if (item.Status is YoutubeItemStatus.Downloading or YoutubeItemStatus.Processing) return Results.Problem(Tx.Key("errors.yt.inProgress"), statusCode: 409);
             if (deleteTrack == true && item.Track is { } track && LibraryScanner.IsUnder(track.FilePath, Path.GetFullPath(options.Value.UploadPath)))
             {
                 if (File.Exists(track.FilePath)) File.Delete(track.FilePath);
@@ -275,7 +276,7 @@ public static class YoutubeEndpoints
         }
         catch (HttpRequestException ex)
         {
-            return Results.Problem($"Service injoignable : {ex.Message}", statusCode: 502);
+            return Results.Problem(Tx.Key("errors.yt.unreachable", ("message", ex.Message)), statusCode: 502);
         }
     }
 }
