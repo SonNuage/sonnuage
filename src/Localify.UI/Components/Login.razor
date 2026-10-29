@@ -1,4 +1,5 @@
 @inject AuthSession Auth
+@inject AccountStore Accounts
 @inject IServerEndpoint Endpoint
 @inject IPlatformInfo Platform
 
@@ -8,7 +9,11 @@
         <h1>Connexion</h1>
         @if (Endpoint.IsConfigurable)
         {
-            <p class="muted">Serveur : @Endpoint.BaseAddress?.Host <button type="button" class="link" @onclick="ChangeServerAsync">changer</button></p>
+            <p class="muted">Serveur : @(Accounts.LoginServer ?? Endpoint.BaseAddress)?.Host <button type="button" class="link" @onclick="ChangeServerAsync">changer</button></p>
+            @if (!Accounts.IsAdding && Accounts.Active is { } expired)
+            {
+                <p class="muted">La session de <strong>@expired.Username</strong> a expiré : reconnectez-vous.</p>
+            }
         }
         <label>
             <span>Utilisateur</span>
@@ -23,6 +28,17 @@
             <p class="form-error">@_error</p>
         }
         <button class="btn primary wide" type="submit" disabled="@_busy">@(_busy ? "Connexion…" : "Se connecter")</button>
+        @if (Accounts.CanCancelAdd)
+        {
+            <button type="button" class="link" @onclick="Accounts.CancelAdd">Annuler, revenir à @Accounts.Active!.Label</button>
+        }
+        else if (!Accounts.IsAdding)
+        {
+            @foreach (var other in Accounts.Accounts.Where(a => a.Id != Accounts.Active?.Id))
+            {
+                <button type="button" class="link" @onclick="() => Accounts.SwitchAsync(other.Id)">Utiliser @other.Label</button>
+            }
+        }
     </form>
 </div>
 

@@ -17,18 +17,34 @@ public static class MauiProgram
 #endif
 
         builder.Services.AddSingleton<IKeyValueStore, MobileStore>();
-        builder.Services.AddSingleton<IServerEndpoint, MobileEndpoint>();
+        builder.Services.AddSingleton<IServerEndpoint, AccountEndpoint>();
         builder.Services.AddSingleton<IPlatformInfo, MobilePlatform>();
         builder.Services.AddSingleton<AndroidPlayer>();
         builder.Services.AddSingleton<IPlayer>(sp => sp.GetRequiredService<AndroidPlayer>());
         builder.Services.AddSingleton<LibraryBrowser>();
         builder.Services.AddSingleton<QueueStore>();
-        builder.Services.AddLocalifyUi();
+        builder.Services.AddLocalifyUi(multiAccount: true);
 
         var app = builder.Build();
-        // Les réglages de lecture sont dans les Preferences (lecture synchrone) : le service de lecture
-        // peut démarrer seul (Android Auto) avant toute interface, ils doivent donc être chargés ici.
-        app.Services.GetRequiredService<PlaybackSettings>().LoadAsync().GetAwaiter().GetResult();
+        // Le service de lecture peut démarrer seul (Android Auto) avant toute interface : comptes (migration comprise)
+        // et réglages de lecture du compte actif sont chargés ici. Hors du thread principal : SecureStorage y reviendrait
+        // et l'attente synchrone le bloquerait.
+        var accounts = app.Services.GetRequiredService<AccountStore>();
+        var settings = app.Services.GetRequiredService<PlaybackSettings>();
+        Task.Run(async () =>
+        {
+            await accounts.LoadAsync();
+            await settings.LoadAsync();
+        }).GetAwaiter().GetResult();
         return app;
+    }
+
+    /// <summary>Application minimale qui affiche le rapport quand le démarrage normal a échoué.</summary>
+    public static MauiApp CreateCrashApp(string report)
+    {
+        var builder = MauiApp.CreateBuilder();
+        builder.UseMauiApp<CrashApp>();
+        builder.Services.AddSingleton(new CrashReport(report));
+        return builder.Build();
     }
 }

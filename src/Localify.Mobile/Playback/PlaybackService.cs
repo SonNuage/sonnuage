@@ -36,6 +36,11 @@ public sealed class PlaybackService : MediaLibraryService
 
     private MediaLibrarySession? _session;
     private Prefetcher? _prefetcher;
+    private AccountStore? _accounts;
+    private QueueStore? _queue;
+
+    /// <summary>Clé de sauvegarde de la file actuellement chargée (celle du compte à qui elle appartient).</summary>
+    private string? _queueKey;
 
     public override void OnCreate()
     {
@@ -44,7 +49,9 @@ public sealed class PlaybackService : MediaLibraryService
         var api = services.GetRequiredService<ApiClient>();
         var settings = services.GetRequiredService<PlaybackSettings>();
         var browser = services.GetRequiredService<LibraryBrowser>();
-        var queue = services.GetRequiredService<QueueStore>();
+        var queue = _queue = services.GetRequiredService<QueueStore>();
+        var accounts = _accounts = services.GetRequiredService<AccountStore>();
+        _queueKey = queue.CurrentKey;
         var cache = Cache(this);
 
         var http = new DefaultHttpDataSource.Factory()
@@ -56,7 +63,7 @@ public sealed class PlaybackService : MediaLibraryService
             .SetCache(cache)!
             .SetUpstreamDataSourceFactory(http)!
             .SetFlags(CacheDataSource.FlagIgnoreCacheOnError)!;
-        var resolver = new StreamResolver(api, settings, cache);
+        var resolver = new StreamResolver(api, settings, accounts, cache);
         var extractors = new DefaultExtractorsFactory()
             .SetConstantBitrateSeekingEnabled(true)!
             .SetConstantBitrateSeekingAlwaysEnabled(true)!;
@@ -79,13 +86,38 @@ public sealed class PlaybackService : MediaLibraryService
         var player = new ShufflingPlayer(exo);
 
         _prefetcher = new Prefetcher(cached, resolver, settings);
-        player.AddListener(new PlayerEvents(player, _prefetcher, queue, api));
+        player.AddListener(new PlayerEvents(player, _prefetcher, queue, () => _queueKey, api));
 
         var activity = PendingIntent.GetActivity(this, 0, new Intent(this, typeof(MainActivity)), PendingIntentFlags.Immutable | PendingIntentFlags.UpdateCurrent);
         _session = new MediaLibrarySession.Builder(this, player, new LibraryCallback(browser, queue))
             .SetSessionActivity(activity!)!
             .Build();
+        accounts.ActiveChanged += OnAccountChanged;
     }
+
+    /// <summary>
+    /// Changement de compte : la file du compte quitté est sauvée sous sa clé, la lecture s'arrête, puis la file du
+    /// nouveau compte est chargée (sans lecture) et Android Auto est invité à recharger son arborescence.
+    /// </summary>
+    private void OnAccountChanged() => MainThread.BeginInvokeOnMainThread(async () =>
+    {
+        if (_session?.Player is not { } player || _queue is not { } queue) return;
+        queue.Save(player, _queueKey);
+        _queueKey = null;
+        _prefetcher?.Cancel();
+        player.Stop();
+        player.ClearMediaItems();
+        _queueKey = queue.CurrentKey;
+        foreach (var id in new[] { BrowseIds.Root, BrowseIds.Playlists, BrowseIds.Albums, BrowseIds.Artists, BrowseIds.Recent })
+        {
+            _session.NotifyChildrenChanged(id, int.MaxValue, null);
+        }
+        var saved = await queue.LoadAsync();
+        if (saved is null || _session?.Player is not { } current || current.MediaItemCount > 0) return;
+        current.RepeatMode = saved.Value.RepeatMode;
+        current.SetMediaItems(saved.Value.Items, saved.Value.Index, saved.Value.PositionMs);
+        current.Prepare();
+    });
 
     public override MediaLibrarySession? OnGetSessionFromMediaLibraryService(MediaSession.ControllerInfo? controllerInfo) => _session;
 
@@ -94,6 +126,7 @@ public sealed class PlaybackService : MediaLibraryService
 
     public override void OnDestroy()
     {
+        if (_accounts is not null) _accounts.ActiveChanged -= OnAccountChanged;
         _prefetcher?.Cancel();
         if (_session is not null)
         {
@@ -117,7 +150,7 @@ public sealed class PlaybackService : MediaLibraryService
     }
 
     /// <summary>Événements du lecteur : pré-chargement, historique d'écoute, sauvegarde de la file.</summary>
-    private sealed class PlayerEvents(Media3IPlayer player, Prefetcher prefetcher, QueueStore queue, ApiClient api) : Java.Lang.Object, IPlayerListener
+    private sealed class PlayerEvents(Media3IPlayer player, Prefetcher prefetcher, QueueStore queue, Func<string?> queueKey, ApiClient api) : Java.Lang.Object, IPlayerListener
     {
         private const double PlayThresholdSeconds = 30;
 
@@ -126,14 +159,14 @@ public sealed class PlaybackService : MediaLibraryService
         public void OnMediaItemTransition(MediaItem? mediaItem, int reason)
         {
             prefetcher.Schedule(player);
-            queue.Save(player);
+            queue.Save(player, queueKey());
         }
 
         public void OnRepeatModeChanged(int repeatMode) => prefetcher.Schedule(player);
 
         public void OnIsPlayingChanged(bool isPlaying)
         {
-            if (!isPlaying) queue.Save(player);
+            if (!isPlaying) queue.Save(player, queueKey());
         }
 
         public void OnPositionDiscontinuity(PlayerPositionInfo? oldPosition, PlayerPositionInfo? newPosition, int reason)
@@ -150,7 +183,8 @@ public sealed class PlaybackService : MediaLibraryService
         /// <summary>Même règle que le web : une écoute compte au-delà de 30 s (ou de la moitié d'une piste courte).</summary>
         private void Report(MediaItem? item, double seconds, bool completed)
         {
-            if (TrackItems.ToTrack(item) is not { } track) return;
+            // Pas de clé : la file est en cours de vidage pour un changement de compte, l'écoute n'est pas à imputer.
+            if (queueKey() is null || TrackItems.ToTrack(item) is not { } track) return;
             if (!completed && seconds < Math.Min(PlayThresholdSeconds, track.DurationSeconds * 0.5)) return;
             var played = completed ? track.DurationSeconds : seconds;
             _ = Task.Run(async () =>

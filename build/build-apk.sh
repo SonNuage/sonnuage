@@ -8,4 +8,7 @@ rm -rf /work && mkdir -p /work
 cp -r /host/src /host/Directory.Build.props /host/Directory.Packages.props /host/global.json /work/
 find /work/src -type d \( -name bin -o -name obj \) -prune -exec rm -rf {} +
 cd /work
-dotnet publish src/Localify.Mobile/Localify.Mobile.csproj -f net10.0-android -c "$CONFIG" -o /out $EXTRA_ARGS
+dotnet publish src/Localify.Mobile/Localify.Mobile.csproj -f net10.0-android -c "$CONFIG" -o /work/publish $EXTRA_ARGS
+# Seul l'APK signé est installable : l'autre (org.pmjb.localify.apk) n'est qu'un intermédiaire non signé.
+cp /work/publish/*-Signed.apk "/out/localify-$(echo "$CONFIG" | tr '[:upper:]' '[:lower:]').apk"
+ls -l /out/*.apk

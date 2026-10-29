@@ -1,6 +1,7 @@
 @inherits LayoutComponentBase
 @implements IDisposable
 @inject AuthSession Auth
+@inject AccountStore Accounts
 @inject IServerEndpoint Endpoint
 @inject IPlayer Player
 @inject UiState Ui
@@ -10,11 +11,11 @@
 {
     <div class="boot"><div class="spinner"></div></div>
 }
-else if (Endpoint.BaseAddress is null)
+else if (Endpoint.BaseAddress is null || Accounts.NeedsServer)
 {
     <ServerSetup OnConnected="StateHasChanged" />
 }
-else if (!Auth.IsAuthenticated)
+else if (Accounts.IsAdding || !Auth.IsAuthenticated)
 {
     <Login />
 }
@@ -71,6 +72,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         Auth.Changed += OnAuthChanged;
+        Accounts.ActiveChanged += OnAccountSwitched;
         Endpoint.Changed += Refresh;
         Ui.Changed += Refresh;
         await Auth.EnsureLoadedAsync();
@@ -97,6 +99,9 @@ else
 
     private void Refresh() => InvokeAsync(StateHasChanged);
 
+    /// <summary>Autre compte, autre bibliothèque : on repart de l'accueil (les playlists suivent via Auth.Changed).</summary>
+    private void OnAccountSwitched() => InvokeAsync(() => Nav.NavigateTo(""));
+
     private async Task CreatePlaylistAsync()
     {
         var created = await Ui.CreatePlaylistAsync($"Ma playlist n° {Ui.Playlists.Count + 1}", null);
@@ -106,6 +111,7 @@ else
     public void Dispose()
     {
         Auth.Changed -= OnAuthChanged;
+        Accounts.ActiveChanged -= OnAccountSwitched;
         Endpoint.Changed -= Refresh;
         Ui.Changed -= Refresh;
     }

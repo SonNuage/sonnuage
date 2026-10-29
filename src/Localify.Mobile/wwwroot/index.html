@@ -16,6 +16,8 @@
         Une erreur est survenue. <a href="" class="reload">Recharger</a>
     </div>
     <script src="_content/Localify.UI/sliders.js"></script>
-    <script src="_framework/blazor.webview.js"></script>
+    <!-- autostart="false" obligatoire : BlazorWebView appelle Blazor.start() une fois le pont natif prêt. Sans lui,
+         Blazor démarre trop tôt, l'appel de MAUI échoue (« Blazor has already started ») et l'écran reste sur le spinner. -->
+    <script src="_framework/blazor.webview.js" autostart="false"></script>
 </body>
 </html>
