@@ -13,13 +13,14 @@ public sealed class Localizer
 {
     private const string StorageKey = "localify.language";
     private readonly IKeyValueStore _store;
-    private readonly IJSRuntime _js;
+    // Fourni par l'interface (InitAsync) : sous Android, IJSRuntime est propre à la WebView (scoped) et l'instance
+    // qu'obtiendrait ce singleton n'est reliée à aucune page (« Cannot invoke JavaScript outside of a WebView context »).
+    private IJSRuntime? _js;
     private readonly Translations _t = Translations.Instance;
 
-    public Localizer(IKeyValueStore store, IJSRuntime js, AuthSession auth)
+    public Localizer(IKeyValueStore store, AuthSession auth)
     {
         _store = store;
-        _js = js;
         Current = this;
         // À la connexion (ou au renouvellement), la langue choisie sur le compte s'applique.
         auth.Changed += () =>
@@ -61,15 +62,17 @@ public sealed class Localizer
         ("MMM", Format.ShortMonth(d.Month)), ("MMMM", Format.Month(d.Month)), ("yyyy", d.Year.ToString()),
         ("HH", d.Hour.ToString("00")), ("mm", d.Minute.ToString("00"))];
 
-    public async Task InitAsync(string? accountLanguage)
+    /// <param name="js">Runtime JS de la page (celui injecté dans le composant racine).</param>
+    public async Task InitAsync(string? accountLanguage, IJSRuntime js)
     {
+        _js = js;
         string? stored = null, device = null;
         try
         {
             stored = await _store.GetAsync(StorageKey);
-            device = await _js.InvokeAsync<string>("localify.languages");
+            device = await js.InvokeAsync<string>("localify.languages");
         }
-        catch (JSException)
+        catch (Exception ex) when (ex is JSException or InvalidOperationException)
         {
         }
         await ApplyAsync(_t.Resolve(accountLanguage, stored, device), remember: false);
@@ -85,9 +88,9 @@ public sealed class Localizer
         if (remember) await _store.SetAsync(StorageKey, language);
         try
         {
-            await _js.InvokeVoidAsync("localify.setLanguage", language);
+            if (_js is not null) await _js.InvokeVoidAsync("localify.setLanguage", language);
         }
-        catch (JSException)
+        catch (Exception ex) when (ex is JSException or InvalidOperationException)
         {
         }
         if (changed) Changed?.Invoke();

@@ -8,7 +8,11 @@
 #   ANDROID_KEYSTORE_PASSWORD mot de passe du keystore
 #   ANDROID_KEY_ALIAS         alias de la clé
 #   ANDROID_KEY_PASSWORD      mot de passe de la clé
-# Sans elles l'APK est signé avec la clé de debug (installable, mais pas de mise à jour croisée avec un APK signé).
+# Sans elles l'APK est signé avec une clé de secours générée une fois et gardée dans le cache CI : les builds
+# successifs restent installables par-dessus les précédents tant que ce cache vit (une clé régénérée impose de
+# désinstaller l'appli). Pour une signature pérenne, définir les variables ci-dessus.
+# Un seul APK est publié (dist/localify-X.Y.Z.apk), toujours signé : l'APK non signé que produit aussi
+# `dotnet publish` n'est qu'un intermédiaire qu'Android refuse d'installer.
 #
 # Les jobs Docker utilisent docker-in-docker : le runner doit être en mode privileged.
 
@@ -110,19 +114,29 @@ android-apk:
       optional: true
   cache:
     key: nuget-android
-    paths: [.nuget/]
+    paths: [.nuget/, .android-fallback-key/]
   script:
     - *version
     - |
-      SIGN_ARGS=""
       if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
         echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$CI_PROJECT_DIR/localify.keystore"
         SIGN_ARGS="-p:AndroidKeyStore=true -p:AndroidSigningKeyStore=$CI_PROJECT_DIR/localify.keystore -p:AndroidSigningKeyAlias=$ANDROID_KEY_ALIAS -p:AndroidSigningStorePass=env:ANDROID_KEYSTORE_PASSWORD -p:AndroidSigningKeyPass=env:ANDROID_KEY_PASSWORD"
+      else
+        echo "AVERTISSEMENT : pas de keystore de release, signature avec la clé de secours du cache CI."
+        KEY="$CI_PROJECT_DIR/.android-fallback-key/localify-ci.keystore"
+        if [ ! -f "$KEY" ]; then
+          mkdir -p "$(dirname "$KEY")"
+          keytool -genkeypair -keystore "$KEY" -alias localify -keyalg RSA -keysize 2048 -validity 10000             -storepass localify-ci -keypass localify-ci -dname "CN=Localify CI" -noprompt
+        fi
+        SIGN_ARGS="-p:AndroidKeyStore=true -p:AndroidSigningKeyStore=$KEY -p:AndroidSigningKeyAlias=localify -p:AndroidSigningStorePass=localify-ci -p:AndroidSigningKeyPass=localify-ci"
       fi
+      export SIGN_ARGS
     - dotnet publish src/Localify.Mobile/Localify.Mobile.csproj -f net10.0-android -c Release -o out
         -p:Version="$VERSION" -p:ApplicationVersion="$CI_PIPELINE_IID" $SIGN_ARGS
     - mkdir -p dist && cp out/*-Signed.apk "dist/localify-$VERSION.apk"
     - rm -f "$CI_PROJECT_DIR/localify.keystore"
+    # Contrôle : l'APK publié est bien signé (sinon Android refuse de l'installer).
+    - $ANDROID_HOME/build-tools/*/apksigner verify --print-certs "dist/localify-$VERSION.apk" | head -3
   artifacts:
     name: localify-android
     paths: [dist/]

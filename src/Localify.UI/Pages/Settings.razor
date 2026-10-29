@@ -1,5 +1,6 @@
 @page "/settings"
 @inject AuthSession Auth
+@inject AccountStore Accounts
 @inject ApiClient Api
 @inject PlaybackSettings Playback
 @inject IPlayer Player
@@ -70,8 +71,39 @@
             <input class="input" type="password" placeholder="@L["settings.newPassword", ("min", 8)]" @bind="_next" autocomplete="new-password" minlength="8" required />
             <button class="btn" type="submit">@L["settings.changePassword"]</button>
         </form>
-        <button class="btn danger" @onclick="Auth.LogoutAsync"><Icon Name="logout" Size="18" /> @L["settings.logout"]</button>
+        @if (!Accounts.IsMultiAccount)
+        {
+            <button class="btn danger" @onclick="Auth.LogoutAsync"><Icon Name="logout" Size="18" /> @L["settings.logout"]</button>
+        }
     </section>
+
+    @if (Accounts.IsMultiAccount)
+    {
+        <section class="panel">
+            <h2>@L["accounts.title"]</h2>
+            <p class="muted small">@L["accounts.hint"]</p>
+            <ul class="accounts">
+                @foreach (var account in Accounts.Accounts)
+                {
+                    var active = account.Id == Accounts.Active?.Id;
+                    <li class="@(active ? "active" : "")">
+                        <div class="account-name">
+                            <strong>@account.Username</strong>
+                            <span class="muted small">@account.Host@(active ? $" · {L["accounts.active"]}" : "")</span>
+                        </div>
+                        <div class="row">
+                            @if (!active)
+                            {
+                                <button class="btn" @onclick="() => SwitchAsync(account)">@L["accounts.use"]</button>
+                            }
+                            <button class="btn danger" title="@L["accounts.logoutTitle"]" @onclick="() => LogoutAsync(account)"><Icon Name="logout" Size="18" /> @L["accounts.logout"]</button>
+                        </div>
+                    </li>
+                }
+            </ul>
+            <button class="btn" @onclick="Accounts.BeginAdd"><Icon Name="add" Size="18" /> @L["accounts.add"]</button>
+        </section>
+    }
 
     <p class="muted small">Localify @(_info?.Version) · @Platform.Name</p>
 </div>
@@ -123,6 +155,18 @@
         {
             Ui.Notify(L.Server(ex.Message), true);
         }
+    }
+
+    private async Task SwitchAsync(Account account)
+    {
+        await Accounts.SwitchAsync(account.Id);
+        Ui.Notify(L["accounts.switched", ("account", account.Label)]);
+    }
+
+    private async Task LogoutAsync(Account account)
+    {
+        await Auth.LogoutAsync(account);
+        Ui.Notify(L["accounts.loggedOut", ("account", account.Label)]);
     }
 
     private async Task ChangePasswordAsync()

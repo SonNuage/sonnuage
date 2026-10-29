@@ -20,6 +20,12 @@
     <TrimMode>partial</TrimMode>
   </PropertyGroup>
 
+  <!-- Hors de Visual Studio, un APK Debug doit aussi tourner seul : sans les assemblies embarquées (Fast Deployment),
+       il s'arrête au lancement (« No assemblies found in .../.__override__ »). -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug' And '$(BuildingInsideVisualStudio)' != 'true'">
+    <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+  </PropertyGroup>
+
   <ItemGroup>
     <MauiIcon Include="Resources\AppIcon\appicon.svg" Color="#121212" />
     <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#121212" BaseSize="128,128" />

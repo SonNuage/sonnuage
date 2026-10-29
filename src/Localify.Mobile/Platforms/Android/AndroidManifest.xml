@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Pas de sauvegarde automatique : restaurées sur un autre appareil ou après réinstallation, les préférences
+         chiffrées de SecureStorage (jetons) sont illisibles sans la clé Keystore d'origine. -->
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@mipmap/appicon"
         android:roundIcon="@mipmap/appicon_round"
         android:supportsRtl="true"

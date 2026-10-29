@@ -11,8 +11,9 @@ namespace Localify.Mobile.Playback;
 /// et jeton média renouvelé. La clé de cache ne dépend que de la piste et de la qualité, pas du jeton.
 /// Si une autre qualité est déjà entièrement en cache (pré-chargée en Wi-Fi par exemple), elle est préférée :
 /// aucun octet réseau.
+/// Le cache est cloisonné par compte : la clé commence par l'identifiant du compte actif.
 /// </summary>
-public sealed class StreamResolver(ApiClient api, PlaybackSettings settings, ICache cache) : Java.Lang.Object, ResolvingDataSource.IResolver
+public sealed class StreamResolver(ApiClient api, PlaybackSettings settings, AccountStore accounts, ICache cache) : Java.Lang.Object, ResolvingDataSource.IResolver
 {
     public DataSpec? ResolveDataSpec(DataSpec? dataSpec)
     {
@@ -30,7 +31,7 @@ public sealed class StreamResolver(ApiClient api, PlaybackSettings settings, ICa
             .Build();
     }
 
-    public static string Key(Guid id, StreamQuality quality) => $"{id:N}-{quality.ToWire()}";
+    public string Key(Guid id, StreamQuality quality) => $"{accounts.Active?.Id:N}/{id:N}-{quality.ToWire()}";
 
     private bool IsFullyCached(string key)
     {

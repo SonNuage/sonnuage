@@ -4,25 +4,36 @@ using Localify.UI.Services;
 
 namespace Localify.Mobile.Playback;
 
-/// <summary>Sauvegarde de la file pour la reprise (bouton lecture d'Android Auto, redémarrage de l'appli).</summary>
-public sealed class QueueStore(IKeyValueStore store, ApiClient api, LibraryBrowser browser)
+/// <summary>
+/// Sauvegarde de la file pour la reprise (bouton lecture d'Android Auto, redémarrage de l'appli).
+/// Une file par compte : la clé est suffixée par l'identifiant du compte (<see cref="AccountStore.ScopedKey"/>).
+/// </summary>
+public sealed class QueueStore(IKeyValueStore store, AccountStore accounts, ApiClient api, LibraryBrowser browser)
 {
-    private const string Key = "localify.queue";
+    private const string BaseKey = "localify.queue";
 
     public sealed record Saved(List<Guid> Ids, int Index, long PositionMs, int RepeatMode);
 
-    /// <summary>À appeler sur le thread du lecteur ; l'écriture se fait ensuite en arrière-plan.</summary>
-    public void Save(Media3IPlayer player)
+    /// <summary>Clé de la file du compte actif.</summary>
+    public string CurrentKey => accounts.ScopedKey(BaseKey);
+
+    /// <summary>
+    /// À appeler sur le thread du lecteur ; l'écriture se fait ensuite en arrière-plan. <paramref name="key"/> est celle
+    /// du compte à qui appartient la file jouée (null : rien à sauver, par exemple pendant un changement de compte).
+    /// </summary>
+    public void Save(Media3IPlayer player, string? key)
     {
+        if (key is null) return;
         var ids = player.Items().Take(500).Select(i => TrackItems.ToTrack(i)?.Id).OfType<Guid>().ToList();
         var saved = new Saved(ids, Math.Max(0, player.CurrentMediaItemIndex), Math.Max(0, player.CurrentPosition), player.RepeatMode);
-        _ = store.SetAsync(Key, JsonSerializer.Serialize(saved, JsonDefaults.Options));
+        _ = store.SetAsync(key, JsonSerializer.Serialize(saved, JsonDefaults.Options));
     }
 
+    /// <summary>File sauvegardée du compte actif, pistes rechargées depuis son serveur.</summary>
     public async Task<(List<MediaItem> Items, int Index, long PositionMs, int RepeatMode)?> LoadAsync()
     {
         if (!await browser.EnsureSignedInAsync()) return null;
-        var raw = await store.GetAsync(Key);
+        var raw = await store.GetAsync(CurrentKey);
         if (raw is null) return null;
         try
         {

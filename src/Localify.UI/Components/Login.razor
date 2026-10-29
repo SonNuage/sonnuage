@@ -1,4 +1,5 @@
 @inject AuthSession Auth
+@inject AccountStore Accounts
 @inject IServerEndpoint Endpoint
 @inject IPlatformInfo Platform
 
@@ -8,7 +9,11 @@
         <h1>@L["login.title"]</h1>
         @if (Endpoint.IsConfigurable)
         {
-            <p class="muted">@L["login.server", ("host", Endpoint.BaseAddress?.Host)] <button type="button" class="link" @onclick="ChangeServerAsync">@L["login.changeServer"]</button></p>
+            <p class="muted">@L["login.server", ("host", (Accounts.LoginServer ?? Endpoint.BaseAddress)?.Host)] <button type="button" class="link" @onclick="ChangeServerAsync">@L["login.changeServer"]</button></p>
+            @if (!Accounts.IsAdding && Accounts.Active is { } expired)
+            {
+                <p class="muted">@L["login.expired", ("user", expired.Username)]</p>
+            }
         }
         <label>
             <span>@L["login.username"]</span>
@@ -23,6 +28,17 @@
             <p class="form-error">@_error</p>
         }
         <button class="btn primary wide" type="submit" disabled="@_busy">@(_busy ? L["login.submitting"] : L["login.submit"])</button>
+        @if (Accounts.CanCancelAdd)
+        {
+            <button type="button" class="link" @onclick="Accounts.CancelAdd">@L["accounts.cancelAdd", ("account", Accounts.Active!.Label)]</button>
+        }
+        else if (!Accounts.IsAdding)
+        {
+            @foreach (var other in Accounts.Accounts.Where(a => a.Id != Accounts.Active?.Id))
+            {
+                <button type="button" class="link" @onclick="() => Accounts.SwitchAsync(other.Id)">@L["accounts.useOther", ("account", other.Label)]</button>
+            }
+        }
     </form>
 </div>
 

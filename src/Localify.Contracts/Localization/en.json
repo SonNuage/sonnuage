@@ -192,7 +192,8 @@
     "username": "Username",
     "password": "Password",
     "submitting": "Logging in…",
-    "submit": "Log in"
+    "submit": "Log in",
+    "expired": "The session of {user} has expired: please sign in again."
   },
   "player": {
     "errors": {
@@ -241,7 +242,8 @@
     "continue": "Continue",
     "invalid": "Invalid address.",
     "notLocalify": "This server doesn’t answer like a Localify server.",
-    "cannotConnect": "Can’t connect: {message}"
+    "cannotConnect": "Can’t connect: {message}",
+    "addTitle": "Add an account"
   },
   "picker": {
     "title": "Add to playlist",
@@ -663,5 +665,18 @@
       "acoustidHint": "With an AcoustID key (free) and fpcalc on the server, each track is also identified by its audio fingerprint: reliable even when the video title says nothing. Below the threshold, the import is filed but flagged “to review”.",
       "saved": "Settings saved"
     }
+  },
+  "accounts": {
+    "title": "Accounts",
+    "hint": "The library shown and playback belong to the active account. Switching accounts stops playback.",
+    "active": "active",
+    "use": "Use",
+    "useOther": "Use {account}",
+    "logout": "Sign out",
+    "logoutTitle": "Sign out of this account",
+    "add": "Add an account",
+    "cancelAdd": "Cancel, back to {account}",
+    "switched": "Active account: {account}",
+    "loggedOut": "Signed out of {account}"
   }
 }

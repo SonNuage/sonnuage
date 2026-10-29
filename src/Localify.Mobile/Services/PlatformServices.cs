@@ -14,10 +14,20 @@ public sealed class MobileStore : IKeyValueStore
         {
             return await SecureStorage.Default.GetAsync(key);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Clé Keystore invalidée (restauration de sauvegarde, changement de verrouillage) : on repart de zéro.
-            SecureStorage.Default.Remove(key);
+            // Clé Keystore invalidée (sauvegarde restaurée sur un autre appareil ou après réinstallation, changement de
+            // verrouillage) : le fichier chiffré est illisible. Le nettoyage peut lui-même échouer : on repart de zéro
+            // sans jamais laisser l'exception remonter (elle tuait l'appli au démarrage).
+            Android.Util.Log.Warn("Localify", $"SecureStorage illisible, réinitialisé : {ex}");
+            try
+            {
+                SecureStorage.Default.Remove(key);
+            }
+            catch (Exception)
+            {
+                try { SecureStorage.Default.RemoveAll(); } catch (Exception) { }
+            }
             return null;
         }
     }
@@ -30,23 +40,37 @@ public sealed class MobileStore : IKeyValueStore
             else Preferences.Default.Set(key, value);
             return;
         }
-        if (value is null) SecureStorage.Default.Remove(key);
-        else await SecureStorage.Default.SetAsync(key, value);
+        try
+        {
+            if (value is null) SecureStorage.Default.Remove(key);
+            else await SecureStorage.Default.SetAsync(key, value);
+        }
+        catch (Exception ex)
+        {
+            // Même cause que ci-dessus : on vide le stockage sécurisé et on réessaie une fois.
+            Android.Util.Log.Warn("Localify", $"SecureStorage illisible, réinitialisé : {ex}");
+            try { SecureStorage.Default.RemoveAll(); } catch (Exception) { }
+            if (value is not null) await SecureStorage.Default.SetAsync(key, value);
+        }
     }
 }
 
-/// <summary>Adresse du serveur saisie au premier lancement (ex. https://musique.example.org).</summary>
-public sealed class MobileEndpoint : IServerEndpoint
+/// <summary>
+/// Adresse du serveur : celle du compte actif, ou celle saisie pour le compte en cours d'ajout tant qu'aucun compte
+/// n'est actif. Pendant un ajout, l'API reste donc adressée au compte actif (lecture en arrière-plan comprise).
+/// </summary>
+public sealed class AccountEndpoint : IServerEndpoint
 {
-    private const string Key = "localify.server";
+    private readonly AccountStore _accounts;
 
-    public MobileEndpoint()
+    public AccountEndpoint(AccountStore accounts)
     {
-        var raw = Preferences.Default.Get<string?>(Key, null);
-        if (Uri.TryCreate(raw, UriKind.Absolute, out var uri)) BaseAddress = uri;
+        _accounts = accounts;
+        accounts.ActiveChanged += () => Changed?.Invoke();
+        accounts.Changed += () => Changed?.Invoke();
     }
 
-    public Uri? BaseAddress { get; private set; }
+    public Uri? BaseAddress => _accounts.Active?.Server ?? _accounts.PendingServer;
     public bool IsConfigurable => true;
     public event Action? Changed;
 
@@ -54,10 +78,7 @@ public sealed class MobileEndpoint : IServerEndpoint
     {
         // Uri relative "api/..." doit se résoudre sous le chemin éventuel du serveur.
         if (address is not null && !address.AbsolutePath.EndsWith('/')) address = new Uri(address + "/");
-        BaseAddress = address;
-        if (address is null) Preferences.Default.Remove(Key);
-        else Preferences.Default.Set(Key, address.ToString());
-        Changed?.Invoke();
+        _accounts.SetPendingServer(address);
         return Task.CompletedTask;
     }
 }
