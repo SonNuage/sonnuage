@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Localify — Spotify local</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="logo">
+        <span class="logo-icon">&#9835;</span>
+        <span class="logo-text">Localify</span>
+      </div>
+
+      <nav class="side-nav">
+        <button class="nav-item active" data-view="home"><span class="nav-icon">&#8962;</span> Accueil</button>
+        <button class="nav-item" data-view="search"><span class="nav-icon">&#9906;</span> Recherche</button>
+        <button class="nav-item" data-view="library"><span class="nav-icon">&#9776;</span> Bibliothèque</button>
+      </nav>
+
+      <div class="playlists">
+        <div class="playlists-title">TES PLAYLISTS</div>
+        <button class="playlist-item" data-playlist="shuffle">&#127911; Tout écouter</button>
+        <button class="playlist-item" data-playlist="favorites">&#9829; Favoris</button>
+      </div>
+
+      <div class="install-box"><span>&#11015;</span> Installer l'app</div>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="main">
+      <header class="topbar">
+        <div class="nav-buttons">
+          <button class="round-btn" id="backBtn" title="Précédent">&#8592;</button>
+          <button class="round-btn" id="fwdBtn" title="Suivant">&#8594;</button>
+        </div>
+        <div class="topbar-spacer"></div>
+        <button class="gear-btn" id="settingsBtn" title="Réglages">&#9881;</button>
+        <button class="upgrade-btn">Explorer Premium</button>
+        <button class="login-btn">Se connecter</button>
+      </header>
+
+      <main class="content">
+
+        <!-- VUE ACCUEIL -->
+        <section id="view-home" class="view">
+          <h1>Bonsoir</h1>
+
+          <div class="artist-row" id="artistRow"></div>
+          <button class="clear-filter hidden" id="clearFilter">&times; Afficher tous les albums</button>
+
+          <h2 id="albumsTitle">Albums</h2>
+          <div class="card-grid" id="homeAlbums"></div>
+        </section>
+
+        <!-- VUE ALBUM -->
+        <section id="view-album" class="view hidden">
+          <div id="albumContent"></div>
+        </section>
+
+        <!-- VUE RECHERCHE -->
+        <section id="view-search" class="view hidden">
+          <h1>Rechercher</h1>
+          <div class="search-bar">
+            <span>&#9906;</span>
+            <input type="text" id="searchInput" placeholder="Artistes, titres, albums...">
+          </div>
+          <div id="searchResults"></div>
+        </section>
+
+        <!-- VUE BIBLIOTHÈQUE -->
+        <section id="view-library" class="view hidden">
+          <h1>Ta bibliothèque</h1>
+          <div class="lib-artist" id="libList"></div>
+        </section>
+
+      </main>
+    </div>
+
+    <!-- PLAYER -->
+    <footer class="player">
+      <div class="player-left">
+        <div class="cover" id="playerArt"></div>
+        <div class="player-meta">
+          <p class="card-title" id="playerTitle">—</p>
+          <p class="card-sub" id="playerArtist">—</p>
+        </div>
+        <button class="ghost-btn" id="favBtn" title="Ajouter aux favoris">&#9825;</button>
+      </div>
+
+      <div class="player-center">
+        <div class="controls">
+          <button class="ctl-btn" id="shuffleBtn" title="Aléatoire">&#8635;</button>
+          <button class="ctl-btn" id="prevBtn" title="Précédent">&#9198;</button>
+          <button class="play-btn" id="playBtn" title="Lecture">&#9654;</button>
+          <button class="ctl-btn" id="nextBtn" title="Suivant">&#9197;</button>
+          <button class="ctl-btn" id="repeatBtn" title="Répéter">&#10227;</button>
+        </div>
+        <div class="progress-row">
+          <span id="curTime">0:00</span>
+          <div class="progress-bar" id="progressBar">
+            <div class="progress-fill" id="progressFill"></div>
+            <div class="progress-thumb" id="progressThumb"></div>
+          </div>
+          <span id="durTime">0:00</span>
+        </div>
+      </div>
+
+      <div class="player-right">
+        <span class="mute-icon" id="muteIcon">&#9834;</span>
+        <div class="volume-bar" id="volumeBar">
+          <div class="progress-fill" id="volumeFill"></div>
+          <div class="progress-thumb" id="volumeThumb"></div>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- BOTTOM NAV MOBILE -->
+  <nav class="bottom-nav">
+    <button class="b-nav-item active" data-view="home"><span>&#8962;</span>Accueil</button>
+    <button class="b-nav-item" data-view="search"><span>&#9906;</span>Recherche</button>
+    <button class="b-nav-item" data-view="library"><span>&#9776;</span>Bibliothèque</button>
+  </nav>
+
+  <!-- RÉGLAGES -->
+  <div class="overlay hidden" id="settingsOverlay">
+    <div class="settings-panel">
+      <h2>Connexion au serveur</h2>
+      <p class="settings-hint">Le serveur affiche ses adresses au démarrage.<br>Sur ce PC, tape : <code id="srvHint">http://localhost:3000</code></p>
+      <div class="search-bar settings-field">
+        <span>&#127760;</span>
+        <input type="text" id="serverInput" placeholder="http://192.168.1.42:3000" spellcheck="false">
+      </div>
+      <div class="settings-actions">
+        <button class="primary-btn" id="connectBtn">Tester &amp; connecter</button>
+        <button class="ghost-btn big" id="closeSettings">Fermer</button>
+      </div>
+      <div id="connResult" class="conn-result"></div>
+
+      <div class="toggle-row">
+        <label for="compressToggle">Compresser les WAV (MP3)</label>
+        <label class="switch">
+          <input type="checkbox" id="compressToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <p class="settings-hint">Utile hors du réseau local. Le premier lancement d'un morceau peut prendre un moment.</p>
+    </div>
+  </div>
+
+  <audio id="audio" preload="metadata"></audio>
+
+  <script src="config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

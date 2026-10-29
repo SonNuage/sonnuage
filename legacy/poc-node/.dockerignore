@@ -1,0 +1,9 @@
+node_modules
+mobile
+sdk
+bin
+cache
+data
+Localify.apk
+.git
+*.md

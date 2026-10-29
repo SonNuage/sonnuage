@@ -1,0 +1,25 @@
+# Données locales (bibliothèque de dev, binaires, caches)
+/data/
+/cache/
+/sdk/
+/bin/
+/var/
+*.apk
+*.aab
+.env
+.env.*
+!.env.example
+
+# .NET
+bin/
+obj/
+*.user
+.vs/
+.idea/
+TestResults/
+*.db
+*.db-shm
+*.db-wal
+
+# Node (legacy)
+node_modules/

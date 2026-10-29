@@ -1,0 +1,13 @@
+{
+  "appId": "com.localify.player",
+  "appName": "Localify",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": true,
+    "backgroundColor": "#121212"
+  },
+  "server": {
+    "url": "http://192.168.1.20:3000",
+    "androidScheme": "https"
+  }
+}
