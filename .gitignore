@@ -25,3 +25,4 @@ TestResults/
 node_modules/
 /out/
 *.Backup.tmp
+*.zip
