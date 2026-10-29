@@ -2,6 +2,7 @@ using Localify.Mobile.Playback;
 using Localify.Mobile.Services;
 using Localify.UI;
 using Localify.UI.Services;
+using Microsoft.Extensions.Logging;
 
 namespace Localify.Mobile;
 
