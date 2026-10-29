@@ -144,6 +144,8 @@ public enum YoutubeItemStatus
     Failed,
     /// <summary>Déjà publiée au moment de l'abonnement : pas importée, sauf demande explicite.</summary>
     Skipped,
+    /// <summary>Fichier téléchargé, en attente des métadonnées (étape suivante : Processing).</summary>
+    Downloaded,
 }
 
 /// <summary>Une vidéo YouTube demandée par l'admin ou trouvée par un abonnement, et ce qu'elle est devenue.</summary>

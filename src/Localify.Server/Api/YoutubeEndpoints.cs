@@ -29,11 +29,11 @@ public static class YoutubeEndpoints
                 settings.CookiesUpdatedAt,
                 importer.HoldUntil,
                 importer.HoldReason,
-                Count(YoutubeItemStatus.Queued, YoutubeItemStatus.Downloading, YoutubeItemStatus.Processing),
+                Count(YoutubeItemStatus.Queued, YoutubeItemStatus.Downloading, YoutubeItemStatus.Downloaded, YoutubeItemStatus.Processing),
                 Count(YoutubeItemStatus.Failed),
                 counts.Where(c => c.Status == YoutubeItemStatus.Done && c.NeedsReview).Sum(c => c.Count),
                 Count(YoutubeItemStatus.Done),
-                importer.Current);
+                importer.Active);
         });
 
         g.MapPost("/resume", (YoutubeImporter importer) =>
@@ -97,7 +97,7 @@ public static class YoutubeEndpoints
             if (Enum.TryParse<YoutubeItemStatus>(status, true, out var s))
             {
                 query = s is YoutubeItemStatus.Queued
-                    ? query.Where(i => i.Status == YoutubeItemStatus.Queued || i.Status == YoutubeItemStatus.Downloading || i.Status == YoutubeItemStatus.Processing)
+                    ? query.Where(i => i.Status == YoutubeItemStatus.Queued || i.Status == YoutubeItemStatus.Downloading || i.Status == YoutubeItemStatus.Downloaded || i.Status == YoutubeItemStatus.Processing)
                     : query.Where(i => i.Status == s);
             }
             if (review == true) query = query.Where(i => i.NeedsReview && i.Status == YoutubeItemStatus.Done);
@@ -112,7 +112,7 @@ public static class YoutubeEndpoints
             var total = await query.CountAsync(ct);
             // Les imports en cours d'abord, puis les plus récents.
             var rows = await query
-                .OrderBy(i => i.Status == YoutubeItemStatus.Downloading || i.Status == YoutubeItemStatus.Processing ? 0 : i.Status == YoutubeItemStatus.Queued ? 1 : 2)
+                .OrderBy(i => i.Status == YoutubeItemStatus.Downloading || i.Status == YoutubeItemStatus.Downloaded || i.Status == YoutubeItemStatus.Processing ? 0 : i.Status == YoutubeItemStatus.Queued ? 1 : 2)
                 .ThenByDescending(i => i.Status == YoutubeItemStatus.Queued ? DateTimeOffset.MinValue : i.UpdatedAt)
                 .ThenBy(i => i.CreatedAt)
                 .Skip(o).Take(l)
@@ -163,7 +163,7 @@ public static class YoutubeEndpoints
         {
             var item = await db.YoutubeItems.Include(i => i.Track).FirstOrDefaultAsync(i => i.Id == id, ct);
             if (item is null) return Results.NotFound();
-            if (item.Status is YoutubeItemStatus.Downloading or YoutubeItemStatus.Processing) return Results.Problem(Tx.Key("errors.yt.inProgress"), statusCode: 409);
+            if (item.Status is YoutubeItemStatus.Downloading or YoutubeItemStatus.Downloaded or YoutubeItemStatus.Processing) return Results.Problem(Tx.Key("errors.yt.inProgress"), statusCode: 409);
             if (deleteTrack == true && item.Track is { } track && LibraryScanner.IsUnder(track.FilePath, Path.GetFullPath(options.Value.UploadPath)))
             {
                 if (File.Exists(track.FilePath)) File.Delete(track.FilePath);

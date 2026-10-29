@@ -175,7 +175,8 @@
       "cannotStart": "Couldn’t start yt-dlp.",
       "timeout": "yt-dlp didn’t finish in time.",
       "addCookies": " — Add, in the settings, the cookies of an (adult) YouTube account that has access.",
-      "cookiesInsufficient": " — The saved cookies aren’t enough: underage account, not a member, or expired session?"
+      "cookiesInsufficient": " — The saved cookies aren’t enough: underage account, not a member, or expired session?",
+      "parallelDownloads": "Simultaneous downloads: between 1 and {max}."
     },
     "users": {
       "usernameLength": "Username: 2 to 64 characters.",
@@ -600,7 +601,8 @@
       "Processing": "processing",
       "Done": "imported",
       "Failed": "failed",
-      "Skipped": "skipped"
+      "Skipped": "skipped",
+      "Downloaded": "downloaded"
     },
     "stage": {
       "download": "downloading",
@@ -663,7 +665,9 @@
       "threshold": "Auto-accept threshold: {value}",
       "acoustid": "AcoustID API key (optional)",
       "acoustidHint": "With an AcoustID key (free) and fpcalc on the server, each track is also identified by its audio fingerprint: reliable even when the video title says nothing. Below the threshold, the import is filed but flagged “to review”.",
-      "saved": "Settings saved"
+      "saved": "Settings saved",
+      "parallel": "Simultaneous downloads",
+      "parallelHint": "A video YouTube slows down no longer blocks the others. Beyond 3 or 4, YouTube may ask for a bot check."
     }
   },
   "accounts": {

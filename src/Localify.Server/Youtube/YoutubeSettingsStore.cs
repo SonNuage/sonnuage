@@ -12,6 +12,9 @@ namespace Localify.Server.Youtube;
 /// </summary>
 public sealed class YoutubeSettingsStore
 {
+    // Au-delà, YouTube repère vite un comportement de robot (vérification, 429).
+    public const int MaxParallelDownloads = 6;
+
     public static readonly YoutubeSettingsDto Defaults = new(SyncIntervalHours: 6, AudioFormat: "original", AcoustIdKey: null, AutoAcceptThreshold: 0.8);
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { WriteIndented = true };
 
@@ -49,6 +52,7 @@ public sealed class YoutubeSettingsStore
         if (s.SyncIntervalHours is < 0 or > 24 * 7) return (null, Tx.Key("errors.yt.syncInterval"));
         if (s.AudioFormat is not ("original" or "mp3")) return (null, Tx.Key("errors.yt.audioFormat"));
         if (s.AutoAcceptThreshold is < 0 or > 1) return (null, Tx.Key("errors.yt.threshold"));
+        if (s.ParallelDownloads is < 1 or > MaxParallelDownloads) return (null, Tx.Key("errors.yt.parallelDownloads", ("max", MaxParallelDownloads)));
         var clean = s with { AcoustIdKey = string.IsNullOrWhiteSpace(s.AcoustIdKey) ? null : s.AcoustIdKey.Trim() };
         lock (_lock)
         {

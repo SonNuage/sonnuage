@@ -44,6 +44,7 @@ public sealed partial class YtDlp(YoutubeTools tools, FfmpegLocator ffmpeg, Yout
 {
     private static readonly TimeSpan ListTimeout = TimeSpan.FromMinutes(3);
     private static readonly TimeSpan DownloadTimeout = TimeSpan.FromMinutes(30);
+    private const string ThrottledRate = "100K";
 
     public static string WatchUrl(string videoId) => $"https://www.youtube.com/watch?v={videoId}";
 
@@ -140,6 +141,9 @@ public sealed partial class YtDlp(YoutubeTools tools, FfmpegLocator ffmpeg, Yout
         var args = new List<string>
         {
             "--no-playlist", "--no-warnings", "--newline", "--no-mtime", "--no-part",
+            // YouTube bride parfois un flux à la vitesse de lecture (3 min pour un titre de 3 min) : sous ce débit,
+            // yt-dlp redemande une adresse de flux au lieu de subir le bridage.
+            "--throttled-rate", ThrottledRate,
             "-f", string.IsNullOrWhiteSpace(format) ? DefaultFormat : format.Trim(),
             "--write-info-json",
             "--progress-template", "download:[localify] %(progress._percent_str)s",
@@ -167,10 +171,18 @@ public sealed partial class YtDlp(YoutubeTools tools, FfmpegLocator ffmpeg, Yout
             throw new YtDlpException(failure.Kind, failure.Message) { Formats = await ListFormatsAsync(videoId, ct) };
         }
 
-        var infoPath = Path.Combine(workDir, $"{videoId}.info.json");
-        var audio = Directory.EnumerateFiles(workDir, $"{videoId}.*")
-            .FirstOrDefault(f => !f.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+        return await ReadDownloadAsync(workDir, videoId, ct)
             ?? throw new YtDlpException(YtDlpFailure.Other, "yt-dlp n'a produit aucun fichier audio.");
+    }
+
+    /// <summary>Fichier audio et fiche d'une vidéo déjà téléchargée dans <paramref name="workDir"/>, ou null s'il en manque.</summary>
+    public static async Task<YtDownload?> ReadDownloadAsync(string workDir, string videoId, CancellationToken ct)
+    {
+        var infoPath = Path.Combine(workDir, $"{videoId}.info.json");
+        if (!Directory.Exists(workDir) || !File.Exists(infoPath)) return null;
+        var audio = Directory.EnumerateFiles(workDir, $"{videoId}.*")
+            .FirstOrDefault(f => !f.EndsWith(".json", StringComparison.OrdinalIgnoreCase));
+        if (audio is null) return null;
         var info = JsonNode.Parse(await File.ReadAllTextAsync(infoPath, ct))!.AsObject();
         return new YtDownload(audio, info);
     }

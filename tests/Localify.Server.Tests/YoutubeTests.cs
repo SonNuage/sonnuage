@@ -1,3 +1,6 @@
+using System.Net;
+using System.Net.Http.Json;
+using Localify.Contracts;
 using System.Text.Json.Nodes;
 using Localify.Server.Admin;
 using Localify.Server.Api;
@@ -214,5 +217,47 @@ public class YoutubeMiscTests
         Assert.Equal(12, months.Count);
         var (_, years) = DashboardEndpoints.Buckets("all", now, new DateTimeOffset(2001, 5, 1, 0, 0, 0, TimeSpan.Zero));
         Assert.Equal(26, years.Count);
+    }
+}
+
+public sealed class YoutubePipelineTests(LocalifyFactory factory) : IClassFixture<LocalifyFactory>
+{
+    private static CancellationToken Ct => TestContext.Current.CancellationToken;
+
+    [Fact]
+    public async Task A_finished_download_is_found_again_after_a_restart_but_not_a_partial_one()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "localify-ytdl-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(dir);
+            await File.WriteAllTextAsync(Path.Combine(dir, "abcdefghijk.webm"), "audio", Ct);
+            Assert.Null(await YtDlp.ReadDownloadAsync(dir, "abcdefghijk", Ct));
+
+            await File.WriteAllTextAsync(Path.Combine(dir, "abcdefghijk.info.json"), """{"title":"Morceau","duration":12}""", Ct);
+            var download = await YtDlp.ReadDownloadAsync(dir, "abcdefghijk", Ct);
+            Assert.NotNull(download);
+            Assert.EndsWith(".webm", download.AudioPath);
+            Assert.Equal("Morceau", YtDlp.Str(download.Info, "title"));
+
+            Assert.Null(await YtDlp.ReadDownloadAsync(Path.Combine(dir, "absent"), "abcdefghijk", Ct));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(0, HttpStatusCode.BadRequest)]
+    [InlineData(7, HttpStatusCode.BadRequest)]
+    [InlineData(4, HttpStatusCode.OK)]
+    public async Task Parallel_downloads_setting_is_bounded(int parallel, HttpStatusCode expected)
+    {
+        var admin = await factory.AdminClientAsync();
+        var response = await admin.PutAsJsonAsync("/api/admin/youtube/settings", YoutubeSettingsStore.Defaults with { ParallelDownloads = parallel }, Ct);
+        Assert.Equal(expected, response.StatusCode);
+        if (expected == HttpStatusCode.OK)
+            Assert.Equal(parallel, (await response.Content.ReadFromJsonAsync<YoutubeSettingsDto>(Ct))!.ParallelDownloads);
     }
 }

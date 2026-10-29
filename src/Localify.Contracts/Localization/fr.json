@@ -175,7 +175,8 @@
       "cannotStart": "Impossible de lancer yt-dlp.",
       "timeout": "yt-dlp n'a pas terminé à temps.",
       "addCookies": " — Ajoutez dans les réglages les cookies d'un compte YouTube (majeur) qui y a accès.",
-      "cookiesInsufficient": " — Les cookies enregistrés ne suffisent pas : compte mineur, non membre ou session expirée ?"
+      "cookiesInsufficient": " — Les cookies enregistrés ne suffisent pas : compte mineur, non membre ou session expirée ?",
+      "parallelDownloads": "Téléchargements simultanés : entre 1 et {max}."
     },
     "users": {
       "usernameLength": "Nom d'utilisateur : 2 à 64 caractères.",
@@ -600,7 +601,8 @@
       "Processing": "traitement",
       "Done": "importé",
       "Failed": "échec",
-      "Skipped": "ignoré"
+      "Skipped": "ignoré",
+      "Downloaded": "téléchargé"
     },
     "stage": {
       "download": "téléchargement",
@@ -663,7 +665,9 @@
       "threshold": "Seuil d'acceptation automatique : {value}",
       "acoustid": "Clé d'API AcoustID (facultatif)",
       "acoustidHint": "Avec une clé AcoustID (gratuite) et fpcalc sur le serveur, chaque titre est aussi reconnu à son empreinte sonore : fiable même quand le titre de la vidéo ne dit rien. Sous le seuil, l'import est rangé mais signalé « à vérifier ».",
-      "saved": "Réglages enregistrés"
+      "saved": "Réglages enregistrés",
+      "parallel": "Téléchargements simultanés",
+      "parallelHint": "Une vidéo que YouTube ralentit ne bloque plus les autres. Au-delà de 3 ou 4, YouTube risque de demander une vérification anti-robot."
     }
   },
   "accounts": {

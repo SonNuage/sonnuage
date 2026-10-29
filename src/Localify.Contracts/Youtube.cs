@@ -14,7 +14,8 @@ public sealed record YoutubeStatusDto(
     int Failed,
     int NeedsReview,
     int Done,
-    YoutubeProgressDto? Current);
+    // Imports en cours (plusieurs téléchargements en parallèle, un traitement de métadonnées).
+    IReadOnlyList<YoutubeProgressDto> Active);
 
 /// <summary>Contenu d'un export cookies.txt (format Netscape) d'un navigateur connecté à YouTube.</summary>
 public sealed record YoutubeCookiesRequest(string? Content);
@@ -29,7 +30,9 @@ public sealed record YoutubeSettingsDto(
     // Au-dessus, les métadonnées trouvées sont appliquées sans demander ; en dessous, l'import attend une vérification.
     double AutoAcceptThreshold,
     // Avec des cookies, relancer sans eux quand le format demandé manque une fois connecté.
-    bool RetryWithoutCookies = true);
+    bool RetryWithoutCookies = true,
+    // Téléchargements simultanés (1 à 6).
+    int ParallelDownloads = 3);
 
 public sealed record YoutubeVideoDto(
     string VideoId,

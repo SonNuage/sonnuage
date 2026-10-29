@@ -27,9 +27,9 @@
                     <button class="btn" @onclick="ResumeAsync">@L["yt.resumeNow"]</button>
                 </div>
             }
-            @if (st.Current is { } cur)
+            @foreach (var cur in st.Active)
             {
-                <div class="notice">
+                <div class="notice" @key="cur.ItemId">
                     <span class="spinner inline"></span>
                     <span class="grow"><span class="strong">@cur.Title</span> — @StageLabel(cur.Stage)@(cur.Percent is { } p ? " " + L["format.percent", ("value", L.Number(p))] : "")</span>
                     @if (cur.Percent is { } pc) { <progress max="100" value="@pc.ToString(CultureInfo.InvariantCulture)"></progress> }
@@ -703,6 +703,15 @@
                         </select>
                     </label>
                     <label class="field">
+                        <span>@L["yt.settings.parallel"]</span>
+                        <select class="input" value="@s.ParallelDownloads" @onchange="e => _settings = s with { ParallelDownloads = int.Parse(e.Value!.ToString()!) }">
+                            @for (var n = 1; n <= 6; n++)
+                            {
+                                <option value="@n">@n</option>
+                            }
+                        </select>
+                    </label>
+                    <label class="field">
                         <span>@L["yt.settings.audioFormat"]</span>
                         <select class="input" value="@s.AudioFormat" @onchange="e => _settings = s with { AudioFormat = e.Value!.ToString()! }">
                             <option value="original">@L["yt.settings.original"]</option>
@@ -719,6 +728,7 @@
                         <input class="input" value="@s.AcoustIdKey" placeholder="acoustid.org/new-application" @onchange="e => _settings = s with { AcoustIdKey = e.Value?.ToString() }" />
                     </label>
                 </div>
+                <p class="muted small">@L["yt.settings.parallelHint"]</p>
                 <p class="muted small">@L["yt.settings.acoustidHint"]</p>
                 <button class="btn primary" @onclick="SaveSettingsAsync">@L["common.save"]</button>
             </section>
@@ -775,7 +785,7 @@
     {
         "Done" => "good",
         "Failed" => "bad",
-        "Downloading" or "Processing" or "Queued" => "info",
+        "Downloading" or "Downloaded" or "Processing" or "Queued" => "info",
         _ => "",
     };
 
