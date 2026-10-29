@@ -132,3 +132,62 @@ public sealed class PlayEvent
     public double SecondsPlayed { get; set; }
     public bool Completed { get; set; }
 }
+
+public enum YoutubeItemStatus
+{
+    Queued,
+    Downloading,
+    Processing,
+    Done,
+    Failed,
+    /// <summary>Déjà publiée au moment de l'abonnement : pas importée, sauf demande explicite.</summary>
+    Skipped,
+}
+
+/// <summary>Une vidéo YouTube demandée par l'admin ou trouvée par un abonnement, et ce qu'elle est devenue.</summary>
+public sealed class YoutubeItem
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public required string VideoId { get; set; }
+    public required string Title { get; set; }
+    public string? Channel { get; set; }
+    public double? DurationSeconds { get; set; }
+    public string? ThumbnailUrl { get; set; }
+
+    public Guid? SubscriptionId { get; set; }
+    public YoutubeSubscription? Subscription { get; set; }
+    /// <summary>Titre de la playlist d'origine quand elle représente un album (aide la recherche de métadonnées).</summary>
+    public string? AlbumHint { get; set; }
+
+    public YoutubeItemStatus Status { get; set; } = YoutubeItemStatus.Queued;
+    public string? Error { get; set; }
+    public int Attempts { get; set; }
+
+    public Guid? TrackId { get; set; }
+    public Track? Track { get; set; }
+    /// <summary>Métadonnées reconnues avec une confiance insuffisante : l'admin doit confirmer.</summary>
+    public bool NeedsReview { get; set; }
+    public double? MatchConfidence { get; set; }
+    /// <summary>youtube-music, acoustid, musicbrainz, titre.</summary>
+    public string? MatchSource { get; set; }
+    /// <summary>Candidats MusicBrainz (JSON) proposés à l'admin.</summary>
+    public string? CandidatesJson { get; set; }
+
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? CompletedAt { get; set; }
+}
+
+/// <summary>Playlist ou chaîne suivie : ses nouvelles vidéos sont importées à chaque synchronisation.</summary>
+public sealed class YoutubeSubscription
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public required string Url { get; set; }
+    public required string Title { get; set; }
+    public bool Enabled { get; set; } = true;
+    /// <summary>La playlist est un album (ex. album YouTube Music) : son titre sert d'indice d'album.</summary>
+    public bool IsAlbum { get; set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? LastSyncedAt { get; set; }
+    public string? LastError { get; set; }
+}

@@ -8,6 +8,7 @@ using Localify.Server.Data;
 using Localify.Server.Library;
 using Localify.Server.Search;
 using Localify.Server.Streaming;
+using Localify.Server.Youtube;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
@@ -54,6 +55,23 @@ builder.Services.AddSingleton<SearchGateway>();
 builder.Services.AddSingleton<SearchIndexer>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<SearchIndexer>());
 builder.Services.AddScoped<SearchService>();
+
+builder.Services.AddHttpClient(YoutubeTools.HttpClientName, http =>
+{
+    http.DefaultRequestHeaders.UserAgent.ParseAdd("Localify/1.0");
+    http.Timeout = TimeSpan.FromMinutes(5);
+});
+MusicBrainzClient.ConfigureHttp(builder.Services.AddHttpClient(MusicBrainzClient.HttpClientName));
+builder.Services.AddSingleton<YoutubeTools>();
+builder.Services.AddSingleton<YoutubeSettingsStore>();
+builder.Services.AddSingleton<YtDlp>();
+builder.Services.AddSingleton<MusicBrainzClient>();
+builder.Services.AddSingleton<MetadataResolver>();
+builder.Services.AddSingleton<YoutubeLibraryWriter>();
+builder.Services.AddSingleton<YoutubeImporter>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<YoutubeImporter>());
+builder.Services.AddSingleton<YoutubeSyncService>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<YoutubeSyncService>());
 
 ConfigureAuthentication(builder.Services);
 
@@ -111,6 +129,8 @@ app.MapStreamEndpoints();
 app.MapMeEndpoints();
 app.MapPlaylistEndpoints();
 app.MapAdminEndpoints();
+app.MapYoutubeEndpoints();
+app.MapDashboardEndpoints();
 
 app.MapFallback("/api/{**path}", () => Results.NotFound());
 app.MapFallbackToFile("index.html", new StaticFileOptions
@@ -209,9 +229,10 @@ static Task SecurityHeaders(HttpContext http, Func<Task> next)
     h.XFrameOptions = "DENY";
     if (!http.Request.Path.StartsWithSegments("/api"))
     {
+        // Miniatures YouTube affichées dans l'import (admin).
         h.ContentSecurityPolicy =
             "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; " +
-            "img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'";
+            "img-src 'self' data: blob: https://i.ytimg.com https://*.googleusercontent.com https://*.ggpht.com; media-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'";
     }
     return next();
 }

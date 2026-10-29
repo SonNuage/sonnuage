@@ -1,0 +1,15 @@
+@* Barre empilée horizontale : une tranche par clé, couleur var(--series-<clé>), 2 px d'écart entre tranches. *@
+<div class="segbar" role="img" aria-label="@string.Join(", ", Segments.Select(s => $"{s.Key} {Share(s.Value)}"))">
+    @foreach (var (key, value) in Segments)
+    {
+        <span class="segbar-part" style="flex-grow: @Grow(value); background: var(--series-@key)" title="@Share(value)"></span>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<(string Key, double Value)> Segments { get; set; } = [];
+
+    private double Total => Segments.Sum(s => s.Value);
+    private string Grow(double v) => (Total == 0 ? 0 : v / Total * 1000).ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+    private string Share(double v) => Total == 0 ? "" : (v * 100 / Total).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',') + " %";
+}

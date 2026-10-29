@@ -13,6 +13,8 @@ public sealed class LocalifyDbContext(DbContextOptions<LocalifyDbContext> option
     public DbSet<PlaylistEntry> PlaylistEntries => Set<PlaylistEntry>();
     public DbSet<Favorite> Favorites => Set<Favorite>();
     public DbSet<PlayEvent> PlayEvents => Set<PlayEvent>();
+    public DbSet<YoutubeItem> YoutubeItems => Set<YoutubeItem>();
+    public DbSet<YoutubeSubscription> YoutubeSubscriptions => Set<YoutubeSubscription>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -77,6 +79,21 @@ public sealed class LocalifyDbContext(DbContextOptions<LocalifyDbContext> option
             e.HasIndex(x => new { x.UserId, x.PlayedAt });
             e.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(x => x.Track).WithMany().HasForeignKey(x => x.TrackId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<YoutubeItem>(e =>
+        {
+            e.HasIndex(x => x.VideoId).IsUnique();
+            e.HasIndex(x => new { x.Status, x.CreatedAt });
+            e.Property(x => x.VideoId).HasMaxLength(32);
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
+            e.HasOne(x => x.Subscription).WithMany().HasForeignKey(x => x.SubscriptionId).OnDelete(DeleteBehavior.SetNull);
+            e.HasOne(x => x.Track).WithMany().HasForeignKey(x => x.TrackId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        b.Entity<YoutubeSubscription>(e =>
+        {
+            e.HasIndex(x => x.Url).IsUnique();
         });
 
         // SQLite ne sait pas trier/comparer des DateTimeOffset : stockage en ticks UTC.

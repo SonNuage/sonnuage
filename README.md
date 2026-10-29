@@ -25,8 +25,32 @@ Le plan de refonte et les choix d'architecture sont dans [docs/PLAN.md](docs/PLA
 - **Réseau instable** : pré-chargement des pistes suivantes (web : en mémoire ; Android : cache disque de 1 Go
   et tampon de 5 min), reprise automatique sur erreur réseau, qualité distincte en données mobiles sur Android.
 - **Android Auto** : onglets Playlists / Albums / Artistes / Récents, recherche, « Ok Google, mets … ».
-- **Admin** (`/admin`) : statistiques, rescan, envoi d'albums par morceaux de 8 Mo (reprise possible),
-  édition des tags et pochettes, gestion des comptes.
+- **Admin** (`/admin`) : tableau de bord (provenance des titres, historique des ajouts, disque), rescan,
+  envoi d'albums par morceaux de 8 Mo (reprise possible), import depuis YouTube, édition des tags et pochettes,
+  gestion des comptes.
+
+## Import depuis YouTube
+
+Réservé aux administrateurs (`/admin/youtube`), avec [yt-dlp](https://github.com/yt-dlp/yt-dlp) :
+
+- **Explorer** : recherche YouTube Music (meilleures métadonnées) ou YouTube, ou adresse collée d'une vidéo,
+  d'une playlist, d'un album ou d'une chaîne ; sélection puis import.
+- **File d'attente** : un téléchargement à la fois, progression en direct. La meilleure piste audio est gardée
+  telle quelle (Opus ou AAC, aucun réencodage ; MP3 en option). Quand YouTube refuse (trop de requêtes,
+  « confirmez que vous n'êtes pas un robot »), la file se met en pause et reprend seule (30 min, puis le double).
+- **Métadonnées** recomposées automatiquement : champs YouTube Music, recherche MusicBrainz notée sur titre,
+  artiste et durée (l'album studio officiel est préféré aux compilations), empreinte sonore AcoustID en option
+  (clé gratuite + `fpcalc`). Pochette de Cover Art Archive, sinon miniature recadrée au carré. Tags complets
+  (identifiants MusicBrainz, lien de la vidéo) et rangement dans `uploads/YouTube/Artiste/Album/`.
+  Sous le seuil de confiance réglable, l'import est signalé « à vérifier » : l'admin choisit parmi les
+  propositions, cherche sur MusicBrainz ou saisit à la main ; le fichier est retagué et déplacé, le morceau
+  garde sa place dans les playlists.
+- **Abonnements** : playlists, albums ou chaînes synchronisés périodiquement (6 h par défaut).
+- **Réglages** : mise à jour de yt-dlp / Deno en un clic (releases GitHub officielles, SHA-256 vérifiés),
+  cookies YouTube (format cookies.txt), format audio, seuil, clé AcoustID.
+
+L'image Docker embarque yt-dlp, Deno et fpcalc. Ne téléchargez que ce que vous avez le droit de conserver
+(œuvres libres, vos propres contenus, ou selon le droit applicable chez vous) : vérifier cela vous incombe.
 
 ## Recherche
 
@@ -131,7 +155,7 @@ directement sur Internet dans ce mode.
 (`:sha`, `:latest` sur la branche par défaut, `:X.Y.Z` sur tag) et APK Android en artefact → release
 GitLab avec l'APK sur les tags `vX.Y.Z`.
 
-Le runner doit accepter docker-in-docker (`privileged = true`). Pour signer l'APK de release, définir
+Le runner doit accepter docker-in-docker (`privileged = true`) : procédure complète dans [docs/CI-RUNNER.md](docs/CI-RUNNER.md). Pour signer l'APK de release, définir
 `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` et `ANDROID_KEY_PASSWORD`
 (variables masquées). Un keystore se crée avec :
 

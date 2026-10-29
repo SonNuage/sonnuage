@@ -77,7 +77,7 @@ public sealed class UploadService(IOptions<LocalifyOptions> options, MetadataRea
         var artist = FirstReal(meta.AlbumArtist, s.ArtistHint) ?? "Artiste inconnu";
         var album = FirstReal(meta.Album, s.AlbumHint) ?? "Album inconnu";
 
-        var dir = Path.Combine(Path.GetFullPath(options.Value.UploadPath), SafeFileName(artist), SafeFileName(album));
+        var dir = Path.Combine(Path.GetFullPath(options.Value.UploadPath), SafeSegment(artist), SafeSegment(album));
         Directory.CreateDirectory(dir);
         var target = Path.Combine(dir, s.FileName);
         for (var i = 2; File.Exists(target); i++)
@@ -108,10 +108,13 @@ public sealed class UploadService(IOptions<LocalifyOptions> options, MetadataRea
         }
     }
 
-    internal static string SafeFileName(string name)
+    internal static string SafeFileName(string name) => SafeSegment(Path.GetFileName(name.Replace('\\', '/')));
+
+    /// <summary>Nom de dossier ou de fichier sûr : « AC/DC » devient « AC_DC » (et non « DC »).</summary>
+    internal static string SafeSegment(string name)
     {
         var invalid = Path.GetInvalidFileNameChars().Concat(['/', '\\', ':', '*', '?', '"', '<', '>', '|']).ToHashSet();
-        var cleaned = new string(Path.GetFileName(name.Replace('\\', '/')).Select(c => invalid.Contains(c) || char.IsControl(c) ? '_' : c).ToArray()).Trim(' ', '.');
+        var cleaned = new string(name.Select(c => invalid.Contains(c) || char.IsControl(c) ? '_' : c).ToArray()).Trim(' ', '.');
         if (cleaned.Length > 180) cleaned = cleaned[..180];
         return cleaned.Length == 0 ? "sans-nom" : cleaned;
     }

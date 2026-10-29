@@ -79,5 +79,13 @@ Accueil, artistes, albums, recherche, playlists (création, ajout, réordonnance
 6. App Android + Media3 + Android Auto + pré-chargement
 7. Documentation de déploiement (compose + tunnel Cloudflare)
 
+### Import YouTube (ajout)
+
+Inspiré de TonTuyau / LaPompe : file d'import mono-tâche (`YoutubeImporter`) avec pause automatique sur refus de
+YouTube, abonnements (`YoutubeSyncService`), outils yt-dlp/Deno mis à jour depuis l'admin (`YoutubeTools`).
+Métadonnées : `MetadataResolver` croise YouTube Music, MusicBrainz (1 req/s, User-Agent identifié) et AcoustID ;
+pochettes Cover Art Archive. Seules des adresses youtube.com / youtu.be / music.youtube.com sont transmises à
+yt-dlp. Tableau de bord : `/api/admin/dashboard` (provenance, historique, disque) rendu en SVG.
+
 ## 5. Pistes futures
-Paroles synchronisées, ReplayGain, mode hors-ligne complet (téléchargement manuel d'albums), Chromecast, scrobbling Last.fm/ListenBrainz, API compatible Subsonic (pour réutiliser des clients existants).
+Extension de navigateur « Ajouter à Localify » sur YouTube (façon LaPompe, avec clés d'API et synchro des cookies), paroles synchronisées, ReplayGain, mode hors-ligne complet (téléchargement manuel d'albums), Chromecast, scrobbling Last.fm/ListenBrainz, API compatible Subsonic (pour réutiliser des clients existants).

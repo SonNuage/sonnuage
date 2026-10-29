@@ -1,0 +1,756 @@
+@page "/admin/youtube"
+@using System.Globalization
+@implements IDisposable
+@inject ApiClient Api
+@inject UiState Ui
+
+<PageTitle>YouTube · Localify</PageTitle>
+
+<div class="page">
+    <header class="page-header"><h1>Administration</h1></header>
+    <AdminNav>
+        @if (_status is { } st)
+        {
+            @if (st.Tools.YtDlp is null)
+            {
+                <div class="notice warn">
+                    <span>yt-dlp n'est pas installé sur le serveur.</span>
+                    <button class="btn primary" disabled="@_updating" @onclick="() => UpdateToolsAsync(true)">@(_updating ? "Installation…" : "Installer yt-dlp et Deno")</button>
+                </div>
+            }
+            @if (st.HoldUntil is { } until && until > DateTimeOffset.Now)
+            {
+                <div class="notice warn">
+                    <span>YouTube refuse les téléchargements pour l'instant : reprise automatique à @until.ToLocalTime().ToString("HH:mm").
+                        @if (!st.HasCookies) { <span> Ajouter les cookies d'un compte YouTube (Réglages) évite le plus souvent ce blocage.</span> }
+                        <span class="muted small">@st.HoldReason</span></span>
+                    <button class="btn" @onclick="ResumeAsync">Reprendre maintenant</button>
+                </div>
+            }
+            @if (st.Current is { } cur)
+            {
+                <div class="notice">
+                    <span class="spinner inline"></span>
+                    <span class="grow"><span class="strong">@cur.Title</span> — @StageLabel(cur.Stage)@(cur.Percent is { } p ? $" {p:0} %" : "")</span>
+                    @if (cur.Percent is { } pc) { <progress max="100" value="@pc.ToString(CultureInfo.InvariantCulture)"></progress> }
+                </div>
+            }
+        }
+
+        <div class="tabs sub">
+            @foreach (var (key, label) in Tabs)
+            {
+                <button class="tab @(_tab == key ? "active" : null)" @onclick="() => SwitchAsync(key)">
+                    @label
+                    @if (key == "queue" && _status is { } s && s.Queued + s.NeedsReview + s.Failed > 0)
+                    {
+                        <span class="badge">@(s.Queued + s.NeedsReview + s.Failed)</span>
+                    }
+                </button>
+            }
+        </div>
+
+        @switch (_tab)
+        {
+            case "explore":
+                @Explore
+                break;
+            case "queue":
+                @Queue
+                break;
+            case "subs":
+                @Subscriptions
+                break;
+            default:
+                @Settings
+                break;
+        }
+    </AdminNav>
+</div>
+
+<Modal Open="_review is not null" OpenChanged="v => { if (!v) _review = null; }" Title="Vérifier les métadonnées">
+    <ChildContent>
+        @if (_review is { } r)
+        {
+            <div class="review-head">
+                <img class="cover-sm" src="@r.Item.ThumbnailUrl" alt="" loading="lazy" />
+                <div class="grow">
+                    <div class="strong">@r.Item.Title</div>
+                    <div class="muted small">@r.Item.Channel · @Format.Duration(r.Item.DurationSeconds ?? 0) · <a href="https://www.youtube.com/watch?v=@r.Item.VideoId" target="_blank" rel="noopener noreferrer">voir la vidéo</a></div>
+                </div>
+            </div>
+            <h3 class="small muted">Propositions</h3>
+            <ul class="candidates">
+                @foreach (var c in r.Candidates)
+                {
+                    <li class="@(ReferenceEquals(c, r.Selected) ? "on" : null)" @onclick="() => Select(r, c)">
+                        <span class="score @(c.Score >= 0.8 ? "good" : c.Score >= 0.5 ? "mid" : "low")">@((c.Score * 100).ToString("0"))</span>
+                        <span class="grow">
+                            <span class="strong">@c.Title</span> — @c.Artist
+                            <span class="muted small block">@c.Album@(c.Year is { } y ? $" ({y})" : "")@(c.TrackNumber is { } n ? $" · piste {n}" : "") · @SourceLabel(c.Source)</span>
+                        </span>
+                    </li>
+                }
+            </ul>
+            <form class="inline-form" @onsubmit="() => SearchMusicBrainzAsync(r)" @onsubmit:preventDefault="true">
+                <input class="input" placeholder="Titre" @bind="r.SearchTitle" />
+                <input class="input" placeholder="Artiste" @bind="r.SearchArtist" />
+                <button class="btn" type="submit" disabled="@r.Searching"><Icon Name="search" Size="18" /> MusicBrainz</button>
+            </form>
+            <h3 class="small muted">Métadonnées appliquées</h3>
+            <div class="form-grid">
+                <label class="field"><span>Titre</span><input class="input" @bind="r.Edit.Title" /></label>
+                <label class="field"><span>Artiste</span><input class="input" @bind="r.Edit.Artist" /></label>
+                <label class="field"><span>Album</span><input class="input" @bind="r.Edit.Album" /></label>
+                <label class="field"><span>Artiste de l'album</span><input class="input" @bind="r.Edit.AlbumArtist" /></label>
+                <label class="field"><span>Piste</span><input class="input" type="number" min="1" @bind="r.Edit.TrackNumber" /></label>
+                <label class="field"><span>Année</span><input class="input" type="number" @bind="r.Edit.Year" /></label>
+                <label class="field"><span>Genre</span><input class="input" @bind="r.Edit.Genre" /></label>
+            </div>
+        }
+    </ChildContent>
+    <Footer>
+        @if (_review is { } r)
+        {
+            <button class="btn" @onclick="() => AcceptAsync(r)">Garder l'actuel</button>
+            <button class="btn primary" disabled="@r.Applying" @onclick="() => ApplyAsync(r)">@(r.Applying ? "Application…" : "Appliquer")</button>
+        }
+    </Footer>
+</Modal>
+
+@code {
+    private static readonly (string, string)[] Tabs = [("explore", "Explorer"), ("queue", "File d'attente"), ("subs", "Abonnements"), ("settings", "Réglages")];
+    private static readonly (string? Status, bool Review, string Label)[] Filters =
+        [(null, false, "Tout"), ("Queued", false, "En cours"), (null, true, "À vérifier"), ("Failed", false, "En échec"), ("Done", false, "Importés"), ("Skipped", false, "Ignorés")];
+
+    private string _tab = "explore";
+    private YoutubeStatusDto? _status;
+    private Timer? _timer;
+    private bool _updating;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshStatusAsync();
+        _timer = new Timer(_ => InvokeAsync(async () =>
+        {
+            await RefreshStatusAsync();
+            if (_tab == "queue" && _review is null) await LoadItemsAsync();
+            StateHasChanged();
+        }), null, TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(3));
+    }
+
+    public void Dispose() => _timer?.Dispose();
+
+    private async Task RefreshStatusAsync()
+    {
+        try
+        {
+            _status = await Api.YoutubeStatusAsync();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+        }
+    }
+
+    private async Task SwitchAsync(string tab)
+    {
+        _tab = tab;
+        if (tab == "queue") await LoadItemsAsync();
+        else if (tab == "subs") await LoadSubscriptionsAsync();
+        else if (tab == "settings") _settings ??= await Run(() => Api.YoutubeSettingsAsync());
+    }
+
+    private async Task<T?> Run<T>(Func<Task<T?>> action)
+    {
+        try
+        {
+            return await action();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(ex.Message, true);
+            return default;
+        }
+    }
+
+    private async Task<bool> Run(Func<Task> action, string? success = null)
+    {
+        try
+        {
+            await action();
+            if (success is not null) Ui.Notify(success);
+            return true;
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(ex.Message, true);
+            return false;
+        }
+    }
+
+    private async Task ResumeAsync()
+    {
+        await Run(Api.YoutubeResumeAsync);
+        await RefreshStatusAsync();
+    }
+
+    // ---------- Explorer ----------
+
+    private string _query = "";
+    private bool _music = true;
+    private bool _searching;
+    private YoutubeListingDto? _listing;
+    private HashSet<string> _selected = [];
+    private string? _albumHint;
+    private bool _isAlbum;
+
+    private RenderFragment Explore => __builder =>
+    {
+        <section class="panel">
+            <form class="inline-form" @onsubmit="SearchAsync" @onsubmit:preventDefault="true">
+                <input class="input" placeholder="Rechercher, ou coller l'adresse d'une vidéo, d'une playlist ou d'une chaîne" @bind="_query" />
+                <div class="segmented" role="group" aria-label="Source">
+                    <button type="button" class="@(_music ? "on" : null)" @onclick="() => _music = true">YouTube Music</button>
+                    <button type="button" class="@(!_music ? "on" : null)" @onclick="() => _music = false">YouTube</button>
+                </div>
+                <button class="btn primary" type="submit" disabled="@(_searching || string.IsNullOrWhiteSpace(_query))"><Icon Name="search" Size="18" /> Chercher</button>
+            </form>
+            <p class="muted small">YouTube Music donne les meilleures métadonnées (titre, artistes, album). Les titres importés sont reconnus via MusicBrainz, puis rangés avec leur pochette dans la bibliothèque. Importez uniquement ce que vous avez le droit de conserver.</p>
+        </section>
+
+        @if (_searching)
+        {
+            <div class="empty"><span class="spinner inline"></span> Recherche sur YouTube…</div>
+        }
+        else if (_listing is { } l)
+        {
+            <section class="panel">
+                <div class="viz-head">
+                    <div>
+                        <h2>@l.Title</h2>
+                        <span class="muted small">@Format.Plural(l.Entries.Count, "vidéo", "vidéos")@(l.Channel is { } ch ? $" · {ch}" : "")</span>
+                    </div>
+                    <div class="row">
+                        <button class="btn" @onclick="ToggleAll">@(_selected.Count == Importable(l).Count() ? "Tout désélectionner" : "Tout sélectionner")</button>
+                        <button class="btn primary" disabled="@(_selected.Count == 0)" @onclick="ImportAsync"><Icon Name="add" Size="18" /> Importer (@_selected.Count)</button>
+                    </div>
+                </div>
+                @if (l.Kind == "playlist" && l.Url.StartsWith("https://"))
+                {
+                    <div class="inline-form">
+                        <label class="row small"><input type="checkbox" @bind="_isAlbum" /> C'est un album</label>
+                        @if (_isAlbum)
+                        {
+                            <input class="input" placeholder="Nom de l'album" @bind="_albumHint" />
+                        }
+                        <button class="btn" @onclick="() => SubscribeAsync(l.Url, false)">S'abonner (nouveautés seulement)</button>
+                        <button class="btn" @onclick="() => SubscribeAsync(l.Url, true)">S'abonner et tout importer</button>
+                    </div>
+                }
+                <ul class="yt-list">
+                    @foreach (var v in l.Entries)
+                    {
+                        var known = v.ImportStatus is not null and not "Failed" and not "Skipped";
+                        <li class="@(known ? "known" : null)">
+                            <input type="checkbox" checked="@_selected.Contains(v.VideoId)" disabled="@known" @onchange="() => Toggle(v.VideoId)" aria-label="Sélectionner @v.Title" />
+                            <img class="yt-thumb" src="@v.ThumbnailUrl" alt="" loading="lazy" />
+                            <span class="grow">
+                                <span class="strong">@v.Title</span>
+                                <span class="muted small block">@v.Channel@(v.DurationSeconds is { } dur ? $" · {Format.Duration(dur)}" : "")</span>
+                            </span>
+                            @if (v.ImportStatus is { } status) { <span class="badge @StatusClass(status)">@StatusLabel(status)</span> }
+                            <a class="icon-btn" href="https://www.youtube.com/watch?v=@v.VideoId" target="_blank" rel="noopener noreferrer" title="Ouvrir sur YouTube"><Icon Name="play" Size="18" /></a>
+                        </li>
+                    }
+                </ul>
+            </section>
+        }
+    };
+
+    private static IEnumerable<YoutubeVideoDto> Importable(YoutubeListingDto l) => l.Entries.Where(v => v.ImportStatus is null or "Failed" or "Skipped");
+
+    private async Task SearchAsync()
+    {
+        _searching = true;
+        _listing = null;
+        _selected = [];
+        StateHasChanged();
+        _listing = await Run(() => Api.YoutubeSearchAsync(_query.Trim(), _music));
+        _albumHint = _listing?.Kind == "playlist" ? _listing.Title.Replace("Album - ", "") : null;
+        _isAlbum = _listing?.Url.Contains("OLAK5uy_") == true; // albums YouTube Music
+        _searching = false;
+    }
+
+    private void Toggle(string id)
+    {
+        if (!_selected.Remove(id)) _selected.Add(id);
+    }
+
+    private void ToggleAll()
+    {
+        if (_listing is null) return;
+        var all = Importable(_listing).Select(v => v.VideoId).ToHashSet();
+        _selected = _selected.Count == all.Count ? [] : all;
+    }
+
+    private async Task ImportAsync()
+    {
+        if (_listing is null) return;
+        var videos = _listing.Entries.Where(v => _selected.Contains(v.VideoId)).ToList();
+        var result = await Run(() => Api.YoutubeImportAsync(new YoutubeImportRequest(videos, _isAlbum ? _albumHint : null)));
+        if (result is null) return;
+        Ui.Notify(result.AlreadyKnown > 0 ? $"{result.Queued} ajoutée(s) à la file, {result.AlreadyKnown} déjà connue(s)" : $"{result.Queued} ajoutée(s) à la file d'import");
+        _listing = _listing with { Entries = _listing.Entries.Select(v => _selected.Contains(v.VideoId) ? v with { ImportStatus = "Queued" } : v).ToList() };
+        _selected = [];
+        await RefreshStatusAsync();
+    }
+
+    private async Task SubscribeAsync(string url, bool importExisting)
+    {
+        if (await Run(() => Api.YoutubeSubscribeAsync(new CreateSubscriptionRequest(url, _isAlbum, importExisting)), "Abonnement créé"))
+            await RefreshStatusAsync();
+    }
+
+    // ---------- File d'attente ----------
+
+    private int _filter;
+    private string? _itemQuery;
+    private PagedResult<YoutubeItemDto>? _items;
+    private int _limit = 50;
+
+    private RenderFragment Queue => __builder =>
+    {
+        <div class="toolbar">
+            <div class="segmented" role="group" aria-label="Filtre">
+                @for (var i = 0; i < Filters.Length; i++)
+                {
+                    var index = i;
+                    <button class="@(_filter == index ? "on" : null)" @onclick="() => SetFilterAsync(index)">@Filters[i].Label</button>
+                }
+            </div>
+            <input class="input" placeholder="Filtrer par titre ou chaîne" @bind="_itemQuery" @bind:event="oninput" @bind:after="LoadItemsAsync" />
+            @if (_status?.Failed > 0)
+            {
+                <button class="btn" @onclick="RetryFailedAsync"><Icon Name="refresh" Size="18" /> Relancer les échecs</button>
+            }
+        </div>
+        @if (_items is { } pg)
+        {
+            @if (pg.Items.Count == 0)
+            {
+                <div class="empty">Rien ici pour l'instant. Utilisez l'onglet Explorer pour importer des titres.</div>
+            }
+            <ul class="yt-list">
+                @foreach (var item in pg.Items)
+                {
+                    <li @key="item.Id">
+                        <img class="yt-thumb" src="@item.ThumbnailUrl" alt="" loading="lazy" />
+                        <span class="grow">
+                            @if (item.TrackTitle is not null)
+                            {
+                                <span class="strong">@item.TrackTitle</span><span> — @item.TrackArtist</span>
+                                <span class="muted small block">@item.TrackAlbum · depuis « @item.Title »</span>
+                            }
+                            else
+                            {
+                                <span class="strong">@item.Title</span>
+                                <span class="muted small block">@item.Channel@(item.SubscriptionTitle is { } sub ? $" · abonnement « {sub} »" : "")</span>
+                            }
+                            @if (item.Error is { } err && item.Status != "Done") { <span class="form-error small block">@err</span> }
+                        </span>
+                        @if (item.NeedsReview && item.Status == "Done")
+                        {
+                            <button class="badge warn clickable" @onclick="() => OpenReviewAsync(item)">à vérifier @Confidence(item)</button>
+                        }
+                        else
+                        {
+                            <span class="badge @StatusClass(item.Status)" title="@(item.MatchSource is { } src ? $"{SourceLabel(src)}, confiance {Confidence(item)}" : null)">@StatusLabel(item.Status)</span>
+                        }
+                        <span class="row-actions">
+                            @if (item.Status == "Done")
+                            {
+                                <button class="icon-btn" title="Modifier les métadonnées" @onclick="() => OpenReviewAsync(item)"><Icon Name="edit" Size="18" /></button>
+                                @if (item.AlbumId is { } album) { <a class="icon-btn" href="album/@album" title="Voir l'album"><Icon Name="album" Size="18" /></a> }
+                            }
+                            @if (item.Status is "Failed" or "Skipped")
+                            {
+                                <button class="icon-btn" title="Importer / réessayer" @onclick="() => RetryAsync(item)"><Icon Name="refresh" Size="18" /></button>
+                            }
+                            @if (item.Status is not ("Downloading" or "Processing"))
+                            {
+                                <button class="icon-btn" title="@(item.TrackId is null ? "Retirer de la liste" : "Supprimer le morceau importé")" @onclick="() => DeleteAsync(item)"><Icon Name="delete" Size="18" /></button>
+                            }
+                        </span>
+                    </li>
+                }
+            </ul>
+            @if (pg.Total > pg.Items.Count)
+            {
+                <div class="more"><button class="btn" @onclick="MoreAsync">Afficher plus (@pg.Items.Count / @pg.Total)</button></div>
+            }
+        }
+    };
+
+    private async Task SetFilterAsync(int index)
+    {
+        _filter = index;
+        _limit = 50;
+        await LoadItemsAsync();
+    }
+
+    private async Task MoreAsync()
+    {
+        _limit += 100;
+        await LoadItemsAsync();
+    }
+
+    private async Task LoadItemsAsync()
+    {
+        var f = Filters[_filter];
+        try
+        {
+            _items = await Api.YoutubeItemsAsync(f.Status, f.Review, _itemQuery, 0, _limit);
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+        }
+    }
+
+    private async Task RetryAsync(YoutubeItemDto item)
+    {
+        await Run(() => Api.YoutubeRetryAsync(item.Id));
+        await LoadItemsAsync();
+    }
+
+    private async Task RetryFailedAsync()
+    {
+        await Run(Api.YoutubeRetryFailedAsync, "Échecs remis dans la file");
+        await LoadItemsAsync();
+    }
+
+    private async Task DeleteAsync(YoutubeItemDto item)
+    {
+        await Run(() => Api.YoutubeDeleteItemAsync(item.Id, deleteTrack: true), item.TrackId is null ? null : "Morceau supprimé");
+        await LoadItemsAsync();
+        await RefreshStatusAsync();
+    }
+
+    // ---------- Vérification ----------
+
+    private sealed class Review(YoutubeItemDto item)
+    {
+        public YoutubeItemDto Item { get; } = item;
+        public List<MetadataCandidateDto> Candidates { get; set; } = [];
+        public MetadataCandidateDto? Selected { get; set; }
+        public CandidateForm Edit { get; set; } = new();
+        public string? SearchTitle { get; set; }
+        public string? SearchArtist { get; set; }
+        public bool Searching { get; set; }
+        public bool Applying { get; set; }
+    }
+
+    private sealed class CandidateForm
+    {
+        public string? Title { get; set; }
+        public string? Artist { get; set; }
+        public string? Album { get; set; }
+        public string? AlbumArtist { get; set; }
+        public int? TrackNumber { get; set; }
+        public int? Year { get; set; }
+        public string? Genre { get; set; }
+    }
+
+    private Review? _review;
+
+    private async Task OpenReviewAsync(YoutubeItemDto item)
+    {
+        var review = new Review(item) { SearchTitle = item.TrackTitle, SearchArtist = item.TrackArtist };
+        review.Candidates = await Run(() => Api.YoutubeCandidatesAsync(item.Id)) ?? [];
+        var current = review.Candidates.FirstOrDefault(c => c.Title == item.TrackTitle && c.Artist == item.TrackArtist) ?? review.Candidates.FirstOrDefault();
+        if (current is not null) Select(review, current);
+        else review.Edit = new CandidateForm { Title = item.TrackTitle, Artist = item.TrackArtist, Album = item.TrackAlbum };
+        _review = review;
+    }
+
+    private static void Select(Review r, MetadataCandidateDto c)
+    {
+        r.Selected = c;
+        r.Edit = new CandidateForm { Title = c.Title, Artist = c.Artist, Album = c.Album, AlbumArtist = c.AlbumArtist, TrackNumber = c.TrackNumber, Year = c.Year, Genre = c.Genre };
+    }
+
+    private async Task SearchMusicBrainzAsync(Review r)
+    {
+        if (string.IsNullOrWhiteSpace(r.SearchTitle)) return;
+        r.Searching = true;
+        var found = await Run(() => Api.YoutubeMusicBrainzAsync(r.SearchTitle!, r.SearchArtist, r.Item.DurationSeconds)) ?? [];
+        r.Candidates = found.Concat(r.Candidates).DistinctBy(c => (c.Title, c.Artist, c.Album)).Take(15).ToList();
+        if (found.Count > 0) Select(r, found[0]);
+        else Ui.Notify("Aucun résultat sur MusicBrainz", true);
+        r.Searching = false;
+    }
+
+    private async Task ApplyAsync(Review r)
+    {
+        var e = r.Edit;
+        var s = r.Selected;
+        // Les identifiants MusicBrainz (et donc la pochette) ne suivent que si l'album choisi n'a pas été modifié à la main.
+        var sameRelease = s is not null && s.Album == e.Album && s.AlbumArtist == e.AlbumArtist;
+        var candidate = new MetadataCandidateDto(e.Title ?? "", e.Artist ?? "", e.Album, e.AlbumArtist, e.TrackNumber, sameRelease ? s!.DiscNumber : null, e.Year, e.Genre, 1,
+            s is not null && s.Title == e.Title && s.Artist == e.Artist && sameRelease ? s.Source : "manuel",
+            s?.Title == e.Title ? s?.RecordingId : null, sameRelease ? s!.ReleaseId : null, sameRelease ? s!.ReleaseGroupId : null);
+        r.Applying = true;
+        if (await Run(() => Api.YoutubeApplyAsync(r.Item.Id, candidate), "Métadonnées appliquées"))
+        {
+            _review = null;
+            await LoadItemsAsync();
+        }
+        r.Applying = false;
+    }
+
+    private async Task AcceptAsync(Review r)
+    {
+        if (await Run(() => Api.YoutubeAcceptAsync(r.Item.Id)))
+        {
+            _review = null;
+            await LoadItemsAsync();
+        }
+    }
+
+    // ---------- Abonnements ----------
+
+    private List<YoutubeSubscriptionDto>? _subs;
+    private string _subUrl = "";
+    private bool _subAlbum;
+    private bool _subExisting;
+    private Guid? _syncing;
+
+    private RenderFragment Subscriptions => __builder =>
+    {
+        <section class="panel">
+            <h2>Nouvel abonnement</h2>
+            <form class="inline-form" @onsubmit="AddSubscriptionAsync" @onsubmit:preventDefault="true">
+                <input class="input" placeholder="Adresse d'une playlist, d'un album YouTube Music ou d'une chaîne" @bind="_subUrl" required />
+                <label class="row small"><input type="checkbox" @bind="_subAlbum" /> Album</label>
+                <label class="row small"><input type="checkbox" @bind="_subExisting" /> Importer les vidéos existantes</label>
+                <button class="btn primary" type="submit">S'abonner</button>
+            </form>
+            <p class="muted small">Les nouvelles vidéos sont importées à chaque synchronisation (intervalle dans les Réglages).</p>
+        </section>
+        @if (_subs is { Count: > 0 } subs)
+        {
+            <div class="table-wrap">
+                <table class="table">
+                    <thead><tr><th>Abonnement</th><th>Importés</th><th>Dernière synchro</th><th>Actif</th><th></th></tr></thead>
+                    <tbody>
+                        @foreach (var s in subs)
+                        {
+                            <tr @key="s.Id">
+                                <td>
+                                    <a href="@s.Url" target="_blank" rel="noopener noreferrer" class="strong">@s.Title</a>
+                                    @if (s.IsAlbum) { <span class="badge">album</span> }
+                                    @if (s.LastError is { } err) { <div class="form-error small">@err</div> }
+                                </td>
+                                <td>@s.Done / @s.Items</td>
+                                <td>@(s.LastSyncedAt?.ToLocalTime().ToString("dd/MM HH:mm") ?? "jamais")</td>
+                                <td><input type="checkbox" checked="@s.Enabled" @onchange="e => ToggleSubscriptionAsync(s, e.Value is true)" aria-label="Actif" /></td>
+                                <td class="row-actions">
+                                    <button class="icon-btn" title="Synchroniser maintenant" disabled="@(_syncing == s.Id)" @onclick="() => SyncAsync(s)"><Icon Name="refresh" Size="18" /></button>
+                                    <button class="icon-btn" title="Se désabonner (les morceaux importés restent)" @onclick="() => UnsubscribeAsync(s)"><Icon Name="delete" Size="18" /></button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else if (_subs is not null)
+        {
+            <div class="empty">Aucun abonnement.</div>
+        }
+    };
+
+    private async Task LoadSubscriptionsAsync() => _subs = await Run(() => Api.YoutubeSubscriptionsAsync());
+
+    private async Task AddSubscriptionAsync()
+    {
+        if (await Run(() => Api.YoutubeSubscribeAsync(new CreateSubscriptionRequest(_subUrl.Trim(), _subAlbum, _subExisting)), "Abonnement créé"))
+        {
+            _subUrl = "";
+            await LoadSubscriptionsAsync();
+        }
+    }
+
+    private async Task ToggleSubscriptionAsync(YoutubeSubscriptionDto s, bool enabled)
+    {
+        await Run(() => Api.YoutubeUpdateSubscriptionAsync(s.Id, new UpdateSubscriptionRequest(enabled, null)));
+        await LoadSubscriptionsAsync();
+    }
+
+    private async Task SyncAsync(YoutubeSubscriptionDto s)
+    {
+        _syncing = s.Id;
+        await Run(() => Api.YoutubeSyncSubscriptionAsync(s.Id), "Synchronisé");
+        _syncing = null;
+        await LoadSubscriptionsAsync();
+    }
+
+    private async Task UnsubscribeAsync(YoutubeSubscriptionDto s)
+    {
+        await Run(() => Api.YoutubeDeleteSubscriptionAsync(s.Id), "Abonnement supprimé");
+        await LoadSubscriptionsAsync();
+    }
+
+    // ---------- Réglages ----------
+
+    private YoutubeSettingsDto? _settings;
+    private string _cookies = "";
+
+    private RenderFragment Settings => __builder =>
+    {
+        <section class="panel">
+            <h2>Outils</h2>
+            <p>
+                yt-dlp : <span class="strong">@(_status?.Tools.YtDlp ?? "absent")</span><span class="sep">·</span>
+                Deno : <span class="strong">@(_status?.Tools.Deno ?? "absent")</span><span class="sep">·</span>
+                fpcalc (AcoustID) : <span class="strong">@(_status?.Tools.Fpcalc ?? "absent")</span>
+            </p>
+            <p class="muted small">YouTube change souvent : quand les imports échouent sans raison, commencez par mettre yt-dlp à jour. Les binaires viennent des releases officielles GitHub, sommes SHA-256 vérifiées.</p>
+            <div class="row">
+                <button class="btn primary" disabled="@_updating" @onclick="() => UpdateToolsAsync(false)"><Icon Name="refresh" Size="18" /> @(_updating ? "Mise à jour…" : "Mettre à jour yt-dlp")</button>
+                <button class="btn" disabled="@_updating" @onclick="() => UpdateToolsAsync(true)">Mettre à jour yt-dlp et Deno</button>
+            </div>
+        </section>
+
+        <section class="panel">
+            <h2>Cookies YouTube</h2>
+            <p>@(_status?.HasCookies == true ? $"Cookies enregistrés le {_status.CookiesUpdatedAt?.ToLocalTime():dd/MM/yyyy HH:mm}." : "Aucun cookie enregistré.")</p>
+            <p class="muted small">Si YouTube demande de « confirmer que vous n'êtes pas un robot », exportez les cookies d'un navigateur connecté à YouTube au format Netscape (cookies.txt, par exemple avec l'extension « Get cookies.txt LOCALLY ») et collez-les ici. Seuls les cookies youtube.com / google.com sont gardés ; ils ne quittent pas le serveur. Un compte secondaire est préférable.</p>
+            <textarea class="input mono" rows="4" placeholder="# Netscape HTTP Cookie File" @bind="_cookies"></textarea>
+            <div class="row" style="margin-top: .6rem">
+                <InputFile OnChange="LoadCookiesFileAsync" accept=".txt,text/plain" />
+                <button class="btn primary" disabled="@string.IsNullOrWhiteSpace(_cookies)" @onclick="SaveCookiesAsync">Enregistrer</button>
+                @if (_status?.HasCookies == true)
+                {
+                    <button class="btn danger" @onclick="DeleteCookiesAsync">Supprimer</button>
+                }
+            </div>
+        </section>
+
+        @if (_settings is { } s)
+        {
+            <section class="panel">
+                <h2>Import</h2>
+                <div class="form-grid">
+                    <label class="field">
+                        <span>Synchronisation des abonnements</span>
+                        <select class="input" value="@s.SyncIntervalHours" @onchange="e => _settings = s with { SyncIntervalHours = int.Parse(e.Value!.ToString()!) }">
+                            @foreach (var h in new[] { 0, 1, 3, 6, 12, 24, 72, 168 })
+                            {
+                                <option value="@h">@(h == 0 ? "jamais (manuelle)" : h < 24 ? $"toutes les {h} h" : h == 24 ? "chaque jour" : $"tous les {h / 24} jours")</option>
+                            }
+                        </select>
+                    </label>
+                    <label class="field">
+                        <span>Format audio</span>
+                        <select class="input" value="@s.AudioFormat" @onchange="e => _settings = s with { AudioFormat = e.Value!.ToString()! }">
+                            <option value="original">Original (Opus / AAC, sans réencodage)</option>
+                            <option value="mp3">MP3 (compatibilité maximale)</option>
+                        </select>
+                    </label>
+                    <label class="field">
+                        <span>Seuil d'acceptation automatique : @((s.AutoAcceptThreshold * 100).ToString("0")) %</span>
+                        <input type="range" min="0.5" max="1" step="0.05" value="@s.AutoAcceptThreshold.ToString(CultureInfo.InvariantCulture)"
+                               @onchange="e => _settings = s with { AutoAcceptThreshold = double.Parse(e.Value!.ToString()!, CultureInfo.InvariantCulture) }" />
+                    </label>
+                    <label class="field">
+                        <span>Clé d'API AcoustID (facultatif)</span>
+                        <input class="input" value="@s.AcoustIdKey" placeholder="acoustid.org/new-application" @onchange="e => _settings = s with { AcoustIdKey = e.Value?.ToString() }" />
+                    </label>
+                </div>
+                <p class="muted small">Avec une clé AcoustID (gratuite) et fpcalc sur le serveur, chaque titre est aussi reconnu à son empreinte sonore : fiable même quand le titre de la vidéo ne dit rien. Sous le seuil, l'import est rangé mais signalé « à vérifier ».</p>
+                <button class="btn primary" @onclick="SaveSettingsAsync">Enregistrer</button>
+            </section>
+        }
+    };
+
+    private async Task UpdateToolsAsync(bool deno)
+    {
+        _updating = true;
+        StateHasChanged();
+        var tools = await Run(() => Api.YoutubeUpdateToolsAsync(deno));
+        if (tools is not null) Ui.Notify($"yt-dlp {tools.YtDlp} · Deno {tools.Deno}");
+        _updating = false;
+        await RefreshStatusAsync();
+    }
+
+    private async Task LoadCookiesFileAsync(InputFileChangeEventArgs e)
+    {
+        using var reader = new StreamReader(e.File.OpenReadStream(2 * 1024 * 1024));
+        _cookies = await reader.ReadToEndAsync();
+    }
+
+    private async Task SaveCookiesAsync()
+    {
+        if (await Run(() => Api.YoutubeSaveCookiesAsync(_cookies), "Cookies enregistrés"))
+        {
+            _cookies = "";
+            await RefreshStatusAsync();
+        }
+    }
+
+    private async Task DeleteCookiesAsync()
+    {
+        await Run(Api.YoutubeDeleteCookiesAsync, "Cookies supprimés");
+        await RefreshStatusAsync();
+    }
+
+    private async Task SaveSettingsAsync()
+    {
+        if (_settings is { } s && await Run(() => Api.YoutubeSaveSettingsAsync(s)) is { } saved)
+        {
+            _settings = saved;
+            Ui.Notify("Réglages enregistrés");
+        }
+    }
+
+    // ---------- Libellés ----------
+
+    private static string StatusLabel(string status) => status switch
+    {
+        "Queued" => "en attente",
+        "Downloading" => "téléchargement",
+        "Processing" => "traitement",
+        "Done" => "importé",
+        "Failed" => "échec",
+        "Skipped" => "ignoré",
+        _ => status,
+    };
+
+    private static string StatusClass(string status) => status switch
+    {
+        "Done" => "good",
+        "Failed" => "bad",
+        "Downloading" or "Processing" or "Queued" => "info",
+        _ => "",
+    };
+
+    private static string StageLabel(string stage) => stage switch
+    {
+        "download" => "téléchargement",
+        "metadata" => "recherche des métadonnées",
+        "tagging" => "tags et pochette",
+        _ => stage,
+    };
+
+    private static string SourceLabel(string source) => source switch
+    {
+        "musicbrainz" => "MusicBrainz",
+        "acoustid" => "empreinte AcoustID",
+        "youtube-music" => "YouTube Music",
+        "titre" => "titre de la vidéo",
+        "manuel" => "saisie manuelle",
+        _ => source,
+    };
+
+    private static string Confidence(YoutubeItemDto item) => item.MatchConfidence is { } c ? $"{c * 100:0} %" : "";
+}

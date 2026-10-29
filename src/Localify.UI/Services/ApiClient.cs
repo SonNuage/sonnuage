@@ -73,6 +73,35 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     public Task<UserDto?> AdminCreateUserAsync(CreateUserRequest req) => SendAsync<UserDto>(HttpMethod.Post, "api/admin/users", req);
     public Task<UserDto?> AdminUpdateUserAsync(Guid id, UpdateUserRequest req) => SendAsync<UserDto>(HttpMethod.Patch, $"api/admin/users/{id}", req);
     public Task AdminDeleteUserAsync(Guid id) => SendAsync(HttpMethod.Delete, $"api/admin/users/{id}");
+    public Task<DashboardDto?> AdminDashboardAsync(string range) =>
+        GetAsync<DashboardDto>($"api/admin/dashboard?range={range}&offsetMinutes={(int)DateTimeOffset.Now.Offset.TotalMinutes}");
+
+    // ---- YouTube (admin) ----
+    private const string Yt = "api/admin/youtube";
+    public Task<YoutubeStatusDto?> YoutubeStatusAsync(bool refresh = false) => GetAsync<YoutubeStatusDto>($"{Yt}/status?refresh={refresh}");
+    public Task YoutubeResumeAsync() => SendAsync(HttpMethod.Post, $"{Yt}/resume");
+    public Task<YoutubeSettingsDto?> YoutubeSettingsAsync() => GetAsync<YoutubeSettingsDto>($"{Yt}/settings");
+    public Task<YoutubeSettingsDto?> YoutubeSaveSettingsAsync(YoutubeSettingsDto s) => SendAsync<YoutubeSettingsDto>(HttpMethod.Put, $"{Yt}/settings", s);
+    public Task YoutubeSaveCookiesAsync(string content) => SendAsync(HttpMethod.Put, $"{Yt}/cookies", new YoutubeCookiesRequest(content));
+    public Task YoutubeDeleteCookiesAsync() => SendAsync(HttpMethod.Delete, $"{Yt}/cookies");
+    public Task<ToolsStatusDto?> YoutubeUpdateToolsAsync(bool deno) => SendAsync<ToolsStatusDto>(HttpMethod.Post, $"{Yt}/tools/update?deno={deno}");
+    public Task<YoutubeListingDto?> YoutubeSearchAsync(string q, bool music) => GetAsync<YoutubeListingDto>($"{Yt}/search?music={music}&q={Uri.EscapeDataString(q)}");
+    public Task<YoutubeImportResultDto?> YoutubeImportAsync(YoutubeImportRequest req) => SendAsync<YoutubeImportResultDto>(HttpMethod.Post, $"{Yt}/imports", req);
+    public Task<PagedResult<YoutubeItemDto>?> YoutubeItemsAsync(string? status, bool review, string? q, int offset, int limit) =>
+        GetAsync<PagedResult<YoutubeItemDto>>($"{Yt}/items?offset={offset}&limit={limit}&review={review}{(status is null ? "" : $"&status={status}")}{Q(q)}");
+    public Task YoutubeRetryAsync(Guid id) => SendAsync(HttpMethod.Post, $"{Yt}/items/{id}/retry");
+    public Task YoutubeRetryFailedAsync() => SendAsync(HttpMethod.Post, $"{Yt}/items/retry-failed");
+    public Task YoutubeDeleteItemAsync(Guid id, bool deleteTrack) => SendAsync(HttpMethod.Delete, $"{Yt}/items/{id}?deleteTrack={deleteTrack}");
+    public Task<List<MetadataCandidateDto>?> YoutubeCandidatesAsync(Guid id) => GetAsync<List<MetadataCandidateDto>>($"{Yt}/items/{id}/candidates");
+    public Task YoutubeApplyAsync(Guid id, MetadataCandidateDto c) => SendAsync(HttpMethod.Post, $"{Yt}/items/{id}/apply", c);
+    public Task YoutubeAcceptAsync(Guid id) => SendAsync(HttpMethod.Post, $"{Yt}/items/{id}/accept");
+    public Task<List<MetadataCandidateDto>?> YoutubeMusicBrainzAsync(string title, string? artist, double? duration) =>
+        GetAsync<List<MetadataCandidateDto>>($"{Yt}/musicbrainz?title={Uri.EscapeDataString(title)}&artist={Uri.EscapeDataString(artist ?? "")}{(duration is { } d ? $"&duration={d.ToString(System.Globalization.CultureInfo.InvariantCulture)}" : "")}");
+    public Task<List<YoutubeSubscriptionDto>?> YoutubeSubscriptionsAsync() => GetAsync<List<YoutubeSubscriptionDto>>($"{Yt}/subscriptions");
+    public Task YoutubeSubscribeAsync(CreateSubscriptionRequest req) => SendAsync(HttpMethod.Post, $"{Yt}/subscriptions", req);
+    public Task YoutubeUpdateSubscriptionAsync(Guid id, UpdateSubscriptionRequest req) => SendAsync(HttpMethod.Put, $"{Yt}/subscriptions/{id}", req);
+    public Task YoutubeDeleteSubscriptionAsync(Guid id) => SendAsync(HttpMethod.Delete, $"{Yt}/subscriptions/{id}");
+    public Task YoutubeSyncSubscriptionAsync(Guid id) => SendAsync(HttpMethod.Post, $"{Yt}/subscriptions/{id}/sync");
 
     // ---- URL média (jeton en query) ----
 

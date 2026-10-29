@@ -36,6 +36,14 @@ public sealed class LocalifyOptions
     /// <summary>Tentatives de connexion/refresh par minute et par IP (limite le brute-force).</summary>
     public int LoginAttemptsPerMinute { get; set; } = 10;
 
+    /// <summary>yt-dlp et son moteur JavaScript (YouTube l'exige) ; vides : dossier des outils puis PATH.</summary>
+    public string? YtDlpPath { get; set; }
+    public string? DenoPath { get; set; }
+    /// <summary>fpcalc (Chromaprint) pour l'empreinte acoustique AcoustID ; facultatif.</summary>
+    public string FpcalcPath { get; set; } = "fpcalc";
+    /// <summary>Contact transmis à MusicBrainz dans le User-Agent, comme l'exigent ses règles d'usage.</summary>
+    public string MusicBrainzContact { get; set; } = "https://git.pmjb.org/pmj.bailly/localify";
+
     /// <summary>Compte admin créé au premier démarrage si la base ne contient aucun utilisateur.</summary>
     public string? InitialAdminUser { get; set; } = "admin";
 
@@ -54,6 +62,11 @@ public sealed class LocalifyOptions
     public string TranscodeCachePath => Path.Combine(DataPath, "cache", "transcode");
     public string CoverCachePath => Path.Combine(DataPath, "cache", "covers");
     public string UploadTempPath => Path.Combine(DataPath, "uploads-tmp");
+    /// <summary>Où atterrissent les morceaux importés de YouTube (sous le dossier d'envoi : supprimables depuis l'admin).</summary>
+    public string YoutubePath => Path.Combine(UploadPath, "YouTube");
+    public string YoutubeDataPath => Path.Combine(DataPath, "youtube");
+    /// <summary>yt-dlp et Deno téléchargés par la mise à jour depuis l'admin (prioritaires sur ceux de l'image).</summary>
+    public string ToolsPath => Path.Combine(DataPath, "tools");
 }
 
 public sealed class SearchOptions
