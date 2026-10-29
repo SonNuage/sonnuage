@@ -1,0 +1,111 @@
+@page "/settings"
+@inject AuthSession Auth
+@inject ApiClient Api
+@inject PlaybackSettings Playback
+@inject IPlayer Player
+@inject IPlatformInfo Platform
+@inject IServerEndpoint Endpoint
+@inject UiState Ui
+
+<PageTitle>Réglages · Localify</PageTitle>
+
+<div class="page narrow">
+    <header class="page-header"><h1>Réglages</h1></header>
+
+    <section class="panel">
+        <h2>Qualité audio</h2>
+        @if (_info is { TranscodingAvailable: false })
+        {
+            <p class="muted">Le transcodage n'est pas disponible sur ce serveur : les fichiers originaux sont envoyés.</p>
+        }
+        <label class="field">
+            <span>@(Platform.HasMeteredNetworkDetection ? "En Wi-Fi" : "Qualité de lecture")</span>
+            <select class="input" @bind="_quality">
+                @foreach (var q in Qualities)
+                {
+                    <option value="@q.Id">@q.Label</option>
+                }
+            </select>
+        </label>
+        @if (Platform.HasMeteredNetworkDetection)
+        {
+            <label class="field">
+                <span>En réseau mobile</span>
+                <select class="input" @bind="_mobileQuality">
+                    @foreach (var q in Qualities)
+                    {
+                        <option value="@q.Id">@q.Label</option>
+                    }
+                </select>
+            </label>
+        }
+        <label class="field">
+            <span>Pistes pré-chargées d'avance</span>
+            <input class="input" type="number" min="0" max="10" @bind="_prefetch" />
+            <small class="muted">Les pistes suivantes sont téléchargées pendant l'écoute pour ne pas couper en cas de mauvais réseau.</small>
+        </label>
+        <button class="btn primary" @onclick="SavePlaybackAsync">Enregistrer</button>
+    </section>
+
+    <section class="panel">
+        <h2>Compte</h2>
+        <p>Connecté en tant que <strong>@Auth.User?.Username</strong> (@(Auth.IsAdmin ? "administrateur" : "utilisateur"))
+            @if (Endpoint.IsConfigurable) { <span> sur @Endpoint.BaseAddress?.Host</span> }</p>
+        <form class="stack" @onsubmit="ChangePasswordAsync" @onsubmit:preventDefault="true">
+            <input class="input" type="password" placeholder="Mot de passe actuel" @bind="_current" autocomplete="current-password" required />
+            <input class="input" type="password" placeholder="Nouveau mot de passe (8 caractères min.)" @bind="_next" autocomplete="new-password" minlength="8" required />
+            <button class="btn" type="submit">Changer le mot de passe</button>
+        </form>
+        <button class="btn danger" @onclick="Auth.LogoutAsync"><Icon Name="logout" Size="18" /> Se déconnecter</button>
+    </section>
+
+    <p class="muted small">Localify @(_info?.Version) · @Platform.Name</p>
+</div>
+
+@code {
+    private ServerInfoDto? _info;
+    private string _quality = "";
+    private string _mobileQuality = "";
+    private int _prefetch;
+    private string _current = "";
+    private string _next = "";
+
+    private IReadOnlyList<QualityDto> Qualities => _info?.Qualities ?? [new QualityDto("original", "Originale", "original", null)];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _quality = Playback.Quality.ToWire();
+        _mobileQuality = Playback.MobileQuality.ToWire();
+        _prefetch = Playback.PrefetchCount;
+        try
+        {
+            _info = await Api.InfoAsync();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+        }
+    }
+
+    private async Task SavePlaybackAsync()
+    {
+        StreamQualities.TryParse(_quality, out var q);
+        StreamQualities.TryParse(_mobileQuality, out var m);
+        await Playback.SaveAsync(q, m, _prefetch);
+        await Player.ReloadSettingsAsync();
+        Ui.Notify("Réglages enregistrés. Ils s'appliquent à partir de la piste suivante.");
+    }
+
+    private async Task ChangePasswordAsync()
+    {
+        try
+        {
+            await Api.ChangePasswordAsync(_current, _next);
+            Ui.Notify("Mot de passe changé. Reconnectez-vous.");
+            await Auth.LogoutAsync();
+        }
+        catch (ApiException ex)
+        {
+            Ui.Notify(ex.Message, true);
+        }
+    }
+}

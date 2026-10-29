@@ -1,0 +1,152 @@
+@page "/admin/users"
+@inject ApiClient Api
+@inject AuthSession Auth
+@inject UiState Ui
+
+<PageTitle>Utilisateurs · Localify</PageTitle>
+
+<div class="page">
+    <header class="page-header"><h1>Administration</h1></header>
+    <AdminNav>
+        <section class="panel">
+            <h2>Nouvel utilisateur</h2>
+            <form class="inline-form" @onsubmit="CreateAsync" @onsubmit:preventDefault="true">
+                <input class="input" placeholder="Nom d'utilisateur" @bind="_username" autocomplete="off" required />
+                <input class="input" type="password" placeholder="Mot de passe (8 car. min.)" @bind="_password" autocomplete="new-password" minlength="8" required />
+                <select class="input" @bind="_role">
+                    <option value="@Roles.User">Utilisateur</option>
+                    <option value="@Roles.Admin">Administrateur</option>
+                </select>
+                <button class="btn primary" type="submit">Créer</button>
+            </form>
+        </section>
+
+        <div class="table-wrap">
+            <table class="table">
+                <thead><tr><th>Utilisateur</th><th>Rôle</th><th>Créé le</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var u in _users)
+                    {
+                        <tr @key="u.Id">
+                            <td>@u.Username @if (u.Id == Auth.User?.Id) { <span class="badge">vous</span> }</td>
+                            <td>
+                                <select class="input compact" value="@u.Role" @onchange="e => ChangeRoleAsync(u, e.Value?.ToString())" disabled="@(u.Id == Auth.User?.Id)">
+                                    <option value="@Roles.User">Utilisateur</option>
+                                    <option value="@Roles.Admin">Administrateur</option>
+                                </select>
+                            </td>
+                            <td>@u.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                            <td class="row-actions">
+                                <button class="icon-btn" title="Réinitialiser le mot de passe" @onclick="() => StartReset(u)"><Icon Name="edit" Size="18" /></button>
+                                @if (u.Id != Auth.User?.Id)
+                                {
+                                    <button class="icon-btn danger" title="Supprimer" @onclick="() => _deleting = u"><Icon Name="delete" Size="18" /></button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </AdminNav>
+</div>
+
+<Modal Open="_resetting is not null" OpenChanged="v => { if (!v) _resetting = null; }" Title="@($"Mot de passe de {_resetting?.Username}")">
+    <ChildContent>
+        <form id="reset-form" @onsubmit="ResetAsync" @onsubmit:preventDefault="true">
+            <input class="input" type="password" placeholder="Nouveau mot de passe" @bind="_newPassword" minlength="8" required autocomplete="new-password" />
+            <p class="muted small">Toutes les sessions de cet utilisateur seront déconnectées.</p>
+        </form>
+    </ChildContent>
+    <Footer>
+        <button class="btn" @onclick="() => _resetting = null">Annuler</button>
+        <button class="btn primary" type="submit" form="reset-form">Enregistrer</button>
+    </Footer>
+</Modal>
+
+<Modal Open="_deleting is not null" OpenChanged="v => { if (!v) _deleting = null; }" Title="Supprimer l'utilisateur ?">
+    <ChildContent><p>Le compte « @_deleting?.Username », ses playlists et ses favoris seront supprimés.</p></ChildContent>
+    <Footer>
+        <button class="btn" @onclick="() => _deleting = null">Annuler</button>
+        <button class="btn danger" @onclick="DeleteAsync">Supprimer</button>
+    </Footer>
+</Modal>
+
+@code {
+    private List<UserDto> _users = [];
+    private string _username = "";
+    private string _password = "";
+    private string _role = Roles.User;
+    private UserDto? _resetting;
+    private UserDto? _deleting;
+    private string _newPassword = "";
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private void StartReset(UserDto user)
+    {
+        _resetting = user;
+        _newPassword = "";
+    }
+
+    private async Task LoadAsync()
+    {
+        await RunAsync(async () => _users = await Api.AdminUsersAsync() ?? []);
+    }
+
+    private async Task CreateAsync()
+    {
+        await RunAsync(async () =>
+        {
+            await Api.AdminCreateUserAsync(new CreateUserRequest(_username.Trim(), _password, _role));
+            Ui.Notify($"Utilisateur {_username} créé");
+            _username = _password = "";
+            await LoadAsync();
+        });
+    }
+
+    private async Task ChangeRoleAsync(UserDto user, string? role)
+    {
+        await RunAsync(async () =>
+        {
+            await Api.AdminUpdateUserAsync(user.Id, new UpdateUserRequest(null, role));
+            Ui.Notify("Rôle modifié");
+        });
+        await LoadAsync();
+    }
+
+    private async Task ResetAsync()
+    {
+        if (_resetting is null) return;
+        await RunAsync(async () =>
+        {
+            await Api.AdminUpdateUserAsync(_resetting.Id, new UpdateUserRequest(_newPassword, null));
+            Ui.Notify("Mot de passe modifié");
+            _resetting = null;
+        });
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (_deleting is null) return;
+        await RunAsync(async () =>
+        {
+            await Api.AdminDeleteUserAsync(_deleting.Id);
+            Ui.Notify("Utilisateur supprimé");
+        });
+        _deleting = null;
+        await LoadAsync();
+    }
+
+    private async Task RunAsync(Func<Task> action)
+    {
+        try
+        {
+            await action();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(ex.Message, true);
+        }
+    }
+}

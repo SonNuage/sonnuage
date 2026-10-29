@@ -1,0 +1,55 @@
+@page "/favorites"
+@inject ApiClient Api
+@inject IPlayer Player
+
+<PageTitle>Titres likés · Localify</PageTitle>
+
+<div class="page">
+    <header class="hero">
+        <div class="hero-cover liked-cover"><Icon Name="heart" Size="72" /></div>
+        <div class="hero-meta">
+            <span class="eyebrow">Playlist</span>
+            <h1>Titres likés</h1>
+            <p>@Format.Plural(_tracks.Count, "titre", "titres")</p>
+        </div>
+    </header>
+
+    <div class="actions">
+        <button class="play-btn large" title="Lire" disabled="@(_tracks.Count == 0)" @onclick="() => Player.PlayAsync(_tracks, 0, shuffle: false)"><Icon Name="play" Size="32" /></button>
+        <button class="icon-btn" title="Lecture aléatoire" disabled="@(_tracks.Count == 0)" @onclick="() => Player.PlayAsync(_tracks, -1, shuffle: true)"><Icon Name="shuffle" Size="28" /></button>
+    </div>
+
+    <Loader Loading="_loading" Error="@_error" OnRetry="LoadAsync">
+        @if (_tracks.Count == 0)
+        {
+            <p class="empty">Touchez le cœur d'un titre pour le retrouver ici.</p>
+        }
+        <TrackList Tracks="_tracks" ShowCover="true" />
+    </Loader>
+</div>
+
+@code {
+    private List<TrackDto> _tracks = [];
+    private bool _loading = true;
+    private string? _error;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            _tracks = await Api.FavoritesAsync() ?? [];
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

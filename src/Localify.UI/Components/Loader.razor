@@ -1,0 +1,25 @@
+@if (Error is not null)
+{
+    <div class="empty error">
+        <p>@Error</p>
+        @if (OnRetry.HasDelegate)
+        {
+            <button class="btn" @onclick="OnRetry">Réessayer</button>
+        }
+    </div>
+}
+else if (Loading)
+{
+    <div class="loading"><div class="spinner"></div></div>
+}
+else
+{
+    @ChildContent
+}
+
+@code {
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public string? Error { get; set; }
+    [Parameter] public EventCallback OnRetry { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

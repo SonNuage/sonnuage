@@ -1,0 +1,37 @@
+@inject IPlayer Player
+@inject ApiClient Api
+@inject UiState Ui
+
+<div class="grid">
+    @foreach (var album in Albums)
+    {
+        <a class="card" href="album/@album.Id" @key="album.Id">
+            <div class="card-cover">
+                <Cover AlbumId="album.Id" HasCover="album.HasCover" Seed="@album.Title" />
+                <button class="card-play" title="Lire" @onclick="() => PlayAsync(album)" @onclick:preventDefault="true" @onclick:stopPropagation="true">
+                    <Icon Name="play" Size="28" />
+                </button>
+            </div>
+            <span class="card-title">@album.Title</span>
+            <span class="card-sub">@(ShowArtist ? album.ArtistName : album.Year?.ToString() ?? "")</span>
+        </a>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<AlbumDto> Albums { get; set; } = [];
+    [Parameter] public bool ShowArtist { get; set; } = true;
+
+    private async Task PlayAsync(AlbumDto album)
+    {
+        try
+        {
+            var detail = await Api.AlbumAsync(album.Id);
+            if (detail is not null) await Player.PlayAsync(detail.Tracks, 0, shuffle: false);
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(ex.Message, true);
+        }
+    }
+}

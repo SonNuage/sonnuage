@@ -1,0 +1,208 @@
+@page "/admin/upload"
+@inject ApiClient Api
+@inject UiState Ui
+
+<PageTitle>Ajouter des œuvres · Localify</PageTitle>
+
+<div class="page">
+    <header class="page-header"><h1>Administration</h1></header>
+    <AdminNav>
+        <section class="panel">
+            <h2>Ajouter des œuvres</h2>
+            <p class="muted">
+                Les fichiers sont rangés par artiste et album d'après leurs tags. Pour des fichiers sans tags, indiquez l'artiste et l'album ci-dessous.
+                Les envois se font par morceaux de 8 Mo et reprennent après une coupure réseau.
+            </p>
+            <div class="form-grid">
+                <label class="field"><span>Artiste (si absent des tags)</span><input class="input" @bind="_artist" /></label>
+                <label class="field"><span>Album (si absent des tags)</span><input class="input" @bind="_album" /></label>
+            </div>
+            <label class="dropzone @(_busy ? "disabled" : "")">
+                <Icon Name="upload" Size="40" />
+                <span>Glissez des fichiers audio ici ou cliquez pour choisir</span>
+                <small>MP3, FLAC, WAV, OGG, Opus, M4A, AAC, WMA, AIFF…</small>
+                <InputFile OnChange="OnFilesSelected" multiple accept="audio/*,.flac,.wav,.mp3,.ogg,.opus,.m4a,.aac,.wma,.aiff,.aif,.ape,.wv" disabled="@_busy" />
+            </label>
+        </section>
+
+        @if (_items.Count > 0)
+        {
+            <section class="panel">
+                <h2>Envois</h2>
+                <ul class="upload-list">
+                    @foreach (var item in _items)
+                    {
+                        <li class="upload-item @item.Status.ToString().ToLowerInvariant()">
+                            <div class="upload-name">
+                                <span>@item.Name</span>
+                                <small>@Format.Bytes(item.Size) — @StatusLabel(item)</small>
+                            </div>
+                            <progress max="100" value="@item.Percent"></progress>
+                            @if (item.Result is { } t)
+                            {
+                                <a href="album/@t.AlbumId" class="link">@t.ArtistName — @t.AlbumTitle</a>
+                            }
+                        </li>
+                    }
+                </ul>
+            </section>
+        }
+    </AdminNav>
+</div>
+
+@code {
+    private const long MaxFileSize = 4L * 1024 * 1024 * 1024;
+    private const int MaxRetries = 5;
+
+    private readonly List<UploadItem> _items = [];
+    private string? _artist;
+    private string? _album;
+    private bool _busy;
+
+    private enum UploadStatus { Pending, Uploading, Processing, Done, Error }
+
+    private sealed class UploadItem(IBrowserFile file)
+    {
+        public IBrowserFile File { get; } = file;
+        public string Name => File.Name;
+        public long Size => File.Size;
+        public UploadStatus Status { get; set; }
+        public long Sent { get; set; }
+        public string? Error { get; set; }
+        public TrackDto? Result { get; set; }
+        public int Percent => Size == 0 ? 0 : (int)(Sent * 100 / Size);
+    }
+
+    private static string StatusLabel(UploadItem i) => i.Status switch
+    {
+        UploadStatus.Pending => "en attente",
+        UploadStatus.Uploading => $"{i.Percent} %",
+        UploadStatus.Processing => "analyse…",
+        UploadStatus.Done => "ajouté",
+        _ => i.Error ?? "échec",
+    };
+
+    private async Task OnFilesSelected(InputFileChangeEventArgs e)
+    {
+        var batch = e.GetMultipleFiles(500).Select(f => new UploadItem(f)).ToList();
+        _items.InsertRange(0, batch);
+        _busy = true;
+        foreach (var item in batch)
+        {
+            await UploadAsync(item);
+            StateHasChanged();
+        }
+        _busy = false;
+        var ok = batch.Count(i => i.Status == UploadStatus.Done);
+        Ui.Notify($"{ok}/{batch.Count} fichier(s) ajouté(s)", ok < batch.Count);
+    }
+
+    private async Task UploadAsync(UploadItem item)
+    {
+        if (item.Size > MaxFileSize)
+        {
+            Fail(item, "fichier trop volumineux");
+            return;
+        }
+
+        UploadSessionDto? session;
+        try
+        {
+            session = await Api.AdminStartUploadAsync(new StartUploadRequest(item.Name, item.Size, Blank(_artist), Blank(_album)));
+        }
+        catch (ApiException ex)
+        {
+            Fail(item, ex.Message);
+            return;
+        }
+        if (session is null)
+        {
+            Fail(item, "session refusée");
+            return;
+        }
+
+        item.Status = UploadStatus.Uploading;
+        StateHasChanged();
+        var buffer = new byte[session.ChunkSize];
+        try
+        {
+            await using var stream = item.File.OpenReadStream(MaxFileSize);
+            var offset = 0L;
+            while (offset < item.Size)
+            {
+                var read = await ReadChunkAsync(stream, buffer);
+                if (read == 0) break;
+                offset = await SendChunkWithRetryAsync(session.Id, offset, buffer.AsMemory(0, read));
+                item.Sent = offset;
+                StateHasChanged();
+            }
+
+            item.Status = UploadStatus.Processing;
+            StateHasChanged();
+            var tracks = await Api.AdminCompleteUploadAsync(session.Id);
+            item.Result = tracks?.FirstOrDefault();
+            item.Status = UploadStatus.Done;
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or IOException)
+        {
+            Fail(item, ex.Message);
+            try { await Api.AdminCancelUploadAsync(session.Id); } catch (Exception) { }
+        }
+    }
+
+    /// <summary>Envoie un morceau ; sur erreur réseau, relit l'offset côté serveur et renvoie ce qui manque.</summary>
+    private async Task<long> SendChunkWithRetryAsync(Guid id, long offset, ReadOnlyMemory<byte> chunk)
+    {
+        for (var attempt = 0; ; attempt++)
+        {
+            try
+            {
+                var s = await Api.AdminUploadChunkAsync(id, offset, chunk);
+                if (s is null) throw new ApiException(System.Net.HttpStatusCode.NotFound, "session expirée");
+                if (s.Received == offset + chunk.Length) return s.Received;
+                // Le serveur a un autre offset : il a déjà tout ou partie de ce morceau.
+                if (s.Received > offset && s.Received <= offset + chunk.Length)
+                {
+                    var done = (int)(s.Received - offset);
+                    if (done == chunk.Length) return s.Received;
+                    chunk = chunk[done..];
+                    offset = s.Received;
+                    continue;
+                }
+                throw new ApiException(System.Net.HttpStatusCode.Conflict, "désynchronisation de l'envoi");
+            }
+            catch (HttpRequestException) when (attempt < MaxRetries)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt)));
+                var status = await Api.AdminUploadStatusAsync(id);
+                if (status is not null && status.Received > offset)
+                {
+                    var done = (int)Math.Min(status.Received - offset, chunk.Length);
+                    chunk = chunk[done..];
+                    offset += done;
+                    if (chunk.IsEmpty) return offset;
+                }
+            }
+        }
+    }
+
+    private static async Task<int> ReadChunkAsync(Stream stream, byte[] buffer)
+    {
+        var total = 0;
+        while (total < buffer.Length)
+        {
+            var n = await stream.ReadAsync(buffer.AsMemory(total));
+            if (n == 0) break;
+            total += n;
+        }
+        return total;
+    }
+
+    private void Fail(UploadItem item, string message)
+    {
+        item.Status = UploadStatus.Error;
+        item.Error = message;
+    }
+
+    private static string? Blank(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+}

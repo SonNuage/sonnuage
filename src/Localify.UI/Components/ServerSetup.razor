@@ -1,0 +1,61 @@
+@inject IServerEndpoint Endpoint
+@inject IHttpClientFactory HttpFactory
+
+<div class="auth-page">
+    <form class="auth-card" @onsubmit="ConnectAsync" @onsubmit:preventDefault="true">
+        <svg viewBox="0 0 64 64" width="56" height="56" aria-hidden="true"><rect width="64" height="64" rx="14" fill="var(--accent)" /><path d="M24 44V20l22 12z" fill="#121212" /></svg>
+        <h1>Votre serveur</h1>
+        <p class="muted">Adresse de votre serveur Localify, par exemple <code>https://musique.mondomaine.fr</code>.</p>
+        <label>
+            <span>Adresse</span>
+            <input class="input" type="url" inputmode="url" @bind="_address" placeholder="https://" autocapitalize="off" required />
+        </label>
+        @if (_error is not null)
+        {
+            <p class="form-error">@_error</p>
+        }
+        <button class="btn primary wide" type="submit" disabled="@_busy">@(_busy ? "Vérification…" : "Continuer")</button>
+    </form>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnConnected { get; set; }
+
+    private string _address = "https://";
+    private string? _error;
+    private bool _busy;
+
+    private async Task ConnectAsync()
+    {
+        _error = null;
+        var text = _address.Trim().TrimEnd('/') + "/";
+        if (!text.Contains("://")) text = "https://" + text;
+        if (!Uri.TryCreate(text, UriKind.Absolute, out var uri) || uri.Scheme is not ("https" or "http"))
+        {
+            _error = "Adresse invalide.";
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            using var http = HttpFactory.CreateClient("localify-anonymous");
+            var info = await System.Net.Http.Json.HttpClientJsonExtensions.GetFromJsonAsync<ServerInfoDto>(http, new Uri(uri, "api/info"), JsonDefaults.Options);
+            if (info?.Name != "Localify")
+            {
+                _error = "Ce serveur ne répond pas comme un serveur Localify.";
+                return;
+            }
+            await Endpoint.SetAsync(uri);
+            await OnConnected.InvokeAsync();
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException or NotSupportedException)
+        {
+            _error = $"Connexion impossible : {ex.Message}";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

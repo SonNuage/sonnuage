@@ -1,0 +1,80 @@
+@implements IDisposable
+@inject IPlayer Player
+@inject UiState Ui
+@inject NavigationManager Nav
+
+@if (State.Current is { } track)
+{
+    <div class="now-playing">
+        <header class="np-header">
+            <button class="icon-btn" title="Réduire" @onclick="() => Ui.SetNowPlayingOpen(false)"><Icon Name="down" Size="28" /></button>
+            <span class="np-context">En cours de lecture</span>
+            <button class="icon-btn" title="File d'attente" @onclick='() => Go("queue")'><Icon Name="queue" /></button>
+        </header>
+
+        <div class="np-cover">
+            <Cover AlbumId="track.AlbumId" HasCover="track.HasCover" Size="600" Seed="@track.AlbumTitle" />
+        </div>
+
+        <div class="np-meta">
+            <div>
+                <a class="np-title" href="album/@track.AlbumId" @onclick='() => Ui.SetNowPlayingOpen(false)'>@track.Title</a>
+                <a class="np-artist" href="artist/@track.ArtistId" @onclick='() => Ui.SetNowPlayingOpen(false)'>@track.ArtistName</a>
+            </div>
+            <button class="icon-btn fav @(track.IsFavorite ? "on" : "")" title="Favori" @onclick="() => Ui.ToggleFavoriteAsync(track)">
+                <Icon Name="@(track.IsFavorite ? "heart" : "heart-outline")" Size="28" />
+            </button>
+        </div>
+
+        <div class="np-seek">
+            <input type="range" class="slider" min="0" max="@Max" step="1" value="@Position" @onchange="SeekAsync" aria-label="Position" />
+            <div class="np-times">
+                <span>@Format.Duration(State.PositionSeconds)</span>
+                <span>@Format.Duration(State.DurationSeconds)</span>
+            </div>
+        </div>
+
+        <div class="np-controls">
+            <button class="icon-btn @(State.Shuffle ? "on" : "")" title="Lecture aléatoire" @onclick="() => Player.SetShuffleAsync(!State.Shuffle)"><Icon Name="shuffle" /></button>
+            <button class="icon-btn" title="Précédent" @onclick="Player.PreviousAsync"><Icon Name="previous" Size="36" /></button>
+            <button class="play-btn large @(State.IsBuffering ? "buffering" : "")" @onclick="Player.TogglePlayAsync"><Icon Name="@(State.IsPlaying ? "pause" : "play")" Size="36" /></button>
+            <button class="icon-btn" title="Suivant" @onclick="Player.NextAsync"><Icon Name="next" Size="36" /></button>
+            <button class="icon-btn @(State.Repeat != RepeatMode.Off ? "on" : "")" title="Répéter" @onclick="CycleRepeatAsync">
+                <Icon Name="@(State.Repeat == RepeatMode.One ? "repeat-one" : "repeat")" />
+            </button>
+        </div>
+
+        @if (State.Error is { } error)
+        {
+            <p class="pb-error">@error</p>
+        }
+    </div>
+}
+
+@code {
+    private PlayerState State => Player.State;
+    private int Max => (int)Math.Max(1, Math.Ceiling(State.DurationSeconds));
+    private int Position => (int)Math.Min(State.PositionSeconds, Max);
+
+    protected override void OnInitialized() => Player.StateChanged += Refresh;
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    private void Go(string url)
+    {
+        Ui.SetNowPlayingOpen(false);
+        Nav.NavigateTo(url);
+    }
+
+    private Task SeekAsync(ChangeEventArgs e) =>
+        double.TryParse(e.Value?.ToString(), System.Globalization.CultureInfo.InvariantCulture, out var s) ? Player.SeekAsync(s) : Task.CompletedTask;
+
+    private Task CycleRepeatAsync() => Player.SetRepeatAsync(State.Repeat switch
+    {
+        RepeatMode.Off => RepeatMode.All,
+        RepeatMode.All => RepeatMode.One,
+        _ => RepeatMode.Off,
+    });
+
+    public void Dispose() => Player.StateChanged -= Refresh;
+}

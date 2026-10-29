@@ -1,0 +1,43 @@
+@inject ApiClient Api
+
+@if (Url is { } url && !_failed)
+{
+    <img class="cover @Class" src="@url" alt="" loading="lazy" @onerror="() => _failed = true" />
+}
+else
+{
+    <div class="cover cover-placeholder @Class" style="background:@Gradient">
+        <Icon Name="@(Round ? "artist" : "album")" Size="40" />
+    </div>
+}
+
+@code {
+    [Parameter] public Guid? AlbumId { get; set; }
+    [Parameter] public bool HasCover { get; set; } = true;
+    [Parameter] public int Size { get; set; } = 300;
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public bool Round { get; set; }
+    /// <summary>Texte servant à choisir une couleur de repli stable.</summary>
+    [Parameter] public string? Seed { get; set; }
+
+    private bool _failed;
+    private Guid? _lastAlbum;
+
+    private string? Url => HasCover ? Api.CoverUrl(AlbumId, Size) : null;
+
+    private string Gradient
+    {
+        get
+        {
+            var hash = (Seed ?? AlbumId?.ToString() ?? "").Aggregate(17, (h, c) => h * 31 + c);
+            var hue = Math.Abs(hash % 360);
+            return $"linear-gradient(135deg, hsl({hue} 45% 32%), hsl({(hue + 40) % 360} 50% 18%))";
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (_lastAlbum != AlbumId) _failed = false;
+        _lastAlbum = AlbumId;
+    }
+}

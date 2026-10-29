@@ -1,0 +1,155 @@
+@page "/library"
+@page "/library/{Tab}"
+@inject ApiClient Api
+@inject UiState Ui
+@inject NavigationManager Nav
+
+<PageTitle>Bibliothèque · Localify</PageTitle>
+
+<div class="page">
+    <header class="page-header">
+        <h1>Bibliothèque</h1>
+    </header>
+
+    <div class="tabs">
+        <a class="tab @(Current == "playlists" ? "active" : "")" href="library/playlists">Playlists</a>
+        <a class="tab @(Current == "albums" ? "active" : "")" href="library/albums">Albums</a>
+        <a class="tab @(Current == "artists" ? "active" : "")" href="library/artists">Artistes</a>
+    </div>
+
+    @switch (Current)
+    {
+        case "playlists":
+            <div class="list">
+                <a class="list-item" href="favorites">
+                    <span class="chip-icon liked large"><Icon Name="heart" /></span>
+                    <div><span class="list-title">Titres likés</span><span class="list-sub">Playlist automatique</span></div>
+                </a>
+                @foreach (var p in Ui.Playlists)
+                {
+                    <a class="list-item" href="playlist/@p.Id">
+                        <Cover AlbumId="p.CoverAlbumId" HasCover="p.CoverAlbumId is not null" Size="96" Class="cover-sm" Seed="@p.Name" />
+                        <div><span class="list-title">@p.Name</span><span class="list-sub">@Format.Plural(p.TrackCount, "titre", "titres")</span></div>
+                    </a>
+                }
+                <button class="list-item" @onclick="CreatePlaylistAsync">
+                    <span class="chip-icon large"><Icon Name="add" /></span>
+                    <div><span class="list-title">Nouvelle playlist</span></div>
+                </button>
+            </div>
+            break;
+
+        case "albums":
+            <div class="toolbar">
+                <select class="input" value="@_sort" @onchange="ChangeSortAsync">
+                    <option value="recent">Ajout récent</option>
+                    <option value="title">Titre</option>
+                    <option value="artist">Artiste</option>
+                    <option value="year">Année</option>
+                </select>
+                <input class="input" type="search" placeholder="Filtrer…" @bind="_filter" @bind:event="oninput" @bind:after="ReloadAsync" />
+            </div>
+            <Loader Loading="_loading && _albums.Count == 0" Error="@_error" OnRetry="ReloadAsync">
+                <AlbumGrid Albums="_albums" />
+                @if (_albums.Count < _total)
+                {
+                    <div class="more"><button class="btn" @onclick="LoadMoreAsync" disabled="@_loading">Afficher plus</button></div>
+                }
+            </Loader>
+            break;
+
+        case "artists":
+            <div class="toolbar">
+                <input class="input" type="search" placeholder="Filtrer…" @bind="_filter" @bind:event="oninput" @bind:after="ReloadAsync" />
+            </div>
+            <Loader Loading="_loading && _artists.Count == 0" Error="@_error" OnRetry="ReloadAsync">
+                <div class="grid">
+                    @foreach (var a in _artists)
+                    {
+                        <a class="card" href="artist/@a.Id" @key="a.Id">
+                            <div class="card-cover round"><Cover AlbumId="a.CoverAlbumId" HasCover="a.CoverAlbumId is not null" Round="true" Seed="@a.Name" /></div>
+                            <span class="card-title">@a.Name</span>
+                            <span class="card-sub">@Format.Plural(a.AlbumCount, "album", "albums")</span>
+                        </a>
+                    }
+                </div>
+                @if (_artists.Count < _total)
+                {
+                    <div class="more"><button class="btn" @onclick="LoadMoreAsync" disabled="@_loading">Afficher plus</button></div>
+                }
+            </Loader>
+            break;
+    }
+</div>
+
+@code {
+    private const int PageSize = 60;
+
+    [Parameter] public string? Tab { get; set; }
+
+    private string Current => Tab is "albums" or "artists" ? Tab : "playlists";
+    private string? _loadedTab;
+    private string _sort = "recent";
+    private string _filter = "";
+    private readonly List<AlbumDto> _albums = [];
+    private readonly List<ArtistDto> _artists = [];
+    private int _total;
+    private bool _loading;
+    private string? _error;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loadedTab == Current) return;
+        _loadedTab = Current;
+        _filter = "";
+        if (Current == "playlists") await Ui.RefreshPlaylistsAsync();
+        else await ReloadAsync();
+    }
+
+    private async Task ChangeSortAsync(ChangeEventArgs e)
+    {
+        _sort = e.Value?.ToString() ?? "recent";
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _albums.Clear();
+        _artists.Clear();
+        _total = 0;
+        await LoadMoreAsync();
+    }
+
+    private async Task LoadMoreAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            if (Current == "albums")
+            {
+                var page = await Api.AlbumsAsync(_sort, _albums.Count, PageSize, _filter);
+                if (page is not null) { _albums.AddRange(page.Items); _total = page.Total; }
+            }
+            else if (Current == "artists")
+            {
+                var page = await Api.ArtistsAsync(_artists.Count, PageSize, _filter);
+                if (page is not null) { _artists.AddRange(page.Items); _total = page.Total; }
+            }
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task CreatePlaylistAsync()
+    {
+        var created = await Ui.CreatePlaylistAsync($"Ma playlist n° {Ui.Playlists.Count + 1}", null);
+        if (created is not null) Nav.NavigateTo($"playlist/{created.Id}");
+    }
+}

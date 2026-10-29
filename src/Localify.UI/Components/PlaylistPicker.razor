@@ -1,0 +1,47 @@
+@inject UiState Ui
+
+<Modal Open="Open" OpenChanged="OpenChanged" Title="Ajouter à une playlist">
+    <form class="inline-form" @onsubmit="CreateAsync" @onsubmit:preventDefault="true">
+        <input class="input" placeholder="Nouvelle playlist…" @bind="_newName" maxlength="200" />
+        <button class="btn" type="submit" disabled="@string.IsNullOrWhiteSpace(_newName)">Créer</button>
+    </form>
+    <ul class="picker-list">
+        @foreach (var p in Ui.Playlists)
+        {
+            <li>
+                <button class="picker-item" @onclick="() => AddAsync(p.Id)">
+                    <Cover AlbumId="p.CoverAlbumId" HasCover="p.CoverAlbumId is not null" Size="96" Class="cover-xs" Seed="@p.Name" />
+                    <span>@p.Name</span>
+                    <small>@Format.Plural(p.TrackCount, "titre", "titres")</small>
+                </button>
+            </li>
+        }
+    </ul>
+</Modal>
+
+@code {
+    [Parameter] public bool Open { get; set; }
+    [Parameter] public EventCallback<bool> OpenChanged { get; set; }
+    [Parameter] public IReadOnlyList<Guid> TrackIds { get; set; } = [];
+
+    private string _newName = "";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Open && Ui.Playlists.Count == 0) await Ui.RefreshPlaylistsAsync();
+    }
+
+    private async Task AddAsync(Guid playlistId)
+    {
+        await Ui.AddToPlaylistAsync(playlistId, TrackIds);
+        await OpenChanged.InvokeAsync(false);
+    }
+
+    private async Task CreateAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newName)) return;
+        await Ui.CreatePlaylistAsync(_newName.Trim(), TrackIds);
+        _newName = "";
+        await OpenChanged.InvokeAsync(false);
+    }
+}

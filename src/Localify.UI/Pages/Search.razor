@@ -1,0 +1,109 @@
+@page "/search"
+@implements IDisposable
+@inject ApiClient Api
+@inject NavigationManager Nav
+
+<PageTitle>Rechercher · Localify</PageTitle>
+
+<div class="page">
+    <div class="search-box">
+        <Icon Name="search" />
+        <input class="input" type="search" placeholder="Artistes, albums, titres…" value="@_query" @oninput="OnInput" autofocus />
+    </div>
+
+    @if (_error is not null)
+    {
+        <p class="form-error">@_error</p>
+    }
+    else if (_result is { } r)
+    {
+        @if (r.Artists.Count + r.Albums.Count + r.Tracks.Count == 0)
+        {
+            <p class="empty">Aucun résultat pour « @_query ».</p>
+        }
+        @if (r.Tracks.Count > 0)
+        {
+            <section>
+                <h2>Titres</h2>
+                <TrackList Tracks="r.Tracks" ShowCover="true" />
+            </section>
+        }
+        @if (r.Artists.Count > 0)
+        {
+            <section>
+                <h2>Artistes</h2>
+                <div class="grid">
+                    @foreach (var a in r.Artists)
+                    {
+                        <a class="card" href="artist/@a.Id">
+                            <div class="card-cover round"><Cover AlbumId="a.CoverAlbumId" HasCover="a.CoverAlbumId is not null" Round="true" Seed="@a.Name" /></div>
+                            <span class="card-title">@a.Name</span>
+                            <span class="card-sub">Artiste</span>
+                        </a>
+                    }
+                </div>
+            </section>
+        }
+        @if (r.Albums.Count > 0)
+        {
+            <section>
+                <h2>Albums</h2>
+                <AlbumGrid Albums="r.Albums" />
+            </section>
+        }
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "q")] public string? Q { get; set; }
+
+    private string _query = "";
+    private SearchResultDto? _result;
+    private string? _error;
+    private CancellationTokenSource? _debounce;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _query = Q ?? "";
+        if (_query.Length > 0) await RunAsync(_query);
+    }
+
+    private async Task OnInput(ChangeEventArgs e)
+    {
+        _query = e.Value?.ToString() ?? "";
+        _debounce?.Cancel();
+        _debounce = new CancellationTokenSource();
+        var token = _debounce.Token;
+        try
+        {
+            await Task.Delay(250, token);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+        Nav.NavigateTo($"search?q={Uri.EscapeDataString(_query)}", replace: true);
+        await RunAsync(_query);
+    }
+
+    private async Task RunAsync(string q)
+    {
+        _error = null;
+        if (string.IsNullOrWhiteSpace(q))
+        {
+            _result = null;
+            return;
+        }
+        try
+        {
+            var result = await Api.SearchAsync(q);
+            if (q == _query) _result = result;
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    public void Dispose() => _debounce?.Cancel();
+}

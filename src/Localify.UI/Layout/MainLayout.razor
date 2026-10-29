@@ -1,0 +1,112 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject AuthSession Auth
+@inject IServerEndpoint Endpoint
+@inject IPlayer Player
+@inject UiState Ui
+@inject NavigationManager Nav
+
+@if (!_ready)
+{
+    <div class="boot"><div class="spinner"></div></div>
+}
+else if (Endpoint.BaseAddress is null)
+{
+    <ServerSetup OnConnected="StateHasChanged" />
+}
+else if (!Auth.IsAuthenticated)
+{
+    <Login />
+}
+else
+{
+    <div class="shell @(Player.State.Current is null ? "" : "has-player")">
+        <nav class="sidebar">
+            <a class="brand" href="">
+                <svg viewBox="0 0 64 64" width="32" height="32" aria-hidden="true"><rect width="64" height="64" rx="14" fill="var(--accent)" /><path d="M24 44V20l22 12z" fill="#121212" /></svg>
+                <span>Localify</span>
+            </a>
+            <NavLink class="nav-item" href="" Match="NavLinkMatch.All"><Icon Name="home" /><span>Accueil</span></NavLink>
+            <NavLink class="nav-item" href="search"><Icon Name="search" /><span>Rechercher</span></NavLink>
+            <NavLink class="nav-item" href="library"><Icon Name="library" /><span>Bibliothèque</span></NavLink>
+            <NavLink class="nav-item desktop-only" href="queue"><Icon Name="queue" /><span>File d'attente</span></NavLink>
+            @if (Auth.IsAdmin)
+            {
+                <NavLink class="nav-item desktop-only" href="admin"><Icon Name="admin" /><span>Administration</span></NavLink>
+            }
+            <NavLink class="nav-item" href="settings"><Icon Name="settings" /><span>Réglages</span></NavLink>
+
+            <div class="sidebar-playlists desktop-only">
+                <div class="sidebar-heading">
+                    <span>Playlists</span>
+                    <button class="icon-btn" title="Nouvelle playlist" @onclick="CreatePlaylistAsync"><Icon Name="add" Size="18" /></button>
+                </div>
+                <NavLink class="nav-sub" href="favorites"><Icon Name="heart" Size="16" /> Titres likés</NavLink>
+                @foreach (var p in Ui.Playlists)
+                {
+                    <NavLink class="nav-sub" href="@($"playlist/{p.Id}")">@p.Name</NavLink>
+                }
+            </div>
+        </nav>
+
+        <main class="content">
+            @Body
+        </main>
+
+        <PlayerBar />
+    </div>
+}
+
+<div class="toasts" aria-live="polite">
+    @foreach (var t in Ui.Toasts)
+    {
+        <div class="toast @(t.IsError ? "error" : "")" @key="t.Id">@t.Message</div>
+    }
+</div>
+
+@code {
+    private bool _ready;
+    private bool _restored;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Auth.Changed += OnAuthChanged;
+        Endpoint.Changed += Refresh;
+        Ui.Changed += Refresh;
+        await Auth.EnsureLoadedAsync();
+        _ready = true;
+        await AfterLoginAsync();
+    }
+
+    private async Task AfterLoginAsync()
+    {
+        if (!Auth.IsAuthenticated) return;
+        await Ui.RefreshPlaylistsAsync();
+        if (!_restored && Player is IRestorablePlayer restorable)
+        {
+            _restored = true;
+            await restorable.RestoreAsync();
+        }
+    }
+
+    private void OnAuthChanged() => InvokeAsync(async () =>
+    {
+        StateHasChanged();
+        await AfterLoginAsync();
+    });
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    private async Task CreatePlaylistAsync()
+    {
+        var created = await Ui.CreatePlaylistAsync($"Ma playlist n° {Ui.Playlists.Count + 1}", null);
+        if (created is not null) Nav.NavigateTo($"playlist/{created.Id}");
+    }
+
+    public void Dispose()
+    {
+        Auth.Changed -= OnAuthChanged;
+        Endpoint.Changed -= Refresh;
+        Ui.Changed -= Refresh;
+    }
+}

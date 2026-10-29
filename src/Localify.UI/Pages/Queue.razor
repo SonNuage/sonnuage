@@ -1,0 +1,72 @@
+@page "/queue"
+@implements IDisposable
+@inject IPlayer Player
+
+<PageTitle>File d'attente · Localify</PageTitle>
+
+<div class="page">
+    <header class="page-header">
+        <h1>File d'attente</h1>
+    </header>
+
+    @if (State.Current is null)
+    {
+        <p class="empty">Rien en cours de lecture.</p>
+    }
+    else
+    {
+        <h2>En cours</h2>
+        <ol class="queue-list">
+            <li class="queue-item playing">
+                <Cover AlbumId="State.Current.AlbumId" HasCover="State.Current.HasCover" Size="96" Class="cover-sm" Seed="@State.Current.AlbumTitle" />
+                <div class="track-main">
+                    <span class="track-title">@State.Current.Title</span>
+                    <span class="track-sub">@State.Current.ArtistName</span>
+                </div>
+                <span class="track-dur">@Format.Duration(State.Current.DurationSeconds)</span>
+            </li>
+        </ol>
+
+        <h2>À suivre @(State.Shuffle ? "(aléatoire)" : "")</h2>
+        <ol class="queue-list">
+            @for (var i = State.CurrentIndex + 1; i < State.Queue.Count; i++)
+            {
+                var index = i;
+                var t = State.Queue[i];
+                <li class="queue-item" @key="index">
+                    <button class="track-main as-button" @onclick="() => Player.JumpToAsync(index)">
+                        <span class="track-title">@t.Title</span>
+                        <span class="track-sub">@t.ArtistName · @t.AlbumTitle</span>
+                    </button>
+                    <span class="track-dur">@Format.Duration(t.DurationSeconds)</span>
+                    <button class="icon-btn" title="Retirer" @onclick="() => Player.RemoveAtAsync(index)"><Icon Name="close" Size="18" /></button>
+                </li>
+            }
+        </ol>
+        @if (State.CurrentIndex + 1 >= State.Queue.Count)
+        {
+            <p class="muted">Fin de la file@(State.Repeat == RepeatMode.All ? " : la lecture reprendra au début" : "").</p>
+        }
+    }
+</div>
+
+@code {
+    private PlayerState State => Player.State;
+    private Guid? _current;
+    private int _count;
+    private bool _shuffle;
+
+    protected override void OnInitialized() => Player.StateChanged += OnChanged;
+
+    private void OnChanged()
+    {
+        var s = Player.State;
+        if (s.Current?.Id == _current && s.Queue.Count == _count && s.Shuffle == _shuffle) return;
+        _current = s.Current?.Id;
+        _count = s.Queue.Count;
+        _shuffle = s.Shuffle;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose() => Player.StateChanged -= OnChanged;
+}

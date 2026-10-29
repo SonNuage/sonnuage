@@ -1,0 +1,147 @@
+@implements IDisposable
+@inject IPlayer Player
+@inject UiState Ui
+@inject NavigationManager Nav
+
+<ol class="tracklist">
+    @for (var i = 0; i < Tracks.Count; i++)
+    {
+        var index = i;
+        var track = Tracks[i];
+        var current = Player.State.Current?.Id == track.Id;
+        <li class="track-row @(current ? "playing" : "")" @key="KeyOf(index)" @ondblclick="() => PlayAsync(index)">
+            <button class="track-num" title="Lire" @onclick="() => PlayAsync(index)">
+                @if (current && Player.State.IsPlaying)
+                {
+                    <span class="eq"><i></i><i></i><i></i></span>
+                }
+                else
+                {
+                    <span class="num">@(ShowTrackNumbers ? track.TrackNumber?.ToString() ?? "–" : (index + 1).ToString())</span>
+                    <Icon Name="play" Size="18" Class="hover-play" />
+                }
+            </button>
+            @if (ShowCover)
+            {
+                <Cover AlbumId="track.AlbumId" HasCover="track.HasCover" Size="96" Class="cover-xs" Seed="@track.AlbumTitle" />
+            }
+            <div class="track-main" @onclick="() => PlayAsync(index)">
+                <span class="track-title">@track.Title@if (track.IsLossless) { <span class="badge" title="Fichier source sans perte">@track.Format.ToUpperInvariant()</span> }</span>
+                <span class="track-sub">
+                    <a href="artist/@track.ArtistId" @onclick:stopPropagation="true">@track.ArtistName</a>
+                    @if (ShowAlbum)
+                    {
+                        <span class="sep">·</span>
+                        <a href="album/@track.AlbumId" @onclick:stopPropagation="true">@track.AlbumTitle</a>
+                    }
+                </span>
+            </div>
+            <button class="icon-btn fav @(track.IsFavorite ? "on" : "")" title="Favori" @onclick="() => ToggleFavoriteAsync(index)">
+                <Icon Name="@(track.IsFavorite ? "heart" : "heart-outline")" Size="20" />
+            </button>
+            <span class="track-dur">@Format.Duration(track.DurationSeconds)</span>
+            <div class="menu-anchor">
+                <button class="icon-btn" title="Plus d'actions" @onclick="() => ToggleMenu(index)"><Icon Name="more" Size="20" /></button>
+                @if (_menuIndex == index)
+                {
+                    <div class="menu-backdrop" @onclick="() => _menuIndex = -1"></div>
+                    <div class="menu">
+                        <button @onclick="() => PlayNextAsync(track)"><Icon Name="play-next" Size="18" /> Lire ensuite</button>
+                        <button @onclick="() => EnqueueAsync(track)"><Icon Name="queue" Size="18" /> Ajouter à la file</button>
+                        <button @onclick="() => OpenPicker(track)"><Icon Name="playlist-add" Size="18" /> Ajouter à une playlist</button>
+                        <button @onclick='() => Go($"album/{track.AlbumId}")'><Icon Name="album" Size="18" /> Voir l'album</button>
+                        <button @onclick='() => Go($"artist/{track.ArtistId}")'><Icon Name="artist" Size="18" /> Voir l'artiste</button>
+                        @if (OnRemove.HasDelegate)
+                        {
+                            <button class="danger" @onclick="() => RemoveAsync(index)"><Icon Name="delete" Size="18" /> @RemoveLabel</button>
+                        }
+                    </div>
+                }
+            </div>
+        </li>
+    }
+</ol>
+
+<PlaylistPicker @bind-Open="_pickerOpen" TrackIds="_pickerTracks" />
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<TrackDto> Tracks { get; set; } = [];
+    [Parameter] public bool ShowAlbum { get; set; } = true;
+    [Parameter] public bool ShowCover { get; set; }
+    [Parameter] public bool ShowTrackNumbers { get; set; }
+    /// <summary>Lecture d'une piste : par défaut, toute la liste à partir de cette piste.</summary>
+    [Parameter] public EventCallback<int> OnPlay { get; set; }
+    [Parameter] public EventCallback<int> OnRemove { get; set; }
+    [Parameter] public string RemoveLabel { get; set; } = "Retirer";
+    /// <summary>Clés de rendu (ex. id d'entrée de playlist quand une piste apparaît deux fois).</summary>
+    [Parameter] public Func<int, object>? KeySelector { get; set; }
+
+    private int _menuIndex = -1;
+    private bool _pickerOpen;
+    private IReadOnlyList<Guid> _pickerTracks = [];
+    private Guid? _lastCurrent;
+    private bool _lastPlaying;
+
+    protected override void OnInitialized() => Player.StateChanged += OnPlayerChanged;
+
+    private object KeyOf(int index) => KeySelector?.Invoke(index) ?? (object)$"{index}-{Tracks[index].Id}";
+
+    // Ne redessine la liste que si la piste en cours ou l'état lecture change, pas à chaque tick de position.
+    private void OnPlayerChanged()
+    {
+        var s = Player.State;
+        if (s.Current?.Id == _lastCurrent && s.IsPlaying == _lastPlaying) return;
+        _lastCurrent = s.Current?.Id;
+        _lastPlaying = s.IsPlaying;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task PlayAsync(int index)
+    {
+        if (OnPlay.HasDelegate) await OnPlay.InvokeAsync(index);
+        else await Player.PlayAsync(Tracks, index, shuffle: false);
+    }
+
+    private void ToggleMenu(int index) => _menuIndex = _menuIndex == index ? -1 : index;
+
+    private async Task PlayNextAsync(TrackDto t)
+    {
+        _menuIndex = -1;
+        await Player.EnqueueAsync([t], playNext: true);
+        Ui.Notify("Sera lu ensuite");
+    }
+
+    private async Task EnqueueAsync(TrackDto t)
+    {
+        _menuIndex = -1;
+        await Player.EnqueueAsync([t], playNext: false);
+        Ui.Notify("Ajouté à la file d'attente");
+    }
+
+    private void OpenPicker(TrackDto t)
+    {
+        _menuIndex = -1;
+        _pickerTracks = [t.Id];
+        _pickerOpen = true;
+    }
+
+    private void Go(string url)
+    {
+        _menuIndex = -1;
+        Nav.NavigateTo(url);
+    }
+
+    private async Task RemoveAsync(int index)
+    {
+        _menuIndex = -1;
+        await OnRemove.InvokeAsync(index);
+    }
+
+    private async Task ToggleFavoriteAsync(int index)
+    {
+        var updated = await Ui.ToggleFavoriteAsync(Tracks[index]);
+        if (Tracks is IList<TrackDto> { IsReadOnly: false } list) list[index] = updated;
+    }
+
+    public void Dispose() => Player.StateChanged -= OnPlayerChanged;
+}

@@ -1,0 +1,96 @@
+@page "/"
+@inject ApiClient Api
+@inject IPlayer Player
+@inject UiState Ui
+@inject AuthSession Auth
+
+<PageTitle>Localify</PageTitle>
+
+<div class="page">
+    <header class="page-header">
+        <h1>@Greeting</h1>
+        <button class="btn primary" @onclick="ShuffleAllAsync"><Icon Name="shuffle" Size="18" /> Mélanger toute la bibliothèque</button>
+    </header>
+
+    <Loader Loading="_home is null && _error is null" Error="@_error" OnRetry="LoadAsync">
+        @if (_home is { } home)
+        {
+            @if (home.Playlists.Count > 0)
+            {
+                <section>
+                    <h2>Vos playlists</h2>
+                    <div class="chips">
+                        <a class="chip" href="favorites"><span class="chip-icon liked"><Icon Name="heart" Size="20" /></span>Titres likés</a>
+                        @foreach (var p in home.Playlists.Take(7))
+                        {
+                            <a class="chip" href="playlist/@p.Id">
+                                <Cover AlbumId="p.CoverAlbumId" HasCover="p.CoverAlbumId is not null" Size="96" Class="cover-xs" Seed="@p.Name" />
+                                @p.Name
+                            </a>
+                        }
+                    </div>
+                </section>
+            }
+
+            @if (home.RecentlyPlayed.Count > 0)
+            {
+                <section>
+                    <h2>Écoutés récemment</h2>
+                    <TrackList Tracks="home.RecentlyPlayed.Take(10).ToList()" ShowCover="true" />
+                </section>
+            }
+
+            <section>
+                <div class="section-head">
+                    <h2>Ajouts récents</h2>
+                    <a href="library/albums" class="link">Tout afficher</a>
+                </div>
+                @if (home.RecentlyAdded.Count == 0)
+                {
+                    <p class="muted">La bibliothèque est vide. @(Auth.IsAdmin ? "Ajoutez de la musique depuis l'administration." : "")</p>
+                }
+                <AlbumGrid Albums="home.RecentlyAdded" />
+            </section>
+        }
+    </Loader>
+</div>
+
+@code {
+    private HomeDto? _home;
+    private string? _error;
+
+    private static string Greeting => DateTime.Now.Hour switch
+    {
+        < 5 => "Bonne nuit",
+        < 18 => "Bonjour",
+        _ => "Bonsoir",
+    };
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _error = null;
+        try
+        {
+            _home = await Api.HomeAsync();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task ShuffleAllAsync()
+    {
+        try
+        {
+            var tracks = await Api.RandomTracksAsync(200);
+            if (tracks is { Count: > 0 }) await Player.PlayAsync(tracks, 0, shuffle: false);
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(ex.Message, true);
+        }
+    }
+}

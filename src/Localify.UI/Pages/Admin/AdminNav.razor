@@ -1,0 +1,20 @@
+@inject AuthSession Auth
+
+@if (!Auth.IsAdmin)
+{
+    <div class="empty"><p>Accès réservé aux administrateurs.</p></div>
+}
+else
+{
+    <div class="tabs">
+        <NavLink class="tab" href="admin" Match="NavLinkMatch.All">Tableau de bord</NavLink>
+        <NavLink class="tab" href="admin/upload">Ajouter des œuvres</NavLink>
+        <NavLink class="tab" href="admin/library">Métadonnées</NavLink>
+        <NavLink class="tab" href="admin/users">Utilisateurs</NavLink>
+    </div>
+    @ChildContent
+}
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

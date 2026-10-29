@@ -1,0 +1,105 @@
+@implements IDisposable
+@inject IPlayer Player
+@inject UiState Ui
+@inject NavigationManager Nav
+
+@if (State.Current is { } track)
+{
+    <footer class="player-bar">
+        <div class="pb-progress-mobile" style="width:@Percent.ToString(System.Globalization.CultureInfo.InvariantCulture)%"></div>
+
+        <div class="pb-track" @onclick="() => Ui.SetNowPlayingOpen(true)">
+            <Cover AlbumId="track.AlbumId" HasCover="track.HasCover" Size="96" Class="cover-sm" Seed="@track.AlbumTitle" />
+            <div class="pb-meta">
+                <span class="pb-title">@track.Title</span>
+                <span class="pb-artist">@track.ArtistName</span>
+            </div>
+            <button class="icon-btn fav @(track.IsFavorite ? "on" : "")" title="Favori" @onclick="() => Ui.ToggleFavoriteAsync(track)" @onclick:stopPropagation="true">
+                <Icon Name="@(track.IsFavorite ? "heart" : "heart-outline")" Size="20" />
+            </button>
+        </div>
+
+        <div class="pb-center">
+            <div class="pb-controls">
+                <button class="icon-btn desktop-only @(State.Shuffle ? "on" : "")" title="Lecture aléatoire" @onclick="() => Player.SetShuffleAsync(!State.Shuffle)">
+                    <Icon Name="shuffle" Size="20" />
+                </button>
+                <button class="icon-btn desktop-only" title="Précédent" @onclick="Player.PreviousAsync"><Icon Name="previous" /></button>
+                <button class="play-btn @(State.IsBuffering ? "buffering" : "")" title="@(State.IsPlaying ? "Pause" : "Lecture")" @onclick="Player.TogglePlayAsync">
+                    <Icon Name="@(State.IsPlaying ? "pause" : "play")" />
+                </button>
+                <button class="icon-btn" title="Suivant" @onclick="Player.NextAsync"><Icon Name="next" /></button>
+                <button class="icon-btn desktop-only @(State.Repeat != RepeatMode.Off ? "on" : "")" title="Répéter" @onclick="CycleRepeatAsync">
+                    <Icon Name="@(State.Repeat == RepeatMode.One ? "repeat-one" : "repeat")" Size="20" />
+                </button>
+            </div>
+            <div class="pb-seek desktop-only">
+                <span class="time">@Format.Duration(State.PositionSeconds)</span>
+                <input type="range" class="slider" min="0" max="@Max" step="1" value="@Position" @onchange="SeekAsync" aria-label="Position" />
+                <span class="time">@Format.Duration(State.DurationSeconds)</span>
+            </div>
+            @if (State.Error is { } error)
+            {
+                <span class="pb-error">@error</span>
+            }
+        </div>
+
+        <div class="pb-right desktop-only">
+            <a class="icon-btn" href="queue" title="File d'attente"><Icon Name="queue" Size="20" /></a>
+            <button class="icon-btn" title="Couper le son" @onclick="ToggleMuteAsync">
+                <Icon Name="@(State.Volume == 0 ? "volume-off" : "volume")" Size="20" />
+            </button>
+            <input type="range" class="slider volume" min="0" max="100" value="@((int)(State.Volume * 100))" @oninput="VolumeAsync" aria-label="Volume" />
+        </div>
+    </footer>
+}
+
+@if (Ui.NowPlayingOpen)
+{
+    <NowPlaying />
+}
+
+@code {
+    private double _volumeBeforeMute = 1;
+    private PlayerState State => Player.State;
+    private int Max => (int)Math.Max(1, Math.Ceiling(State.DurationSeconds));
+    private int Position => (int)Math.Min(State.PositionSeconds, Max);
+    private double Percent => State.DurationSeconds > 0 ? Math.Min(100, State.PositionSeconds / State.DurationSeconds * 100) : 0;
+
+    protected override void OnInitialized()
+    {
+        Player.StateChanged += Refresh;
+        Ui.Changed += Refresh;
+    }
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    private Task SeekAsync(ChangeEventArgs e) =>
+        double.TryParse(e.Value?.ToString(), System.Globalization.CultureInfo.InvariantCulture, out var s) ? Player.SeekAsync(s) : Task.CompletedTask;
+
+    private Task VolumeAsync(ChangeEventArgs e) =>
+        double.TryParse(e.Value?.ToString(), System.Globalization.CultureInfo.InvariantCulture, out var v) ? Player.SetVolumeAsync(v / 100) : Task.CompletedTask;
+
+    private Task ToggleMuteAsync()
+    {
+        if (State.Volume > 0)
+        {
+            _volumeBeforeMute = State.Volume;
+            return Player.SetVolumeAsync(0);
+        }
+        return Player.SetVolumeAsync(_volumeBeforeMute);
+    }
+
+    private Task CycleRepeatAsync() => Player.SetRepeatAsync(State.Repeat switch
+    {
+        RepeatMode.Off => RepeatMode.All,
+        RepeatMode.All => RepeatMode.One,
+        _ => RepeatMode.Off,
+    });
+
+    public void Dispose()
+    {
+        Player.StateChanged -= Refresh;
+        Ui.Changed -= Refresh;
+    }
+}

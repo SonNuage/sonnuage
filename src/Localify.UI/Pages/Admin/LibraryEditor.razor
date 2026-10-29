@@ -1,0 +1,273 @@
+@page "/admin/library"
+@inject ApiClient Api
+@inject UiState Ui
+@inject NavigationManager Nav
+
+<PageTitle>Métadonnées · Localify</PageTitle>
+
+<div class="page">
+    <header class="page-header"><h1>Administration</h1></header>
+    <AdminNav>
+        @if (_album is { } album)
+        {
+            <section class="panel album-editor">
+                <Cover AlbumId="album.Album.Id" HasCover="album.Album.HasCover" Size="300" Class="cover-md" Seed="@album.Album.Title" />
+                <form class="stack" @onsubmit="SaveAlbumAsync" @onsubmit:preventDefault="true">
+                    <h2>Album</h2>
+                    <div class="form-grid">
+                        <label class="field"><span>Titre</span><input class="input" @bind="_albumTitle" required /></label>
+                        <label class="field"><span>Artiste de l'album</span><input class="input" @bind="_albumArtist" required /></label>
+                        <label class="field"><span>Année</span><input class="input" type="number" @bind="_albumYear" /></label>
+                    </div>
+                    <div class="row">
+                        <button class="btn primary" type="submit">Enregistrer l'album</button>
+                        <label class="btn">
+                            Changer la pochette
+                            <InputFile OnChange="UploadCoverAsync" accept="image/jpeg,image/png,image/webp" class="hidden-input" />
+                        </label>
+                        <a class="btn" href="album/@album.Album.Id">Voir l'album</a>
+                    </div>
+                    <p class="muted small">Les modifications sont enregistrées dans la base de Localify ; les fichiers ne sont pas modifiés et ces valeurs ne seront plus écrasées par les analyses.</p>
+                </form>
+            </section>
+        }
+
+        <div class="toolbar">
+            <input class="input" type="search" placeholder="Rechercher un titre, un artiste, un album…" @bind="_query" @bind:event="oninput" @bind:after="SearchAsync" />
+            @if (AlbumId is not null)
+            {
+                <button class="btn" @onclick='() => Nav.NavigateTo("admin/library")'>Toute la bibliothèque</button>
+            }
+        </div>
+
+        <Loader Loading="_loading && _tracks.Count == 0" Error="@_error" OnRetry="SearchAsync">
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr><th>#</th><th>Titre</th><th>Artiste</th><th>Album</th><th>Fichier</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var t in _tracks)
+                        {
+                            <tr @key="t.Id">
+                                <td>@(t.DiscNumber is > 1 ? $"{t.DiscNumber}-" : "")@t.TrackNumber</td>
+                                <td>@t.Title @if (t.MetadataLocked) { <span class="badge" title="Modifié à la main">édité</span> }</td>
+                                <td>@t.ArtistName</td>
+                                <td>@t.AlbumTitle</td>
+                                <td class="path" title="@t.RelativePath">@t.RelativePath</td>
+                                <td class="row-actions">
+                                    <button class="icon-btn" title="Modifier" @onclick="() => Edit(t)"><Icon Name="edit" Size="18" /></button>
+                                    @if (t.Deletable)
+                                    {
+                                        <button class="icon-btn danger" title="Supprimer" @onclick="() => _deleting = t"><Icon Name="delete" Size="18" /></button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <p class="muted small">@_tracks.Count / @_total titres</p>
+            @if (_tracks.Count < _total)
+            {
+                <div class="more"><button class="btn" @onclick="LoadMoreAsync" disabled="@_loading">Afficher plus</button></div>
+            }
+        </Loader>
+    </AdminNav>
+</div>
+
+<Modal Open="_editing is not null" OpenChanged="v => { if (!v) _editing = null; }" Title="Modifier le titre">
+    <ChildContent>
+        @if (_editing is not null)
+        {
+            <form id="track-form" class="form-grid" @onsubmit="SaveTrackAsync" @onsubmit:preventDefault="true">
+                <label class="field wide"><span>Titre</span><input class="input" @bind="_form.Title" required /></label>
+                <label class="field"><span>Artiste</span><input class="input" @bind="_form.Artist" required /></label>
+                <label class="field"><span>Artiste de l'album</span><input class="input" @bind="_form.AlbumArtist" required /></label>
+                <label class="field wide"><span>Album</span><input class="input" @bind="_form.Album" required /></label>
+                <label class="field"><span>N° de piste</span><input class="input" type="number" @bind="_form.Track" /></label>
+                <label class="field"><span>N° de disque</span><input class="input" type="number" @bind="_form.Disc" /></label>
+                <label class="field"><span>Année</span><input class="input" type="number" @bind="_form.Year" /></label>
+                <label class="field"><span>Genre</span><input class="input" @bind="_form.Genre" /></label>
+                <p class="muted small wide">Fichier : @_editing.RelativePath</p>
+            </form>
+        }
+    </ChildContent>
+    <Footer>
+        <button class="btn" @onclick="() => _editing = null">Annuler</button>
+        <button class="btn primary" type="submit" form="track-form">Enregistrer</button>
+    </Footer>
+</Modal>
+
+<Modal Open="_deleting is not null" OpenChanged="v => { if (!v) _deleting = null; }" Title="Supprimer ce fichier ?">
+    <ChildContent><p>« @_deleting?.Title » sera supprimé du disque et de la bibliothèque.</p></ChildContent>
+    <Footer>
+        <button class="btn" @onclick="() => _deleting = null">Annuler</button>
+        <button class="btn danger" @onclick="DeleteAsync">Supprimer</button>
+    </Footer>
+</Modal>
+
+@code {
+    private const int PageSize = 100;
+    [SupplyParameterFromQuery(Name = "album")] public Guid? AlbumId { get; set; }
+
+    private readonly List<TrackMetadataDto> _tracks = [];
+    private int _total;
+    private string _query = "";
+    private bool _loading;
+    private string? _error;
+    private AlbumDetailDto? _album;
+    private string _albumTitle = "";
+    private string _albumArtist = "";
+    private int? _albumYear;
+    private TrackMetadataDto? _editing;
+    private TrackMetadataDto? _deleting;
+    private TrackForm _form = new();
+    private Guid? _loadedAlbum = Guid.Empty;
+
+    private sealed class TrackForm
+    {
+        public string Title { get; set; } = "";
+        public string Artist { get; set; } = "";
+        public string AlbumArtist { get; set; } = "";
+        public string Album { get; set; } = "";
+        public int? Track { get; set; }
+        public int? Disc { get; set; }
+        public int? Year { get; set; }
+        public string? Genre { get; set; }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loadedAlbum == AlbumId) return;
+        _loadedAlbum = AlbumId;
+        await LoadAlbumAsync();
+        await SearchAsync();
+    }
+
+    private async Task LoadAlbumAsync()
+    {
+        _album = AlbumId is { } id ? await Api.AlbumAsync(id) : null;
+        if (_album is not null)
+        {
+            _albumTitle = _album.Album.Title;
+            _albumArtist = _album.Album.ArtistName;
+            _albumYear = _album.Album.Year;
+        }
+    }
+
+    private async Task SearchAsync()
+    {
+        _tracks.Clear();
+        _total = 0;
+        await LoadMoreAsync();
+    }
+
+    private async Task LoadMoreAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            var page = await Api.AdminTracksAsync(_query, AlbumId, _tracks.Count, PageSize);
+            if (page is not null)
+            {
+                _tracks.AddRange(page.Items);
+                _total = page.Total;
+            }
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void Edit(TrackMetadataDto t)
+    {
+        _editing = t;
+        _form = new TrackForm
+        {
+            Title = t.Title, Artist = t.ArtistName, AlbumArtist = t.AlbumArtistName, Album = t.AlbumTitle,
+            Track = t.TrackNumber, Disc = t.DiscNumber, Year = t.Year, Genre = t.Genre,
+        };
+    }
+
+    private async Task SaveTrackAsync()
+    {
+        if (_editing is null) return;
+        try
+        {
+            var updated = await Api.AdminUpdateTrackAsync(_editing.Id, new UpdateTrackMetadataRequest(
+                _form.Title, _form.Artist, _form.Album, _form.AlbumArtist, _form.Track, _form.Disc, _form.Year, _form.Genre));
+            var i = _tracks.FindIndex(x => x.Id == _editing.Id);
+            if (updated is not null && i >= 0) _tracks[i] = updated;
+            _editing = null;
+            Ui.Notify("Titre mis à jour");
+        }
+        catch (ApiException ex)
+        {
+            Ui.Notify(ex.Message, true);
+        }
+    }
+
+    private async Task SaveAlbumAsync()
+    {
+        if (_album is null) return;
+        try
+        {
+            var updated = await Api.AdminUpdateAlbumAsync(_album.Album.Id, new UpdateAlbumRequest(_albumTitle, _albumArtist, _albumYear));
+            Ui.Notify("Album mis à jour");
+            // Changer l'artiste ou le titre peut fusionner l'album avec un existant : l'id change.
+            if (updated is not null && updated.Id != _album.Album.Id) Nav.NavigateTo($"admin/library?album={updated.Id}");
+            else
+            {
+                await LoadAlbumAsync();
+                await SearchAsync();
+            }
+        }
+        catch (ApiException ex)
+        {
+            Ui.Notify(ex.Message, true);
+        }
+    }
+
+    private async Task UploadCoverAsync(InputFileChangeEventArgs e)
+    {
+        if (_album is null) return;
+        try
+        {
+            await using var stream = e.File.OpenReadStream(10 * 1024 * 1024);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+            buffer.Position = 0;
+            await Api.AdminSetAlbumCoverAsync(_album.Album.Id, buffer, e.File.ContentType);
+            Ui.Notify("Pochette mise à jour");
+            await LoadAlbumAsync();
+        }
+        catch (Exception ex) when (ex is ApiException or IOException)
+        {
+            Ui.Notify(ex.Message, true);
+        }
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (_deleting is null) return;
+        try
+        {
+            await Api.AdminDeleteTrackAsync(_deleting.Id);
+            _tracks.RemoveAll(t => t.Id == _deleting.Id);
+            _total--;
+            Ui.Notify("Fichier supprimé");
+        }
+        catch (ApiException ex)
+        {
+            Ui.Notify(ex.Message, true);
+        }
+        _deleting = null;
+    }
+}

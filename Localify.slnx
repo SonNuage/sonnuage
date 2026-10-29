@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Localify.Contracts/Localify.Contracts.csproj" />
+    <Project Path="src/Localify.Server/Localify.Server.csproj" />
+    <Project Path="src/Localify.UI/Localify.UI.csproj" />
+    <Project Path="src/Localify.Web/Localify.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Localify.Server.Tests/Localify.Server.Tests.csproj" />
+  </Folder>
+</Solution>

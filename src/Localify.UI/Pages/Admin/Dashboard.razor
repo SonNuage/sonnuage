@@ -1,0 +1,100 @@
+@page "/admin"
+@implements IDisposable
+@inject ApiClient Api
+@inject UiState Ui
+
+<PageTitle>Administration · Localify</PageTitle>
+
+<div class="page">
+    <header class="page-header"><h1>Administration</h1></header>
+    <AdminNav>
+        <Loader Loading="_stats is null && _error is null" Error="@_error" OnRetry="LoadAsync">
+            @if (_stats is { } s)
+            {
+                <div class="stats">
+                    <div class="stat"><span class="stat-value">@s.Artists</span><span class="stat-label">artistes</span></div>
+                    <div class="stat"><span class="stat-value">@s.Albums</span><span class="stat-label">albums</span></div>
+                    <div class="stat"><span class="stat-value">@s.Tracks</span><span class="stat-label">titres</span></div>
+                    <div class="stat"><span class="stat-value">@Format.LongDuration(s.TotalDurationSeconds)</span><span class="stat-label">d'écoute</span></div>
+                    <div class="stat"><span class="stat-value">@Format.Bytes(s.TotalBytes)</span><span class="stat-label">sur disque</span></div>
+                    <div class="stat"><span class="stat-value">@Format.Bytes(s.TranscodeCacheBytes)</span><span class="stat-label">cache de transcodage</span></div>
+                </div>
+
+                <section class="panel">
+                    <h2>Analyse de la bibliothèque</h2>
+                    @if (s.Scan.Running)
+                    {
+                        <p><span class="spinner inline"></span> Analyse en cours : @s.Scan.FilesSeen fichiers vus, @s.Scan.Added ajoutés, @s.Scan.Updated mis à jour.</p>
+                    }
+                    else
+                    {
+                        <p>
+                            Dernière analyse : @(s.Scan.LastFinishedAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "jamais")
+                            @if (s.Scan.LastFinishedAt is not null)
+                            {
+                                <span> — @s.Scan.FilesSeen fichiers, @s.Scan.Added ajoutés, @s.Scan.Updated mis à jour, @s.Scan.Removed retirés.</span>
+                            }
+                        </p>
+                    }
+                    @if (s.Scan.LastError is { } err)
+                    {
+                        <p class="form-error">@err</p>
+                    }
+                    <p class="muted">Les changements sur disque sont détectés automatiquement. L'analyse complète est incrémentale : seuls les fichiers modifiés sont relus.</p>
+                    <div class="row">
+                        <button class="btn primary" disabled="@s.Scan.Running" @onclick="ScanAsync"><Icon Name="refresh" Size="18" /> Analyser maintenant</button>
+                        <button class="btn" @onclick="ClearCacheAsync"><Icon Name="delete" Size="18" /> Vider le cache de transcodage</button>
+                    </div>
+                </section>
+            }
+        </Loader>
+    </AdminNav>
+</div>
+
+@code {
+    private LibraryStatsDto? _stats;
+    private string? _error;
+    private Timer? _timer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+        _timer = new Timer(_ => InvokeAsync(async () =>
+        {
+            if (_stats?.Scan.Running == true)
+            {
+                await LoadAsync();
+                StateHasChanged();
+            }
+        }), null, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2));
+    }
+
+    private async Task LoadAsync()
+    {
+        _error = null;
+        try
+        {
+            _stats = await Api.AdminStatsAsync();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task ScanAsync()
+    {
+        await Api.AdminScanAsync();
+        await Task.Delay(500);
+        await LoadAsync();
+    }
+
+    private async Task ClearCacheAsync()
+    {
+        await Api.AdminClearCacheAsync();
+        Ui.Notify("Cache de transcodage vidé");
+        await LoadAsync();
+    }
+
+    public void Dispose() => _timer?.Dispose();
+}

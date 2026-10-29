@@ -1,0 +1,75 @@
+@page "/artist/{Id:guid}"
+@inject ApiClient Api
+@inject IPlayer Player
+@inject UiState Ui
+
+<PageTitle>@(_artist?.Artist.Name ?? "Artiste") · Localify</PageTitle>
+
+<Loader Loading="_artist is null && _error is null" Error="@_error" OnRetry="LoadAsync">
+    @if (_artist is { } a)
+    {
+        <div class="page">
+            <header class="hero">
+                <Cover AlbumId="a.Artist.CoverAlbumId" HasCover="a.Artist.CoverAlbumId is not null" Size="600" Class="hero-cover round" Round="true" Seed="@a.Artist.Name" />
+                <div class="hero-meta">
+                    <span class="eyebrow">Artiste</span>
+                    <h1>@a.Artist.Name</h1>
+                    <p>@Format.Plural(a.Artist.AlbumCount, "album", "albums") · @Format.Plural(a.Artist.TrackCount, "titre", "titres")</p>
+                </div>
+            </header>
+
+            <div class="actions">
+                <button class="play-btn large" title="Tout lire" @onclick="() => PlayAllAsync(false)"><Icon Name="play" Size="32" /></button>
+                <button class="icon-btn" title="Lecture aléatoire" @onclick="() => PlayAllAsync(true)"><Icon Name="shuffle" Size="28" /></button>
+            </div>
+
+            <section>
+                <h2>Discographie</h2>
+                <AlbumGrid Albums="a.Albums" ShowArtist="false" />
+            </section>
+        </div>
+    }
+</Loader>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private ArtistDetailDto? _artist;
+    private string? _error;
+    private Guid _loaded;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loaded == Id) return;
+        _loaded = Id;
+        _artist = null;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _error = null;
+        try
+        {
+            _artist = await Api.ArtistAsync(Id);
+            if (_artist is null) _error = "Artiste introuvable.";
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task PlayAllAsync(bool shuffle)
+    {
+        try
+        {
+            var tracks = await Api.ArtistTracksAsync(Id);
+            if (tracks is { Count: > 0 }) await Player.PlayAsync(tracks, shuffle ? -1 : 0, shuffle);
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(ex.Message, true);
+        }
+    }
+}

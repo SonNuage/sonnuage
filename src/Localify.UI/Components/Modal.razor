@@ -1,0 +1,26 @@
+@if (Open)
+{
+    <div class="modal-backdrop" @onclick="Close">
+        <div class="modal" role="dialog" aria-modal="true" @onclick:stopPropagation="true">
+            <header class="modal-header">
+                <h2>@Title</h2>
+                <button class="icon-btn" title="Fermer" @onclick="Close"><Icon Name="close" /></button>
+            </header>
+            <div class="modal-body">@ChildContent</div>
+            @if (Footer is not null)
+            {
+                <footer class="modal-footer">@Footer</footer>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Open { get; set; }
+    [Parameter] public EventCallback<bool> OpenChanged { get; set; }
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? Footer { get; set; }
+
+    private Task Close() => OpenChanged.InvokeAsync(false);
+}

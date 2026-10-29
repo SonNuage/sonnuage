@@ -1,0 +1,171 @@
+@page "/playlist/{Id:guid}"
+@inject ApiClient Api
+@inject IPlayer Player
+@inject UiState Ui
+@inject NavigationManager Nav
+
+<PageTitle>@(_playlist?.Playlist.Name ?? "Playlist") · Localify</PageTitle>
+
+<Loader Loading="_playlist is null && _error is null" Error="@_error" OnRetry="LoadAsync">
+    @if (_playlist is { } p)
+    {
+        <div class="page">
+            <header class="hero">
+                <Cover AlbumId="p.Playlist.CoverAlbumId" HasCover="p.Playlist.CoverAlbumId is not null" Size="600" Class="hero-cover" Seed="@p.Playlist.Name" />
+                <div class="hero-meta">
+                    <span class="eyebrow">Playlist</span>
+                    @if (_editing)
+                    {
+                        <form class="inline-form" @onsubmit="SaveAsync" @onsubmit:preventDefault="true">
+                            <input class="input large" @bind="_name" maxlength="200" required />
+                            <input class="input" @bind="_description" placeholder="Description (facultatif)" maxlength="1000" />
+                            <button class="btn primary" type="submit">Enregistrer</button>
+                            <button class="btn" type="button" @onclick="() => _editing = false">Annuler</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <h1 @onclick="StartEdit" class="editable" title="Renommer">@p.Playlist.Name</h1>
+                        @if (!string.IsNullOrWhiteSpace(p.Playlist.Description))
+                        {
+                            <p class="muted">@p.Playlist.Description</p>
+                        }
+                    }
+                    <p>@Format.Plural(p.Playlist.TrackCount, "titre", "titres"), @Format.LongDuration(p.Playlist.DurationSeconds)</p>
+                </div>
+            </header>
+
+            <div class="actions">
+                <button class="play-btn large" title="Lire" disabled="@(_tracks.Count == 0)" @onclick="() => Player.PlayAsync(_tracks, 0, shuffle: false)"><Icon Name="play" Size="32" /></button>
+                <button class="icon-btn" title="Lecture aléatoire" disabled="@(_tracks.Count == 0)" @onclick="() => Player.PlayAsync(_tracks, -1, shuffle: true)"><Icon Name="shuffle" Size="28" /></button>
+                <button class="icon-btn" title="Renommer" @onclick="StartEdit"><Icon Name="edit" Size="24" /></button>
+                <button class="icon-btn" title="@(_reorder ? "Terminer" : "Réordonner")" @onclick="() => _reorder = !_reorder"><Icon Name="@(_reorder ? "close" : "up")" Size="24" /></button>
+                <button class="icon-btn danger" title="Supprimer la playlist" @onclick="() => _confirmDelete = true"><Icon Name="delete" Size="24" /></button>
+            </div>
+
+            @if (_tracks.Count == 0)
+            {
+                <p class="empty">Playlist vide. Ajoutez des titres depuis un album ou la recherche (menu ⋮ → « Ajouter à une playlist »).</p>
+            }
+            else if (_reorder)
+            {
+                <ol class="reorder-list">
+                    @for (var i = 0; i < p.Entries.Count; i++)
+                    {
+                        var index = i;
+                        var e = p.Entries[i];
+                        <li @key="e.EntryId">
+                            <span class="track-title">@e.Track.Title</span>
+                            <span class="track-sub">@e.Track.ArtistName</span>
+                            <button class="icon-btn" disabled="@(index == 0)" @onclick="() => MoveAsync(index, index - 1)" title="Monter"><Icon Name="up" /></button>
+                            <button class="icon-btn" disabled="@(index == p.Entries.Count - 1)" @onclick="() => MoveAsync(index, index + 1)" title="Descendre"><Icon Name="down" /></button>
+                        </li>
+                    }
+                </ol>
+            }
+            else
+            {
+                <TrackList Tracks="_tracks" ShowCover="true" OnRemove="RemoveAsync" RemoveLabel="Retirer de la playlist"
+                           KeySelector="i => p.Entries[i].EntryId" />
+            }
+        </div>
+
+        <Modal @bind-Open="_confirmDelete" Title="Supprimer la playlist ?">
+            <ChildContent><p>« @p.Playlist.Name » sera supprimée. Les titres restent dans la bibliothèque.</p></ChildContent>
+            <Footer>
+                <button class="btn" @onclick="() => _confirmDelete = false">Annuler</button>
+                <button class="btn danger" @onclick="DeleteAsync">Supprimer</button>
+            </Footer>
+        </Modal>
+    }
+</Loader>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private PlaylistDetailDto? _playlist;
+    private List<TrackDto> _tracks = [];
+    private string? _error;
+    private bool _editing;
+    private bool _reorder;
+    private bool _confirmDelete;
+    private string _name = "";
+    private string? _description;
+    private Guid _loaded;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loaded == Id) return;
+        _loaded = Id;
+        _playlist = null;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _error = null;
+        try
+        {
+            _playlist = await Api.PlaylistAsync(Id);
+            if (_playlist is null) _error = "Playlist introuvable.";
+            else _tracks = _playlist.Entries.Select(e => e.Track).ToList();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private void StartEdit()
+    {
+        _name = _playlist!.Playlist.Name;
+        _description = _playlist.Playlist.Description;
+        _editing = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        await RunAsync(() => Api.UpdatePlaylistAsync(Id, _name, _description ?? ""));
+        _editing = false;
+        await LoadAsync();
+        await Ui.RefreshPlaylistsAsync();
+    }
+
+    private async Task RemoveAsync(int index)
+    {
+        await RunAsync(() => Api.RemovePlaylistEntryAsync(Id, _playlist!.Entries[index].EntryId));
+        await LoadAsync();
+        await Ui.RefreshPlaylistsAsync();
+    }
+
+    private async Task MoveAsync(int from, int to)
+    {
+        var entry = _playlist!.Entries[from];
+        // Mise à jour optimiste : la liste ne saute pas pendant l'aller-retour serveur.
+        var entries = _playlist.Entries.ToList();
+        entries.RemoveAt(from);
+        entries.Insert(to, entry);
+        _playlist = _playlist with { Entries = entries };
+        _tracks = entries.Select(e => e.Track).ToList();
+        await RunAsync(() => Api.MovePlaylistEntryAsync(Id, entry.EntryId, to));
+    }
+
+    private async Task DeleteAsync()
+    {
+        await RunAsync(() => Api.DeletePlaylistAsync(Id));
+        await Ui.RefreshPlaylistsAsync();
+        Nav.NavigateTo("library/playlists");
+    }
+
+    private async Task RunAsync(Func<Task> action)
+    {
+        try
+        {
+            await action();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(ex.Message, true);
+        }
+    }
+}

@@ -1,0 +1,44 @@
+@inject AuthSession Auth
+@inject IServerEndpoint Endpoint
+@inject IPlatformInfo Platform
+
+<div class="auth-page">
+    <form class="auth-card" @onsubmit="SubmitAsync" @onsubmit:preventDefault="true">
+        <svg viewBox="0 0 64 64" width="56" height="56" aria-hidden="true"><rect width="64" height="64" rx="14" fill="var(--accent)" /><path d="M24 44V20l22 12z" fill="#121212" /></svg>
+        <h1>Connexion</h1>
+        @if (Endpoint.IsConfigurable)
+        {
+            <p class="muted">Serveur : @Endpoint.BaseAddress?.Host <button type="button" class="link" @onclick="ChangeServerAsync">changer</button></p>
+        }
+        <label>
+            <span>Utilisateur</span>
+            <input class="input" @bind="_username" autocomplete="username" autocapitalize="off" required />
+        </label>
+        <label>
+            <span>Mot de passe</span>
+            <input class="input" type="password" @bind="_password" autocomplete="current-password" required />
+        </label>
+        @if (_error is not null)
+        {
+            <p class="form-error">@_error</p>
+        }
+        <button class="btn primary wide" type="submit" disabled="@_busy">@(_busy ? "Connexion…" : "Se connecter")</button>
+    </form>
+</div>
+
+@code {
+    private string _username = "";
+    private string _password = "";
+    private string? _error;
+    private bool _busy;
+
+    private async Task SubmitAsync()
+    {
+        _busy = true;
+        _error = await Auth.LoginAsync(_username.Trim(), _password, Platform.Name);
+        _busy = false;
+        if (_error is null) _password = "";
+    }
+
+    private Task ChangeServerAsync() => Endpoint.SetAsync(null);
+}
