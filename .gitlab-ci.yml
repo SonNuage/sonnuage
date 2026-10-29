@@ -43,11 +43,13 @@ default:
   before_script:
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
 
-# Image de build Android (SDK + workload MAUI), reconstruite seulement quand sa recette change.
+# Image de build Android (SDK + workload MAUI), reconstruite seulement quand sa recette change,
+# ou à la demande : Run pipeline avec la variable BUILD_ANDROID_SDK=1 (premier pipeline, registre vidé…).
 android-sdk-image:
   extends: .docker
   stage: prepare
   rules:
+    - if: $BUILD_ANDROID_SDK == "1"
     - changes: [build/android-sdk.Dockerfile]
   script:
     - docker build -f build/android-sdk.Dockerfile -t "$ANDROID_SDK_IMAGE" build
