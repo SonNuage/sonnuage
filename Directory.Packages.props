@@ -15,6 +15,8 @@
     <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="10.0.14" />
     <PackageVersion Include="TagLibSharp" Version="2.3.0" />
     <PackageVersion Include="xunit.v3" Version="4.0.2" />
+    <!-- Rapport TRX des tests (option report-trx de dotnet test, en CI) : même version que Microsoft.Testing.Platform tiré par xunit.v3. -->
+    <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.5.1" />
     <PackageVersion Include="Microsoft.Maui.Controls" Version="10.0.120" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="10.0.120" />
     <PackageVersion Include="Xamarin.AndroidX.Media3.Session" Version="1.11.1" />

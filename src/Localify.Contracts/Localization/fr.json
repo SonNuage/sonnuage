@@ -360,7 +360,8 @@
       "upload": "Ajouter des œuvres",
       "youtube": "YouTube",
       "metadata": "Métadonnées",
-      "users": "Utilisateurs"
+      "users": "Utilisateurs",
+      "keys": "Clés API"
     }
   },
   "users": {
@@ -512,7 +513,8 @@
     "none": "Aucune clé.",
     "revokeConfirm": "Révoquer la clé ?",
     "revokeHint": "L'extension qui utilise « {name} » ne pourra plus rien envoyer.",
-    "revoked": "Clé révoquée"
+    "revoked": "Clé révoquée",
+    "serverUrl": "Adresse du serveur à indiquer dans l'extension"
   },
   "yt": {
     "notInstalled": "yt-dlp n'est pas installé sur le serveur.",

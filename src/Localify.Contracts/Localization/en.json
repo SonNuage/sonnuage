@@ -360,7 +360,8 @@
       "upload": "Add music",
       "youtube": "YouTube",
       "metadata": "Metadata",
-      "users": "Users"
+      "users": "Users",
+      "keys": "API keys"
     }
   },
   "users": {
@@ -512,7 +513,8 @@
     "none": "No keys.",
     "revokeConfirm": "Revoke this key?",
     "revokeHint": "The extension using “{name}” won’t be able to send anything anymore.",
-    "revoked": "Key revoked"
+    "revoked": "Key revoked",
+    "serverUrl": "Server address to enter in the extension"
   },
   "yt": {
     "notInstalled": "yt-dlp isn’t installed on the server.",

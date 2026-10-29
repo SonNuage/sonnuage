@@ -1,12 +1,20 @@
 @* Clés d'API de l'extension de navigateur (bouton « Ajouter à Localify » sur YouTube). *@
 @inject ApiClient Api
 @inject UiState Ui
+@inject IServerEndpoint Endpoint
 
 <section class="panel">
     <h2>@L["keys.title"]</h2>
     <p class="muted small">
         @L["keys.intro"]
     </p>
+    @if (Endpoint.BaseAddress is { } server)
+    {
+        <label class="field">
+            <span>@L["keys.serverUrl"]</span>
+            <input class="input mono" readonly value="@server.ToString().TrimEnd('/')" onfocus="this.select()" />
+        </label>
+    }
     <form class="inline-form" @onsubmit="CreateAsync" @onsubmit:preventDefault="true">
         <input class="input" placeholder="@L["keys.namePlaceholder"]" @bind="_name" maxlength="100" autocomplete="off" required />
         <button class="btn primary" type="submit">@L["keys.create"]</button>
