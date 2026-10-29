@@ -678,5 +678,17 @@
     "cancelAdd": "Cancel, back to {account}",
     "switched": "Active account: {account}",
     "loggedOut": "Signed out of {account}"
+  },
+  "android": {
+    "recent": "Recent",
+    "sessionExpired": "Session expired: log in again in the app."
+  },
+  "crash": {
+    "copy": "Copy report",
+    "copied": "Copied ✓",
+    "continue": "Continue",
+    "startFailed": "Localify couldn’t start",
+    "stoppedLastTime": "Localify stopped last time",
+    "intro": "Here is the error report. Copy it to pass it on."
   }
 }

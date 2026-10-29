@@ -24,7 +24,7 @@ public sealed class StreamResolver(ApiClient api, PlaybackSettings settings, Acc
 
         // Appelé sur le thread de chargement d'ExoPlayer : attente synchrone acceptable (pas de contexte UI).
         var url = api.StreamUrlAsync(id, quality).GetAwaiter().GetResult()
-            ?? throw new Java.IO.IOException("Session expirée : reconnectez-vous dans l'application.");
+            ?? throw new Java.IO.IOException(NativeText.Get("android.sessionExpired", "Session expirée : reconnectez-vous dans l'application."));
         return dataSpec.BuildUpon()!
             .SetUri(Android.Net.Uri.Parse(url))!
             .SetKey(Key(id, quality))!

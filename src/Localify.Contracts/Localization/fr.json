@@ -678,5 +678,17 @@
     "cancelAdd": "Annuler, revenir à {account}",
     "switched": "Compte actif : {account}",
     "loggedOut": "Déconnecté de {account}"
+  },
+  "android": {
+    "recent": "Récents",
+    "sessionExpired": "Session expirée : reconnectez-vous dans l'application."
+  },
+  "crash": {
+    "copy": "Copier le rapport",
+    "copied": "Copié ✓",
+    "continue": "Continuer",
+    "startFailed": "Localify n'a pas pu démarrer",
+    "stoppedLastTime": "Localify s'est arrêté la dernière fois",
+    "intro": "Voici le rapport d'erreur. Copiez-le pour le transmettre."
   }
 }

@@ -1,5 +1,6 @@
 using AndroidX.Media3.Common;
 using Localify.Contracts;
+using Localify.Mobile.Services;
 using Localify.UI.Services;
 
 namespace Localify.Mobile.Playback;
@@ -57,14 +58,14 @@ public sealed class LibraryBrowser(ApiClient api, AuthSession auth)
                     Folder(BrowseIds.Playlists, "Playlists", MediaMetadata.MediaTypeFolderPlaylists),
                     Folder(BrowseIds.Albums, "Albums", MediaMetadata.MediaTypeFolderAlbums),
                     Folder(BrowseIds.Artists, "Artistes", MediaMetadata.MediaTypeFolderArtists),
-                    Folder(BrowseIds.Recent, "Récents", MediaMetadata.MediaTypeFolderMixed),
+                    Folder(BrowseIds.Recent, NativeText.Get("android.recent", "Récents"), MediaMetadata.MediaTypeFolderMixed),
                 ];
             case BrowseIds.Playlists:
             {
                 var items = new List<MediaItem>
                 {
-                    Playable(BrowseIds.ShuffleAll, "Lecture aléatoire", "Toute la bibliothèque", null, MediaMetadata.MediaTypePlaylist),
-                    Container(BrowseIds.Favorites, "Titres likés", null, null, MediaMetadata.MediaTypePlaylist),
+                    Playable(BrowseIds.ShuffleAll, NativeText.Get("player.shuffle", "Lecture aléatoire"), NativeText.Get("editor.wholeLibrary", "Toute la bibliothèque"), null, MediaMetadata.MediaTypePlaylist),
+                    Container(BrowseIds.Favorites, NativeText.Get("nav.likedSongs", "Titres likés"), null, null, MediaMetadata.MediaTypePlaylist),
                 };
                 foreach (var p in await api.PlaylistsAsync() ?? [])
                 {
@@ -87,7 +88,7 @@ public sealed class LibraryBrowser(ApiClient api, AuthSession auth)
             {
                 var artist = await api.ArtistAsync(id);
                 if (artist is null) return [];
-                var items = new List<MediaItem> { Playable(parentId, "Tout lire", artist.Artist.Name, null, MediaMetadata.MediaTypePlaylist) };
+                var items = new List<MediaItem> { Playable(parentId, NativeText.Get("artist.playAll", "Tout lire"), artist.Artist.Name, null, MediaMetadata.MediaTypePlaylist) };
                 items.AddRange(artist.Albums.Select(AlbumItem));
                 return items;
             }

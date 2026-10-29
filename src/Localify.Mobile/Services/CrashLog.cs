@@ -83,16 +83,16 @@ public sealed class CrashPage : ContentPage
     public CrashPage(string report, Func<Page>? next)
     {
         BackgroundColor = Color.FromArgb("#121212");
-        var copy = new Button { Text = "Copier le rapport", BackgroundColor = Color.FromArgb("#1db954"), TextColor = Colors.Black };
+        var copy = new Button { Text = NativeText.Get("crash.copy", "Copier le rapport"), BackgroundColor = Color.FromArgb("#1db954"), TextColor = Colors.Black };
         copy.Clicked += async (_, _) =>
         {
             await Clipboard.Default.SetTextAsync(report);
-            copy.Text = "Copié ✓";
+            copy.Text = NativeText.Get("crash.copied", "Copié ✓");
         };
         var buttons = new HorizontalStackLayout { Spacing = 12, Children = { copy } };
         if (next is not null)
         {
-            var go = new Button { Text = "Continuer", BackgroundColor = Color.FromArgb("#333333"), TextColor = Colors.White };
+            var go = new Button { Text = NativeText.Get("crash.continue", "Continuer"), BackgroundColor = Color.FromArgb("#333333"), TextColor = Colors.White };
             go.Clicked += (_, _) =>
             {
                 CrashLog.Clear();
@@ -108,8 +108,8 @@ public sealed class CrashPage : ContentPage
             RowDefinitions = [new(GridLength.Auto), new(GridLength.Auto), new(GridLength.Star), new(GridLength.Auto)],
             Children =
             {
-                new Label { Text = next is null ? "Localify n'a pas pu démarrer" : "Localify s'est arrêté la dernière fois", FontSize = 22, FontAttributes = FontAttributes.Bold, TextColor = Colors.White },
-                Row(1, new Label { Text = "Voici le rapport d'erreur. Copiez-le pour le transmettre.", TextColor = Color.FromArgb("#b3b3b3") }),
+                new Label { Text = next is null ? NativeText.Get("crash.startFailed", "Localify n'a pas pu démarrer") : NativeText.Get("crash.stoppedLastTime", "Localify s'est arrêté la dernière fois"), FontSize = 22, FontAttributes = FontAttributes.Bold, TextColor = Colors.White },
+                Row(1, new Label { Text = NativeText.Get("crash.intro", "Voici le rapport d'erreur. Copiez-le pour le transmettre."), TextColor = Color.FromArgb("#b3b3b3") }),
                 Row(2, new ScrollView { Content = new Editor { Text = report, IsReadOnly = true, FontSize = 11, FontFamily = "monospace", TextColor = Color.FromArgb("#e0e0e0"), BackgroundColor = Color.FromArgb("#1e1e1e"), AutoSize = EditorAutoSizeOption.TextChanges } }),
                 Row(3, buttons),
             },
