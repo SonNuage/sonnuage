@@ -24,20 +24,20 @@ src/
   Localify.Server/      ASP.NET Core : API, scan, transcodage, auth, héberge le client web
   Localify.UI/          Razor Class Library : toutes les pages (lecteur + admin), partagée web/Android
   Localify.Web/         Blazor WebAssembly : lecteur navigateur (implémentation audio JS)
-  Localify.Android/     .NET MAUI Blazor Hybrid : mêmes pages + service natif Media3 (Android Auto)
+  Localify.Mobile/      .NET MAUI Blazor Hybrid : mêmes pages + service natif Media3 (Android Auto)
 tests/
   Localify.Server.Tests/
 deploy/                 compose.yaml, exemple de tunnel Cloudflare
 ```
 
 UI unique en Razor partagée entre le navigateur et Android. Le moteur audio est une interface
-(`IPlayerEngine`) avec deux implémentations : `<audio>` côté web, ExoPlayer/Media3 côté Android.
+(`IPlayer`) avec deux implémentations : `<audio>` côté web, ExoPlayer/Media3 côté Android.
 
 ### Serveur
 - **Stockage** : SQLite + EF Core (migrations), fichier dans `/config`. Bibliothèque musicale montée en lecture seule (`/music`), uploads dans `/music-uploads`.
 - **Scan** : service d'arrière-plan + `FileSystemWatcher`, scan incrémental (taille + mtime), tags lus avec TagLib# (repli sur l'arborescence `Artiste/Album/NN titre`), pochette intégrée ou image du dossier, déduplication par empreinte (taille + durée + titre).
 - **IDs stables** : GUID par piste, conservés aux rescans tant que le chemin ne change pas.
-- **Auth** : comptes utilisateurs (rôles `admin` / `user`), JWT courts + refresh tokens en rotation, admin initial créé via variables d'environnement. Les URL média acceptent un jeton de flux signé en query (`?st=`) pour `<audio>` et Android Auto.
+- **Auth** : comptes utilisateurs (rôles `admin` / `user`), JWT courts + refresh tokens en rotation, admin initial créé via variables d'environnement. Les URL média acceptent un jeton de flux signé en query (`?t=`) pour `<audio>` et Android Auto.
 - **Streaming** : `Range` complet sur l'original. Transcodage à la volée par ffmpeg :
   `original`, `lossless` (FLAC), `high` (MP3 320), `normal` (MP3 192), `low` (MP3 128), `data-saver` (MP3 64).
   Le flux est envoyé **pendant** l'encodage (premiers octets en < 1 s) et écrit en parallèle dans un cache disque ; plusieurs clients partagent le même encodage ; les requêtes suivantes sont servies depuis le cache avec `Range`. Cache borné en taille (LRU).

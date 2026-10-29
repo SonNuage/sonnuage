@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+    <RootNamespace>Localify.Mobile</RootNamespace>
+    <EnableDefaultCssItems>false</EnableDefaultCssItems>
+
+    <ApplicationTitle>Localify</ApplicationTitle>
+    <ApplicationId>org.pmjb.localify</ApplicationId>
+    <ApplicationDisplayVersion>$(Version)</ApplicationDisplayVersion>
+    <!-- Surchargé par la CI (-p:ApplicationVersion=$CI_PIPELINE_IID) : doit croître à chaque build installé. -->
+    <ApplicationVersion>1</ApplicationVersion>
+    <SupportedOSPlatformVersion>26.0</SupportedOSPlatformVersion>
+
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+    <!-- Les DTO sont (dé)sérialisés par réflexion : on ne rogne que le framework. -->
+    <TrimMode>partial</TrimMode>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <MauiIcon Include="Resources\AppIcon\appicon.svg" Color="#121212" />
+    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#121212" BaseSize="128,128" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" />
+    <PackageReference Include="Xamarin.AndroidX.Media3.Session" />
+    <PackageReference Include="Xamarin.AndroidX.Media3.ExoPlayer" />
+    <PackageReference Include="Xamarin.AndroidX.Media3.DataSource" />
+    <PackageReference Include="Xamarin.AndroidX.Media3.Common" />
+    <PackageReference Include="Xamarin.AndroidX.Core.Core.Ktx" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Localify.UI\Localify.UI.csproj" />
+  </ItemGroup>
+
+</Project>

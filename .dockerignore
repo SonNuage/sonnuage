@@ -1,0 +1,17 @@
+**/bin/
+**/obj/
+.git/
+.vs/
+.claude/
+data/
+var/
+cache/
+sdk/
+bin/
+legacy/
+tests/
+src/Localify.Mobile/
+out/
+build/
+*.apk
+.env

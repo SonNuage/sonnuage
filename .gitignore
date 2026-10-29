@@ -23,3 +23,5 @@ TestResults/
 
 # Node (legacy)
 node_modules/
+/out/
+*.Backup.tmp
