@@ -6,6 +6,7 @@
 @inject IPlayer Player
 @inject UiState Ui
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 
 @if (!_ready)
 {
@@ -76,7 +77,7 @@ else
         Endpoint.Changed += Refresh;
         Ui.Changed += Refresh;
         await Auth.EnsureLoadedAsync();
-        await L.InitAsync(Auth.User?.Language);
+        await L.InitAsync(Auth.User?.Language, JS);
         _ready = true;
         await AfterLoginAsync();
     }
