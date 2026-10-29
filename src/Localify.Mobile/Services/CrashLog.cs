@@ -130,3 +130,29 @@ public sealed class CrashApp(CrashReport report) : Application
 }
 
 public sealed record CrashReport(string Text);
+
+/// <summary>
+/// Les exceptions non gérées d'un composant Blazor ne tuent pas le processus : l'interface s'arrête et n'affiche que
+/// « Une erreur est survenue ». Elles passent par la journalisation, d'où on les recopie dans le journal de plantage.
+/// </summary>
+public sealed class CrashLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider
+{
+    public Microsoft.Extensions.Logging.ILogger CreateLogger(string categoryName) => new Logger(categoryName);
+
+    public void Dispose()
+    {
+    }
+
+    private sealed class Logger(string category) : Microsoft.Extensions.Logging.ILogger
+    {
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+        public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) =>
+            logLevel >= Microsoft.Extensions.Logging.LogLevel.Error && category.StartsWith("Microsoft.AspNetCore.Components", StringComparison.Ordinal);
+
+        public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            if (IsEnabled(logLevel) && exception is not null) CrashLog.Write($"Interface ({category})", exception);
+        }
+    }
+}

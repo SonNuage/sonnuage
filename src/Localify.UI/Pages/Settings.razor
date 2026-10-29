@@ -89,7 +89,7 @@
                     <li class="@(active ? "active" : "")">
                         <div class="account-name">
                             <strong>@account.Username</strong>
-                            <span class="muted small">@account.Server.Host@(active ? $" · {L["accounts.active"]}" : "")</span>
+                            <span class="muted small">@account.Host@(active ? $" · {L["accounts.active"]}" : "")</span>
                         </div>
                         <div class="row">
                             @if (!active)

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Localify.Contracts;
 
 namespace Localify.UI.Services;
@@ -11,7 +12,14 @@ namespace Localify.UI.Services;
 /// </summary>
 public sealed record Account(Guid Id, Uri Server, Guid UserId, string Username)
 {
-    public string Label => $"{Username} · {Server.Host}";
+    [JsonIgnore]
+    public string Label => $"{Username} · {Host}";
+
+    /// <summary>Hôte, avec le port s'il n'est pas celui par défaut (deux serveurs sur la même machine).</summary>
+    [JsonIgnore]
+    public string Host => Server.IsDefaultPort ? Server.Host : $"{Server.Host}:{Server.Port}";
+
+    [JsonIgnore]
     public string SessionKey => AccountStore.Scoped(AccountStore.SessionBaseKey, Id);
 }
 

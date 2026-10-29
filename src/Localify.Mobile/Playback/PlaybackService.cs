@@ -105,6 +105,8 @@ public sealed class PlaybackService : MediaLibraryService
         queue.Save(player, _queueKey);
         _queueKey = null;
         _prefetcher?.Cancel();
+        // Stop() garde playWhenReady : sans ceci, la file du nouveau compte repartirait toute seule.
+        player.PlayWhenReady = false;
         player.Stop();
         player.ClearMediaItems();
         _queueKey = queue.CurrentKey;
