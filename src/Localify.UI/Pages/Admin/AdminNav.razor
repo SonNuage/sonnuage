@@ -2,16 +2,16 @@
 
 @if (!Auth.IsAdmin)
 {
-    <div class="empty"><p>Accès réservé aux administrateurs.</p></div>
+    <div class="empty"><p>@L["admin.restricted"]</p></div>
 }
 else
 {
     <div class="tabs">
-        <NavLink class="tab" href="admin" Match="NavLinkMatch.All">Tableau de bord</NavLink>
-        <NavLink class="tab" href="admin/upload">Ajouter des œuvres</NavLink>
-        <NavLink class="tab" href="admin/youtube">YouTube</NavLink>
-        <NavLink class="tab" href="admin/library">Métadonnées</NavLink>
-        <NavLink class="tab" href="admin/users">Utilisateurs</NavLink>
+        <NavLink class="tab" href="admin" Match="NavLinkMatch.All">@L["admin.tabs.dashboard"]</NavLink>
+        <NavLink class="tab" href="admin/upload">@L["admin.tabs.upload"]</NavLink>
+        <NavLink class="tab" href="admin/youtube">@L["admin.tabs.youtube"]</NavLink>
+        <NavLink class="tab" href="admin/library">@L["admin.tabs.metadata"]</NavLink>
+        <NavLink class="tab" href="admin/users">@L["admin.tabs.users"]</NavLink>
     </div>
     @ChildContent
 }

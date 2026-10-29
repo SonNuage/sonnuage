@@ -14,6 +14,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ApiClient>();
         services.AddSingleton<PlaybackSettings>();
         services.AddSingleton<UiState>();
+        services.AddSingleton<Localizer>();
         return services;
     }
 }

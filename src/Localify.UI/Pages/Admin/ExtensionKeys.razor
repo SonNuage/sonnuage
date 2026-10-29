@@ -3,24 +3,21 @@
 @inject UiState Ui
 
 <section class="panel">
-    <h2>Extension de navigateur</h2>
+    <h2>@L["keys.title"]</h2>
     <p class="muted small">
-        L'extension Localify ajoute un bouton « Ajouter à Localify » sur YouTube et YouTube Music (dossier <span class="mono">extension/</span> du dépôt, à charger
-        « non empaquetée »). Elle se connecte avec une clé créée ici : la clé permet seulement d'ajouter des vidéos à la file, de s'abonner et d'envoyer
-        des cookies YouTube. Elle ne donne accès ni à la bibliothèque ni au reste de l'administration. Une clé cesse de fonctionner dès qu'elle est révoquée,
-        ou si son créateur n'est plus administrateur.
+        @L["keys.intro"]
     </p>
     <form class="inline-form" @onsubmit="CreateAsync" @onsubmit:preventDefault="true">
-        <input class="input" placeholder="Nom (ex. Firefox du salon)" @bind="_name" maxlength="100" autocomplete="off" required />
-        <button class="btn primary" type="submit">Créer une clé</button>
+        <input class="input" placeholder="@L["keys.namePlaceholder"]" @bind="_name" maxlength="100" autocomplete="off" required />
+        <button class="btn primary" type="submit">@L["keys.create"]</button>
     </form>
 
     @if (_created is { } created)
     {
         <div class="notice" style="margin-top: .6rem">
-            <span>Clé « @created.Key.Name » : copiez-la maintenant dans les options de l'extension, elle ne sera plus affichée.</span>
+            <span>@L["keys.created", ("name", created.Key.Name)]</span>
             <input class="input mono" readonly value="@created.Secret" onfocus="this.select()" />
-            <button class="btn" @onclick="() => _created = null">Fermer</button>
+            <button class="btn" @onclick="() => _created = null">@L["common.close"]</button>
         </div>
     }
 
@@ -28,17 +25,17 @@
     {
         <div class="table-wrap" style="margin-top: .6rem">
             <table class="table">
-                <thead><tr><th>Nom</th><th>Clé</th><th>Créée</th><th>Dernière utilisation</th><th></th></tr></thead>
+                <thead><tr><th>@L["keys.colName"]</th><th>@L["keys.colKey"]</th><th>@L["keys.colCreated"]</th><th>@L["keys.colLastUsed"]</th><th></th></tr></thead>
                 <tbody>
                     @foreach (var k in _keys)
                     {
                         <tr @key="k.Id">
                             <td>@k.Name</td>
                             <td class="mono">@k.Prefix…</td>
-                            <td>@k.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy") <span class="muted small">par @k.CreatedBy</span></td>
-                            <td>@(k.LastUsedAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "jamais")</td>
+                            <td>@L.Date(k.CreatedAt) <span class="muted small">@L["keys.by", ("name", k.CreatedBy)]</span></td>
+                            <td>@(k.LastUsedAt is { } used ? L.DateTime(used) : L["common.never"])</td>
                             <td class="row-actions">
-                                <button class="icon-btn danger" title="Révoquer" @onclick="() => _revoking = k"><Icon Name="delete" Size="18" /></button>
+                                <button class="icon-btn danger" title="@L["keys.revoke"]" @onclick="() => _revoking = k"><Icon Name="delete" Size="18" /></button>
                             </td>
                         </tr>
                     }
@@ -48,15 +45,15 @@
     }
     else if (_keys is not null)
     {
-        <p class="muted small">Aucune clé.</p>
+        <p class="muted small">@L["keys.none"]</p>
     }
 </section>
 
-<Modal Open="_revoking is not null" OpenChanged="v => { if (!v) _revoking = null; }" Title="Révoquer la clé ?">
-    <ChildContent><p>L'extension qui utilise « @_revoking?.Name » ne pourra plus rien envoyer.</p></ChildContent>
+<Modal Open="_revoking is not null" OpenChanged="v => { if (!v) _revoking = null; }" Title="@L["keys.revokeConfirm"]">
+    <ChildContent><p>@L["keys.revokeHint", ("name", _revoking?.Name)]</p></ChildContent>
     <Footer>
-        <button class="btn" @onclick="() => _revoking = null">Annuler</button>
-        <button class="btn danger" @onclick="RevokeAsync">Révoquer</button>
+        <button class="btn" @onclick="() => _revoking = null">@L["common.cancel"]</button>
+        <button class="btn danger" @onclick="RevokeAsync">@L["keys.revoke"]</button>
     </Footer>
 </Modal>
 
@@ -76,7 +73,7 @@
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
-            Ui.Notify(ex.Message, true);
+            Ui.Notify(L.Server(ex.Message), true);
         }
     }
 
@@ -91,7 +88,7 @@
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
-            Ui.Notify(ex.Message, true);
+            Ui.Notify(L.Server(ex.Message), true);
         }
     }
 
@@ -102,12 +99,12 @@
         try
         {
             await Api.RevokeExtensionKeyAsync(key.Id);
-            Ui.Notify("Clé révoquée");
+            Ui.Notify(L["keys.revoked"]);
             await LoadAsync();
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
-            Ui.Notify(ex.Message, true);
+            Ui.Notify(L.Server(ex.Message), true);
         }
     }
 }

@@ -215,7 +215,7 @@ public sealed class WebPlayer(IJSRuntime js, ApiClient api, PlaybackSettings set
         var url = await api.StreamUrlAsync(track.Id, settings.Quality);
         if (url is null)
         {
-            _error = "Session expirée";
+            _error = Localizer.Current?["player.errors.sessionExpired"] ?? "Session expired";
             Changed();
             return;
         }
@@ -308,9 +308,9 @@ public sealed class WebPlayer(IJSRuntime js, ApiClient api, PlaybackSettings set
     public Task OnEnded() => AdvanceAsync(auto: true);
 
     [JSInvokable]
-    public void OnError(string message)
+    public void OnError(string key)
     {
-        _error = message;
+        _error = Localizer.Current?[key] ?? key;
         _playing = false;
         _buffering = false;
         Changed();

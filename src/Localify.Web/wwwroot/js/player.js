@@ -113,7 +113,7 @@ function onError() {
       return;
     }
   }
-  notify('OnError', err.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED ? 'Format non lu par ce navigateur' : 'Lecture impossible (réseau)');
+  notify('OnError', err.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED ? 'player.errors.unsupported' : 'player.errors.network');
 }
 
 function reloadCurrent() {

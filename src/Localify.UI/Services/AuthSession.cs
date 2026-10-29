@@ -70,10 +70,10 @@ public sealed class AuthSession(IKeyValueStore store, IServerEndpoint endpoint, 
         }
         catch (HttpRequestException ex)
         {
-            return $"Serveur injoignable : {ex.Message}";
+            return Text("login.unreachable", ("message", ex.Message));
         }
-        if ((int)response.StatusCode == 429) return "Trop de tentatives, réessayez dans une minute.";
-        if (!response.IsSuccessStatusCode) return "Identifiants invalides.";
+        if ((int)response.StatusCode == 429) return Text("login.tooManyAttempts");
+        if (!response.IsSuccessStatusCode) return Text("login.invalid");
         await SetAsync(await response.Content.ReadFromJsonAsync<TokenResponse>(JsonDefaults.Options));
         return null;
     }
@@ -164,10 +164,19 @@ public sealed class AuthSession(IKeyValueStore store, IServerEndpoint endpoint, 
         Changed?.Invoke();
     }
 
+    /// <summary>Après un changement du compte (langue préférée…) : la session garde l'utilisateur à jour.</summary>
+    public async Task UpdateUserAsync(UserDto user)
+    {
+        if (_tokens is { } t && t.User.Id == user.Id) await SetAsync(t with { User = user });
+    }
+
+    private static string Text(string key, params (string, object?)[] args) =>
+        Localizer.Current?[key, args] ?? Localify.Contracts.Localization.Translations.Instance.Get("en", key, args);
+
     private HttpClient CreateClient()
     {
         var http = httpFactory.CreateClient("localify-anonymous");
-        http.BaseAddress = endpoint.BaseAddress ?? throw new InvalidOperationException("Adresse du serveur non configurée");
+        http.BaseAddress = endpoint.BaseAddress ?? throw new InvalidOperationException(Localizer.Current?["errors.serverNotConfigured"] ?? "Server address not configured.");
         return http;
     }
 }

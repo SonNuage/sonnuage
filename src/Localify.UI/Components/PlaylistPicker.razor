@@ -1,9 +1,9 @@
 @inject UiState Ui
 
-<Modal Open="Open" OpenChanged="OpenChanged" Title="Ajouter à une playlist">
+<Modal Open="Open" OpenChanged="OpenChanged" Title="@L["picker.title"]">
     <form class="inline-form" @onsubmit="CreateAsync" @onsubmit:preventDefault="true">
-        <input class="input" placeholder="Nouvelle playlist…" @bind="_newName" maxlength="200" />
-        <button class="btn" type="submit" disabled="@string.IsNullOrWhiteSpace(_newName)">Créer</button>
+        <input class="input" placeholder="@L["picker.newPlaceholder"]" @bind="_newName" maxlength="200" />
+        <button class="btn" type="submit" disabled="@string.IsNullOrWhiteSpace(_newName)">@L["common.create"]</button>
     </form>
     <ul class="picker-list">
         @foreach (var p in Ui.Playlists)
@@ -12,7 +12,7 @@
                 <button class="picker-item" @onclick="() => AddAsync(p.Id)">
                     <Cover AlbumId="p.CoverAlbumId" HasCover="p.CoverAlbumId is not null" Size="96" Class="cover-xs" Seed="@p.Name" />
                     <span>@p.Name</span>
-                    <small>@Format.Plural(p.TrackCount, "titre", "titres")</small>
+                    <small>@L["common.tracks", ("count", p.TrackCount)]</small>
                 </button>
             </li>
         }

@@ -14,34 +14,34 @@
                 <span class="pb-title">@track.Title</span>
                 <span class="pb-artist">@track.ArtistName</span>
             </div>
-            <button class="icon-btn fav @(track.IsFavorite ? "on" : "")" title="Favori" @onclick="() => Ui.ToggleFavoriteAsync(track)" @onclick:stopPropagation="true">
+            <button class="icon-btn fav @(track.IsFavorite ? "on" : "")" title="@L["common.favorite"]" @onclick="() => Ui.ToggleFavoriteAsync(track)" @onclick:stopPropagation="true">
                 <Icon Name="@(track.IsFavorite ? "heart" : "heart-outline")" Size="20" />
             </button>
         </div>
 
         <div class="pb-center">
             <div class="pb-controls">
-                <button class="icon-btn desktop-only @(State.Shuffle ? "on" : "")" title="Lecture aléatoire" @onclick="() => Player.SetShuffleAsync(!State.Shuffle)">
+                <button class="icon-btn desktop-only @(State.Shuffle ? "on" : "")" title="@L["player.shuffle"]" @onclick="() => Player.SetShuffleAsync(!State.Shuffle)">
                     <Icon Name="shuffle" Size="20" />
                 </button>
-                <button class="icon-btn desktop-only" title="Précédent" @onclick="Player.PreviousAsync"><Icon Name="previous" /></button>
-                <button class="play-btn @(State.IsBuffering ? "buffering" : "")" title="@(State.IsPlaying ? "Pause" : "Lecture")" @onclick="Player.TogglePlayAsync">
+                <button class="icon-btn desktop-only" title="@L["player.previous"]" @onclick="Player.PreviousAsync"><Icon Name="previous" /></button>
+                <button class="play-btn @(State.IsBuffering ? "buffering" : "")" title="@(State.IsPlaying ? L["player.pause"] : L["player.play"])" @onclick="Player.TogglePlayAsync">
                     <Icon Name="@(State.IsPlaying ? "pause" : "play")" />
                 </button>
-                <button class="icon-btn" title="Suivant" @onclick="Player.NextAsync"><Icon Name="next" /></button>
-                <button class="icon-btn desktop-only @(State.Repeat != RepeatMode.Off ? "on" : "")" title="Répéter" @onclick="CycleRepeatAsync">
+                <button class="icon-btn" title="@L["player.next"]" @onclick="Player.NextAsync"><Icon Name="next" /></button>
+                <button class="icon-btn desktop-only @(State.Repeat != RepeatMode.Off ? "on" : "")" title="@L["player.repeat"]" @onclick="CycleRepeatAsync">
                     <Icon Name="@(State.Repeat == RepeatMode.One ? "repeat-one" : "repeat")" Size="20" />
                 </button>
             </div>
             <div class="pb-seek desktop-only">
                 <span class="time">@Format.Duration(State.PositionSeconds)</span>
-                <input type="range" class="slider" min="0" max="@Max" step="any" value="@Position" style="@Pct(Position, Max)" @onchange="SeekAsync" aria-label="Position" />
+                <input type="range" class="slider" min="0" max="@Max" step="any" value="@Position" style="@Pct(Position, Max)" @onchange="SeekAsync" aria-label="@L["player.position"]" />
                 <span class="time">@Format.Duration(State.DurationSeconds)</span>
             </div>
             @if (Player is IConnectPlayer { IsRemote: true } connect)
             {
-                <button class="pb-remote" title="Faire jouer la musique dans cet onglet" @onclick="connect.PlayHereAsync">
-                    <Icon Name="volume" Size="14" /> Lecture dans un autre onglet · <span class="strong">Lire ici</span>
+                <button class="pb-remote" title="@L["player.remote.title"]" @onclick="connect.PlayHereAsync">
+                    <Icon Name="volume" Size="14" /> @L["player.remote.elsewhere"] · <span class="strong">@L["player.remote.playHere"]</span>
                 </button>
             }
             else if (State.Error is { } error)
@@ -51,11 +51,11 @@
         </div>
 
         <div class="pb-right desktop-only">
-            <a class="icon-btn" href="queue" title="File d'attente"><Icon Name="queue" Size="20" /></a>
-            <button class="icon-btn" title="Couper le son" @onclick="ToggleMuteAsync">
+            <a class="icon-btn" href="queue" title="@L["nav.queue"]"><Icon Name="queue" Size="20" /></a>
+            <button class="icon-btn" title="@L["player.mute"]" @onclick="ToggleMuteAsync">
                 <Icon Name="@(State.Volume == 0 ? "volume-off" : "volume")" Size="20" />
             </button>
-            <input type="range" class="slider volume" min="0" max="100" value="@((int)(State.Volume * 100))" style="@Pct(State.Volume, 1)" @oninput="VolumeAsync" aria-label="Volume" />
+            <input type="range" class="slider volume" min="0" max="100" value="@((int)(State.Volume * 100))" style="@Pct(State.Volume, 1)" @oninput="VolumeAsync" aria-label="@L["player.volume"]" />
         </div>
     </footer>
 }

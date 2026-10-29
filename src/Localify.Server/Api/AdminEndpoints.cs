@@ -1,3 +1,4 @@
+using Localify.Contracts.Localization;
 using Localify.Contracts;
 using Localify.Server.Admin;
 using Localify.Server.Auth;
@@ -103,7 +104,7 @@ public static class AdminEndpoints
             // Seuls les fichiers envoyés via l'admin sont supprimables : la bibliothèque principale reste en lecture seule.
             var uploadRoot = Path.GetFullPath(options.Value.UploadPath);
             if (!LibraryScanner.IsUnder(track.FilePath, uploadRoot))
-                return Results.Problem("Ce fichier fait partie de la bibliothèque principale (lecture seule). Supprimez-le directement sur le disque.", statusCode: 409);
+                return Results.Problem(Tx.Key("errors.admin.readOnlyFile"), statusCode: 409);
 
             if (File.Exists(track.FilePath)) File.Delete(track.FilePath);
             db.Tracks.Remove(track);
@@ -149,7 +150,7 @@ public static class AdminEndpoints
 
             using var buffer = new MemoryStream();
             await request.Body.CopyToAsync(buffer, ct);
-            if (buffer.Length is 0 or > MaxCoverBytes) return Results.Problem("Image vide ou trop lourde (10 Mo max).", statusCode: 400);
+            if (buffer.Length is 0 or > MaxCoverBytes) return Results.Problem(Tx.Key("errors.admin.badCover"), statusCode: 400);
 
             var dir = CoverLocator.CustomCoverDirectory(options.Value);
             Directory.CreateDirectory(dir);
@@ -188,7 +189,7 @@ public static class AdminEndpoints
             var (path, error) = uploads.Complete(id);
             if (path is null) return Results.Problem(error, statusCode: 400);
             var tracks = await scans.ScanFilesNowAsync([path], ct);
-            if (tracks.Count == 0) return Results.Problem("Fichier reçu mais illisible.", statusCode: 422);
+            if (tracks.Count == 0) return Results.Problem(Tx.Key("errors.admin.unreadable"), statusCode: 422);
             var ids = tracks.Select(t => t.Id).ToList();
             return Results.Ok(await LibraryEndpoints.TracksInOrderAsync(db, http.User.UserId(), ids, ct));
         });
@@ -217,9 +218,9 @@ public static class AdminEndpoints
             if (user is null) return Results.NotFound();
             if (req.Role is { } role)
             {
-                if (role is not (Roles.Admin or Roles.User)) return Results.Problem("Rôle inconnu.", statusCode: 400);
+                if (role is not (Roles.Admin or Roles.User)) return Results.Problem(Tx.Key("errors.unknownRole"), statusCode: 400);
                 if (role != Roles.Admin && user.Role == Roles.Admin && await db.Users.CountAsync(u => u.Role == Roles.Admin, ct) == 1)
-                    return Results.Problem("Il faut garder au moins un administrateur.", statusCode: 409);
+                    return Results.Problem(Tx.Key("errors.admin.lastAdmin"), statusCode: 409);
                 if (user.Role != role)
                 {
                     user.Role = role;
@@ -229,7 +230,7 @@ public static class AdminEndpoints
             if (req.Password is { } password)
             {
                 if (password.Length < UserService.MinPasswordLength)
-                    return Results.Problem($"Mot de passe : {UserService.MinPasswordLength} caractères minimum.", statusCode: 400);
+                    return Results.Problem(Tx.Key("errors.passwordMin", ("min", UserService.MinPasswordLength)), statusCode: 400);
                 await users.SetPasswordAsync(user, password, ct);
             }
             await db.SaveChangesAsync(ct);
@@ -238,7 +239,7 @@ public static class AdminEndpoints
 
         g.MapDelete("/users/{id:guid}", async (Guid id, HttpContext http, LocalifyDbContext db, CancellationToken ct) =>
         {
-            if (id == http.User.UserId()) return Results.Problem("Impossible de supprimer son propre compte.", statusCode: 409);
+            if (id == http.User.UserId()) return Results.Problem(Tx.Key("errors.admin.deleteSelf"), statusCode: 409);
             var deleted = await db.Users.Where(u => u.Id == id).ExecuteDeleteAsync(ct);
             return deleted > 0 ? Results.NoContent() : Results.NotFound();
         });
@@ -259,7 +260,7 @@ public static class AdminEndpoints
     }
 
     private static IResult? Validate(string? title) =>
-        title is not null && string.IsNullOrWhiteSpace(title) ? Results.Problem("Le titre ne peut pas être vide.", statusCode: 400) : null;
+        title is not null && string.IsNullOrWhiteSpace(title) ? Results.Problem(Tx.Key("errors.admin.emptyTitle"), statusCode: 400) : null;
 
     private static string? Clean(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 

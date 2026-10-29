@@ -76,6 +76,8 @@ public sealed class User
     /// <summary>Changé au changement de mot de passe : invalide tous les jetons média émis.</summary>
     public string SecurityStamp { get; set; } = Guid.NewGuid().ToString("N");
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    /// <summary>Langue préférée de l'interface (« fr », « en »…), suivie sur tous ses appareils ; null = celle de l'appareil.</summary>
+    public string? Language { get; set; }
 }
 
 public sealed class RefreshToken

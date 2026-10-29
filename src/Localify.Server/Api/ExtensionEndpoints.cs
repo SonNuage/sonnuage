@@ -1,3 +1,4 @@
+using Localify.Contracts.Localization;
 using Localify.Contracts;
 using Localify.Server.Auth;
 using Localify.Server.Data;
@@ -21,7 +22,7 @@ public static class ExtensionEndpoints
         keys.MapPost("/", async (CreateExtensionKeyRequest req, HttpContext http, LocalifyDbContext db, TimeProvider time, CancellationToken ct) =>
         {
             var name = req.Name?.Trim();
-            if (string.IsNullOrEmpty(name) || name.Length > 100) return Results.Problem("Nom requis (100 caractères au plus).", statusCode: 400);
+            if (string.IsNullOrEmpty(name) || name.Length > 100) return Results.Problem(Tx.Key("errors.keys.nameRequired"), statusCode: 400);
             if (!Guid.TryParse(http.User.FindFirst("sub")?.Value, out var userId)) return Results.Unauthorized();
             var secret = ApiKeyAuthenticationHandler.NewSecret();
             var key = new ApiKey
@@ -44,7 +45,7 @@ public static class ExtensionEndpoints
 
         app.MapGet("/api/extension/status", async (string? videoId, string? url, LocalifyDbContext db, CancellationToken ct) =>
         {
-            if (videoId is not null && !YoutubeImporter.IsVideoId(videoId)) return Results.Problem("Identifiant de vidéo invalide.", statusCode: 400);
+            if (videoId is not null && !YoutubeImporter.IsVideoId(videoId)) return Results.Problem(Tx.Key("errors.badVideoId"), statusCode: 400);
             var item = videoId is null ? null : await db.YoutubeItems.Where(i => i.VideoId == videoId)
                 .Select(i => new { i.Status, i.NeedsReview, i.Error }).FirstOrDefaultAsync(ct);
             bool? subscribed = null;

@@ -1,3 +1,4 @@
+using Localify.Contracts.Localization;
 using System.Text.RegularExpressions;
 using Localify.Contracts;
 using Localify.Server.Data;
@@ -41,7 +42,7 @@ public sealed partial class YoutubeSyncService(
             using var scope = scopes.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<LocalifyDbContext>();
             var sub = await db.YoutubeSubscriptions.FirstOrDefaultAsync(s => s.Id == subscriptionId, ct);
-            if (sub is null) return "Abonnement introuvable.";
+            if (sub is null) return Tx.Key("errors.yt.subNotFound");
             try
             {
                 var listing = await ytDlp.ListAsync(sub.Url, null, ct);
@@ -69,7 +70,7 @@ public sealed partial class YoutubeSyncService(
     public async Task<(YoutubeSubscription? Subscription, string? Error)> CreateAsync(LocalifyDbContext db, CreateSubscriptionRequest req, CancellationToken ct)
     {
         if (NormalizeUrl(req.Url) is not { } url) return (null, "Adresse YouTube invalide.");
-        if (await db.YoutubeSubscriptions.AnyAsync(s => s.Url == url, ct)) return (null, "Déjà abonné à cette adresse.");
+        if (await db.YoutubeSubscriptions.AnyAsync(s => s.Url == url, ct)) return (null, Tx.Key("errors.yt.alreadySubscribed"));
         YtListing listing;
         try
         {
@@ -79,7 +80,7 @@ public sealed partial class YoutubeSyncService(
         {
             return (null, ex.Message);
         }
-        if (listing.Kind != "playlist") return (null, "Cette adresse est une vidéo : importez-la directement, ou abonnez-vous à sa playlist ou à sa chaîne.");
+        if (listing.Kind != "playlist") return (null, Tx.Key("errors.yt.isVideo"));
 
         var sub = new YoutubeSubscription { Url = url, Title = listing.Title.Length > 300 ? listing.Title[..300] : listing.Title, IsAlbum = req.IsAlbum, CreatedAt = time.GetUtcNow() };
         db.YoutubeSubscriptions.Add(sub);

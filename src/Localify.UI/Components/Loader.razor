@@ -4,7 +4,7 @@
         <p>@Error</p>
         @if (OnRetry.HasDelegate)
         {
-            <button class="btn" @onclick="OnRetry">Réessayer</button>
+            <button class="btn" @onclick="OnRetry">@L["common.retry"]</button>
         }
     </div>
 }

@@ -1,0 +1,665 @@
+{
+  "_meta": {
+    "name": "English",
+    "decimalSeparator": ".",
+    "groupSeparator": ",",
+    "months": [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ],
+    "shortMonths": [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec"
+    ],
+    "days": [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday"
+    ],
+    "shortDays": [
+      "Sun",
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri",
+      "Sat"
+    ]
+  },
+  "common": {
+    "tracks": {
+      "one": "{count} track",
+      "other": "{count} tracks"
+    },
+    "albums": {
+      "one": "{count} album",
+      "other": "{count} albums"
+    },
+    "videos": {
+      "one": "{count} video",
+      "other": "{count} videos"
+    },
+    "create": "Create",
+    "retry": "Try again",
+    "close": "Close",
+    "play": "Play",
+    "favorite": "Like",
+    "remove": "Remove",
+    "more": "More options",
+    "showAll": "Show all",
+    "playlist": "Playlist",
+    "album": "Album",
+    "artist": "Artist",
+    "addToQueue": "Add to queue",
+    "edit": "Edit",
+    "showMore": "Show more",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "never": "never",
+    "total": "Total"
+  },
+  "format": {
+    "hoursMinutes": "{hours} h {minutes} min",
+    "minutes": "{minutes} min",
+    "bytes": {
+      "tb": "{value} TB",
+      "gb": "{value} GB",
+      "mb": "{value} MB",
+      "kb": "{value} KB",
+      "b": "{value} B"
+    },
+    "date": "{MMM} {d}, {yyyy}",
+    "dateTime": "{MMM} {d}, {yyyy}, {HH}:{mm}",
+    "percent": "{value}%",
+    "hoursShort": "{value} h"
+  },
+  "toast": {
+    "favoriteAdded": "Added to Liked Songs",
+    "favoriteRemoved": "Removed from Liked Songs",
+    "addedTo": "Added to {name}",
+    "addedManyTo": {
+      "one": "{count} track added to {name}",
+      "other": "{count} tracks added to {name}"
+    },
+    "thePlaylist": "the playlist",
+    "playlistCreated": "Playlist “{name}” created",
+    "playNext": "Will play next",
+    "queued": "Added to queue"
+  },
+  "errors": {
+    "serverNotConfigured": "Server address not configured.",
+    "sessionExpired": "Session expired.",
+    "generic": "Error",
+    "http": "Error {status}",
+    "unknownLanguage": "Unknown language: {language}",
+    "upload": {
+      "unknownFormat": "Unrecognised audio format.",
+      "badSize": "Invalid file size.",
+      "unknownSession": "Unknown or expired upload session.",
+      "offset": "Expected offset: {offset}.",
+      "chunkTooLarge": "Chunk too large.",
+      "incomplete": "Incomplete file: {received}/{size} bytes."
+    },
+    "admin": {
+      "readOnlyFile": "This file belongs to the main library (read-only). Delete it directly on disk.",
+      "badCover": "Image empty or too large (10 MB max).",
+      "unreadable": "File received but unreadable.",
+      "lastAdmin": "At least one administrator must remain.",
+      "deleteSelf": "You can’t delete your own account.",
+      "emptyTitle": "The title can’t be empty."
+    },
+    "unknownRole": "Unknown role.",
+    "passwordMin": "Password: {min} characters minimum.",
+    "auth": {
+      "invalid": "Invalid credentials.",
+      "wrongPassword": "Current password is incorrect."
+    },
+    "keys": {
+      "nameRequired": "Name required (100 characters max)."
+    },
+    "badVideoId": "Invalid video ID.",
+    "nameRequired": "Name required.",
+    "playlistLimit": "A playlist is limited to {max} tracks.",
+    "unknownQuality": "Unknown quality: {quality}",
+    "yt": {
+      "updateFailed": "Update failed: {message}",
+      "batchSize": "Between 1 and 1000 videos per request.",
+      "retryOnlyFailed": "Only failed or skipped imports can be retried.",
+      "badFormat": "Invalid yt-dlp format (e.g. “140”, “bestaudio”, “251/140”).",
+      "inProgress": "Import in progress.",
+      "unreachable": "Service unreachable: {message}",
+      "notFound": "Import not found or not finished yet.",
+      "titleArtistRequired": "Title and artist are required.",
+      "fileGone": "The track’s file is gone.",
+      "syncInterval": "Sync interval: between 0 (never) and 168 hours.",
+      "audioFormat": "Audio format: “original” or “mp3”.",
+      "threshold": "Acceptance threshold: between 0 and 1.",
+      "noCookies": "No youtube.com cookies found: export cookies in Netscape format (cookies.txt) from a browser signed in to YouTube.",
+      "subNotFound": "Subscription not found.",
+      "alreadySubscribed": "Already subscribed to this address.",
+      "isVideo": "This address is a video: import it directly, or subscribe to its playlist or channel.",
+      "checksumMissing": "Checksum for {asset} missing from the yt-dlp release.",
+      "checksumUnreadable": "Checksum for {asset} unreadable.",
+      "checksumMismatch": "{asset}: unexpected SHA-256 checksum, download refused.",
+      "formatsAvailable": "Available formats:",
+      "formatsSignedIn": "Signed in (cookies):",
+      "formatsAnonymous": "Without cookies:",
+      "formatsFailed": "(list unavailable: {message})",
+      "formatsNoTable": "(no table)",
+      "missing": "yt-dlp not found: install it or use “Update yt-dlp” in the admin pages.",
+      "cannotStart": "Couldn’t start yt-dlp.",
+      "timeout": "yt-dlp didn’t finish in time.",
+      "addCookies": " — Add, in the settings, the cookies of an (adult) YouTube account that has access.",
+      "cookiesInsufficient": " — The saved cookies aren’t enough: underage account, not a member, or expired session?"
+    },
+    "users": {
+      "usernameLength": "Username: 2 to 64 characters.",
+      "exists": "This username already exists."
+    }
+  },
+  "login": {
+    "unreachable": "Server unreachable: {message}",
+    "tooManyAttempts": "Too many attempts, try again in a minute.",
+    "invalid": "Invalid username or password.",
+    "title": "Log in",
+    "server": "Server: {host}",
+    "changeServer": "change",
+    "username": "Username",
+    "password": "Password",
+    "submitting": "Logging in…",
+    "submit": "Log in"
+  },
+  "player": {
+    "errors": {
+      "unsupported": "This browser can’t play this format",
+      "network": "Playback failed (network)",
+      "sessionExpired": "Session expired"
+    },
+    "shuffle": "Shuffle",
+    "previous": "Previous",
+    "next": "Next",
+    "pause": "Pause",
+    "play": "Play",
+    "repeat": "Repeat",
+    "position": "Position",
+    "volume": "Volume",
+    "mute": "Mute",
+    "collapse": "Collapse",
+    "nowPlaying": "Now playing",
+    "remote": {
+      "title": "Play the music in this tab",
+      "elsewhere": "Playing in another tab",
+      "elsewhereShort": "In another tab",
+      "playHere": "Play here"
+    }
+  },
+  "nav": {
+    "home": "Home",
+    "search": "Search",
+    "library": "Your Library",
+    "queue": "Queue",
+    "admin": "Admin",
+    "settings": "Settings",
+    "playlists": "Playlists",
+    "newPlaylist": "New playlist",
+    "likedSongs": "Liked Songs",
+    "defaultPlaylistName": "My Playlist #{number}"
+  },
+  "app": {
+    "notFound": "Page not found."
+  },
+  "server": {
+    "title": "Your server",
+    "hint": "Address of your Localify server, for example",
+    "address": "Address",
+    "checking": "Checking…",
+    "continue": "Continue",
+    "invalid": "Invalid address.",
+    "notLocalify": "This server doesn’t answer like a Localify server.",
+    "cannotConnect": "Can’t connect: {message}"
+  },
+  "picker": {
+    "title": "Add to playlist",
+    "newPlaceholder": "New playlist…"
+  },
+  "track": {
+    "lossless": "Lossless source file",
+    "playNext": "Play next",
+    "addToQueue": "Add to queue",
+    "addToPlaylist": "Add to playlist",
+    "goToAlbum": "Go to album",
+    "goToArtist": "Go to artist"
+  },
+  "home": {
+    "shuffleAll": "Shuffle the whole library",
+    "yourPlaylists": "Your playlists",
+    "recentlyPlayed": "Recently played",
+    "recentlyAdded": "Recently added",
+    "emptyLibrary": "The library is empty.",
+    "emptyLibraryAdmin": "Add music from the admin pages.",
+    "greeting": {
+      "night": "Good night",
+      "day": "Good morning",
+      "evening": "Good evening"
+    }
+  },
+  "favorites": {
+    "empty": "Tap the heart on a track to find it here."
+  },
+  "queue": {
+    "nothing": "Nothing playing.",
+    "current": "Now playing",
+    "next": "Next up",
+    "shuffled": "(shuffled)",
+    "end": "End of the queue.",
+    "endRepeat": "End of the queue: playback will start over."
+  },
+  "artist": {
+    "playAll": "Play all",
+    "discography": "Discography",
+    "notFound": "Artist not found."
+  },
+  "search": {
+    "placeholder": "Artists, albums, tracks…",
+    "didYouMean": "Did you mean",
+    "noResults": "No results for “{query}”.",
+    "tracks": "Tracks",
+    "artists": "Artists",
+    "albums": "Albums"
+  },
+  "library": {
+    "playlists": "Playlists",
+    "albums": "Albums",
+    "artists": "Artists",
+    "autoPlaylist": "Automatic playlist",
+    "sort": {
+      "recent": "Recently added",
+      "title": "Title",
+      "artist": "Artist",
+      "year": "Year",
+      "label": "Sort by"
+    }
+  },
+  "playlist": {
+    "descriptionPlaceholder": "Description (optional)",
+    "rename": "Rename",
+    "done": "Done",
+    "reorder": "Reorder",
+    "delete": "Delete playlist",
+    "deleteConfirm": "Delete this playlist?",
+    "empty": "This playlist is empty. Add tracks from an album or a search (⋮ menu → “Add to playlist”).",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "removeFrom": "Remove from playlist",
+    "notFound": "Playlist not found."
+  },
+  "album": {
+    "notFound": "Album not found."
+  },
+  "settings": {
+    "audioQuality": "Audio quality",
+    "noTranscoding": "Transcoding isn’t available on this server: original files are streamed.",
+    "onWifi": "On Wi-Fi",
+    "playbackQuality": "Streaming quality",
+    "onMobile": "On mobile data",
+    "prefetch": "Tracks downloaded ahead",
+    "prefetchHint": "Upcoming tracks are downloaded while you listen, so a poor connection doesn’t interrupt playback.",
+    "account": "Account",
+    "loggedInAs": "Logged in as",
+    "roleAdmin": "administrator",
+    "roleUser": "user",
+    "onServer": "on {host}",
+    "currentPassword": "Current password",
+    "newPassword": "New password ({min} characters min.)",
+    "changePassword": "Change password",
+    "logout": "Log out",
+    "saved": "Settings saved. They apply from the next track.",
+    "passwordChanged": "Password changed. Please log in again.",
+    "language": "Language",
+    "languageHint": "Used on all your devices signed in to this account.",
+    "languageSaved": "Language saved"
+  },
+  "quality": {
+    "original": "Original",
+    "lossless": "Lossless (FLAC)",
+    "high": "Very high (320 kbps)",
+    "normal": "Normal (192 kbps)",
+    "low": "Low (128 kbps)",
+    "datasaver": "Data saver (64 kbps)"
+  },
+  "admin": {
+    "restricted": "Administrators only.",
+    "title": "Admin",
+    "tabs": {
+      "dashboard": "Dashboard",
+      "upload": "Add music",
+      "youtube": "YouTube",
+      "metadata": "Metadata",
+      "users": "Users"
+    }
+  },
+  "users": {
+    "new": "New user",
+    "username": "Username",
+    "passwordMin": "Password ({min} chars min.)",
+    "roleUser": "User",
+    "roleAdmin": "Administrator",
+    "colUser": "User",
+    "colRole": "Role",
+    "colCreated": "Created",
+    "you": "you",
+    "resetPassword": "Reset password",
+    "passwordOf": "Password for {name}",
+    "newPassword": "New password",
+    "resetHint": "All of this user’s sessions will be signed out.",
+    "deleteConfirm": "Delete this user?",
+    "deleteHint": "The account “{name}”, its playlists and liked songs will be deleted.",
+    "created": "User {name} created",
+    "roleChanged": "Role changed",
+    "passwordChanged": "Password changed",
+    "deleted": "User deleted"
+  },
+  "upload": {
+    "intro": "Files are filed by artist and album from their tags. For untagged files, enter the artist and album below.",
+    "resumable": "Uploads are sent in 8 MB chunks and resume after a network drop.",
+    "artistHint": "Artist (if missing from tags)",
+    "albumHint": "Album (if missing from tags)",
+    "drop": "Drop audio files here or click to choose",
+    "list": "Uploads",
+    "status": {
+      "pending": "waiting",
+      "processing": "analysing…",
+      "done": "added",
+      "failed": "failed"
+    },
+    "summary": "{ok}/{total} file(s) added",
+    "tooLarge": "file too large",
+    "sessionRefused": "upload refused",
+    "sessionExpired": "upload session expired",
+    "desync": "upload out of sync"
+  },
+  "editor": {
+    "title": "Title",
+    "artist": "Artist",
+    "albumArtist": "Album artist",
+    "year": "Year",
+    "album": "Album",
+    "trackNumber": "Track no.",
+    "discNumber": "Disc no.",
+    "genre": "Genre",
+    "file": "File",
+    "fileIs": "File: {path}",
+    "saveAlbum": "Save album",
+    "changeCover": "Change cover",
+    "dbOnly": "Changes are saved in Localify’s database; files aren’t modified and these values won’t be overwritten by later scans.",
+    "searchPlaceholder": "Search a track, artist or album…",
+    "wholeLibrary": "Whole library",
+    "edited": "edited",
+    "editedHint": "Edited by hand",
+    "count": "{shown} / {total} tracks",
+    "editTrack": "Edit track",
+    "deleteConfirm": "Delete this file?",
+    "deleteHint": "“{title}” will be deleted from disk and from the library.",
+    "trackUpdated": "Track updated",
+    "albumUpdated": "Album updated",
+    "coverUpdated": "Cover updated",
+    "fileDeleted": "File deleted"
+  },
+  "dash": {
+    "stat": {
+      "artists": "artists",
+      "albums": "albums",
+      "tracks": "tracks",
+      "playlists": "playlists",
+      "users": "users"
+    },
+    "yt": {
+      "queued": "YouTube imports queued",
+      "review": " · {count} to review",
+      "failed": " · {count} failed"
+    },
+    "totalDuration": "Total duration",
+    "average": "avg. {duration}",
+    "storage": "Storage",
+    "freeOf": "free of {total} ({disk})",
+    "history": "Additions over time",
+    "period": "Period",
+    "scale": "Scale",
+    "linear": "Linear",
+    "log": "Log",
+    "showTable": "Show table",
+    "historyAria": "Tracks added per period and source",
+    "range": {
+      "day": "Day",
+      "week": "Week",
+      "month": "Month",
+      "year": "Year",
+      "all": "All"
+    },
+    "bucket": {
+      "hour": "{weekday}, {month} {d}, {HH}:00",
+      "hourShort": "{HH}:00",
+      "month": "{month} {yyyy}",
+      "monthShort": "{MM}/{yy}",
+      "day": "{weekday}, {month} {d}, {yyyy}",
+      "dayShort": "{MM}/{dd}"
+    },
+    "source": {
+      "library": "Library",
+      "upload": "Uploads",
+      "youtube": "YouTube"
+    },
+    "slice": {
+      "cache": "Caches",
+      "other": "Other files on disk",
+      "free": "Free"
+    },
+    "scan": {
+      "title": "Library scan",
+      "running": "Scanning: {seen} files seen, {added} added, {updated} updated.",
+      "last": "Last scan: {date}",
+      "lastStats": " — {seen} files, {added} added, {updated} updated, {removed} removed.",
+      "hint": "Changes on disk are detected automatically. A full scan is incremental: only modified files are read again.",
+      "now": "Scan now"
+    },
+    "search": "Search: {engine} · transcoding cache: {cache}",
+    "searchEngine": {
+      "elasticsearch": "Elasticsearch (typo tolerance, suggestions)",
+      "indexing": "Elasticsearch, initial indexing in progress (database search meanwhile)",
+      "degraded": "Elasticsearch unreachable, database search until it’s back",
+      "database": "database (no Elasticsearch configured)"
+    },
+    "clearCache": "Clear transcoding cache",
+    "cacheCleared": "Transcoding cache cleared"
+  },
+  "keys": {
+    "title": "Browser extension",
+    "intro": "The Localify extension adds an “Add to Localify” button on YouTube and YouTube Music (the repository’s extension/ folder, loaded “unpacked”). It connects with a key created here: the key can only queue videos, subscribe and send YouTube cookies. It gives no access to the library or the rest of the admin pages. A key stops working as soon as it’s revoked, or if its creator is no longer an administrator.",
+    "namePlaceholder": "Name (e.g. Living room Firefox)",
+    "create": "Create key",
+    "created": "Key “{name}”: copy it into the extension’s options now, it won’t be shown again.",
+    "colName": "Name",
+    "colKey": "Key",
+    "colCreated": "Created",
+    "colLastUsed": "Last used",
+    "by": "by {name}",
+    "revoke": "Revoke",
+    "none": "No keys.",
+    "revokeConfirm": "Revoke this key?",
+    "revokeHint": "The extension using “{name}” won’t be able to send anything anymore.",
+    "revoked": "Key revoked"
+  },
+  "yt": {
+    "notInstalled": "yt-dlp isn’t installed on the server.",
+    "installing": "Installing…",
+    "install": "Install yt-dlp and Deno",
+    "hold": "YouTube is refusing downloads for now: resuming automatically at {time}.",
+    "holdCookies": " Adding a YouTube account’s cookies (Settings) usually avoids this block.",
+    "resumeNow": "Resume now",
+    "tab": {
+      "explore": "Explore",
+      "queue": "Queue",
+      "subs": "Subscriptions",
+      "settings": "Settings"
+    },
+    "filter": {
+      "all": "All",
+      "queued": "In progress",
+      "review": "To review",
+      "failed": "Failed",
+      "done": "Imported",
+      "skipped": "Skipped"
+    },
+    "filterAria": "Filter",
+    "formats": {
+      "title": "Available formats",
+      "hint": "YouTube offers none of the requested audio formats. Pick an identifier (ID column) or a yt-dlp selector for this attempt only: “140” (AAC), “251” (Opus), “18” (360p video, only the audio is kept), or “251/140/18”.",
+      "none": "No list recorded: retry the import once to fetch it.",
+      "placeholder": "e.g. 140/18",
+      "aria": "yt-dlp format",
+      "retry": "Retry with this format"
+    },
+    "review": {
+      "title": "Review metadata",
+      "watch": "watch the video",
+      "candidates": "Suggestions",
+      "trackNo": "track {number}",
+      "applied": "Applied metadata",
+      "track": "Track",
+      "keep": "Keep current",
+      "applying": "Applying…",
+      "apply": "Apply",
+      "noResults": "No results on MusicBrainz"
+    },
+    "explore": {
+      "placeholder": "Search, or paste a video, playlist or channel address",
+      "search": "Search",
+      "hint": "YouTube Music gives the best metadata (title, artists, album). Imported tracks are identified through MusicBrainz, then filed with their cover in the library. Only import what you have the right to keep.",
+      "searching": "Searching YouTube…",
+      "selectAll": "Select all",
+      "deselectAll": "Deselect all",
+      "import": "Import ({count})",
+      "isAlbum": "It’s an album",
+      "albumName": "Album name",
+      "subscribeNew": "Subscribe (new videos only)",
+      "subscribeAll": "Subscribe and import everything",
+      "select": "Select {title}",
+      "open": "Open on YouTube",
+      "queued": "{queued} added to the import queue",
+      "queuedKnown": "{queued} queued, {known} already known"
+    },
+    "queue": {
+      "filterPlaceholder": "Filter by title or channel",
+      "retryFailed": "Retry failed",
+      "empty": "Nothing here yet. Use the Explore tab to import tracks.",
+      "from": "from “{title}”",
+      "subscription": "subscription “{name}”",
+      "toReview": "to review",
+      "match": "{source}, confidence {confidence}",
+      "editMetadata": "Edit metadata",
+      "formats": "Available formats, retry with another",
+      "retry": "Import / retry",
+      "removeItem": "Remove from list",
+      "deleteTrack": "Delete the imported track",
+      "retried": "Import restarted",
+      "failedRequeued": "Failed items requeued",
+      "trackDeleted": "Track deleted"
+    },
+    "status": {
+      "Queued": "queued",
+      "Downloading": "downloading",
+      "Processing": "processing",
+      "Done": "imported",
+      "Failed": "failed",
+      "Skipped": "skipped"
+    },
+    "stage": {
+      "download": "downloading",
+      "metadata": "looking up metadata",
+      "tagging": "tags and cover"
+    },
+    "source": {
+      "musicbrainz": "MusicBrainz",
+      "acoustid": "AcoustID fingerprint",
+      "youtube-music": "YouTube Music",
+      "titre": "video title",
+      "manuel": "manual entry"
+    },
+    "subs": {
+      "new": "New subscription",
+      "placeholder": "Address of a playlist, YouTube Music album or channel",
+      "importExisting": "Import existing videos",
+      "subscribe": "Subscribe",
+      "hint": "New videos are imported on every sync (interval in Settings).",
+      "colName": "Subscription",
+      "colImported": "Imported",
+      "colLastSync": "Last sync",
+      "colEnabled": "Active",
+      "album": "album",
+      "syncNow": "Sync now",
+      "unsubscribe": "Unsubscribe (imported tracks stay)",
+      "none": "No subscriptions.",
+      "created": "Subscription created",
+      "synced": "Synced",
+      "deleted": "Subscription deleted"
+    },
+    "tools": {
+      "title": "Tools",
+      "missing": "missing",
+      "hint": "YouTube changes often: when imports fail for no reason, start by updating yt-dlp. Binaries come from the official GitHub releases, with SHA-256 checksums verified.",
+      "updating": "Updating…",
+      "update": "Update yt-dlp",
+      "updateAll": "Update yt-dlp and Deno"
+    },
+    "cookies": {
+      "title": "YouTube cookies",
+      "saved": "Cookies saved on {date}.",
+      "none": "No cookies saved.",
+      "hint": "If YouTube asks you to “confirm you’re not a bot”, export the cookies of a browser signed in to YouTube in Netscape format (cookies.txt, for example with the “Get cookies.txt LOCALLY” extension) and paste them here. Only youtube.com / google.com cookies are kept; they never leave the server. A secondary account is preferable.",
+      "adult": "With an adult account’s cookies, videos restricted to signed-in users or adults download too: every import is tried signed in first.",
+      "retryWithout": "Retry without cookies when, signed in, YouTube doesn’t offer the requested audio format",
+      "savedToast": "Cookies saved",
+      "deleted": "Cookies deleted"
+    },
+    "settings": {
+      "import": "Import",
+      "sync": "Subscription sync",
+      "syncNever": "never (manual)",
+      "syncHours": "every {count} h",
+      "syncDaily": "daily",
+      "syncDays": "every {count} days",
+      "audioFormat": "Audio format",
+      "original": "Original (Opus / AAC, no re-encoding)",
+      "mp3": "MP3 (maximum compatibility)",
+      "threshold": "Auto-accept threshold: {value}",
+      "acoustid": "AcoustID API key (optional)",
+      "acoustidHint": "With an AcoustID key (free) and fpcalc on the server, each track is also identified by its audio fingerprint: reliable even when the video title says nothing. Below the threshold, the import is filed but flagged “to review”.",
+      "saved": "Settings saved"
+    }
+  }
+}

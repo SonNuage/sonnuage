@@ -3,7 +3,7 @@
 @inject IPlayer Player
 @inject AuthSession Auth
 
-<PageTitle>@(_album?.Album.Title ?? "Album") · Localify</PageTitle>
+<PageTitle>@(_album?.Album.Title ?? L["common.album"]) · Localify</PageTitle>
 
 <Loader Loading="_album is null && _error is null" Error="@_error" OnRetry="LoadAsync">
     @if (_album is { } a)
@@ -12,24 +12,24 @@
             <header class="hero">
                 <Cover AlbumId="a.Album.Id" HasCover="a.Album.HasCover" Size="600" Class="hero-cover" Seed="@a.Album.Title" />
                 <div class="hero-meta">
-                    <span class="eyebrow">Album</span>
+                    <span class="eyebrow">@L["common.album"]</span>
                     <h1>@a.Album.Title</h1>
                     <p>
                         <a href="artist/@a.Album.ArtistId" class="strong">@a.Album.ArtistName</a>
                         @if (a.Album.Year is { } year) { <span class="sep">·</span>@year }
-                        <span class="sep">·</span>@Format.Plural(a.Tracks.Count, "titre", "titres"), @Format.LongDuration(a.Album.DurationSeconds)
+                        <span class="sep">·</span>@L["common.tracks", ("count", a.Tracks.Count)], @Format.LongDuration(a.Album.DurationSeconds)
                     </p>
                 </div>
             </header>
 
             <div class="actions">
-                <button class="play-btn large" title="Lire" @onclick="() => Player.PlayAsync(a.Tracks, 0, shuffle: false)"><Icon Name="play" Size="32" /></button>
-                <button class="icon-btn" title="Lecture aléatoire" @onclick="() => Player.PlayAsync(a.Tracks, -1, shuffle: true)"><Icon Name="shuffle" Size="28" /></button>
-                <button class="icon-btn" title="Ajouter à une playlist" @onclick="() => _picker = true"><Icon Name="playlist-add" Size="28" /></button>
-                <button class="icon-btn" title="Ajouter à la file" @onclick="() => Player.EnqueueAsync(a.Tracks, playNext: false)"><Icon Name="queue" Size="28" /></button>
+                <button class="play-btn large" title="@L["common.play"]" @onclick="() => Player.PlayAsync(a.Tracks, 0, shuffle: false)"><Icon Name="play" Size="32" /></button>
+                <button class="icon-btn" title="@L["player.shuffle"]" @onclick="() => Player.PlayAsync(a.Tracks, -1, shuffle: true)"><Icon Name="shuffle" Size="28" /></button>
+                <button class="icon-btn" title="@L["track.addToPlaylist"]" @onclick="() => _picker = true"><Icon Name="playlist-add" Size="28" /></button>
+                <button class="icon-btn" title="@L["common.addToQueue"]" @onclick="() => Player.EnqueueAsync(a.Tracks, playNext: false)"><Icon Name="queue" Size="28" /></button>
                 @if (Auth.IsAdmin)
                 {
-                    <a class="icon-btn" title="Modifier" href="admin/library?album=@a.Album.Id"><Icon Name="edit" Size="24" /></a>
+                    <a class="icon-btn" title="@L["common.edit"]" href="admin/library?album=@a.Album.Id"><Icon Name="edit" Size="24" /></a>
                 }
             </div>
 
@@ -62,12 +62,12 @@
         try
         {
             _album = await Api.AlbumAsync(Id);
-            if (_album is null) _error = "Album introuvable.";
+            if (_album is null) _error = L["album.notFound"];
             else _tracks = _album.Tracks.ToList();
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
-            _error = ex.Message;
+            _error = L.Server(ex.Message);
         }
     }
 }

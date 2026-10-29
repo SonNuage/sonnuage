@@ -7,56 +7,70 @@
 @inject IServerEndpoint Endpoint
 @inject UiState Ui
 
-<PageTitle>Réglages · Localify</PageTitle>
+<PageTitle>@L["nav.settings"] · Localify</PageTitle>
 
 <div class="page narrow">
-    <header class="page-header"><h1>Réglages</h1></header>
+    <header class="page-header"><h1>@L["nav.settings"]</h1></header>
 
     <section class="panel">
-        <h2>Qualité audio</h2>
+        <h2>@L["settings.language"]</h2>
+        <label class="field">
+            <span>@L["settings.language"]</span>
+            <select class="input" value="@L.Language" @onchange="e => SetLanguageAsync(e.Value?.ToString())">
+                @foreach (var lang in L.Available)
+                {
+                    <option value="@lang.Code">@lang.Name</option>
+                }
+            </select>
+            <small class="muted">@L["settings.languageHint"]</small>
+        </label>
+    </section>
+
+    <section class="panel">
+        <h2>@L["settings.audioQuality"]</h2>
         @if (_info is { TranscodingAvailable: false })
         {
-            <p class="muted">Le transcodage n'est pas disponible sur ce serveur : les fichiers originaux sont envoyés.</p>
+            <p class="muted">@L["settings.noTranscoding"]</p>
         }
         <label class="field">
-            <span>@(Platform.HasMeteredNetworkDetection ? "En Wi-Fi" : "Qualité de lecture")</span>
+            <span>@(Platform.HasMeteredNetworkDetection ? L["settings.onWifi"] : L["settings.playbackQuality"])</span>
             <select class="input" @bind="_quality">
                 @foreach (var q in Qualities)
                 {
-                    <option value="@q.Id">@q.Label</option>
+                    <option value="@q.Id">@L["quality." + q.Id]</option>
                 }
             </select>
         </label>
         @if (Platform.HasMeteredNetworkDetection)
         {
             <label class="field">
-                <span>En réseau mobile</span>
+                <span>@L["settings.onMobile"]</span>
                 <select class="input" @bind="_mobileQuality">
                     @foreach (var q in Qualities)
                     {
-                        <option value="@q.Id">@q.Label</option>
+                        <option value="@q.Id">@L["quality." + q.Id]</option>
                     }
                 </select>
             </label>
         }
         <label class="field">
-            <span>Pistes pré-chargées d'avance</span>
+            <span>@L["settings.prefetch"]</span>
             <input class="input" type="number" min="0" max="10" @bind="_prefetch" />
-            <small class="muted">Les pistes suivantes sont téléchargées pendant l'écoute pour ne pas couper en cas de mauvais réseau.</small>
+            <small class="muted">@L["settings.prefetchHint"]</small>
         </label>
-        <button class="btn primary" @onclick="SavePlaybackAsync">Enregistrer</button>
+        <button class="btn primary" @onclick="SavePlaybackAsync">@L["common.save"]</button>
     </section>
 
     <section class="panel">
-        <h2>Compte</h2>
-        <p>Connecté en tant que <strong>@Auth.User?.Username</strong> (@(Auth.IsAdmin ? "administrateur" : "utilisateur"))
-            @if (Endpoint.IsConfigurable) { <span> sur @Endpoint.BaseAddress?.Host</span> }</p>
+        <h2>@L["settings.account"]</h2>
+        <p>@L["settings.loggedInAs"] <strong>@Auth.User?.Username</strong> (@(Auth.IsAdmin ? L["settings.roleAdmin"] : L["settings.roleUser"]))
+            @if (Endpoint.IsConfigurable) { <span> @L["settings.onServer", ("host", Endpoint.BaseAddress?.Host)]</span> }</p>
         <form class="stack" @onsubmit="ChangePasswordAsync" @onsubmit:preventDefault="true">
-            <input class="input" type="password" placeholder="Mot de passe actuel" @bind="_current" autocomplete="current-password" required />
-            <input class="input" type="password" placeholder="Nouveau mot de passe (8 caractères min.)" @bind="_next" autocomplete="new-password" minlength="8" required />
-            <button class="btn" type="submit">Changer le mot de passe</button>
+            <input class="input" type="password" placeholder="@L["settings.currentPassword"]" @bind="_current" autocomplete="current-password" required />
+            <input class="input" type="password" placeholder="@L["settings.newPassword", ("min", 8)]" @bind="_next" autocomplete="new-password" minlength="8" required />
+            <button class="btn" type="submit">@L["settings.changePassword"]</button>
         </form>
-        <button class="btn danger" @onclick="Auth.LogoutAsync"><Icon Name="logout" Size="18" /> Se déconnecter</button>
+        <button class="btn danger" @onclick="Auth.LogoutAsync"><Icon Name="logout" Size="18" /> @L["settings.logout"]</button>
     </section>
 
     <p class="muted small">Localify @(_info?.Version) · @Platform.Name</p>
@@ -70,7 +84,7 @@
     private string _current = "";
     private string _next = "";
 
-    private IReadOnlyList<QualityDto> Qualities => _info?.Qualities ?? [new QualityDto("original", "Originale", "original", null)];
+    private IReadOnlyList<QualityDto> Qualities => _info?.Qualities ?? [new QualityDto("original", "original", "original", null)];
 
     protected override async Task OnInitializedAsync()
     {
@@ -92,7 +106,23 @@
         StreamQualities.TryParse(_mobileQuality, out var m);
         await Playback.SaveAsync(q, m, _prefetch);
         await Player.ReloadSettingsAsync();
-        Ui.Notify("Réglages enregistrés. Ils s'appliquent à partir de la piste suivante.");
+        Ui.Notify(L["settings.saved"]);
+    }
+
+    private async Task SetLanguageAsync(string? code)
+    {
+        if (string.IsNullOrEmpty(code)) return;
+        try
+        {
+            // Sur le compte d'abord (suivie sur les autres appareils), puis ici : l'interface se redessine.
+            if (await Api.SetLanguageAsync(code) is { } user) await Auth.UpdateUserAsync(user);
+            await L.SetAsync(code);
+            Ui.Notify(L["settings.languageSaved"]);
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
     }
 
     private async Task ChangePasswordAsync()
@@ -100,12 +130,12 @@
         try
         {
             await Api.ChangePasswordAsync(_current, _next);
-            Ui.Notify("Mot de passe changé. Reconnectez-vous.");
+            Ui.Notify(L["settings.passwordChanged"]);
             await Auth.LogoutAsync();
         }
         catch (ApiException ex)
         {
-            Ui.Notify(ex.Message, true);
+            Ui.Notify(L.Server(ex.Message), true);
         }
     }
 }

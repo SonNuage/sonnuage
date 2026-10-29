@@ -3,40 +3,40 @@
 @inject UiState Ui
 @inject NavigationManager Nav
 
-<PageTitle>Métadonnées · Localify</PageTitle>
+<PageTitle>@L["admin.tabs.metadata"] · Localify</PageTitle>
 
 <div class="page">
-    <header class="page-header"><h1>Administration</h1></header>
+    <header class="page-header"><h1>@L["admin.title"]</h1></header>
     <AdminNav>
         @if (_album is { } album)
         {
             <section class="panel album-editor">
                 <Cover AlbumId="album.Album.Id" HasCover="album.Album.HasCover" Size="300" Class="cover-md" Seed="@album.Album.Title" />
                 <form class="stack" @onsubmit="SaveAlbumAsync" @onsubmit:preventDefault="true">
-                    <h2>Album</h2>
+                    <h2>@L["editor.album"]</h2>
                     <div class="form-grid">
-                        <label class="field"><span>Titre</span><input class="input" @bind="_albumTitle" required /></label>
-                        <label class="field"><span>Artiste de l'album</span><input class="input" @bind="_albumArtist" required /></label>
-                        <label class="field"><span>Année</span><input class="input" type="number" @bind="_albumYear" /></label>
+                        <label class="field"><span>@L["editor.title"]</span><input class="input" @bind="_albumTitle" required /></label>
+                        <label class="field"><span>@L["editor.albumArtist"]</span><input class="input" @bind="_albumArtist" required /></label>
+                        <label class="field"><span>@L["editor.year"]</span><input class="input" type="number" @bind="_albumYear" /></label>
                     </div>
                     <div class="row">
-                        <button class="btn primary" type="submit">Enregistrer l'album</button>
+                        <button class="btn primary" type="submit">@L["editor.saveAlbum"]</button>
                         <label class="btn">
-                            Changer la pochette
+                            @L["editor.changeCover"]
                             <InputFile OnChange="UploadCoverAsync" accept="image/jpeg,image/png,image/webp" class="hidden-input" />
                         </label>
-                        <a class="btn" href="album/@album.Album.Id">Voir l'album</a>
+                        <a class="btn" href="album/@album.Album.Id">@L["track.goToAlbum"]</a>
                     </div>
-                    <p class="muted small">Les modifications sont enregistrées dans la base de Localify ; les fichiers ne sont pas modifiés et ces valeurs ne seront plus écrasées par les analyses.</p>
+                    <p class="muted small">@L["editor.dbOnly"]</p>
                 </form>
             </section>
         }
 
         <div class="toolbar">
-            <input class="input" type="search" placeholder="Rechercher un titre, un artiste, un album…" @bind="_query" @bind:event="oninput" @bind:after="SearchAsync" />
+            <input class="input" type="search" placeholder="@L["editor.searchPlaceholder"]" @bind="_query" @bind:event="oninput" @bind:after="SearchAsync" />
             @if (AlbumId is not null)
             {
-                <button class="btn" @onclick='() => Nav.NavigateTo("admin/library")'>Toute la bibliothèque</button>
+                <button class="btn" @onclick='() => Nav.NavigateTo("admin/library")'>@L["editor.wholeLibrary"]</button>
             }
         </div>
 
@@ -44,22 +44,22 @@
             <div class="table-wrap">
                 <table class="table">
                     <thead>
-                        <tr><th>#</th><th>Titre</th><th>Artiste</th><th>Album</th><th>Fichier</th><th></th></tr>
+                        <tr><th>#</th><th>@L["editor.title"]</th><th>@L["editor.artist"]</th><th>@L["editor.album"]</th><th>@L["editor.file"]</th><th></th></tr>
                     </thead>
                     <tbody>
                         @foreach (var t in _tracks)
                         {
                             <tr @key="t.Id">
                                 <td>@(t.DiscNumber is > 1 ? $"{t.DiscNumber}-" : "")@t.TrackNumber</td>
-                                <td>@t.Title @if (t.MetadataLocked) { <span class="badge" title="Modifié à la main">édité</span> }</td>
+                                <td>@t.Title @if (t.MetadataLocked) { <span class="badge" title="@L["editor.editedHint"]">@L["editor.edited"]</span> }</td>
                                 <td>@t.ArtistName</td>
                                 <td>@t.AlbumTitle</td>
                                 <td class="path" title="@t.RelativePath">@t.RelativePath</td>
                                 <td class="row-actions">
-                                    <button class="icon-btn" title="Modifier" @onclick="() => Edit(t)"><Icon Name="edit" Size="18" /></button>
+                                    <button class="icon-btn" title="@L["common.edit"]" @onclick="() => Edit(t)"><Icon Name="edit" Size="18" /></button>
                                     @if (t.Deletable)
                                     {
-                                        <button class="icon-btn danger" title="Supprimer" @onclick="() => _deleting = t"><Icon Name="delete" Size="18" /></button>
+                                        <button class="icon-btn danger" title="@L["common.delete"]" @onclick="() => _deleting = t"><Icon Name="delete" Size="18" /></button>
                                     }
                                 </td>
                             </tr>
@@ -67,43 +67,43 @@
                     </tbody>
                 </table>
             </div>
-            <p class="muted small">@_tracks.Count / @_total titres</p>
+            <p class="muted small">@L["editor.count", ("shown", _tracks.Count), ("total", _total)]</p>
             @if (_tracks.Count < _total)
             {
-                <div class="more"><button class="btn" @onclick="LoadMoreAsync" disabled="@_loading">Afficher plus</button></div>
+                <div class="more"><button class="btn" @onclick="LoadMoreAsync" disabled="@_loading">@L["common.showMore"]</button></div>
             }
         </Loader>
     </AdminNav>
 </div>
 
-<Modal Open="_editing is not null" OpenChanged="v => { if (!v) _editing = null; }" Title="Modifier le titre">
+<Modal Open="_editing is not null" OpenChanged="v => { if (!v) _editing = null; }" Title="@L["editor.editTrack"]">
     <ChildContent>
         @if (_editing is not null)
         {
             <form id="track-form" class="form-grid" @onsubmit="SaveTrackAsync" @onsubmit:preventDefault="true">
-                <label class="field wide"><span>Titre</span><input class="input" @bind="_form.Title" required /></label>
-                <label class="field"><span>Artiste</span><input class="input" @bind="_form.Artist" required /></label>
-                <label class="field"><span>Artiste de l'album</span><input class="input" @bind="_form.AlbumArtist" required /></label>
-                <label class="field wide"><span>Album</span><input class="input" @bind="_form.Album" required /></label>
-                <label class="field"><span>N° de piste</span><input class="input" type="number" @bind="_form.Track" /></label>
-                <label class="field"><span>N° de disque</span><input class="input" type="number" @bind="_form.Disc" /></label>
-                <label class="field"><span>Année</span><input class="input" type="number" @bind="_form.Year" /></label>
-                <label class="field"><span>Genre</span><input class="input" @bind="_form.Genre" /></label>
-                <p class="muted small wide">Fichier : @_editing.RelativePath</p>
+                <label class="field wide"><span>@L["editor.title"]</span><input class="input" @bind="_form.Title" required /></label>
+                <label class="field"><span>@L["editor.artist"]</span><input class="input" @bind="_form.Artist" required /></label>
+                <label class="field"><span>@L["editor.albumArtist"]</span><input class="input" @bind="_form.AlbumArtist" required /></label>
+                <label class="field wide"><span>@L["editor.album"]</span><input class="input" @bind="_form.Album" required /></label>
+                <label class="field"><span>@L["editor.trackNumber"]</span><input class="input" type="number" @bind="_form.Track" /></label>
+                <label class="field"><span>@L["editor.discNumber"]</span><input class="input" type="number" @bind="_form.Disc" /></label>
+                <label class="field"><span>@L["editor.year"]</span><input class="input" type="number" @bind="_form.Year" /></label>
+                <label class="field"><span>@L["editor.genre"]</span><input class="input" @bind="_form.Genre" /></label>
+                <p class="muted small wide">@L["editor.fileIs", ("path", _editing.RelativePath)]</p>
             </form>
         }
     </ChildContent>
     <Footer>
-        <button class="btn" @onclick="() => _editing = null">Annuler</button>
-        <button class="btn primary" type="submit" form="track-form">Enregistrer</button>
+        <button class="btn" @onclick="() => _editing = null">@L["common.cancel"]</button>
+        <button class="btn primary" type="submit" form="track-form">@L["common.save"]</button>
     </Footer>
 </Modal>
 
-<Modal Open="_deleting is not null" OpenChanged="v => { if (!v) _deleting = null; }" Title="Supprimer ce fichier ?">
-    <ChildContent><p>« @_deleting?.Title » sera supprimé du disque et de la bibliothèque.</p></ChildContent>
+<Modal Open="_deleting is not null" OpenChanged="v => { if (!v) _deleting = null; }" Title="@L["editor.deleteConfirm"]">
+    <ChildContent><p>@L["editor.deleteHint", ("title", _deleting?.Title)]</p></ChildContent>
     <Footer>
-        <button class="btn" @onclick="() => _deleting = null">Annuler</button>
-        <button class="btn danger" @onclick="DeleteAsync">Supprimer</button>
+        <button class="btn" @onclick="() => _deleting = null">@L["common.cancel"]</button>
+        <button class="btn danger" @onclick="DeleteAsync">@L["common.delete"]</button>
     </Footer>
 </Modal>
 
@@ -178,7 +178,7 @@
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
-            _error = ex.Message;
+            _error = L.Server(ex.Message);
         }
         finally
         {
@@ -206,11 +206,11 @@
             var i = _tracks.FindIndex(x => x.Id == _editing.Id);
             if (updated is not null && i >= 0) _tracks[i] = updated;
             _editing = null;
-            Ui.Notify("Titre mis à jour");
+            Ui.Notify(L["editor.trackUpdated"]);
         }
         catch (ApiException ex)
         {
-            Ui.Notify(ex.Message, true);
+            Ui.Notify(L.Server(ex.Message), true);
         }
     }
 
@@ -220,7 +220,7 @@
         try
         {
             var updated = await Api.AdminUpdateAlbumAsync(_album.Album.Id, new UpdateAlbumRequest(_albumTitle, _albumArtist, _albumYear));
-            Ui.Notify("Album mis à jour");
+            Ui.Notify(L["editor.albumUpdated"]);
             // Changer l'artiste ou le titre peut fusionner l'album avec un existant : l'id change.
             if (updated is not null && updated.Id != _album.Album.Id) Nav.NavigateTo($"admin/library?album={updated.Id}");
             else
@@ -231,7 +231,7 @@
         }
         catch (ApiException ex)
         {
-            Ui.Notify(ex.Message, true);
+            Ui.Notify(L.Server(ex.Message), true);
         }
     }
 
@@ -245,12 +245,12 @@
             await stream.CopyToAsync(buffer);
             buffer.Position = 0;
             await Api.AdminSetAlbumCoverAsync(_album.Album.Id, buffer, e.File.ContentType);
-            Ui.Notify("Pochette mise à jour");
+            Ui.Notify(L["editor.coverUpdated"]);
             await LoadAlbumAsync();
         }
         catch (Exception ex) when (ex is ApiException or IOException)
         {
-            Ui.Notify(ex.Message, true);
+            Ui.Notify(L.Server(ex.Message), true);
         }
     }
 
@@ -262,11 +262,11 @@
             await Api.AdminDeleteTrackAsync(_deleting.Id);
             _tracks.RemoveAll(t => t.Id == _deleting.Id);
             _total--;
-            Ui.Notify("Fichier supprimé");
+            Ui.Notify(L["editor.fileDeleted"]);
         }
         catch (ApiException ex)
         {
-            Ui.Notify(ex.Message, true);
+            Ui.Notify(L.Server(ex.Message), true);
         }
         _deleting = null;
     }

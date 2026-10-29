@@ -155,7 +155,7 @@ public sealed class TokenService(
 
 public static class UserMapping
 {
-    public static UserDto ToDto(this User u) => new(u.Id, u.Username, u.Role, u.CreatedAt);
+    public static UserDto ToDto(this User u) => new(u.Id, u.Username, u.Role, u.CreatedAt, u.Language);
 }
 
 public static class ClaimsPrincipalExtensions

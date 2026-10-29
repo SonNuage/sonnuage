@@ -1,3 +1,4 @@
+using Localify.Contracts.Localization;
 using Localify.Contracts;
 using Localify.Server.Auth;
 using Localify.Server.Data;
@@ -30,7 +31,7 @@ public static class StreamEndpoints
         CancellationToken ct)
     {
         if (!StreamQualities.TryParse(quality, out var requested))
-            return Results.Problem($"Qualité inconnue : {quality}", statusCode: StatusCodes.Status400BadRequest);
+            return Results.Problem(Tx.Key("errors.unknownQuality", ("quality", quality)), statusCode: StatusCodes.Status400BadRequest);
 
         var track = await db.Tracks.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id, ct);
         if (track is null || !File.Exists(track.FilePath)) return Results.NotFound();
