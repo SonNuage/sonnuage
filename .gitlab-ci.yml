@@ -56,8 +56,16 @@ android-sdk-image:
 server-test:
   stage: test
   image: mcr.microsoft.com/dotnet/sdk:10.0
+  services:
+    - name: docker.elastic.co/elasticsearch/elasticsearch:9.2.0
+      alias: elasticsearch
+      variables:
+        discovery.type: single-node
+        xpack.security.enabled: "false"
+        ES_JAVA_OPTS: -Xms512m -Xmx512m
   variables:
     LOCALIFY_TEST_FFMPEG: /usr/bin/ffmpeg
+    LOCALIFY_TEST_ELASTICSEARCH: http://elasticsearch:9200
   cache:
     key: nuget-server
     paths: [.nuget/]
@@ -65,6 +73,8 @@ server-test:
     - apt-get update -qq && apt-get install -y -qq --no-install-recommends ffmpeg > /dev/null
   script:
     - dotnet build src/Localify.Server/Localify.Server.csproj -c Release
+    # Elasticsearch démarre pendant le build ; on l'attend avant les tests (ses tests échouent sinon).
+    - for i in $(seq 1 60); do curl -fs "$LOCALIFY_TEST_ELASTICSEARCH/_cluster/health?wait_for_status=yellow&timeout=1s" > /dev/null && break; sleep 2; done
     - dotnet test --project tests/Localify.Server.Tests/Localify.Server.Tests.csproj -c Release --report-trx --results-directory TestResults
   artifacts:
     when: always

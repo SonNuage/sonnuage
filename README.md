@@ -28,6 +28,38 @@ Le plan de refonte et les choix d'architecture sont dans [docs/PLAN.md](docs/PLA
 - **Admin** (`/admin`) : statistiques, rescan, envoi d'albums par morceaux de 8 Mo (reprise possible),
   édition des tags et pochettes, gestion des comptes.
 
+## Recherche
+
+Sans configuration, la recherche se fait en base : sous-chaînes, insensible à la casse et aux accents.
+Avec **Elasticsearch** (8.x ou 9.x), elle devient instantanée et tolérante :
+
+- résultats dès les premières lettres de chaque mot (`hig volt` → High Voltage) ;
+- fautes de frappe (`gilmor ratle` → Rattle That Lock) et « Vouliez-vous dire … ? » ;
+- suggestions pendant la saisie, y compris au milieu d'un nom (`gilm` → David Gilmour) ;
+- `AC/DC`, `T.N.T.` trouvés en tapant `acdc`, `tnt` ;
+- titres les plus écoutés favorisés ;
+- recherche sémantique vectorielle en option (`Localify__Search__SemanticInferenceId` : identifiant d'un endpoint
+  d'inférence Elasticsearch, par exemple un modèle E5 multilingue ; selon la licence de votre cluster).
+
+L'index est reconstruit automatiquement après chaque scan, chaque modification depuis l'admin, au retour
+d'Elasticsearch après une panne et toutes les 30 minutes.
+
+**Résilience** : une requête qui n'aboutit pas en 2 s (`Localify__Search__TimeoutMilliseconds`) est servie
+par la recherche en base ; la requête Elasticsearch continue en arrière-plan avec nouvelles tentatives et
+son résultat sert la frappe suivante. Après des échecs répétés, Elasticsearch est mis de côté (réponse en
+base immédiate) et sondé en arrière-plan jusqu'à son retour. L'état est visible dans l'admin.
+
+| Variable | Rôle |
+|---|---|
+| `Localify__Search__Url` | URL d'Elasticsearch ; vide = recherche en base |
+| `Localify__Search__ApiKey` ou `__Username` / `__Password` | Authentification |
+| `Localify__Search__CertificateFingerprint` | Empreinte SHA-256 du certificat auto-signé d'Elasticsearch |
+| `Localify__Search__Index` | Préfixe des index (`localify`) |
+| `Localify__Search__TimeoutMilliseconds` | Délai avant repli sur la base (`2000`) |
+
+En local : `docker run -d -p 127.0.0.1:9200:9200 -e discovery.type=single-node -e xpack.security.enabled=false docker.elastic.co/elasticsearch/elasticsearch:9.2.0`
+(la configuration de dev pointe déjà sur `http://localhost:9200`).
+
 ## Développement
 
 Prérequis : SDK .NET 10, ffmpeg (dans le `PATH` ou `bin/ffmpeg.exe`).
@@ -39,7 +71,7 @@ dotnet run --project src/Localify.Server --launch-profile Localify.Server
 Puis http://localhost:5080. La configuration de dev ([appsettings.Development.json](src/Localify.Server/appsettings.Development.json))
 lit la musique dans `data/`, écrit base et caches dans `var/` et crée le compte `admin` au premier démarrage.
 
-Tests (définir `LOCALIFY_TEST_FFMPEG` pour activer les tests de transcodage) :
+Tests (`LOCALIFY_TEST_FFMPEG` active les tests de transcodage, `LOCALIFY_TEST_ELASTICSEARCH` ceux de la recherche avancée) :
 
 ```bash
 dotnet test --project tests/Localify.Server.Tests

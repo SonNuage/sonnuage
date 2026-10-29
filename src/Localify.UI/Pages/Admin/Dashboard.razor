@@ -40,6 +40,7 @@
                     {
                         <p class="form-error">@err</p>
                     }
+                    <p class="muted">Recherche : @SearchLabel(s.SearchEngine)</p>
                     <p class="muted">Les changements sur disque sont détectés automatiquement. L'analyse complète est incrémentale : seuls les fichiers modifiés sont relus.</p>
                     <div class="row">
                         <button class="btn primary" disabled="@s.Scan.Running" @onclick="ScanAsync"><Icon Name="refresh" Size="18" /> Analyser maintenant</button>
@@ -97,4 +98,12 @@
     }
 
     public void Dispose() => _timer?.Dispose();
+
+    private static string SearchLabel(string engine) => engine switch
+    {
+        "elasticsearch" => "Elasticsearch (tolérance aux fautes, suggestions)",
+        "indexing" => "Elasticsearch, indexation initiale en cours (recherche en base en attendant)",
+        "degraded" => "Elasticsearch injoignable, recherche en base en attendant son retour",
+        _ => "en base (aucun Elasticsearch configuré)",
+    };
 }

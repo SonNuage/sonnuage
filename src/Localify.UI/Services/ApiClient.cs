@@ -26,6 +26,7 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     public Task<List<TrackDto>?> RandomTracksAsync(int count) => GetAsync<List<TrackDto>>($"api/tracks/random?count={count}");
     public Task<List<TrackDto>?> LookupTracksAsync(IReadOnlyList<Guid> ids) => SendAsync<List<TrackDto>>(HttpMethod.Post, "api/tracks/lookup", ids);
     public Task<SearchResultDto?> SearchAsync(string q, int limit = 20) => GetAsync<SearchResultDto>($"api/search?limit={limit}&q={Uri.EscapeDataString(q)}");
+    public Task<List<string>?> SuggestAsync(string q, int limit = 8) => GetAsync<List<string>>($"api/search/suggest?limit={limit}&q={Uri.EscapeDataString(q)}");
 
     // ---- Moi ----
     public Task<List<TrackDto>?> FavoritesAsync() => GetAsync<List<TrackDto>>("api/me/favorites");

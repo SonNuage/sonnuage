@@ -3,6 +3,8 @@
 #      (ex. musique.mondomaine.fr) vers http://localify:8080, récupérer le jeton.
 #   2. cp .env.example .env et remplir les valeurs.
 #   3. docker compose up -d
+# Recherche avancée (fautes de frappe, suggestions) : COMPOSE_PROFILES=search dans .env démarre
+# Elasticsearch, et LOCALIFY_SEARCH_URL=http://elasticsearch:9200 le branche. Sans, recherche en base.
 services:
   localify:
     image: ${LOCALIFY_IMAGE:?image du serveur requise}
@@ -13,6 +15,7 @@ services:
       Localify__InitialAdminPassword: ${LOCALIFY_ADMIN_PASSWORD:?mot de passe admin requis}
       Localify__TranscodeCacheMaxMegabytes: ${LOCALIFY_CACHE_MB:-10240}
       Localify__BehindProxy: "true"
+      Localify__Search__Url: ${LOCALIFY_SEARCH_URL:-}
     volumes:
       - ${MUSIC_DIR:?dossier de musique requis}:/music:ro
       - ./uploads:/uploads
@@ -31,3 +34,21 @@ services:
     depends_on:
       localify:
         condition: service_healthy
+
+  # Facultatif (profil « search »). Joignable seulement depuis le réseau Docker du projet : aucun port publié,
+  # d'où la sécurité désactivée. Pour un Elasticsearch existant, renseigner plutôt LOCALIFY_SEARCH_URL
+  # (+ Localify__Search__ApiKey et Localify__Search__CertificateFingerprint).
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.2.0
+    container_name: localify-search
+    restart: unless-stopped
+    profiles: [search]
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+    volumes:
+      - search-data:/usr/share/elasticsearch/data
+
+volumes:
+  search-data:

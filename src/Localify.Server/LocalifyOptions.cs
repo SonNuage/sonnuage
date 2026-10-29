@@ -47,8 +47,41 @@ public sealed class LocalifyOptions
     /// </summary>
     public bool BehindProxy { get; set; } = true;
 
+    /// <summary>Moteur de recherche externe facultatif. Sans URL, la recherche se fait en base.</summary>
+    public SearchOptions Search { get; set; } = new();
+
     public string DatabasePath => Path.Combine(DataPath, "localify.db");
     public string TranscodeCachePath => Path.Combine(DataPath, "cache", "transcode");
     public string CoverCachePath => Path.Combine(DataPath, "cache", "covers");
     public string UploadTempPath => Path.Combine(DataPath, "uploads-tmp");
+}
+
+public sealed class SearchOptions
+{
+    /// <summary>URL d'Elasticsearch (ex. http://elasticsearch:9200). Vide : recherche en base uniquement.</summary>
+    public string? Url { get; set; }
+
+    /// <summary>Clé d'API (en-tête « ApiKey … »), prioritaire sur l'utilisateur / mot de passe.</summary>
+    public string? ApiKey { get; set; }
+
+    public string? Username { get; set; }
+    public string? Password { get; set; }
+
+    /// <summary>
+    /// Empreinte SHA-256 du certificat (CA) d'Elasticsearch, affichée au premier démarrage d'un nœud 8+/9+
+    /// en HTTPS auto-signé. Permet de faire confiance à ce certificat sans désactiver la vérification TLS.
+    /// </summary>
+    public string? CertificateFingerprint { get; set; }
+
+    /// <summary>Préfixe des index créés.</summary>
+    public string Index { get; set; } = "localify";
+
+    /// <summary>Au-delà, la requête bascule sur la recherche en base pendant qu'Elasticsearch termine en arrière-plan.</summary>
+    public int TimeoutMilliseconds { get; set; } = 2000;
+
+    /// <summary>
+    /// Identifiant d'un endpoint d'inférence Elasticsearch (ex. un modèle E5 multilingue) pour ajouter une
+    /// recherche sémantique vectorielle (champ semantic_text). Vide : recherche textuelle floue uniquement.
+    /// </summary>
+    public string? SemanticInferenceId { get; set; }
 }

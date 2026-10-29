@@ -7,7 +7,8 @@ public sealed record LibraryStatsDto(
     long TotalBytes,
     double TotalDurationSeconds,
     long TranscodeCacheBytes,
-    ScanStatusDto Scan);
+    ScanStatusDto Scan,
+    string SearchEngine = "database");
 
 public sealed record ScanStatusDto(
     bool Running,

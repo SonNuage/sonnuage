@@ -2,6 +2,7 @@ using Localify.Contracts;
 using Localify.Server.Auth;
 using Localify.Server.Data;
 using Localify.Server.Library;
+using Localify.Server.Search;
 using Localify.Server.Streaming;
 using Microsoft.EntityFrameworkCore;
 
@@ -105,25 +106,11 @@ public static class LibraryEndpoints
             await db.Tracks.OrderBy(_ => EF.Functions.Random()).Take(Math.Clamp(count ?? 50, 1, 500))
                 .Select(Projections.Track(db, http.User.UserId())).ToListAsync(ct));
 
-        g.MapGet("/search", async (string q, int? limit, HttpContext http, LocalifyDbContext db, CancellationToken ct) =>
-        {
-            var tokens = q.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(NameNormalizer.Key).Where(k => k.Length > 0).ToList();
-            if (tokens.Count == 0) return new SearchResultDto([], [], []);
-            var take = Math.Clamp(limit ?? 20, 1, 100);
-            var whole = NameNormalizer.Key(q);
+        g.MapGet("/search", (string q, int? limit, HttpContext http, SearchService search, CancellationToken ct) =>
+            search.SearchAsync(q, Math.Clamp(limit ?? 20, 1, 100), http.User.UserId(), ct));
 
-            var artists = await db.Artists.Where(a => a.NormalizedName.Contains(whole))
-                .OrderBy(a => a.NormalizedName.Length).Take(take).Select(Projections.Artist).ToListAsync(ct);
-            var albums = await db.Albums.Where(a => a.NormalizedTitle.Contains(whole) || a.Artist.NormalizedName.Contains(whole))
-                .OrderBy(a => a.NormalizedTitle.Length).Take(take).Select(Projections.Album).ToListAsync(ct);
-
-            var trackQuery = db.Tracks.AsQueryable();
-            foreach (var token in tokens) trackQuery = trackQuery.Where(t => t.SearchKey.Contains(token));
-            var tracks = await trackQuery.OrderBy(t => t.Title.Length).Take(take)
-                .Select(Projections.Track(db, http.User.UserId())).ToListAsync(ct);
-
-            return new SearchResultDto(artists, albums, tracks);
-        });
+        g.MapGet("/search/suggest", (string q, int? limit, SearchService search, CancellationToken ct) =>
+            search.SuggestAsync(q, Math.Clamp(limit ?? 8, 1, 20), ct));
 
         app.MapMethods("/api/albums/{id:guid}/cover", ["GET", "HEAD"], async (Guid id, int? size, HttpContext http, LocalifyDbContext db, CoverService covers, CancellationToken ct) =>
         {

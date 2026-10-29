@@ -35,7 +35,8 @@ public sealed record ArtistDetailDto(ArtistDto Artist, IReadOnlyList<AlbumDto> A
 public sealed record SearchResultDto(
     IReadOnlyList<ArtistDto> Artists,
     IReadOnlyList<AlbumDto> Albums,
-    IReadOnlyList<TrackDto> Tracks);
+    IReadOnlyList<TrackDto> Tracks,
+    string? Correction = null);
 
 public sealed record HomeDto(
     IReadOnlyList<AlbumDto> RecentlyAdded,

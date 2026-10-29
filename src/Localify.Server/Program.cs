@@ -6,6 +6,7 @@ using Localify.Server.Api;
 using Localify.Server.Auth;
 using Localify.Server.Data;
 using Localify.Server.Library;
+using Localify.Server.Search;
 using Localify.Server.Streaming;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -47,6 +48,12 @@ builder.Services.AddSingleton<FfmpegLocator>();
 builder.Services.AddSingleton<TranscodeService>();
 builder.Services.AddSingleton<CoverService>();
 builder.Services.AddSingleton<UploadService>();
+ElasticsearchClient.ConfigureHttp(builder.Services.AddHttpClient(ElasticsearchClient.HttpClientName));
+builder.Services.AddSingleton<ElasticsearchClient>();
+builder.Services.AddSingleton<SearchGateway>();
+builder.Services.AddSingleton<SearchIndexer>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<SearchIndexer>());
+builder.Services.AddScoped<SearchService>();
 
 ConfigureAuthentication(builder.Services);
 

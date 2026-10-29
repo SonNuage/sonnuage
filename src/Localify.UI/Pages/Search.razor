@@ -8,7 +8,14 @@
 <div class="page">
     <div class="search-box">
         <Icon Name="search" />
-        <input class="input" type="search" placeholder="Artistes, albums, titres…" value="@_query" @oninput="OnInput" autofocus />
+        <input class="input" type="search" placeholder="Artistes, albums, titres…" value="@_query" @oninput="OnInput" autofocus
+               list="search-suggestions" autocomplete="off" />
+        <datalist id="search-suggestions">
+            @foreach (var s in _suggestions)
+            {
+                <option value="@s"></option>
+            }
+        </datalist>
     </div>
 
     @if (_error is not null)
@@ -17,6 +24,10 @@
     }
     else if (_result is { } r)
     {
+        @if (r.Correction is { } fix)
+        {
+            <p class="muted">Vouliez-vous dire <a href="search?q=@Uri.EscapeDataString(fix)" @onclick="() => UseCorrectionAsync(fix)" @onclick:preventDefault="true"><strong>@fix</strong></a> ?</p>
+        }
         @if (r.Artists.Count + r.Albums.Count + r.Tracks.Count == 0)
         {
             <p class="empty">Aucun résultat pour « @_query ».</p>
@@ -61,6 +72,7 @@
     private SearchResultDto? _result;
     private string? _error;
     private CancellationTokenSource? _debounce;
+    private IReadOnlyList<string> _suggestions = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -83,7 +95,27 @@
             return;
         }
         Nav.NavigateTo($"search?q={Uri.EscapeDataString(_query)}", replace: true);
-        await RunAsync(_query);
+        await Task.WhenAll(RunAsync(_query), SuggestAsync(_query));
+    }
+
+    private async Task UseCorrectionAsync(string fix)
+    {
+        _query = fix;
+        Nav.NavigateTo($"search?q={Uri.EscapeDataString(fix)}", replace: true);
+        await RunAsync(fix);
+    }
+
+    private async Task SuggestAsync(string q)
+    {
+        try
+        {
+            var suggestions = q.Trim().Length < 2 ? [] : await Api.SuggestAsync(q) ?? [];
+            if (q == _query) _suggestions = suggestions;
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            // Les suggestions sont un confort : une erreur ici ne doit pas masquer les résultats.
+        }
     }
 
     private async Task RunAsync(string q)

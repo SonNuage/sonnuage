@@ -22,6 +22,9 @@ public sealed class ScanCoordinator(
 
     public ScanStatusDto Status => _status;
 
+    /// <summary>La bibliothèque a pu changer (fin de scan complet ou partiel).</summary>
+    public event Action? LibraryChanged;
+
     public void RequestFullScan() => _fullScanRequests.Writer.TryWrite(true);
 
     /// <summary>Indexe immédiatement des fichiers (upload) en attendant la fin d'un scan éventuel.</summary>
@@ -32,7 +35,9 @@ public sealed class ScanCoordinator(
         {
             using var scope = scopes.CreateScope();
             var scanner = scope.ServiceProvider.GetRequiredService<LibraryScanner>();
-            return await scanner.ScanFilesAsync(files, ct);
+            var tracks = await scanner.ScanFilesAsync(files, ct);
+            LibraryChanged?.Invoke();
+            return tracks;
         }
         finally
         {
@@ -104,6 +109,7 @@ public sealed class ScanCoordinator(
                 Updated = r.Updated,
                 Removed = r.Removed,
             };
+            LibraryChanged?.Invoke();
         }
         finally
         {

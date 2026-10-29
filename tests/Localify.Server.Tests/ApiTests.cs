@@ -13,7 +13,7 @@ namespace Localify.Server.Tests;
 /// <summary>
 /// Serveur complet sur une bibliothèque temporaire de WAV générés (pas de fichiers binaires dans le dépôt).
 /// </summary>
-public sealed class LocalifyFactory : WebApplicationFactory<Program>
+public class LocalifyFactory : WebApplicationFactory<Program>
 {
     public const string AdminPassword = "test-admin-password";
     private readonly string _root = Path.Combine(Path.GetTempPath(), "localify-tests-" + Guid.NewGuid().ToString("N"));
@@ -42,6 +42,11 @@ public sealed class LocalifyFactory : WebApplicationFactory<Program>
         builder.UseSetting("Localify:BehindProxy", "false");
         builder.UseSetting("Localify:LoginAttemptsPerMinute", "1000");
         builder.UseSetting("Localify:FfmpegPath", Environment.GetEnvironmentVariable("LOCALIFY_TEST_FFMPEG") ?? "ffmpeg");
+        ConfigureMore(builder);
+    }
+
+    protected virtual void ConfigureMore(IWebHostBuilder builder)
+    {
     }
 
     public static void WriteWav(string path, int seconds, int sampleRate = 8000)

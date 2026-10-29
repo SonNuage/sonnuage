@@ -3,6 +3,7 @@ using Localify.Server.Admin;
 using Localify.Server.Auth;
 using Localify.Server.Data;
 using Localify.Server.Library;
+using Localify.Server.Search;
 using Localify.Server.Streaming;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -16,8 +17,17 @@ public static class AdminEndpoints
     public static void MapAdminEndpoints(this IEndpointRouteBuilder app)
     {
         var g = app.MapGroup("/api/admin").RequireAuthorization(AuthConstants.AdminPolicy).WithTags("Admin");
+        // Toute modification de pistes ou d'albums (tags, pochettes, suppressions) se répercute sur l'index de recherche.
+        g.AddEndpointFilter(async (context, next) =>
+        {
+            var result = await next(context);
+            var request = context.HttpContext.Request;
+            if (!HttpMethods.IsGet(request.Method) && (request.Path.Value?.Contains("/tracks") == true || request.Path.Value?.Contains("/albums") == true))
+                context.HttpContext.RequestServices.GetRequiredService<SearchIndexer>().RequestReindex();
+            return result;
+        });
 
-        g.MapGet("/stats", async (LocalifyDbContext db, ScanCoordinator scans, TranscodeService transcoder, CancellationToken ct) =>
+        g.MapGet("/stats", async (LocalifyDbContext db, ScanCoordinator scans, TranscodeService transcoder, SearchGateway search, CancellationToken ct) =>
             new LibraryStatsDto(
                 await db.Artists.CountAsync(ct),
                 await db.Albums.CountAsync(ct),
@@ -25,7 +35,8 @@ public static class AdminEndpoints
                 await db.Tracks.SumAsync(t => t.FileSize, ct),
                 await db.Tracks.SumAsync(t => t.DurationSeconds, ct),
                 transcoder.CacheSizeBytes(),
-                scans.Status));
+                scans.Status,
+                search.Status));
 
         g.MapPost("/scan", (ScanCoordinator scans) =>
         {
