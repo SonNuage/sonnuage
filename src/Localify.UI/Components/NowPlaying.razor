@@ -8,7 +8,14 @@
     <div class="now-playing">
         <header class="np-header">
             <button class="icon-btn" title="Réduire" @onclick="() => Ui.SetNowPlayingOpen(false)"><Icon Name="down" Size="28" /></button>
-            <span class="np-context">En cours de lecture</span>
+            @if (Player is IConnectPlayer { IsRemote: true } connect)
+            {
+                <button class="np-context pb-remote" title="Faire jouer la musique ici" @onclick="connect.PlayHereAsync">Dans un autre onglet · <span class="strong">Lire ici</span></button>
+            }
+            else
+            {
+                <span class="np-context">En cours de lecture</span>
+            }
             <button class="icon-btn" title="File d'attente" @onclick='() => Go("queue")'><Icon Name="queue" /></button>
         </header>
 
@@ -27,7 +34,7 @@
         </div>
 
         <div class="np-seek">
-            <input type="range" class="slider" min="0" max="@Max" step="1" value="@Position" @onchange="SeekAsync" aria-label="Position" />
+            <input type="range" class="slider" min="0" max="@Max" step="any" value="@Position" style="@Pct(Position, Max)" @onchange="SeekAsync" aria-label="Position" />
             <div class="np-times">
                 <span>@Format.Duration(State.PositionSeconds)</span>
                 <span>@Format.Duration(State.DurationSeconds)</span>
@@ -55,6 +62,9 @@
     private PlayerState State => Player.State;
     private int Max => (int)Math.Max(1, Math.Ceiling(State.DurationSeconds));
     private int Position => (int)Math.Min(State.PositionSeconds, Max);
+
+    private static string Pct(double value, double max) =>
+        $"--pct: {(max > 0 ? Math.Clamp(value / max * 100, 0, 100) : 0).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}%";
 
     protected override void OnInitialized() => Player.StateChanged += Refresh;
 

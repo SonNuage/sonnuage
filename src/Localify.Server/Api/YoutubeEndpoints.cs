@@ -15,6 +15,8 @@ public static class YoutubeEndpoints
     public static void MapYoutubeEndpoints(this IEndpointRouteBuilder app)
     {
         var g = app.MapGroup("/api/admin/youtube").RequireAuthorization(AuthConstants.AdminPolicy).WithTags("YouTube");
+        // Seules routes ouvertes aussi aux clés d'extension de navigateur (ajouter, jamais lire ni supprimer).
+        var ext = app.MapGroup("/api/admin/youtube").RequireAuthorization(AuthConstants.ExtensionPolicy).WithTags("YouTube");
 
         g.MapGet("/status", async (bool? refresh, LocalifyDbContext db, YoutubeTools tools, YoutubeSettingsStore settings, YoutubeImporter importer, CancellationToken ct) =>
         {
@@ -46,7 +48,7 @@ public static class YoutubeEndpoints
             return saved is null ? Results.Problem(error, statusCode: 400) : Results.Ok(saved);
         });
 
-        g.MapPut("/cookies", (YoutubeCookiesRequest req, YoutubeSettingsStore settings) =>
+        ext.MapPut("/cookies", (YoutubeCookiesRequest req, YoutubeSettingsStore settings) =>
             settings.SaveCookies(req.Content ?? "") is { } error ? Results.Problem(error, statusCode: 400) : Results.NoContent());
         g.MapDelete("/cookies", (YoutubeSettingsStore settings) =>
         {
@@ -74,16 +76,16 @@ public static class YoutubeEndpoints
             return await Run(async () => await WithStatusAsync(db, await ytDlp.SearchAsync(q.Trim(), music == true, Math.Clamp(limit ?? 20, 1, 50), ct), q, ct));
         });
 
-        g.MapGet("/resolve", async (string url, YtDlp ytDlp, LocalifyDbContext db, CancellationToken ct) =>
+        ext.MapGet("/resolve", async (string url, YtDlp ytDlp, LocalifyDbContext db, CancellationToken ct) =>
             YoutubeSyncService.NormalizeUrl(url) is { } u ? await ListingAsync(ytDlp, db, u, 1000, ct) : Results.Problem("Adresse YouTube invalide.", statusCode: 400));
 
-        g.MapPost("/imports", async (YoutubeImportRequest req, YoutubeImporter importer, LocalifyDbContext db, CancellationToken ct) =>
+        ext.MapPost("/imports", async (YoutubeImportRequest req, YoutubeImporter importer, LocalifyDbContext db, CancellationToken ct) =>
             req.Videos is not { Count: > 0 and <= 1000 }
                 ? Results.Problem("Entre 1 et 1000 vidéos par demande.", statusCode: 400)
                 : Results.Ok(await importer.EnqueueAsync(db, req.Videos, string.IsNullOrWhiteSpace(req.AlbumHint) ? null : req.AlbumHint.Trim(), null, ct)));
 
         MapItems(g);
-        MapSubscriptions(g);
+        MapSubscriptions(g, ext);
     }
 
     private static void MapItems(RouteGroupBuilder g)
@@ -121,17 +123,31 @@ public static class YoutubeEndpoints
             return new PagedResult<YoutubeItemDto>(rows, total, o, l);
         });
 
-        g.MapPost("/items/{id:guid}/retry", async (Guid id, LocalifyDbContext db, YoutubeImporter importer, CancellationToken ct) =>
+        // format : sélecteur yt-dlp pour cette seule tentative (après un « format indisponible »).
+        g.MapPost("/items/{id:guid}/retry", async (Guid id, string? format, LocalifyDbContext db, YoutubeImporter importer, CancellationToken ct) =>
         {
             var item = await db.YoutubeItems.FirstOrDefaultAsync(i => i.Id == id, ct);
             if (item is null) return Results.NotFound();
             if (item.Status is not (YoutubeItemStatus.Failed or YoutubeItemStatus.Skipped)) return Results.Problem("Seuls les imports en échec ou ignorés se relancent.", statusCode: 409);
+            if (!string.IsNullOrWhiteSpace(format))
+            {
+                if (!YtDlp.IsValidFormat(format.Trim())) return Results.Problem("Format yt-dlp invalide (ex. « 140 », « bestaudio », « 251/140 »).", statusCode: 400);
+                importer.UseFormatOnce(item.Id, format.Trim());
+            }
             item.Status = YoutubeItemStatus.Queued;
             item.Error = null;
             item.UpdatedAt = DateTimeOffset.UtcNow;
             await db.SaveChangesAsync(ct);
             importer.Wake();
             return Results.NoContent();
+        });
+
+        g.MapGet("/items/{id:guid}/formats", async (Guid id, LocalifyDbContext db, YoutubeImporter importer, CancellationToken ct) =>
+        {
+            var item = await db.YoutubeItems.FirstOrDefaultAsync(i => i.Id == id, ct);
+            if (item is null) return Results.NotFound();
+            var path = importer.FormatsPath(item.VideoId);
+            return File.Exists(path) ? Results.Text(await File.ReadAllTextAsync(path, ct)) : Results.NoContent();
         });
 
         g.MapPost("/items/retry-failed", async (LocalifyDbContext db, YoutubeImporter importer, CancellationToken ct) =>
@@ -200,7 +216,7 @@ public static class YoutubeEndpoints
         });
     }
 
-    private static void MapSubscriptions(RouteGroupBuilder g)
+    private static void MapSubscriptions(RouteGroupBuilder g, RouteGroupBuilder ext)
     {
         g.MapGet("/subscriptions", async (LocalifyDbContext db, CancellationToken ct) =>
             await db.YoutubeSubscriptions.OrderBy(s => s.Title)
@@ -209,7 +225,7 @@ public static class YoutubeEndpoints
                     db.YoutubeItems.Count(i => i.SubscriptionId == s.Id && i.Status == YoutubeItemStatus.Done)))
                 .ToListAsync(ct));
 
-        g.MapPost("/subscriptions", async (CreateSubscriptionRequest req, YoutubeSyncService sync, LocalifyDbContext db, CancellationToken ct) =>
+        ext.MapPost("/subscriptions", async (CreateSubscriptionRequest req, YoutubeSyncService sync, LocalifyDbContext db, CancellationToken ct) =>
         {
             var (sub, error) = await sync.CreateAsync(db, req, ct);
             return sub is null ? Results.Problem(error, statusCode: 400) : Results.Created($"/api/admin/youtube/subscriptions/{sub.Id}", sub.Id);
@@ -244,7 +260,7 @@ public static class YoutubeEndpoints
         var ids = listing.Entries.Select(e => e.Id).ToList();
         var known = await db.YoutubeItems.Where(i => ids.Contains(i.VideoId)).ToDictionaryAsync(i => i.VideoId, i => i.Status.ToString(), ct);
         return new YoutubeListingDto(listing.Kind, listing.Title, listing.Channel, url,
-            listing.Entries.Select(e => new YoutubeVideoDto(e.Id, e.Title, e.Channel, e.DurationSeconds, e.Thumbnail, known.GetValueOrDefault(e.Id))).ToList());
+            listing.Entries.Select(e => new YoutubeVideoDto(e.Id, e.Title, e.Channel, e.DurationSeconds, e.Thumbnail, known.GetValueOrDefault(e.Id), e.Album)).ToList());
     }
 
     private static async Task<IResult> Run<T>(Func<Task<T>> action)

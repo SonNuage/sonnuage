@@ -1,0 +1,350 @@
+{
+  "extName": {
+    "message": "Localify",
+    "description": "Extension name (store, extensions page)."
+  },
+  "extDescription": {
+    "message": "Add the YouTube video, playlist or channel you are viewing to your Localify server.",
+    "description": "Extension description (store, extensions page)."
+  },
+  "actionTitle": {
+    "message": "Localify: settings",
+    "description": "Tooltip of the toolbar icon, which opens the settings."
+  },
+  "btnLoading": {
+    "message": "Localify…",
+    "description": "Button label while the extension checks the page with the server."
+  },
+  "btnAdd": {
+    "message": "Add to Localify",
+    "description": "Button on a video page: queue the video for import."
+  },
+  "btnAdding": {
+    "message": "Adding…",
+    "description": "Button label while the import request is sent."
+  },
+  "btnImported": {
+    "message": "Already imported",
+    "description": "Disabled button: the video is already in the library."
+  },
+  "btnImportedReview": {
+    "message": "Already imported (to review)",
+    "description": "Disabled button: imported, but the metadata must be checked by an admin."
+  },
+  "btnQueued": {
+    "message": "Queued…",
+    "description": "Disabled button: the video waits in the import queue."
+  },
+  "btnImporting": {
+    "message": "Importing…",
+    "description": "Disabled button: the server is downloading or processing the video."
+  },
+  "btnAlreadyKnown": {
+    "message": "Already known",
+    "description": "Disabled button: the server already knew this video."
+  },
+  "btnRetryImport": {
+    "message": "Retry import",
+    "description": "Button after a failed import: queue it again."
+  },
+  "btnRetry": {
+    "message": "Retry",
+    "description": "Button: retry the last action after an error."
+  },
+  "btnConfigure": {
+    "message": "Set up Localify",
+    "description": "Button shown when no server is set up: opens the settings."
+  },
+  "btnSubscribe": {
+    "message": "Subscribe in Localify",
+    "description": "Button on a playlist or channel page."
+  },
+  "btnSubscribing": {
+    "message": "Subscribing…",
+    "description": "Button label while the subscription is created."
+  },
+  "btnSubscribed": {
+    "message": "Subscribed in Localify",
+    "description": "Disabled button: the playlist or channel is already followed."
+  },
+  "msgQueued": {
+    "message": "Added to the Localify import queue.",
+    "description": "Message after a video was queued."
+  },
+  "msgFailed": {
+    "message": "The import failed.",
+    "description": "Message: the import failed, no reason given."
+  },
+  "msgFailedReason": {
+    "message": "Failed: $REASON$",
+    "description": "Message: the import failed; REASON is the server's error (may be in another language).",
+    "placeholders": {
+      "reason": {
+        "content": "$1",
+        "example": "HTTP Error 403"
+      }
+    }
+  },
+  "msgSubscribing": {
+    "message": "The server is reading the list, this may take a moment.",
+    "description": "Message while subscribing; reading a long playlist takes time."
+  },
+  "msgSubscribedExisting": {
+    "message": "The existing videos are being added to the queue.",
+    "description": "Message after subscribing with the existing videos."
+  },
+  "msgSubscribedFuture": {
+    "message": "New videos will be imported at each sync.",
+    "description": "Message after subscribing without the existing videos."
+  },
+  "optAlbum": {
+    "message": "This is an album (playlist title = album)",
+    "description": "Checkbox in the subscription options."
+  },
+  "optExisting": {
+    "message": "Also import the videos already published",
+    "description": "Checkbox in the subscription options."
+  },
+  "titleMoreOptions": {
+    "message": "Subscription options",
+    "description": "Tooltip of the ⋯ button."
+  },
+  "titleHide": {
+    "message": "Hide on this page",
+    "description": "Tooltip of the ✕ button."
+  },
+  "titleTarget": {
+    "message": "Sent to $NAME$",
+    "description": "Tooltip of the button: which Localify instance receives the action; NAME is the instance name.",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "Home"
+      }
+    }
+  },
+  "errNoResponse": {
+    "message": "No response from the extension.",
+    "description": "Error: the background script did not answer."
+  },
+  "errReloaded": {
+    "message": "Extension reloaded: refresh the page.",
+    "description": "Error: the extension was updated or reloaded while the page was open."
+  },
+  "errNotConfigured": {
+    "message": "Extension not set up: add a server address and a key.",
+    "description": "Error: no Localify instance with an address and a key."
+  },
+  "errUnreachable": {
+    "message": "$NAME$: server unreachable.",
+    "description": "Error: network failure; NAME is the instance name.",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "Home"
+      }
+    }
+  },
+  "errKeyRejected": {
+    "message": "$NAME$: key rejected, it may have been revoked.",
+    "description": "Error 401; NAME is the instance name.",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "Home"
+      }
+    }
+  },
+  "errForbidden": {
+    "message": "$NAME$: access denied by the server.",
+    "description": "Error 403; NAME is the instance name.",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "Home"
+      }
+    }
+  },
+  "errThrottled": {
+    "message": "YouTube is limiting requests, try again later.",
+    "description": "Error 429: YouTube refused the server's requests."
+  },
+  "errServer": {
+    "message": "$NAME$: server error ($STATUS$).",
+    "description": "Other HTTP error; NAME is the instance, STATUS the HTTP code.",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "Home"
+      },
+      "status": {
+        "content": "$2",
+        "example": "500"
+      }
+    }
+  },
+  "errServerDetail": {
+    "message": "$NAME$: $DETAIL$",
+    "description": "HTTP error with a message from the server (often in French); NAME is the instance.",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "Home"
+      },
+      "detail": {
+        "content": "$2",
+        "example": "Adresse YouTube invalide."
+      }
+    }
+  },
+  "errCookiePermission": {
+    "message": "The “cookies” permission has not been granted.",
+    "description": "Error: the optional 'cookies' permission is not granted."
+  },
+  "errNoYoutubeCookies": {
+    "message": "No youtube.com cookies: sign in to YouTube in this browser.",
+    "description": "Error: the browser has no youtube.com cookie."
+  },
+  "optionsTitle": {
+    "message": "Localify – extension settings",
+    "description": "Title of the settings page."
+  },
+  "optionsIntro": {
+    "message": "Add the YouTube or YouTube Music video, playlist or channel you are viewing to your Localify servers.",
+    "description": "Introduction on the settings page."
+  },
+  "instancesHeading": {
+    "message": "Localify instances",
+    "description": "Heading of the list of servers."
+  },
+  "instancesHelp": {
+    "message": "Create a key in Localify: Administration → YouTube → Réglages → Extension de navigateur. It only allows adding YouTube imports and subscriptions, and sending cookies.",
+    "description": "Where to create a key. The path names the Localify admin UI, which is in French: keep the French labels."
+  },
+  "instanceNew": {
+    "message": "New instance",
+    "description": "Name given to a new instance before the user renames it."
+  },
+  "fieldName": {
+    "message": "Name",
+    "description": "Label of the instance name field."
+  },
+  "fieldNamePlaceholder": {
+    "message": "Home",
+    "description": "Example name for an instance."
+  },
+  "fieldUrl": {
+    "message": "Server address",
+    "description": "Label of the server address field."
+  },
+  "fieldKey": {
+    "message": "Extension key",
+    "description": "Label of the API key field."
+  },
+  "fieldDefault": {
+    "message": "Used by the YouTube buttons",
+    "description": "Radio button: this instance receives the clicks on the YouTube buttons."
+  },
+  "fieldSendCookies": {
+    "message": "Send YouTube cookies automatically",
+    "description": "Checkbox: periodically send the YouTube cookies to this instance."
+  },
+  "btnSaveTest": {
+    "message": "Save and test",
+    "description": "Button: save the instance and check the key."
+  },
+  "btnSendCookiesNow": {
+    "message": "Send cookies now",
+    "description": "Button: send the cookies to this instance now."
+  },
+  "btnRemove": {
+    "message": "Remove",
+    "description": "Button: remove the instance from the extension."
+  },
+  "btnAddInstance": {
+    "message": "Add an instance",
+    "description": "Button: add another Localify server."
+  },
+  "confirmRemove": {
+    "message": "Remove “$NAME$” from the extension? The key stays valid on the server until it is revoked there.",
+    "description": "Confirmation; NAME is the instance name.",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "Home"
+      }
+    }
+  },
+  "statusInvalidUrl": {
+    "message": "Invalid address: it must start with https:// (or http:// for a local server).",
+    "description": "Error: the address is not an http(s) URL."
+  },
+  "statusMissingKey": {
+    "message": "Enter the extension key.",
+    "description": "Error: the key field is empty."
+  },
+  "statusPermissionDenied": {
+    "message": "Permission denied: the extension cannot reach this server.",
+    "description": "Error: the user refused access to the server address."
+  },
+  "statusTesting": {
+    "message": "Testing the connection…",
+    "description": "Progress message."
+  },
+  "statusConnected": {
+    "message": "Connected: the server accepts the key.",
+    "description": "Success message."
+  },
+  "statusSending": {
+    "message": "Sending…",
+    "description": "Progress message while sending cookies."
+  },
+  "cookiesNeverSent": {
+    "message": "No cookies sent yet.",
+    "description": "Cookie state of an instance."
+  },
+  "cookiesLastSent": {
+    "message": "Cookies last sent on $DATE$.",
+    "description": "Cookie state; DATE is a localized date and time.",
+    "placeholders": {
+      "date": {
+        "content": "$1",
+        "example": "29/10/2026 18:30"
+      }
+    }
+  },
+  "cookiesLastError": {
+    "message": "Last send failed: $ERROR$",
+    "description": "Cookie state; ERROR is the error message.",
+    "placeholders": {
+      "error": {
+        "content": "$1",
+        "example": "Server unreachable."
+      }
+    }
+  },
+  "cookiesHeading": {
+    "message": "YouTube cookies (optional)",
+    "description": "Heading of the cookie section."
+  },
+  "cookiesIntro": {
+    "message": "When YouTube asks a server to “confirm you're not a bot”, yt-dlp needs the cookies of a signed-in YouTube session. The extension can send them for you to the instances you tick:",
+    "description": "Why cookies may be needed."
+  },
+  "cookiesPoint1": {
+    "message": "Only this browser's youtube.com and google.com cookies are read, in Netscape format (cookies.txt), and sent to the ticked Localify instances and nowhere else.",
+    "description": "Cookie explanation, item 1."
+  },
+  "cookiesPoint2": {
+    "message": "These cookies open your Google account: each server receiving them can act on YouTube on your behalf. Prefer a browser profile signed in with a secondary account.",
+    "description": "Cookie explanation, item 2 (security warning)."
+  },
+  "cookiesPoint3": {
+    "message": "Off by default. The browser asks for the “cookies” permission the first time; it is removed when no instance receives cookies any more.",
+    "description": "Cookie explanation, item 3."
+  },
+  "cookiesInterval": {
+    "message": "Send every (hours)",
+    "description": "Label of the sending interval, in hours."
+  }
+}

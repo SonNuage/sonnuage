@@ -31,6 +31,13 @@ public sealed class TranscodeService : IDisposable
 
     public bool Available => _ffmpeg.Available;
 
+    public string FfmpegPath => _ffmpeg.Path!;
+
+    /// <summary>Créneau d'encodage partagé avec le cache (ne pas saturer le serveur de ffmpeg simultanés).</summary>
+    public Task WaitSlotAsync(CancellationToken ct) => _slots.WaitAsync(ct);
+
+    public void ReleaseSlot() => _slots.Release();
+
     public TranscodeHandle Get(Track track, TranscodeProfile profile)
     {
         var key = $"{track.Id:N}-{profile.Name}-{track.FileModifiedUtc.Ticks:x}-{track.FileSize:x}";

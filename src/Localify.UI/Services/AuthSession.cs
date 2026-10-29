@@ -29,16 +29,35 @@ public sealed class AuthSession(IKeyValueStore store, IServerEndpoint endpoint, 
     {
         if (_loaded) return;
         _loaded = true;
+        _tokens = await ReadStoredAsync();
+    }
+
+    private async Task<TokenResponse?> ReadStoredAsync()
+    {
         var raw = await store.GetAsync(StorageKey);
-        if (raw is null) return;
+        if (raw is null) return null;
         try
         {
-            _tokens = JsonSerializer.Deserialize<TokenResponse>(raw, JsonDefaults.Options);
+            return JsonSerializer.Deserialize<TokenResponse>(raw, JsonDefaults.Options);
         }
         catch (JsonException)
         {
             await store.SetAsync(StorageKey, null);
+            return null;
         }
+    }
+
+    /// <summary>
+    /// Jetons renouvelés entre-temps par un autre onglet (le stockage est partagé) : on les reprend au lieu de
+    /// renouveler avec un refresh token déjà consommé, que le serveur prendrait pour un vol.
+    /// </summary>
+    private async Task<TokenResponse?> AdoptSharedAsync(TokenResponse stale)
+    {
+        var stored = await ReadStoredAsync();
+        if (stored is null || stored.RefreshToken == stale.RefreshToken || stored.User.Id != stale.User.Id) return null;
+        _tokens = stored;
+        Changed?.Invoke();
+        return stored;
     }
 
     public async Task<string?> LoginAsync(string username, string password, string deviceName)
@@ -101,6 +120,11 @@ public sealed class AuthSession(IKeyValueStore store, IServerEndpoint endpoint, 
         {
             // Un autre appel a déjà renouvelé pendant qu'on attendait.
             if (!ReferenceEquals(_tokens, stale)) return _tokens;
+            if (await AdoptSharedAsync(stale) is { } shared)
+            {
+                if (shared.AccessTokenExpiresAt - DateTimeOffset.UtcNow > RefreshMargin) return shared;
+                stale = shared;
+            }
 
             using var http = CreateClient();
             HttpResponseMessage response;
@@ -116,6 +140,8 @@ public sealed class AuthSession(IKeyValueStore store, IServerEndpoint endpoint, 
 
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
+                // Perdu la course contre un autre onglet : ses jetons sont dans le stockage partagé.
+                if (await AdoptSharedAsync(stale) is { } winner) return winner;
                 await SetAsync(null);
                 return null;
             }

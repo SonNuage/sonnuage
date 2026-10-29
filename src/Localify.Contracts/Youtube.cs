@@ -27,7 +27,9 @@ public sealed record YoutubeSettingsDto(
     string AudioFormat,
     string? AcoustIdKey,
     // Au-dessus, les métadonnées trouvées sont appliquées sans demander ; en dessous, l'import attend une vérification.
-    double AutoAcceptThreshold);
+    double AutoAcceptThreshold,
+    // Avec des cookies, relancer sans eux quand le format demandé manque une fois connecté.
+    bool RetryWithoutCookies = true);
 
 public sealed record YoutubeVideoDto(
     string VideoId,
@@ -36,7 +38,9 @@ public sealed record YoutubeVideoDto(
     double? DurationSeconds,
     string? ThumbnailUrl,
     // État de l'import si la vidéo est déjà connue (Queued, Done, Failed…), sinon null.
-    string? ImportStatus);
+    string? ImportStatus,
+    // Album déduit de la playlist d'origine (chaîne lue album par album), prioritaire sur l'album commun de l'import.
+    string? Album = null);
 
 public sealed record YoutubeListingDto(string Kind, string Title, string? Channel, string Url, IReadOnlyList<YoutubeVideoDto> Entries);
 

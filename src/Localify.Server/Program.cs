@@ -130,6 +130,7 @@ app.MapMeEndpoints();
 app.MapPlaylistEndpoints();
 app.MapAdminEndpoints();
 app.MapYoutubeEndpoints();
+app.MapExtensionEndpoints();
 app.MapDashboardEndpoints();
 
 app.MapFallback("/api/{**path}", () => Results.NotFound());
@@ -152,7 +153,8 @@ static void ConfigureAuthentication(IServiceCollection services)
                 if (ctx.Request.Query.TryGetValue("t", out var t)) ctx.Token = t;
                 return Task.CompletedTask;
             },
-        });
+        })
+        .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(AuthConstants.ApiKeyScheme, _ => { });
 
     services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme).Configure<SigningKeyProvider>((o, keys) =>
         Configure(o, keys, AuthConstants.ApiAudience));
@@ -164,6 +166,10 @@ static void ConfigureAuthentication(IServiceCollection services)
             .RequireAuthenticatedUser().Build())
         .AddPolicy(AuthConstants.AdminPolicy, p => p.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
             .RequireAuthenticatedUser().RequireClaim("role", Localify.Contracts.Roles.Admin))
+        .AddPolicy(AuthConstants.ExtensionPolicy, p => p.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, AuthConstants.ApiKeyScheme)
+            .RequireAuthenticatedUser().RequireAssertion(c =>
+                c.User.HasClaim("role", Localify.Contracts.Roles.Admin) ||
+                c.User.HasClaim(ApiKeyAuthenticationHandler.KindClaim, nameof(ApiKeyKind.BrowserExtension))))
         .AddPolicy(AuthConstants.MediaPolicy, p => p.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, AuthConstants.MediaScheme)
             .RequireAuthenticatedUser());
 

@@ -23,6 +23,7 @@ public static class StreamEndpoints
     private static async Task<IResult> StreamAsync(
         Guid id,
         string? quality,
+        double? start,
         HttpContext http,
         LocalifyDbContext db,
         TranscodeService transcoder,
@@ -39,6 +40,11 @@ public static class StreamEndpoints
         var profile = transcoder.Available ? TranscodeProfile.Resolve(track, requested) : null;
         http.Response.Headers["X-Localify-Quality"] = profile?.Name ?? "original";
         http.Response.Headers["X-Localify-Duration"] = track.DurationSeconds.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+
+        // Saut au-delà de ce que le navigateur a déjà reçu d'un flux en cours d'encodage (sans Range possible) :
+        // le lecteur redemande la piste à partir de ce point, encodée à part sans passer par le cache.
+        if (start is > 0 && transcoder.Available && start < track.DurationSeconds)
+            return new OffsetTranscodeResult(transcoder, track, profile ?? TranscodeProfile.For(StreamQuality.High), start.Value);
 
         if (profile is null)
             return Results.File(track.FilePath, LibraryFiles.ContentType(track.FilePath), lastModified: track.FileModifiedUtc, enableRangeProcessing: true);

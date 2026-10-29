@@ -12,7 +12,10 @@ builder.Services.AddSingleton<IServerEndpoint>(new SameOriginEndpoint(new Uri(bu
 builder.Services.AddSingleton<IKeyValueStore, BrowserStore>();
 builder.Services.AddSingleton<IPlatformInfo, BrowserPlatform>();
 builder.Services.AddSingleton<WebPlayer>();
-builder.Services.AddSingleton<IPlayer>(sp => sp.GetRequiredService<WebPlayer>());
+builder.Services.AddSingleton<BroadcastPlaybackLink>();
+// Un seul onglet joue ; les autres le pilotent (voir LinkedPlayer).
+builder.Services.AddSingleton<IPlayer>(sp => new LinkedPlayer(
+    sp.GetRequiredService<WebPlayer>(), sp.GetRequiredService<WebPlayer>(), sp.GetRequiredService<BroadcastPlaybackLink>()));
 builder.Services.AddLocalifyUi();
 
 var host = builder.Build();

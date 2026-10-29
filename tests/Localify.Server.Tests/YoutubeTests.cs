@@ -138,6 +138,9 @@ public class YoutubeMiscTests
     [InlineData("ERROR: unable to download video data: HTTP Error 429: Too Many Requests", YtDlpFailure.Throttled)]
     [InlineData("ERROR: [youtube] abc: Video unavailable. This video is private", YtDlpFailure.Unavailable)]
     [InlineData("ERROR: [youtube] abc: Private video. Sign in if you've been granted access", YtDlpFailure.Unavailable)]
+    [InlineData("ERROR: [youtube] abc: Sign in to confirm your age. This video may be inappropriate for some users.", YtDlpFailure.NeedsAccount)]
+    [InlineData("ERROR: [youtube] abc: Join this channel to get access to members-only content like this video", YtDlpFailure.NeedsAccount)]
+    [InlineData("ERROR: [youtube] abc: Requested format is not available. Use --list-formats for a list of available formats", YtDlpFailure.FormatUnavailable)]
     [InlineData("ERROR: Postprocessing: something odd", YtDlpFailure.Other)]
     public void Classifies_yt_dlp_errors(string error, YtDlpFailure expected)
     {
@@ -148,8 +151,8 @@ public class YoutubeMiscTests
     [InlineData("https://www.youtube.com/watch?v=dQw4w9WgXcQ", "https://www.youtube.com/watch?v=dQw4w9WgXcQ")]
     [InlineData("https://youtu.be/dQw4w9WgXcQ", "https://youtu.be/dQw4w9WgXcQ")]
     [InlineData("https://music.youtube.com/playlist?list=OLAK5uy_abc", "https://music.youtube.com/playlist?list=OLAK5uy_abc")]
-    [InlineData("https://www.youtube.com/@DaftPunk", "https://www.youtube.com/@DaftPunk/videos")]
-    [InlineData("https://www.youtube.com/channel/UC123/", "https://www.youtube.com/channel/UC123/videos")]
+    [InlineData("https://www.youtube.com/@DaftPunk", "https://www.youtube.com/@DaftPunk")]
+    [InlineData("https://www.youtube.com/channel/UC123/", "https://www.youtube.com/channel/UC123")]
     [InlineData("http://www.youtube.com/@DaftPunk/playlists", "https://www.youtube.com/@DaftPunk/playlists")]
     [InlineData("https://evil.example.com/watch?v=dQw4w9WgXcQ", null)]
     [InlineData("file:///etc/passwd", null)]
@@ -158,6 +161,17 @@ public class YoutubeMiscTests
     public void Accepts_only_youtube_urls(string input, string? expected)
     {
         Assert.Equal(expected, YoutubeSyncService.NormalizeUrl(input));
+    }
+
+    [Theory]
+    [InlineData("140", true)]
+    [InlineData("bestaudio[acodec=opus]/bestaudio[ext=m4a]/18", true)]
+    [InlineData("251/140 --exec rm", false)]
+    [InlineData("", false)]
+    [InlineData("a;b", false)]
+    public void Validates_format_selectors(string format, bool valid)
+    {
+        Assert.Equal(valid, YtDlp.IsValidFormat(format));
     }
 
     [Theory]

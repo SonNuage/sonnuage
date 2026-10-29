@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Localify</title>
+  <style>
+    :root { color-scheme: light dark; --bg: #fff; --fg: #191919; --muted: #666; --panel: #f4f4f4; --card: #fff; --accent: #1db954; --bad: #c62828; --good: #1b7f3b; }
+    @media (prefers-color-scheme: dark) { :root { --bg: #121212; --fg: #f1f1f1; --muted: #a7a7a7; --panel: #1e1e1e; --card: #262626; --bad: #ff6b6b; --good: #4ade80; } }
+    body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 system-ui, sans-serif; }
+    main { max-width: 680px; margin: 0 auto; padding: 24px 16px 48px; }
+    h1 { font-size: 1.5rem; margin: 0 0 4px; }
+    h2 { font-size: 1.1rem; margin: 0 0 8px; }
+    section { background: var(--panel); border-radius: 10px; padding: 16px; margin-top: 16px; }
+    .instance { background: var(--card); border: 1px solid #8883; border-radius: 8px; padding: 14px; margin-top: 12px; }
+    .grid { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; }
+    @media (max-width: 520px) { .grid { grid-template-columns: 1fr; } }
+    label.field { display: block; }
+    label.field.wide { grid-column: 1 / -1; }
+    label.field span { display: block; font-weight: 600; margin-bottom: 4px; }
+    input[type=url], input[type=password], input[type=text], input[type=number] { width: 100%; box-sizing: border-box; padding: 8px 10px; border-radius: 6px; border: 1px solid #8884; background: var(--bg); color: inherit; font: inherit; }
+    input[type=number] { width: 6em; }
+    button { font: inherit; border: 0; border-radius: 18px; padding: 8px 16px; background: var(--accent); color: #000; cursor: pointer; }
+    button.secondary { background: #8883; color: inherit; }
+    button.danger { background: transparent; color: var(--bad); }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+    .checks { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; }
+    .checks label { display: flex; gap: 6px; align-items: center; cursor: pointer; }
+    .muted { color: var(--muted); font-size: .9rem; }
+    .status { margin-top: 8px; min-height: 1.2em; font-size: .9rem; white-space: pre-line; }
+    .status.bad { color: var(--bad); }
+    .status.good { color: var(--good); }
+    ul { padding-left: 1.2em; }
+  </style>
+</head>
+<body>
+<main>
+  <h1 data-i18n="extName"></h1>
+  <p class="muted" data-i18n="optionsIntro"></p>
+
+  <section>
+    <h2 data-i18n="instancesHeading"></h2>
+    <p class="muted" data-i18n="instancesHelp"></p>
+    <div id="instances"></div>
+    <div class="row"><button id="add" class="secondary" data-i18n="btnAddInstance"></button></div>
+  </section>
+
+  <section>
+    <h2 data-i18n="cookiesHeading"></h2>
+    <p data-i18n="cookiesIntro"></p>
+    <ul class="muted">
+      <li data-i18n="cookiesPoint1"></li>
+      <li data-i18n="cookiesPoint2"></li>
+      <li data-i18n="cookiesPoint3"></li>
+    </ul>
+    <label class="row"><span data-i18n="cookiesInterval"></span> <input id="cookieHours" type="number" min="1" max="168" step="1" /></label>
+  </section>
+</main>
+
+<template id="instance">
+  <div class="instance">
+    <div class="grid">
+      <label class="field"><span data-i18n="fieldName"></span><input name="name" type="text" maxlength="60" data-i18n-placeholder="fieldNamePlaceholder" autocomplete="off" /></label>
+      <label class="field"><span data-i18n="fieldUrl"></span><input name="url" type="url" placeholder="https://music.example.org" autocomplete="off" /></label>
+      <label class="field wide"><span data-i18n="fieldKey"></span><input name="apiKey" type="password" placeholder="lfy_ext_…" autocomplete="off" /></label>
+    </div>
+    <div class="checks">
+      <label><input name="default" type="radio" /> <span data-i18n="fieldDefault"></span></label>
+      <label><input name="sendCookies" type="checkbox" /> <span data-i18n="fieldSendCookies"></span></label>
+    </div>
+    <div class="row">
+      <button name="save" data-i18n="btnSaveTest"></button>
+      <button name="cookiesNow" class="secondary" data-i18n="btnSendCookiesNow"></button>
+      <button name="remove" class="danger" data-i18n="btnRemove"></button>
+    </div>
+    <div class="status" data-role="status"></div>
+    <div class="status muted" data-role="cookies"></div>
+  </div>
+</template>
+
+<script src="options.js"></script>
+</body>
+</html>

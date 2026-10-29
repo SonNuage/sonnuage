@@ -29,6 +29,9 @@ public sealed class YoutubeLibraryWriter(
         // L'opus de YouTube arrive dans un conteneur webm, que ni les tags ni tous les lecteurs ne gèrent.
         if (ext is ".webm" or ".mka")
             return await FfmpegAsync(downloaded, ".opus", ["-vn", "-c:a", "copy"], ct);
+        // Format de secours « vidéo avec son » : on n'en garde que l'audio (AAC), sans réencoder.
+        if (ext is ".mp4")
+            return await FfmpegAsync(downloaded, ".m4a", ["-vn", "-c:a", "copy"], ct);
         return downloaded;
     }
 

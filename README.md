@@ -52,6 +52,45 @@ Réservé aux administrateurs (`/admin/youtube`), avec [yt-dlp](https://github.c
 L'image Docker embarque yt-dlp, Deno et fpcalc. Ne téléchargez que ce que vous avez le droit de conserver
 (œuvres libres, vos propres contenus, ou selon le droit applicable chez vous) : vérifier cela vous incombe.
 
+### Extension de navigateur
+
+Le dossier [`extension/`](extension/) contient une extension Manifest V3 (Chrome, Edge, Firefox 128+) qui ajoute
+sur YouTube et YouTube Music un bouton **Ajouter à Localify** (vidéo ; affiche « déjà importé » ou « en attente »)
+et **S'abonner dans Localify** (playlist, album ou chaîne).
+
+1. Dans Localify : *Administration → YouTube → Réglages → Extension de navigateur*, créer une clé et la copier
+   (elle n'est affichée qu'une fois ; seule son empreinte est conservée). La clé ne permet que quatre actions :
+   ajouter des vidéos à la file, lire une adresse YouTube, s'abonner, envoyer des cookies YouTube ; plus
+   l'état d'une vidéo. Rien d'autre de l'API n'est accessible avec elle. Révoquez-la depuis le même écran.
+2. Charger l'extension non empaquetée :
+   - **Chrome / Edge** : `chrome://extensions` → activer le *mode développeur* → *Charger l'extension non
+     empaquetée* → choisir le dossier `extension/`.
+   - **Firefox** : `about:debugging#/runtime/this-firefox` → *Charger un module complémentaire temporaire* →
+     choisir `extension/manifest.json` (retiré au redémarrage de Firefox).
+3. Cliquer sur l'icône de l'extension (ou *Options*), saisir le nom, l'adresse du serveur (par exemple
+   `https://musique.exemple.fr`, ou `http://localhost:5080` en développement) et la clé, puis
+   *Enregistrer et tester* : le navigateur demande l'accès à ce seul serveur.
+
+**Plusieurs instances** : *Ajouter une instance* enregistre d'autres serveurs Localify (chacun avec sa propre
+clé). Les boutons sur YouTube agissent sur l'instance cochée *Utilisée par les boutons YouTube* (son nom
+s'affiche au survol du bouton).
+
+**Envoi des cookies** (facultatif, désactivé par défaut, au choix pour chaque instance) : l'extension exporte
+périodiquement les cookies youtube.com / google.com du navigateur au format Netscape vers
+`PUT /api/admin/youtube/cookies` des instances cochées, ce qui évite les blocages « confirmez que vous n'êtes pas
+un robot ». L'intervalle est commun ; *Envoyer les cookies maintenant* fait un envoi ponctuel. Ces cookies
+ouvrent votre compte Google à chaque serveur qui les reçoit : utilisez un profil connecté avec un compte
+secondaire. La permission « cookies » est rendue dès qu'aucune instance ne les reçoit plus.
+
+**Langues** : l'extension suit la langue du navigateur, en français ou en anglais (anglais par défaut pour les
+autres langues). Les textes sont dans `extension/_locales/<langue>/messages.json` (format `chrome.i18n`, avec une
+description par message pour les traducteurs) ; pour ajouter une langue, copier `en/` vers le code de la
+langue (`de`, `es`, `pt_BR`…) et traduire les champs `message` en gardant les `$PARAMÈTRES$`. Les messages
+d'erreur venus du serveur restent en français.
+
+Derrière Cloudflare Access, autorisez l'en-tête `Authorization: ApiKey …` (règle *Bypass* ou jeton de
+service) pour les chemins `/api/admin/youtube/*` et `/api/extension/*`.
+
 ## Recherche
 
 Sans configuration, la recherche se fait en base : sous-chaînes, insensible à la casse et aux accents.

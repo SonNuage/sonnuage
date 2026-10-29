@@ -18,6 +18,9 @@ public static class AuthConstants
     public const string MediaScheme = "Media";
     public const string MediaPolicy = "media";
     public const string AdminPolicy = "admin";
+    public const string ApiKeyScheme = "ApiKey";
+    /// <summary>Admin connecté, ou clé d'extension de navigateur : uniquement les routes d'ajout d'imports YouTube.</summary>
+    public const string ExtensionPolicy = "extension";
     public const string SecurityStampClaim = "sstamp";
 }
 
@@ -94,6 +97,8 @@ public sealed class TokenService(
     /// Rotation : un refresh token ne sert qu'une fois. Réutiliser un jeton déjà remplacé indique un vol :
     /// toute la lignée de l'utilisateur est révoquée.
     /// </summary>
+    private static readonly TimeSpan ConcurrentRefreshGrace = TimeSpan.FromMinutes(1);
+
     public async Task<TokenResponse?> RefreshAsync(string refreshToken, CancellationToken ct)
     {
         var hash = Hash(refreshToken);
@@ -103,7 +108,9 @@ public sealed class TokenService(
 
         if (stored.RevokedAt is not null)
         {
-            if (stored.ReplacedById is not null)
+            // Renouvelé à l'instant : deux onglets du même navigateur l'ont fait en même temps. Le perdant relit
+            // les jetons partagés par l'autre ; ce n'est pas un jeton volé rejoué plus tard.
+            if (stored.ReplacedById is not null && now - stored.RevokedAt.Value > ConcurrentRefreshGrace)
             {
                 await db.RefreshTokens.Where(r => r.UserId == stored.UserId && r.RevokedAt == null)
                     .ExecuteUpdateAsync(s => s.SetProperty(r => r.RevokedAt, now), ct);

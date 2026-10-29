@@ -68,6 +68,21 @@
     </AdminNav>
 </div>
 
+<Modal Open="_formatsItem is not null" OpenChanged="v => { if (!v) _formatsItem = null; }" Title="Formats proposés">
+    <ChildContent>
+        @if (_formatsItem is { } fi)
+        {
+            <p class="strong">@fi.Title</p>
+            <p class="muted small">YouTube ne propose aucun des formats audio demandés. Choisissez un identifiant (colonne ID) ou un sélecteur yt-dlp pour cette seule tentative : « 140 » (AAC), « 251 » (Opus), « 18 » (vidéo 360p dont seul l'audio sera gardé), ou « 251/140/18 ».</p>
+            <pre class="formats-table">@(_formats ?? "Aucune liste relevée : relancez une fois l'import pour la récupérer.")</pre>
+            <div class="row">
+                <input class="input mono grow" placeholder="ex. 140/18" @bind="_format" @bind:event="oninput" aria-label="Format yt-dlp" />
+                <button class="btn primary" disabled="@string.IsNullOrWhiteSpace(_format)" @onclick="RetryWithFormatAsync">Réessayer avec ce format</button>
+            </div>
+        }
+    </ChildContent>
+</Modal>
+
 <Modal Open="_review is not null" OpenChanged="v => { if (!v) _review = null; }" Title="Vérifier les métadonnées">
     <ChildContent>
         @if (_review is { } r)
@@ -372,6 +387,10 @@
                                 <button class="icon-btn" title="Modifier les métadonnées" @onclick="() => OpenReviewAsync(item)"><Icon Name="edit" Size="18" /></button>
                                 @if (item.AlbumId is { } album) { <a class="icon-btn" href="album/@album" title="Voir l'album"><Icon Name="album" Size="18" /></a> }
                             }
+                            @if (item.Status is "Failed" && item.Error?.Contains("format", StringComparison.OrdinalIgnoreCase) == true)
+                            {
+                                <button class="icon-btn" title="Formats proposés, réessayer avec un autre" @onclick="() => OpenFormatsAsync(item)"><Icon Name="settings" Size="18" /></button>
+                            }
                             @if (item.Status is "Failed" or "Skipped")
                             {
                                 <button class="icon-btn" title="Importer / réessayer" @onclick="() => RetryAsync(item)"><Icon Name="refresh" Size="18" /></button>
@@ -420,6 +439,28 @@
     {
         await Run(() => Api.YoutubeRetryAsync(item.Id));
         await LoadItemsAsync();
+    }
+
+    // Échec « format indisponible » : la liste des formats relevée par le serveur, et un format pour cette tentative.
+    private YoutubeItemDto? _formatsItem;
+    private string? _formats;
+    private string _format = "";
+
+    private async Task OpenFormatsAsync(YoutubeItemDto item)
+    {
+        _formatsItem = item;
+        _format = "";
+        _formats = await Run(() => Api.YoutubeFormatsAsync(item.Id));
+    }
+
+    private async Task RetryWithFormatAsync()
+    {
+        if (_formatsItem is not { } item) return;
+        if (await Run(() => Api.YoutubeRetryAsync(item.Id, _format), "Import relancé"))
+        {
+            _formatsItem = null;
+            await LoadItemsAsync();
+        }
     }
 
     private async Task RetryFailedAsync()
@@ -634,6 +675,15 @@
                     <button class="btn danger" @onclick="DeleteCookiesAsync">Supprimer</button>
                 }
             </div>
+            <p class="muted small">Avec les cookies d'un compte majeur, les vidéos réservées aux personnes connectées ou aux adultes se téléchargent aussi : chaque import est d'abord tenté connecté.</p>
+            @if (_settings is { } cs)
+            {
+                <label class="row small">
+                    <input type="checkbox" checked="@cs.RetryWithoutCookies"
+                           @onchange="async e => { _settings = cs with { RetryWithoutCookies = e.Value is true }; await SaveSettingsAsync(); }" />
+                    Réessayer sans les cookies quand, connecté, YouTube ne propose pas le format audio demandé
+                </label>
+            }
         </section>
 
         @if (_settings is { } s)
@@ -671,6 +721,8 @@
                 <button class="btn primary" @onclick="SaveSettingsAsync">Enregistrer</button>
             </section>
         }
+
+        <ExtensionKeys />
     };
 
     private async Task UpdateToolsAsync(bool deno)

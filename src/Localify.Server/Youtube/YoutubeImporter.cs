@@ -39,6 +39,14 @@ public sealed class YoutubeImporter(
 
     public void Wake() => _wake.Writer.TryWrite(true);
 
+    // Format yt-dlp choisi par l'admin pour la prochaine tentative d'un import (une seule fois, non conservé).
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, string> _formatOverrides = new();
+
+    public void UseFormatOnce(Guid itemId, string format) => _formatOverrides[itemId] = format;
+
+    /// <summary>Formats proposés par YouTube, relevés lors du dernier échec « format indisponible ».</summary>
+    public string FormatsPath(string videoId) => Path.Combine(options.Value.YoutubeDataPath, "formats", $"{videoId}.txt");
+
     public void Resume()
     {
         HoldUntil = null;
@@ -72,7 +80,7 @@ public sealed class YoutubeImporter(
                 Channel = Truncate(v.Channel, 200),
                 DurationSeconds = v.DurationSeconds,
                 ThumbnailUrl = Truncate(v.ThumbnailUrl, 1000),
-                AlbumHint = Truncate(albumHint, 300),
+                AlbumHint = Truncate(v.Album ?? albumHint, 300),
                 SubscriptionId = subscriptionId,
                 CreatedAt = time.GetUtcNow(),
                 UpdatedAt = time.GetUtcNow(),
@@ -184,7 +192,10 @@ public sealed class YoutubeImporter(
         try
         {
             if (Directory.Exists(workDir)) Directory.Delete(workDir, recursive: true);
-            var download = await ytDlp.DownloadAsync(item.VideoId, workDir, p => Current = Current! with { Percent = p }, ct);
+            _formatOverrides.TryRemove(item.Id, out var format);
+            var download = await ytDlp.DownloadAsync(item.VideoId, workDir, format, settings.Settings.RetryWithoutCookies,
+                p => Current = Current! with { Percent = p }, ct);
+            if (File.Exists(FormatsPath(item.VideoId))) File.Delete(FormatsPath(item.VideoId));
 
             await SetAsync(db, item, YoutubeItemStatus.Processing, ct);
             Current = Current! with { Stage = "metadata", Percent = null };
@@ -229,6 +240,11 @@ public sealed class YoutubeImporter(
         {
             logger.LogWarning(ex, "Import YouTube {VideoId} en échec", item.VideoId);
             item.Error = ex.Message;
+            if (ex is YtDlpException { Formats: { } formats })
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(FormatsPath(item.VideoId))!);
+                await File.WriteAllTextAsync(FormatsPath(item.VideoId), formats, CancellationToken.None);
+            }
             await SetAsync(db, item, YoutubeItemStatus.Failed, CancellationToken.None);
         }
         finally

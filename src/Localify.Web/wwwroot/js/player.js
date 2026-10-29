@@ -10,6 +10,10 @@ let currentKey = null;
 let retries = 0;
 let lastReportedSecond = -1;
 let resumeAt = 0;
+// Début (s) du flux courant dans la piste : > 0 quand le serveur encode à partir d'un point de saut.
+let offset = 0;
+
+function position() { return offset + (audio.currentTime || 0); }
 
 // key -> { url: objectURL | null, controller, done: Promise }
 const prefetched = new Map();
@@ -24,10 +28,10 @@ export function init(dotnetRef) {
   audio.addEventListener('waiting', () => notify('OnBuffering'));
   audio.addEventListener('ended', () => notify('OnEnded'));
   audio.addEventListener('timeupdate', () => {
-    const s = Math.floor(audio.currentTime);
+    const s = Math.floor(position());
     if (s !== lastReportedSecond) {
       lastReportedSecond = s;
-      notify('OnTime', audio.currentTime);
+      notify('OnTime', position());
       updatePositionState();
     }
   });
@@ -41,8 +45,8 @@ export function init(dotnetRef) {
       previoustrack: () => notify('OnRemote', 'previous', 0),
       nexttrack: () => notify('OnRemote', 'next', 0),
       seekto: (d) => notify('OnRemote', 'seek', d.seekTime ?? 0),
-      seekbackward: (d) => notify('OnRemote', 'seek', Math.max(0, audio.currentTime - (d.seekOffset || 10))),
-      seekforward: (d) => notify('OnRemote', 'seek', audio.currentTime + (d.seekOffset || 10)),
+      seekbackward: (d) => notify('OnRemote', 'seek', Math.max(0, position() - (d.seekOffset || 10))),
+      seekforward: (d) => notify('OnRemote', 'seek', position() + (d.seekOffset || 10)),
     };
     for (const [action, handler] of Object.entries(handlers)) {
       try { ms.setActionHandler(action, handler); } catch { /* action non supportée */ }
@@ -69,11 +73,13 @@ export async function load(key, url, startAt, autoplay, duration) {
   retries = 0;
   resumeAt = startAt || 0;
   lastReportedSecond = -1;
+  offset = 0;
 
   const entry = prefetched.get(key);
   audio.src = entry && entry.url ? entry.url : url;
   if (resumeAt > 0) {
-    audio.addEventListener('loadedmetadata', () => { audio.currentTime = resumeAt; }, { once: true });
+    const at = resumeAt;
+    audio.addEventListener('loadedmetadata', () => seek(at), { once: true });
   }
   if (autoplay) await safePlay();
   evict(new Set([key]));
@@ -111,10 +117,11 @@ function onError() {
 }
 
 function reloadCurrent() {
-  const position = audio.currentTime || resumeAt;
-  resumeAt = position;
+  const at = audio.currentTime ? position() : resumeAt;
+  resumeAt = at;
+  offset = 0;
   audio.src = currentUrl;
-  audio.addEventListener('loadedmetadata', () => { audio.currentTime = position; }, { once: true });
+  audio.addEventListener('loadedmetadata', () => seek(at), { once: true });
   safePlay();
 }
 
@@ -128,7 +135,28 @@ export function stop() {
 }
 export function seek(seconds) {
   if (!isFinite(seconds)) return;
-  audio.currentTime = Math.max(0, seconds);
+  seconds = Math.max(0, seconds);
+  const local = seconds - offset;
+  if (local >= 0 && (canSeekTo(local) || audio.src.startsWith('blob:') || !currentUrl)) {
+    audio.currentTime = local;
+    return;
+  }
+  // Flux en cours d'encodage, reçu seulement jusqu'à un certain point : le navigateur ne sait pas y sauter
+  // (il s'arrêterait au bout de ce qu'il a reçu). On redemande la piste au serveur à partir de ce point.
+  const playing = !audio.paused;
+  offset = seconds < 1 ? 0 : seconds;
+  lastReportedSecond = -1;
+  audio.src = offset > 0 ? `${currentUrl}&start=${offset.toFixed(3)}` : currentUrl;
+  notify('OnTime', seconds);
+  if (playing) safePlay();
+}
+
+function canSeekTo(t) {
+  const r = audio.seekable;
+  for (let i = 0; i < r.length; i++) {
+    if (t >= r.start(i) && t <= r.end(i)) return true;
+  }
+  return false;
 }
 export function setVolume(v) { audio.volume = Math.min(1, Math.max(0, v)); }
 
@@ -188,12 +216,12 @@ export function setPlaybackState(playing) {
 
 function updatePositionState() {
   if (!('mediaSession' in navigator) || !navigator.mediaSession.setPositionState) return;
-  const duration = isFinite(audio.duration) && audio.duration > 0 ? audio.duration : expectedDuration;
+  const duration = expectedDuration || (isFinite(audio.duration) && audio.duration > 0 ? offset + audio.duration : 0);
   if (!duration) return;
   try {
     navigator.mediaSession.setPositionState({
       duration,
-      position: Math.min(audio.currentTime, duration),
+      position: Math.min(position(), duration),
       playbackRate: audio.playbackRate,
     });
   } catch { /* valeurs transitoires invalides */ }

@@ -6,7 +6,7 @@ using Microsoft.JSInterop;
 namespace Localify.Web.Services;
 
 /// <summary>Lecteur navigateur : file en C#, audio et MediaSession en JS (wwwroot/js/player.js).</summary>
-public sealed class WebPlayer(IJSRuntime js, ApiClient api, PlaybackSettings settings, IKeyValueStore store) : IPlayer, IRestorablePlayer, IAsyncDisposable
+public sealed class WebPlayer(IJSRuntime js, ApiClient api, PlaybackSettings settings, IKeyValueStore store) : IPlayer, IRestorablePlayer, IAdoptablePlayer, IAsyncDisposable
 {
     private const string QueueStorageKey = "localify.queue";
     /// <summary>Une écoute compte dans l'historique au-delà de 30 s (ou à la fin d'une piste plus courte).</summary>
@@ -57,6 +57,23 @@ public sealed class WebPlayer(IJSRuntime js, ApiClient api, PlaybackSettings set
         catch (Exception ex) when (ex is JsonException or ApiException or HttpRequestException)
         {
         }
+    }
+
+    /// <summary>Reprend ici la file d'un autre onglet, dans son ordre de lecture et à sa position.</summary>
+    public async Task AdoptAsync(PlayerState state, bool autoplay)
+    {
+        if (state.Queue.Count == 0) return;
+        await ReportCurrentAsync(completed: false);
+        _queue.Load(state.Queue, Math.Max(0, state.CurrentIndex), false);
+        _queue.Repeat = state.Repeat;
+        _volume = state.Volume;
+        await (await ModuleAsync()).InvokeVoidAsync("setVolume", _volume);
+        await LoadCurrentAsync(autoplay, startAt: state.PositionSeconds);
+    }
+
+    public async Task ReleaseAsync()
+    {
+        if (_module is not null && _playing) await _module.InvokeVoidAsync("pause");
     }
 
     public async Task PlayAsync(IReadOnlyList<TrackDto> tracks, int startIndex = 0, bool? shuffle = null)

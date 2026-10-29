@@ -76,6 +76,12 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     public Task<DashboardDto?> AdminDashboardAsync(string range) =>
         GetAsync<DashboardDto>($"api/admin/dashboard?range={range}&offsetMinutes={(int)DateTimeOffset.Now.Offset.TotalMinutes}");
 
+    // ---- Clés d'extension de navigateur (admin) ----
+    public Task<List<ExtensionKeyDto>?> ExtensionKeysAsync() => GetAsync<List<ExtensionKeyDto>>("api/admin/extension-keys");
+    public Task<CreatedExtensionKeyDto?> CreateExtensionKeyAsync(string name) =>
+        SendAsync<CreatedExtensionKeyDto>(HttpMethod.Post, "api/admin/extension-keys", new CreateExtensionKeyRequest(name));
+    public Task RevokeExtensionKeyAsync(Guid id) => SendAsync(HttpMethod.Delete, $"api/admin/extension-keys/{id}");
+
     // ---- YouTube (admin) ----
     private const string Yt = "api/admin/youtube";
     public Task<YoutubeStatusDto?> YoutubeStatusAsync(bool refresh = false) => GetAsync<YoutubeStatusDto>($"{Yt}/status?refresh={refresh}");
@@ -89,7 +95,15 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     public Task<YoutubeImportResultDto?> YoutubeImportAsync(YoutubeImportRequest req) => SendAsync<YoutubeImportResultDto>(HttpMethod.Post, $"{Yt}/imports", req);
     public Task<PagedResult<YoutubeItemDto>?> YoutubeItemsAsync(string? status, bool review, string? q, int offset, int limit) =>
         GetAsync<PagedResult<YoutubeItemDto>>($"{Yt}/items?offset={offset}&limit={limit}&review={review}{(status is null ? "" : $"&status={status}")}{Q(q)}");
-    public Task YoutubeRetryAsync(Guid id) => SendAsync(HttpMethod.Post, $"{Yt}/items/{id}/retry");
+    public Task YoutubeRetryAsync(Guid id, string? format = null) =>
+        SendAsync(HttpMethod.Post, $"{Yt}/items/{id}/retry{(string.IsNullOrWhiteSpace(format) ? "" : $"?format={Uri.EscapeDataString(format.Trim())}")}");
+    public async Task<string?> YoutubeFormatsAsync(Guid id)
+    {
+        using var response = await SendCoreAsync(() => new HttpRequestMessage(HttpMethod.Get, $"{Yt}/items/{id}/formats"));
+        if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.NoContent) return null;
+        await EnsureSuccessAsync(response);
+        return await response.Content.ReadAsStringAsync();
+    }
     public Task YoutubeRetryFailedAsync() => SendAsync(HttpMethod.Post, $"{Yt}/items/retry-failed");
     public Task YoutubeDeleteItemAsync(Guid id, bool deleteTrack) => SendAsync(HttpMethod.Delete, $"{Yt}/items/{id}?deleteTrack={deleteTrack}");
     public Task<List<MetadataCandidateDto>?> YoutubeCandidatesAsync(Guid id) => GetAsync<List<MetadataCandidateDto>>($"{Yt}/items/{id}/candidates");

@@ -250,9 +250,21 @@ public sealed class ApiTests(LocalifyFactory factory) : IClassFixture<LocalifyFa
         refreshed.EnsureSuccessStatusCode();
         var second = (await refreshed.Content.ReadFromJsonAsync<TokenResponse>(Ct))!;
 
-        // Rejouer l'ancien jeton (vol présumé) révoque aussi le nouveau.
+        // Rejoué aussitôt (deux onglets qui renouvellent en même temps) : refusé, sans toucher à la session.
         Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/api/auth/refresh", new RefreshRequest(first.RefreshToken), Ct)).StatusCode);
-        Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/api/auth/refresh", new RefreshRequest(second.RefreshToken), Ct)).StatusCode);
+        var again = await client.PostAsJsonAsync("/api/auth/refresh", new RefreshRequest(second.RefreshToken), Ct);
+        again.EnsureSuccessStatusCode();
+        var third = (await again.Content.ReadFromJsonAsync<TokenResponse>(Ct))!;
+
+        // Rejoué plus tard (vol présumé) : toute la lignée est révoquée, y compris le jeton courant.
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<Localify.Server.Data.LocalifyDbContext>();
+            foreach (var token in db.RefreshTokens.Where(r => r.RevokedAt != null).ToList()) token.RevokedAt = token.RevokedAt!.Value.AddMinutes(-5);
+            await db.SaveChangesAsync(Ct);
+        }
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/api/auth/refresh", new RefreshRequest(first.RefreshToken), Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/api/auth/refresh", new RefreshRequest(third.RefreshToken), Ct)).StatusCode);
     }
 
     [Fact]

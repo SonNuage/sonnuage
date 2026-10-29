@@ -60,6 +60,49 @@ namespace Localify.Server.Data.Migrations
                     b.ToTable("Albums");
                 });
 
+            modelBuilder.Entity("Localify.Server.Data.ApiKey", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("KeyHash")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("LastUsedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Prefix")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("KeyHash")
+                        .IsUnique();
+
+                    b.ToTable("ApiKeys");
+                });
+
             modelBuilder.Entity("Localify.Server.Data.Artist", b =>
                 {
                     b.Property<Guid>("Id")
@@ -487,6 +530,17 @@ namespace Localify.Server.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Artist");
+                });
+
+            modelBuilder.Entity("Localify.Server.Data.ApiKey", b =>
+                {
+                    b.HasOne("Localify.Server.Data.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
                 });
 
             modelBuilder.Entity("Localify.Server.Data.Favorite", b =>

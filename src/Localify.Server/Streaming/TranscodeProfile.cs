@@ -7,11 +7,13 @@ public sealed record TranscodeProfile(StreamQuality Quality, string Extension, s
 {
     public string Name => Quality.ToWire();
 
-    public IEnumerable<string> FfmpegArguments(string input, string output, int? sourceSampleRate)
+    /// <param name="start">Position de départ (s) : l'encodage commence là, pour un saut dans une piste pas encore encodée.</param>
+    public IEnumerable<string> FfmpegArguments(string input, string output, int? sourceSampleRate, double? start = null)
     {
         yield return "-hide_banner";
         yield return "-loglevel"; yield return "error";
         yield return "-nostdin";
+        if (start is > 0) { yield return "-ss"; yield return start.Value.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture); }
         yield return "-i"; yield return input;
         yield return "-map"; yield return "0:a:0";
         yield return "-map_metadata"; yield return "-1";
@@ -44,6 +46,8 @@ public sealed record TranscodeProfile(StreamQuality Quality, string Extension, s
     };
 
     public static IEnumerable<TranscodeProfile> All => Profiles.Values;
+
+    public static TranscodeProfile For(StreamQuality quality) => Profiles[quality];
 
     /// <summary>
     /// Profil à appliquer, ou null s'il vaut mieux servir le fichier original :

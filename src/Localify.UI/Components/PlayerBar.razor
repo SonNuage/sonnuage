@@ -35,10 +35,16 @@
             </div>
             <div class="pb-seek desktop-only">
                 <span class="time">@Format.Duration(State.PositionSeconds)</span>
-                <input type="range" class="slider" min="0" max="@Max" step="1" value="@Position" @onchange="SeekAsync" aria-label="Position" />
+                <input type="range" class="slider" min="0" max="@Max" step="any" value="@Position" style="@Pct(Position, Max)" @onchange="SeekAsync" aria-label="Position" />
                 <span class="time">@Format.Duration(State.DurationSeconds)</span>
             </div>
-            @if (State.Error is { } error)
+            @if (Player is IConnectPlayer { IsRemote: true } connect)
+            {
+                <button class="pb-remote" title="Faire jouer la musique dans cet onglet" @onclick="connect.PlayHereAsync">
+                    <Icon Name="volume" Size="14" /> Lecture dans un autre onglet · <span class="strong">Lire ici</span>
+                </button>
+            }
+            else if (State.Error is { } error)
             {
                 <span class="pb-error">@error</span>
             }
@@ -49,7 +55,7 @@
             <button class="icon-btn" title="Couper le son" @onclick="ToggleMuteAsync">
                 <Icon Name="@(State.Volume == 0 ? "volume-off" : "volume")" Size="20" />
             </button>
-            <input type="range" class="slider volume" min="0" max="100" value="@((int)(State.Volume * 100))" @oninput="VolumeAsync" aria-label="Volume" />
+            <input type="range" class="slider volume" min="0" max="100" value="@((int)(State.Volume * 100))" style="@Pct(State.Volume, 1)" @oninput="VolumeAsync" aria-label="Volume" />
         </div>
     </footer>
 }
@@ -64,6 +70,9 @@
     private PlayerState State => Player.State;
     private int Max => (int)Math.Max(1, Math.Ceiling(State.DurationSeconds));
     private int Position => (int)Math.Min(State.PositionSeconds, Max);
+
+    private static string Pct(double value, double max) =>
+        $"--pct: {(max > 0 ? Math.Clamp(value / max * 100, 0, 100) : 0).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}%";
     private double Percent => State.DurationSeconds > 0 ? Math.Min(100, State.PositionSeconds / State.DurationSeconds * 100) : 0;
 
     protected override void OnInitialized()

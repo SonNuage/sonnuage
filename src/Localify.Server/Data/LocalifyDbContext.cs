@@ -15,6 +15,7 @@ public sealed class LocalifyDbContext(DbContextOptions<LocalifyDbContext> option
     public DbSet<PlayEvent> PlayEvents => Set<PlayEvent>();
     public DbSet<YoutubeItem> YoutubeItems => Set<YoutubeItem>();
     public DbSet<YoutubeSubscription> YoutubeSubscriptions => Set<YoutubeSubscription>();
+    public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -94,6 +95,14 @@ public sealed class LocalifyDbContext(DbContextOptions<LocalifyDbContext> option
         b.Entity<YoutubeSubscription>(e =>
         {
             e.HasIndex(x => x.Url).IsUnique();
+        });
+
+        b.Entity<ApiKey>(e =>
+        {
+            e.HasIndex(x => x.KeyHash).IsUnique();
+            e.Property(x => x.Name).HasMaxLength(100);
+            e.Property(x => x.Kind).HasConversion<string>().HasMaxLength(32);
+            e.HasOne(x => x.CreatedBy).WithMany().HasForeignKey(x => x.CreatedById).OnDelete(DeleteBehavior.Cascade);
         });
 
         // SQLite ne sait pas trier/comparer des DateTimeOffset : stockage en ticks UTC.

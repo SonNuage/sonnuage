@@ -191,3 +191,24 @@ public sealed class YoutubeSubscription
     public DateTimeOffset? LastSyncedAt { get; set; }
     public string? LastError { get; set; }
 }
+
+public enum ApiKeyKind
+{
+    /// <summary>Extension de navigateur : limitée à l'ajout d'imports YouTube (voir ApiKeyAuthentication).</summary>
+    BrowserExtension,
+}
+
+/// <summary>Clé d'API créée par un admin ; seule son empreinte SHA-256 est conservée.</summary>
+public sealed class ApiKey
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public required string Name { get; set; }
+    public ApiKeyKind Kind { get; set; } = ApiKeyKind.BrowserExtension;
+    public required string KeyHash { get; set; }
+    /// <summary>Début de la clé, affiché pour la reconnaître.</summary>
+    public required string Prefix { get; set; }
+    public Guid CreatedById { get; set; }
+    public User CreatedBy { get; set; } = null!;
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? LastUsedAt { get; set; }
+}

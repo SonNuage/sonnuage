@@ -29,7 +29,8 @@ public sealed partial class YoutubeSyncService(
         var host = uri.Host.ToLowerInvariant();
         if (host is not ("youtube.com" or "www.youtube.com" or "m.youtube.com" or "music.youtube.com" or "youtu.be")) return null;
         var url = new UriBuilder(uri) { Scheme = "https", Port = -1, Fragment = "" }.Uri.ToString();
-        return ChannelRoot().IsMatch(uri.AbsolutePath) ? url.TrimEnd('/') + "/videos" : url;
+        // Une chaîne reste à sa racine : yt-dlp en lit les onglets (Vidéos, ou « Albums et singles » à défaut).
+        return ChannelRoot().IsMatch(uri.AbsolutePath) ? url.TrimEnd('/') : url;
     }
 
     public async Task<string?> SyncAsync(Guid subscriptionId, CancellationToken ct)
@@ -45,7 +46,7 @@ public sealed partial class YoutubeSyncService(
             {
                 var listing = await ytDlp.ListAsync(sub.Url, null, ct);
                 sub.Title = listing.Title.Length > 300 ? listing.Title[..300] : listing.Title;
-                var videos = listing.Entries.Select(e => new YoutubeVideoDto(e.Id, e.Title, e.Channel ?? listing.Channel, e.DurationSeconds, e.Thumbnail, null));
+                var videos = listing.Entries.Select(e => new YoutubeVideoDto(e.Id, e.Title, e.Channel ?? listing.Channel, e.DurationSeconds, e.Thumbnail, null, e.Album));
                 var result = await importer.EnqueueAsync(db, videos, sub.IsAlbum ? listing.Title : null, sub.Id, ct);
                 sub.LastError = null;
                 logger.LogInformation("Abonnement « {Title} » : {Queued} nouvelle(s) vidéo(s)", sub.Title, result.Queued);
@@ -83,7 +84,7 @@ public sealed partial class YoutubeSyncService(
         var sub = new YoutubeSubscription { Url = url, Title = listing.Title.Length > 300 ? listing.Title[..300] : listing.Title, IsAlbum = req.IsAlbum, CreatedAt = time.GetUtcNow() };
         db.YoutubeSubscriptions.Add(sub);
         await db.SaveChangesAsync(ct);
-        var videos = listing.Entries.Select(e => new YoutubeVideoDto(e.Id, e.Title, e.Channel ?? listing.Channel, e.DurationSeconds, e.Thumbnail, null)).ToList();
+        var videos = listing.Entries.Select(e => new YoutubeVideoDto(e.Id, e.Title, e.Channel ?? listing.Channel, e.DurationSeconds, e.Thumbnail, null, e.Album)).ToList();
         if (req.ImportExisting)
         {
             await importer.EnqueueAsync(db, videos, req.IsAlbum ? listing.Title : null, sub.Id, ct);
