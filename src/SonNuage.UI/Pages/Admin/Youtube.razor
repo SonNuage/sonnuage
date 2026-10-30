@@ -33,7 +33,7 @@
             @foreach (var cur in _tab == "queue" ? st.Active : [])
             {
                 <div class="notice" @key="cur.ItemId">
-                    <span class="spinner inline"></span>
+                    <Logo Size="16" Animated="true" />
                     <span class="grow"><span class="strong">@cur.Title</span> - @StageLabel(cur.Stage)@(cur.Percent is { } p ? " " + L["format.percent", ("value", L.Number(p))] : "")</span>
                     @if (cur.Percent is { } pc) { <progress max="100" value="@pc.ToString(CultureInfo.InvariantCulture)"></progress> }
                 </div>
@@ -259,7 +259,7 @@
 
         @if (_searching)
         {
-            <div class="empty"><span class="spinner inline"></span> @L["yt.explore.searching"]</div>
+            <div class="empty"><Logo Size="16" Animated="true" /> @L["yt.explore.searching"]</div>
         }
         else if (_listing is { } l)
         {

@@ -9,7 +9,7 @@
     {
         @if (stats.Scan.Running)
         {
-            <p><span class="spinner inline"></span> @L["dash.scan.running", ("seen", stats.Scan.FilesSeen), ("added", stats.Scan.Added), ("updated", stats.Scan.Updated)]</p>
+            <p><Logo Size="16" Animated="true" /> @L["dash.scan.running", ("seen", stats.Scan.FilesSeen), ("added", stats.Scan.Added), ("updated", stats.Scan.Updated)]</p>
         }
         else
         {
@@ -34,7 +34,7 @@
     }
     else
     {
-        <div class="spinner inline"></div>
+        <Logo Size="16" Animated="true" />
     }
 </section>
 

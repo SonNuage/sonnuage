@@ -27,7 +27,6 @@
   --btn-border: #727272;
   --input-focus: #777;
   --track: #4d4d4d;
-  --spinner-track: #333;
   --subtle: #555;
   --tint-1: rgba(255,255,255,.04);
   --tint-2: rgba(255,255,255,.08);
@@ -160,14 +159,11 @@ select.input { cursor: pointer; }
 .boot { min-height: 100vh; }
 
 /* Logo (composant Logo et écran de démarrage) : les barres dansent pendant la lecture et le chargement. */
-.logo { flex: none; }
+.logo { flex: none; vertical-align: middle; }
 .logo .lb { transform-box: fill-box; transform-origin: 50% 100%; }
 .logo.playing .lb { animation: logo-eq 1s ease-in-out infinite alternate; }
 @keyframes logo-eq { from { transform: scaleY(.35); } to { transform: scaleY(1); } }
 @media (prefers-reduced-motion: reduce) { .logo.playing .lb { animation: none; } }
-.spinner { width: 36px; height: 36px; border: 3px solid var(--spinner-track); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
-.spinner.inline { display: inline-block; width: 14px; height: 14px; border-width: 2px; vertical-align: middle; }
-@keyframes spin { to { transform: rotate(360deg); } }
 
 .shell { display: grid; grid-template-columns: var(--nav-width) 1fr; grid-template-rows: 1fr auto; height: 100vh; height: 100dvh; }
 .sidebar { grid-row: 1; background: var(--chrome); padding: 1rem .75rem; display: flex; flex-direction: column; gap: .15rem; overflow-y: auto; }
@@ -570,7 +566,6 @@ select.input { cursor: pointer; }
   --btn-border: #a8a8a8;
   --input-focus: #888;
   --track: #cfcfcf;
-  --spinner-track: #ddd;
   --subtle: #bdbdbd;
   --tint-1: rgba(0,0,0,.03);
   --tint-2: rgba(0,0,0,.05);
@@ -617,7 +612,6 @@ select.input { cursor: pointer; }
     --btn-border: #a8a8a8;
     --input-focus: #888;
     --track: #cfcfcf;
-    --spinner-track: #ddd;
     --subtle: #bdbdbd;
     --tint-1: rgba(0,0,0,.03);
     --tint-2: rgba(0,0,0,.05);
@@ -696,7 +690,6 @@ button.tab { border: 0; cursor: pointer; color: inherit; display: inline-flex; a
 .notice { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; background: var(--bg-elevated); border-left: 3px solid var(--accent); border-radius: var(--radius); padding: .75rem 1rem; margin-bottom: 1rem; }
 .notice.warn { border-left-color: #c98500; }
 .notice > span { flex: 1 1 260px; }
-.notice > .spinner { flex: 0 0 auto; }
 .notice progress { flex: 0 1 200px; accent-color: var(--accent); }
 .badge.good { background: rgba(29,185,84,.18); color: var(--ok-text); }
 .badge.bad { background: rgba(241,94,108,.18); color: var(--danger); }
