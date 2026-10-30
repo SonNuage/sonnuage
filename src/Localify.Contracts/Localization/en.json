@@ -401,7 +401,8 @@
       "tasks": "Tasks",
       "users": "Users",
       "keys": "API keys",
-      "settings": "Settings"
+      "settings": "Settings",
+      "about": "About"
     }
   },
   "users": {
@@ -875,6 +876,31 @@
       "discNumber": "Disc no.",
       "year": "Year",
       "genre": "Genre"
+    }
+  },
+  "about": {
+    "tagline": "Personal music server: your library, YouTube and your devices.",
+    "version": "Version",
+    "server": "Server",
+    "build": "Web client",
+    "runtime": "Runtime",
+    "client": "Client",
+    "source": "Source code",
+    "repository": "View repository",
+    "issues": "Report an issue",
+    "releases": "Releases",
+    "noRepository": "The public repository is not online yet.",
+    "components": "Components",
+    "transcoding": "Transcoding (FFmpeg)",
+    "available": "available",
+    "unavailable": "unavailable",
+    "credits": "Credits",
+    "credit": {
+      "metadata": "track identification and metadata",
+      "youtube": "YouTube import",
+      "search": "typo-tolerant search",
+      "audio": "tag reading and transcoding",
+      "icons": "icons (Apache 2.0)"
     }
   }
 }

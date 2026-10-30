@@ -181,6 +181,16 @@ select.input { cursor: pointer; }
 .todo .notice:hover { text-decoration: none; background: var(--bg-hover); }
 .todo .notice .icon { color: var(--text-muted); }
 
+/* À propos */
+.about-hero { display: flex; align-items: center; gap: 1rem; }
+.about-hero h2 { margin: 0; font-size: 1.5rem; }
+.about-hero p { margin: .2rem 0 0; }
+.facts { display: grid; grid-template-columns: max-content 1fr; gap: .45rem 1.5rem; margin: 0; }
+.facts dt { color: var(--text-muted); }
+.facts dd { margin: 0; overflow-wrap: anywhere; }
+.credits { margin: 0; padding-left: 1.1rem; line-height: 1.9; }
+.credits a { text-decoration: underline; }
+
 /* Pastille du compte, en bas du menu ; son menu s'ouvre vers le haut. */
 .account-badge { position: relative; margin-top: .75rem; border-top: 1px solid var(--line); padding-top: .75rem; }
 .account-trigger {

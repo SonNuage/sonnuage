@@ -24,7 +24,8 @@ public static class LibraryEndpoints
                     : new QualityDto(q.ToWire(), q.Label(), "original", null))
                 .ToList();
             var version = typeof(LibraryEndpoints).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
-            return new ServerInfoDto("Localify", version, qualities, transcoder.Available, WebApp.Build(env));
+            var runtime = $"{System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription} · {System.Runtime.InteropServices.RuntimeInformation.OSDescription}";
+            return new ServerInfoDto("Localify", version, qualities, transcoder.Available, WebApp.Build(env), runtime);
         }).AllowAnonymous();
 
         var g = app.MapGroup("/api").RequireAuthorization().WithTags("Library");

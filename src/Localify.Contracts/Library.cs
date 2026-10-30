@@ -69,6 +69,8 @@ public sealed record MovePlaylistEntryRequest(int NewPosition);
 public sealed record PlayEventRequest(Guid TrackId, double SecondsPlayed, bool Completed);
 
 /// <param name="Build">Empreinte du client web servi : un onglet ouvert la compare pour proposer de recharger après un déploiement.</param>
-public sealed record ServerInfoDto(string Name, string Version, IReadOnlyList<QualityDto> Qualities, bool TranscodingAvailable, string? Build = null);
+/// <param name="Runtime">Environnement d'exécution du serveur (.NET, système), pour la page « À propos ».</param>
+public sealed record ServerInfoDto(string Name, string Version, IReadOnlyList<QualityDto> Qualities, bool TranscodingAvailable, string? Build = null,
+    string? Runtime = null);
 
 public sealed record QualityDto(string Id, string Label, string Format, int? BitrateKbps);

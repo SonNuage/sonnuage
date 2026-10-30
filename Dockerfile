@@ -9,9 +9,9 @@ COPY src/Localify.Web/*.csproj src/Localify.Web/
 COPY src/Localify.Server/*.csproj src/Localify.Server/
 RUN dotnet restore src/Localify.Server/Localify.Server.csproj
 COPY src/ src/
-ARG VERSION=0.0.0
+ARG VERSION=
 RUN dotnet publish src/Localify.Server/Localify.Server.csproj -c Release -o /app --no-restore \
-    -p:Version=${VERSION} -p:UseAppHost=false
+    ${VERSION:+-p:Version=$VERSION} -p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 # Import YouTube : yt-dlp et Deno (moteur JavaScript exigé par YouTube) épinglés et vérifiés ; l'admin peut les
