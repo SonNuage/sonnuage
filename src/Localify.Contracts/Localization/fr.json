@@ -239,10 +239,15 @@
     "playlists": "Playlists",
     "newPlaylist": "Nouvelle playlist",
     "likedSongs": "Titres likés",
-    "defaultPlaylistName": "Ma playlist n° {number}"
+    "defaultPlaylistName": "Ma playlist n° {number}",
+    "myAccount": "Mon compte",
+    "accountMenu": "Menu du compte",
+    "switchAccount": "Changer de compte"
   },
   "app": {
-    "notFound": "Page introuvable."
+    "notFound": "Page introuvable.",
+    "updateAvailable": "Une nouvelle version de Localify est disponible.",
+    "reload": "Recharger"
   },
   "server": {
     "title": "Votre serveur",

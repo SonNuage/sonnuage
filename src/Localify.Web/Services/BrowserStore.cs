@@ -32,4 +32,5 @@ public sealed class BrowserPlatform : IPlatformInfo
 {
     public bool HasMeteredNetworkDetection => false;
     public string Name => "web";
+    public bool ServedByServer => true;
 }

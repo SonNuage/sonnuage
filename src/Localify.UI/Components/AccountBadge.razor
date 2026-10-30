@@ -1,0 +1,78 @@
+@implements IDisposable
+@inject AuthSession Auth
+@inject AccountStore Accounts
+@inject IServerEndpoint Endpoint
+@inject NavigationManager Nav
+
+@* Pastille du compte connecté, en bas du menu : réglages du compte, administration, changement de compte, déconnexion. *@
+<div class="account-badge desktop-only">
+    @if (_open)
+    {
+        <div class="menu-backdrop" @onclick="() => _open = false"></div>
+        <div class="account-menu" role="menu">
+            <a href="settings" role="menuitem"><Icon Name="settings" Size="18" /> @L["nav.myAccount"]</a>
+            @if (Auth.IsAdmin)
+            {
+                <a href="admin" role="menuitem"><Icon Name="admin" Size="18" /> @L["nav.admin"]</a>
+            }
+            @if (Accounts.IsMultiAccount)
+            {
+                <hr />
+                <div class="muted">@L["nav.switchAccount"]</div>
+                @foreach (var account in Accounts.Accounts.Where(a => a.Id != Accounts.Active?.Id))
+                {
+                    <button role="menuitem" @onclick="() => SwitchAsync(account)">
+                        <span class="avatar small">@Initial(account.Username)</span> @account.Username <span class="muted">@account.Host</span>
+                    </button>
+                }
+                <button role="menuitem" @onclick="AddAccount"><Icon Name="add" Size="18" /> @L["accounts.add"]</button>
+            }
+            <hr />
+            <button role="menuitem" @onclick="LogoutAsync"><Icon Name="logout" Size="18" /> @L["settings.logout"]</button>
+        </div>
+    }
+    <button class="account-trigger @(_open ? "open" : "")" title="@L["nav.accountMenu"]" aria-haspopup="menu" aria-expanded="@(_open ? "true" : "false")"
+            @onclick="() => _open = !_open">
+        <span class="avatar">@Initial(Auth.User?.Username)</span>
+        <span class="account-who">
+            <strong>@Auth.User?.Username</strong>
+            <span>@(Auth.IsAdmin ? L["users.roleAdmin"] : L["users.roleUser"])@(Endpoint.IsConfigurable ? $" · {Endpoint.BaseAddress?.Host}" : "")</span>
+        </span>
+        <Icon Name="up" Size="18" />
+    </button>
+</div>
+
+@code {
+    private bool _open;
+
+    protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
+
+    private static string Initial(string? name) => string.IsNullOrEmpty(name) ? "?" : name[..1];
+
+    private async Task SwitchAsync(Account account)
+    {
+        _open = false;
+        await Accounts.SwitchAsync(account.Id);
+    }
+
+    private void AddAccount()
+    {
+        _open = false;
+        Accounts.BeginAdd();
+    }
+
+    private async Task LogoutAsync()
+    {
+        _open = false;
+        await Auth.LogoutAsync();
+    }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e) =>
+        InvokeAsync(() =>
+        {
+            _open = false;
+            StateHasChanged();
+        });
+
+    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
+}

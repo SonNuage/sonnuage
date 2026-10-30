@@ -49,6 +49,8 @@ else
                     <NavLink class="nav-sub" href="@($"playlist/{p.Id}")">@p.Name</NavLink>
                 }
             </div>
+
+            <AccountBadge />
         </nav>
 
         <main class="content">
@@ -59,6 +61,8 @@ else
         <PlayerBar />
     </div>
 }
+
+<UpdateNotice />
 
 <div class="toasts" aria-live="polite">
     @foreach (var t in Ui.Toasts)

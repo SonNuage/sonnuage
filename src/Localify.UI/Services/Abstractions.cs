@@ -73,6 +73,8 @@ public interface IPlatformInfo
     /// <summary>Plateforme où un réseau mobile/Wi-Fi est distinguable (Android).</summary>
     bool HasMeteredNetworkDetection { get; }
     string Name { get; }
+    /// <summary>Interface chargée depuis le serveur (web) : un déploiement la rend obsolète, il faut recharger la page.</summary>
+    bool ServedByServer => false;
 }
 
 /// <summary>Lecteur capable de restaurer la file de la session précédente après connexion.</summary>

@@ -239,10 +239,15 @@
     "playlists": "Playlists",
     "newPlaylist": "New playlist",
     "likedSongs": "Liked Songs",
-    "defaultPlaylistName": "My Playlist #{number}"
+    "defaultPlaylistName": "My Playlist #{number}",
+    "myAccount": "My account",
+    "accountMenu": "Account menu",
+    "switchAccount": "Switch account"
   },
   "app": {
-    "notFound": "Page not found."
+    "notFound": "Page not found.",
+    "updateAvailable": "A new version of Localify is available.",
+    "reload": "Reload"
   },
   "server": {
     "title": "Your server",
