@@ -3,7 +3,7 @@
 Serveur de musique auto-hébergé façon Spotify : bibliothèque scannée depuis vos dossiers, lecteur web,
 application Android (avec Android Auto), playlists, favoris, transcodage à la volée, administration.
 
-*SonNuage* : SoundCloud, traduit. Le projet s'appelait auparavant *Localify*.
+*SonNuage* : SoundCloud, traduit.
 
 | Projet | Rôle |
 |---|---|

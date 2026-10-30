@@ -26,7 +26,7 @@ else
     <div class="shell @(Player.State.Current is null ? "" : "has-player")">
         <nav class="sidebar @(InAdmin ? "admin" : null)">
             <a class="brand" href="">
-                <svg viewBox="0 0 64 64" width="32" height="32" aria-hidden="true"><rect width="64" height="64" rx="14" fill="var(--accent)" /><path d="M24 44V20l22 12z" fill="#121212" /></svg>
+                <Logo Size="32" FollowPlayback="true" />
                 <span>SonNuage</span>
             </a>
             @if (InAdmin)

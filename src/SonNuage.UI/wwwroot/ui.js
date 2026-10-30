@@ -1,16 +1,5 @@
 // Petits utilitaires d'interface partagés web/Android.
 
-// L'appli s'appelait Localify : ses réglages, comptes et file d'attente passent sous les clés « sonnuage. ».
-// Exécuté avant le démarrage de Blazor, qui lit ces clés.
-try {
-  for (const key of Object.keys(localStorage)) {
-    if (!key.startsWith('localify.')) continue;
-    const renamed = 'sonnuage.' + key.slice('localify.'.length);
-    if (localStorage.getItem(renamed) === null) localStorage.setItem(renamed, localStorage.getItem(key));
-    localStorage.removeItem(key);
-  }
-} catch { /* stockage indisponible (navigation privée) : rien à reprendre */ }
-
 // Remplissage des curseurs (lecture, volume) jusqu'au pouce, y compris pendant qu'on le fait glisser,
 // avant même que Blazor ne réaffiche la valeur.
 (() => {

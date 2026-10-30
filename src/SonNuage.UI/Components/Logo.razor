@@ -1,0 +1,38 @@
+@implements IDisposable
+@inject IPlayer Player
+@* Logo SonNuage : barres d'égaliseur découpées en nuage. Au repos, un nuage plein ; animé, les barres dansent.
+   FollowPlayback : animé pendant la lecture (menu de gauche). Mêmes couleurs dans les deux thèmes. *@
+<svg class="logo @(Animated || (FollowPlayback && Player.State.IsPlaying) ? "playing" : null)" viewBox="0 0 64 64" width="@Size" height="@Size" aria-hidden="true">
+    <defs><clipPath id="@_clip"><path d="@Cloud" /></clipPath></defs>
+    <rect width="64" height="64" rx="14" fill="#141a33" />
+    <g clip-path="url(#@_clip)" fill="#ffd166">
+        @foreach (var (x, delay) in Bars)
+        {
+            <rect class="lb" x="@x" y="10" width="6" height="38" style="animation-delay: @delay" />
+        }
+    </g>
+</svg>
+
+@code {
+    /// <summary>Nuage centré dans le carré de 64 (même tracé que les icônes de l'appli et de l'extension).</summary>
+    private const string Cloud = "M16.7 47.4H48.7A10 10 0 0 0 47.7 27.9A14 14 0 0 0 20.7 26.4A10.5 10.5 0 0 0 16.7 47.4Z";
+
+    private static readonly (string X, string Delay)[] Bars =
+        [("5", "-.2s"), ("12.5", "-.7s"), ("20", "-.4s"), ("27.5", "-.9s"), ("35", "-.1s"), ("42.5", "-.6s"), ("50", "-.3s")];
+
+    // Plusieurs logos par page (menu, connexion…) : un clipPath par instance.
+    private readonly string _clip = "logo-" + Guid.NewGuid().ToString("N")[..8];
+
+    [Parameter] public int Size { get; set; } = 32;
+    [Parameter] public bool Animated { get; set; }
+    [Parameter] public bool FollowPlayback { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (FollowPlayback) Player.StateChanged += Refresh;
+    }
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Player.StateChanged -= Refresh;
+}
