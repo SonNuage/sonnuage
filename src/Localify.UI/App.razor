@@ -1,7 +1,8 @@
 @implements IDisposable
 
-@* Changer de langue recrée toute l'interface (la lecture continue : le lecteur est un service). *@
-<Router @key="L.Language" AppAssembly="typeof(App).Assembly">
+@* Changer de langue redessine les textes partout (langue en cascade, voir LocalizedComponentBase) sans rien recréer. *@
+<CascadingValue Name="@LocalizedComponentBase.LanguageCascade" Value="L.Language">
+<Router AppAssembly="typeof(App).Assembly">
     <Found Context="routeData">
         <RouteView RouteData="routeData" DefaultLayout="typeof(MainLayout)" />
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
@@ -12,6 +13,7 @@
         </LayoutView>
     </NotFound>
 </Router>
+</CascadingValue>
 
 @code {
     protected override void OnInitialized() => L.Changed += Rerender;

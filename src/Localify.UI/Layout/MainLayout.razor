@@ -76,6 +76,9 @@ else
 </div>
 
 @code {
+    // La mise en page hérite de LayoutComponentBase : elle reçoit la langue elle-même pour se redessiner.
+    [CascadingParameter(Name = LocalizedComponentBase.LanguageCascade)] public string? UiLanguage { get; set; }
+
     private bool _ready;
 
     private bool InAdmin => Nav.ToBaseRelativePath(Nav.Uri) is var path && (path == "admin" || path.StartsWith("admin/") || path.StartsWith("admin?"));
