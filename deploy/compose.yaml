@@ -1,21 +1,21 @@
-# Déploiement type : Localify + tunnel Cloudflare (aucun port ouvert sur la box).
+# Déploiement type : SonNuage + tunnel Cloudflare (aucun port ouvert sur la box).
 #   1. Créer un tunnel dans Cloudflare Zero Trust > Networks > Tunnels, router le nom d'hôte
-#      (ex. musique.mondomaine.fr) vers http://localify:8080, récupérer le jeton.
+#      (ex. musique.mondomaine.fr) vers http://sonnuage:8080, récupérer le jeton.
 #   2. cp .env.example .env et remplir les valeurs.
 #   3. docker compose up -d
 # Recherche avancée (fautes de frappe, suggestions) : COMPOSE_PROFILES=search dans .env démarre
-# Elasticsearch, et LOCALIFY_SEARCH_URL=http://elasticsearch:9200 le branche. Sans, recherche en base.
+# Elasticsearch, et SONNUAGE_SEARCH_URL=http://elasticsearch:9200 le branche. Sans, recherche en base.
 services:
-  localify:
-    image: ${LOCALIFY_IMAGE:?image du serveur requise}
-    container_name: localify
+  sonnuage:
+    image: ${SONNUAGE_IMAGE:?image du serveur requise}
+    container_name: sonnuage
     restart: unless-stopped
     environment:
-      Localify__InitialAdminUser: ${LOCALIFY_ADMIN_USER:-admin}
-      Localify__InitialAdminPassword: ${LOCALIFY_ADMIN_PASSWORD:?mot de passe admin requis}
-      Localify__TranscodeCacheMaxMegabytes: ${LOCALIFY_CACHE_MB:-10240}
-      Localify__BehindProxy: "true"
-      Localify__Search__Url: ${LOCALIFY_SEARCH_URL:-}
+      SonNuage__InitialAdminUser: ${SONNUAGE_ADMIN_USER:-admin}
+      SonNuage__InitialAdminPassword: ${SONNUAGE_ADMIN_PASSWORD:?mot de passe admin requis}
+      SonNuage__TranscodeCacheMaxMegabytes: ${SONNUAGE_CACHE_MB:-10240}
+      SonNuage__BehindProxy: "true"
+      SonNuage__Search__Url: ${SONNUAGE_SEARCH_URL:-}
     volumes:
       - ${MUSIC_DIR:?dossier de musique requis}:/music:ro
       - ./uploads:/uploads
@@ -26,21 +26,21 @@ services:
 
   cloudflared:
     image: cloudflare/cloudflared:2025.10.0
-    container_name: localify-tunnel
+    container_name: sonnuage-tunnel
     restart: unless-stopped
     command: tunnel --no-autoupdate run
     environment:
       TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?jeton du tunnel requis}
     depends_on:
-      localify:
+      sonnuage:
         condition: service_healthy
 
   # Facultatif (profil « search »). Joignable seulement depuis le réseau Docker du projet : aucun port publié,
-  # d'où la sécurité désactivée. Pour un Elasticsearch existant, renseigner plutôt LOCALIFY_SEARCH_URL
-  # (+ Localify__Search__ApiKey et Localify__Search__CertificateFingerprint).
+  # d'où la sécurité désactivée. Pour un Elasticsearch existant, renseigner plutôt SONNUAGE_SEARCH_URL
+  # (+ SonNuage__Search__ApiKey et SonNuage__Search__CertificateFingerprint).
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:9.2.0
-    container_name: localify-search
+    container_name: sonnuage-search
     restart: unless-stopped
     profiles: [search]
     environment:

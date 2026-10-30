@@ -1,4 +1,4 @@
-# Localify — plan de refonte
+# SonNuage — plan de refonte
 
 ## 1. Constat sur les POC (`legacy/`)
 
@@ -20,13 +20,13 @@ Conclusion : réécriture complète plutôt que reprise. Les POC restent dans `l
 
 ```
 src/
-  Localify.Contracts/   DTO partagés serveur ⇄ clients
-  Localify.Server/      ASP.NET Core : API, scan, transcodage, auth, héberge le client web
-  Localify.UI/          Razor Class Library : toutes les pages (lecteur + admin), partagée web/Android
-  Localify.Web/         Blazor WebAssembly : lecteur navigateur (implémentation audio JS)
-  (Localify.Mobile)     .NET MAUI Blazor Hybrid, dépôt localify-android : mêmes pages (paquet Localify.UI) + Media3
+  SonNuage.Contracts/   DTO partagés serveur ⇄ clients
+  SonNuage.Server/      ASP.NET Core : API, scan, transcodage, auth, héberge le client web
+  SonNuage.UI/          Razor Class Library : toutes les pages (lecteur + admin), partagée web/Android
+  SonNuage.Web/         Blazor WebAssembly : lecteur navigateur (implémentation audio JS)
+  (SonNuage.Mobile)     .NET MAUI Blazor Hybrid, dépôt sonnuage-android : mêmes pages (paquet SonNuage.UI) + Media3
 tests/
-  Localify.Server.Tests/
+  SonNuage.Server.Tests/
 deploy/                 compose.yaml, exemple de tunnel Cloudflare
 ```
 
@@ -88,4 +88,4 @@ pochettes Cover Art Archive. Seules des adresses youtube.com / youtu.be / music.
 yt-dlp. Tableau de bord : `/api/admin/dashboard` (provenance, historique, disque) rendu en SVG.
 
 ## 5. Pistes futures
-Extension de navigateur « Ajouter à Localify » sur YouTube (façon LaPompe, avec clés d'API et synchro des cookies), paroles synchronisées, ReplayGain, mode hors-ligne complet (téléchargement manuel d'albums), Chromecast, scrobbling Last.fm/ListenBrainz, API compatible Subsonic (pour réutiliser des clients existants).
+Extension de navigateur « Ajouter à SonNuage » sur YouTube (façon LaPompe, avec clés d'API et synchro des cookies), paroles synchronisées, ReplayGain, mode hors-ligne complet (téléchargement manuel d'albums), Chromecast, scrobbling Last.fm/ListenBrainz, API compatible Subsonic (pour réutiliser des clients existants).

@@ -10,7 +10,7 @@ sdk/
 bin/
 legacy/
 tests/
-src/Localify.Mobile/
+src/SonNuage.Mobile/
 out/
 build/
 *.apk

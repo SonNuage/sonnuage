@@ -49,7 +49,7 @@
   function serverBase() {
     const saved = localStorage.getItem('loc-server');
     if (saved) return saved.replace(/\/+$/, '');
-    if (window.LOCALIFY_SERVER) return window.LOCALIFY_SERVER.replace(/\/+$/, '');
+    if (window.SONNUAGE_SERVER) return window.SONNUAGE_SERVER.replace(/\/+$/, '');
     return window.location.origin;
   }
 
@@ -563,7 +563,7 @@
     const base = serverBase();
     const origin = window.location.origin;
     $('#serverInput').value = base === origin ? '' : base;
-    $('#srvHint').textContent = window.LOCALIFY_SERVER || 'http://localhost:3000';
+    $('#srvHint').textContent = window.SONNUAGE_SERVER || 'http://localhost:3000';
     $('#compressToggle').checked = compressEnabled();
     $('#connResult').innerHTML = '';
     settingsOverlay.classList.remove('hidden');

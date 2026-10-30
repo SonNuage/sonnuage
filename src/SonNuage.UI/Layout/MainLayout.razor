@@ -1,0 +1,136 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject AuthSession Auth
+@inject AccountStore Accounts
+@inject IServerEndpoint Endpoint
+@inject IPlayer Player
+@inject UiState Ui
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@inject ThemeSettings Theme
+
+@if (!_ready)
+{
+    <div class="boot"><div class="spinner"></div></div>
+}
+else if (Endpoint.BaseAddress is null || Accounts.NeedsServer)
+{
+    <ServerSetup OnConnected="StateHasChanged" />
+}
+else if (Accounts.IsAdding || !Auth.IsAuthenticated)
+{
+    <Login />
+}
+else
+{
+    <div class="shell @(Player.State.Current is null ? "" : "has-player")">
+        <nav class="sidebar @(InAdmin ? "admin" : null)">
+            <a class="brand" href="">
+                <svg viewBox="0 0 64 64" width="32" height="32" aria-hidden="true"><rect width="64" height="64" rx="14" fill="var(--accent)" /><path d="M24 44V20l22 12z" fill="#121212" /></svg>
+                <span>SonNuage</span>
+            </a>
+            @if (InAdmin)
+            {
+                <AdminSidebar />
+            }
+            else
+            {
+            <NavLink class="nav-item" href="" Match="NavLinkMatch.All"><Icon Name="home" /><span>@L["nav.home"]</span></NavLink>
+            <NavLink class="nav-item" href="search"><Icon Name="search" /><span>@L["nav.search"]</span></NavLink>
+            <NavLink class="nav-item" href="library"><Icon Name="library" /><span>@L["nav.library"]</span></NavLink>
+            <NavLink class="nav-item desktop-only" href="queue"><Icon Name="queue" /><span>@L["nav.queue"]</span></NavLink>
+            @* Sur ordinateur, les réglages sont dans la pastille du compte ; sur mobile (sans pastille), dans la barre du bas. *@
+            <NavLink class="nav-item mobile-only" href="settings"><Icon Name="settings" /><span>@L["nav.settings"]</span></NavLink>
+
+            <div class="sidebar-playlists desktop-only">
+                <div class="sidebar-heading">
+                    <span>@L["nav.playlists"]</span>
+                    <button class="icon-btn" title="@L["nav.newPlaylist"]" @onclick="CreatePlaylistAsync"><Icon Name="add" Size="18" /></button>
+                </div>
+                <NavLink class="nav-sub" href="favorites"><Icon Name="heart" Size="16" /> @L["nav.likedSongs"]</NavLink>
+                @foreach (var p in Ui.Playlists)
+                {
+                    <NavLink class="nav-sub" href="@($"playlist/{p.Id}")">@p.Name</NavLink>
+                }
+            </div>
+            }
+
+            <AccountBadge />
+        </nav>
+
+        <main class="content">
+            <SearchOverlay />
+            <div class="content-scroll">@Body</div>
+        </main>
+
+        <PlayerBar />
+    </div>
+}
+
+<UpdateNotice />
+
+<div class="toasts" aria-live="polite">
+    @foreach (var t in Ui.Toasts)
+    {
+        <div class="toast @(t.IsError ? "error" : "")" @key="t.Id">@t.Message</div>
+    }
+</div>
+
+@code {
+    // La mise en page hérite de LayoutComponentBase : elle reçoit la langue elle-même pour se redessiner.
+    [CascadingParameter(Name = LocalizedComponentBase.LanguageCascade)] public string? UiLanguage { get; set; }
+
+    private bool _ready;
+
+    private bool InAdmin => Nav.ToBaseRelativePath(Nav.Uri) is var path && (path == "admin" || path.StartsWith("admin/") || path.StartsWith("admin?"));
+    private bool _restored;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Auth.Changed += OnAuthChanged;
+        Accounts.ActiveChanged += OnAccountSwitched;
+        Endpoint.Changed += Refresh;
+        Ui.Changed += Refresh;
+        await Auth.EnsureLoadedAsync();
+        await L.InitAsync(Auth.User?.Language, JS);
+        await Theme.LoadAsync();
+        _ready = true;
+        await AfterLoginAsync();
+    }
+
+    private async Task AfterLoginAsync()
+    {
+        if (!Auth.IsAuthenticated) return;
+        await Ui.RefreshPlaylistsAsync();
+        if (!_restored && Player is IRestorablePlayer restorable)
+        {
+            _restored = true;
+            await restorable.RestoreAsync();
+        }
+    }
+
+    private void OnAuthChanged() => InvokeAsync(async () =>
+    {
+        StateHasChanged();
+        await AfterLoginAsync();
+    });
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    /// <summary>Autre compte, autre bibliothèque : on repart de l'accueil (les playlists suivent via Auth.Changed).</summary>
+    private void OnAccountSwitched() => InvokeAsync(() => Nav.NavigateTo(""));
+
+    private async Task CreatePlaylistAsync()
+    {
+        var created = await Ui.CreatePlaylistAsync(L["nav.defaultPlaylistName", ("number", Ui.Playlists.Count + 1)], null);
+        if (created is not null) Nav.NavigateTo($"playlist/{created.Id}");
+    }
+
+    public void Dispose()
+    {
+        Auth.Changed -= OnAuthChanged;
+        Accounts.ActiveChanged -= OnAccountSwitched;
+        Endpoint.Changed -= Refresh;
+        Ui.Changed -= Refresh;
+    }
+}

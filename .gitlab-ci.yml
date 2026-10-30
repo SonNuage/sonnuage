@@ -1,7 +1,7 @@
-# Pipeline Localify (serveur + client web)
+# Pipeline SonNuage (serveur + client web)
 #  - test        : build + tests du serveur (avec ffmpeg et Elasticsearch)
-#  - build       : image Docker du serveur (registre GitLab) ; paquets NuGet Localify.Contracts et Localify.UI
-#                  (registre NuGet du projet), utilisés par l'application Android (dépôt localify-android)
+#  - build       : image Docker du serveur (registre GitLab) ; paquets NuGet SonNuage.Contracts et SonNuage.UI
+#                  (registre NuGet du projet), utilisés par l'application Android (dépôt sonnuage-android)
 #  - release     : sur tag vX.Y.Z, release GitLab
 #
 # Les jobs Docker utilisent docker-in-docker : le runner doit être en mode privileged.
@@ -47,18 +47,18 @@ server-test:
         xpack.security.enabled: "false"
         ES_JAVA_OPTS: -Xms512m -Xmx512m
   variables:
-    LOCALIFY_TEST_FFMPEG: /usr/bin/ffmpeg
-    LOCALIFY_TEST_ELASTICSEARCH: http://elasticsearch:9200
+    SONNUAGE_TEST_FFMPEG: /usr/bin/ffmpeg
+    SONNUAGE_TEST_ELASTICSEARCH: http://elasticsearch:9200
   cache:
     key: nuget-server
     paths: [.nuget/]
   before_script:
     - apt-get update -qq && apt-get install -y -qq --no-install-recommends ffmpeg > /dev/null
   script:
-    - dotnet build src/Localify.Server/Localify.Server.csproj -c Release
+    - dotnet build src/SonNuage.Server/SonNuage.Server.csproj -c Release
     # Elasticsearch démarre pendant le build ; on l'attend avant les tests (ses tests échouent sinon).
-    - for i in $(seq 1 60); do curl -fs "$LOCALIFY_TEST_ELASTICSEARCH/_cluster/health?wait_for_status=yellow&timeout=1s" > /dev/null && break; sleep 2; done
-    - dotnet test --project tests/Localify.Server.Tests/Localify.Server.Tests.csproj -c Release --report-trx --results-directory TestResults
+    - for i in $(seq 1 60); do curl -fs "$SONNUAGE_TEST_ELASTICSEARCH/_cluster/health?wait_for_status=yellow&timeout=1s" > /dev/null && break; sleep 2; done
+    - dotnet test --project tests/SonNuage.Server.Tests/SonNuage.Server.Tests.csproj -c Release --report-trx --results-directory TestResults
   artifacts:
     when: always
     paths: [TestResults/]
@@ -83,8 +83,8 @@ server-image:
         docker push "$SERVER_IMAGE:$VERSION"
       fi
 
-# Bibliothèques partagées avec l'application Android (dépôt localify-android) : Localify.Contracts et
-# Localify.UI, dans le registre NuGet du projet. Version : X.Y.Z sur tag, 0.1.0-ci.N sur les branches.
+# Bibliothèques partagées avec l'application Android (dépôt sonnuage-android) : SonNuage.Contracts et
+# SonNuage.UI, dans le registre NuGet du projet. Version : X.Y.Z sur tag, 0.1.0-ci.N sur les branches.
 shared-packages:
   stage: build
   image: mcr.microsoft.com/dotnet/sdk:10.0
@@ -98,8 +98,8 @@ shared-packages:
     policy: pull
   script:
     - *version
-    - dotnet pack src/Localify.Contracts/Localify.Contracts.csproj -c Release -o packages -p:Version="$VERSION"
-    - dotnet pack src/Localify.UI/Localify.UI.csproj -c Release -o packages -p:Version="$VERSION"
+    - dotnet pack src/SonNuage.Contracts/SonNuage.Contracts.csproj -c Release -o packages -p:Version="$VERSION"
+    - dotnet pack src/SonNuage.UI/SonNuage.UI.csproj -c Release -o packages -p:Version="$VERSION"
     - dotnet nuget add source "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/nuget/index.json"
         --name gitlab --username gitlab-ci-token --password "$CI_JOB_TOKEN" --store-password-in-clear-text
     - dotnet nuget push "packages/*.nupkg" --source gitlab
@@ -116,5 +116,5 @@ release:
   script:
     - *version
     - >
-      release-cli create --name "Localify $VERSION" --tag-name "$CI_COMMIT_TAG"
-      --description "Image serveur : \`$SERVER_IMAGE:$VERSION\` · paquets NuGet Localify.Contracts et Localify.UI $VERSION"
+      release-cli create --name "SonNuage $VERSION" --tag-name "$CI_COMMIT_TAG"
+      --description "Image serveur : \`$SERVER_IMAGE:$VERSION\` · paquets NuGet SonNuage.Contracts et SonNuage.UI $VERSION"

@@ -1,13 +1,13 @@
 services:
-  localify:
+  sonnuage:
     build: .
-    container_name: localify
+    container_name: sonnuage
     ports:
       - "3000:3000"
     volumes:
       - E:\Musique:/app/data
       - ./cache:/app/cache
     environment:
-      - LOCALIFY_BITRATE=192k
-      - LOCALIFY_PUBLIC_IP=192.168.1.20
+      - SONNUAGE_BITRATE=192k
+      - SONNUAGE_PUBLIC_IP=192.168.1.20
     restart: unless-stopped

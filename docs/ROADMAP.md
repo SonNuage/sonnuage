@@ -1,4 +1,4 @@
-# Localify : feuille de route
+# SonNuage : feuille de route
 
 Ce document dit où en est le projet et ce qui vient ensuite. Il se lit sans connaître le code.
 Les priorités sont indicatives : on les revoit à chaque livraison.
@@ -16,7 +16,7 @@ Légende : ✅ fait · 🔜 prochain · 💡 idée à creuser · ⚠️ limite c
 | Recherche | ✅ Elasticsearch (fautes de frappe, suggestions), avec repli automatique sur la base s'il tombe |
 | Import YouTube | ✅ recherche, playlists, albums, chaînes, abonnements synchronisés, extension de navigateur avec clés API |
 | Tâches | ✅ volet « Tâches » dans l'admin : files, suites de tâches, journal en direct, annulation et relance, rescan AcoustID |
-| Déploiement | ✅ Docker Compose sur le homelab (Localify + Elasticsearch), CI GitLab avec runner dédié, APK Android signé |
+| Déploiement | ✅ Docker Compose sur le homelab (SonNuage + Elasticsearch), CI GitLab avec runner dédié, APK Android signé |
 
 ## Livré récemment
 
@@ -76,7 +76,7 @@ Tout traitement long passe désormais par une file de tâches, visible dans **Ad
   - album, numéros de piste et année seulement si l'édition trouvée est le même album ;
   - genre seulement s'il manque ;
   - jamais de modification d'un morceau édité à la main.
-- Les suites terminées sont effacées après 14 jours (`Localify__Jobs__RetentionDays`).
+- Les suites terminées sont effacées après 14 jours (`SonNuage__Jobs__RetentionDays`).
 
 ### Lenteur des imports YouTube : diagnostic et correction
 
@@ -136,7 +136,7 @@ Deux besoins distincts, à concevoir ensemble plus tard :
 - 💡 Revue groupée des propositions d'un rescan (accepter ou refuser en lot au lieu de lire le journal).
 - 💡 Sauvegarde automatique de la base SQLite (copie à chaud, rotation).
 - 💡 Recherche sémantique (« musique calme pour travailler ») via le modèle d'inférence d'Elasticsearch,
-  déjà prévu dans la configuration (`Localify__Search__SemanticInferenceId`).
+  déjà prévu dans la configuration (`SonNuage__Search__SemanticInferenceId`).
 - 💡 Paroles synchronisées (LRCLIB) dans le lecteur.
 
 ## Limites connues

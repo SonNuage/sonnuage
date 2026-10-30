@@ -10,7 +10,7 @@ const ROOT = __dirname;
 const DATA = path.join(ROOT, 'data');
 const CACHE_DIR = path.join(ROOT, 'cache');
 const PORT = process.env.PORT || 3000;
-const BITRATE = process.env.LOCALIFY_BITRATE || '192k';
+const BITRATE = process.env.SONNUAGE_BITRATE || '192k';
 
 function ffmpegPath() {
   if (process.env.FFMPEG_PATH) return process.env.FFMPEG_PATH;
@@ -345,7 +345,7 @@ function transcodeCacheFile(track) {
 
 function lanIPs() {
   const ips = [];
-  if (process.env.LOCALIFY_PUBLIC_IP) ips.push(process.env.LOCALIFY_PUBLIC_IP);
+  if (process.env.SONNUAGE_PUBLIC_IP) ips.push(process.env.SONNUAGE_PUBLIC_IP);
   for (const name of Object.keys(os.networkInterfaces())) {
     for (const ni of os.networkInterfaces()[name]) {
       if (ni.family === 'IPv4' && !ni.internal) ips.push(ni.address);
@@ -387,7 +387,7 @@ const server = http.createServer((req, res) => {
 
   if (url === '/api/info') {
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-    return res.end(JSON.stringify({ name: 'Localify', version: '1.0', ips: lanIPs() }));
+    return res.end(JSON.stringify({ name: 'SonNuage', version: '1.0', ips: lanIPs() }));
   }
 
   const stream = /^\/stream\/(\d+)$/.exec(url);
@@ -419,7 +419,7 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log('Localify serveur démarré :');
+  console.log('SonNuage serveur démarré :');
   console.log('   PC      -> http://localhost:' + PORT);
   const ips = lanIPs();
   for (const ip of ips) console.log('   Téléphone -> http://' + ip + ':' + PORT);

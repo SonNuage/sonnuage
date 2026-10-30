@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- Publié en paquet NuGet (registre GitLab du projet) pour l'application Android (dépôt sonnuage-android). -->
+    <PackageId>SonNuage.UI</PackageId>
+    <Description>SonNuage : pages et composants Blazor partagés par le client web et l'application Android.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SonNuage.Contracts\SonNuage.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

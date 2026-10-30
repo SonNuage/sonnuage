@@ -1,0 +1,161 @@
+@page "/admin/users"
+@inject ApiClient Api
+@inject AuthSession Auth
+@inject UiState Ui
+
+<PageTitle>@L["admin.tabs.users"] · SonNuage</PageTitle>
+
+<div class="page">
+    <AdminNav Title="@L["admin.nav.users"]">
+        <Actions>
+            <button class="btn primary" @onclick="() => _adding = true"><Icon Name="add" Size="18" /> @L["users.new"]</button>
+        </Actions>
+        <ChildContent>
+        <div class="table-wrap">
+            <table class="table">
+                <thead><tr><th>@L["users.colUser"]</th><th>@L["users.colRole"]</th><th>@L["users.colCreated"]</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var u in _users)
+                    {
+                        <tr @key="u.Id">
+                            <td>@u.Username @if (u.Id == Auth.User?.Id) { <span class="badge">@L["users.you"]</span> }</td>
+                            <td>
+                                <select class="input compact" value="@u.Role" @onchange="e => ChangeRoleAsync(u, e.Value?.ToString())" disabled="@(u.Id == Auth.User?.Id)">
+                                    <option value="@Roles.User">@L["users.roleUser"]</option>
+                                    <option value="@Roles.Admin">@L["users.roleAdmin"]</option>
+                                </select>
+                            </td>
+                            <td>@L.Date(u.CreatedAt)</td>
+                            <td class="row-actions">
+                                <button class="icon-btn" title="@L["users.resetPassword"]" @onclick="() => StartReset(u)"><Icon Name="edit" Size="18" /></button>
+                                @if (u.Id != Auth.User?.Id)
+                                {
+                                    <button class="icon-btn danger" title="@L["common.delete"]" @onclick="() => _deleting = u"><Icon Name="delete" Size="18" /></button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        </ChildContent>
+    </AdminNav>
+</div>
+
+<Modal Open="_resetting is not null" OpenChanged="v => { if (!v) _resetting = null; }" Title="@L["users.passwordOf", ("name", _resetting?.Username)]">
+    <ChildContent>
+        <form id="reset-form" @onsubmit="ResetAsync" @onsubmit:preventDefault="true">
+            <input class="input" type="password" placeholder="@L["users.newPassword"]" @bind="_newPassword" minlength="8" required autocomplete="new-password" />
+            <p class="muted small">@L["users.resetHint"]</p>
+        </form>
+    </ChildContent>
+    <Footer>
+        <button class="btn" @onclick="() => _resetting = null">@L["common.cancel"]</button>
+        <button class="btn primary" type="submit" form="reset-form">@L["common.save"]</button>
+    </Footer>
+</Modal>
+
+<Modal Open="_deleting is not null" OpenChanged="v => { if (!v) _deleting = null; }" Title="@L["users.deleteConfirm"]">
+    <ChildContent><p>@L["users.deleteHint", ("name", _deleting?.Username)]</p></ChildContent>
+    <Footer>
+        <button class="btn" @onclick="() => _deleting = null">@L["common.cancel"]</button>
+        <button class="btn danger" @onclick="DeleteAsync">@L["common.delete"]</button>
+    </Footer>
+</Modal>
+
+
+<Modal @bind-Open="_adding" Title="@L["users.new"]">
+    <form id="new-user" class="stack" @onsubmit="CreateAsync" @onsubmit:preventDefault="true">
+        <input class="input" placeholder="@L["users.username"]" @bind="_username" autocomplete="off" required />
+        <input class="input" type="password" placeholder="@L["users.passwordMin", ("min", 8)]" @bind="_password" autocomplete="new-password" minlength="8" required />
+        <select class="input" @bind="_role">
+            <option value="@Roles.User">@L["users.roleUser"]</option>
+            <option value="@Roles.Admin">@L["users.roleAdmin"]</option>
+        </select>
+        <div class="row">
+            <button class="btn" type="button" @onclick="() => _adding = false">@L["common.cancel"]</button>
+            <button class="btn primary" type="submit">@L["common.create"]</button>
+        </div>
+    </form>
+</Modal>
+@code {
+    private List<UserDto> _users = [];
+    private string _username = "";
+    private string _password = "";
+    private string _role = Roles.User;
+    private UserDto? _resetting;
+    private UserDto? _deleting;
+    private string _newPassword = "";
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private void StartReset(UserDto user)
+    {
+        _resetting = user;
+        _newPassword = "";
+    }
+
+    private async Task LoadAsync()
+    {
+        await RunAsync(async () => _users = await Api.AdminUsersAsync() ?? []);
+    }
+
+    private bool _adding;
+
+    private async Task CreateAsync()
+    {
+        await RunAsync(async () =>
+        {
+            await Api.AdminCreateUserAsync(new CreateUserRequest(_username.Trim(), _password, _role));
+            Ui.Notify(L["users.created", ("name", _username)]);
+            _adding = false;
+            _username = _password = "";
+            await LoadAsync();
+        });
+    }
+
+    private async Task ChangeRoleAsync(UserDto user, string? role)
+    {
+        await RunAsync(async () =>
+        {
+            await Api.AdminUpdateUserAsync(user.Id, new UpdateUserRequest(null, role));
+            Ui.Notify(L["users.roleChanged"]);
+        });
+        await LoadAsync();
+    }
+
+    private async Task ResetAsync()
+    {
+        if (_resetting is null) return;
+        await RunAsync(async () =>
+        {
+            await Api.AdminUpdateUserAsync(_resetting.Id, new UpdateUserRequest(_newPassword, null));
+            Ui.Notify(L["users.passwordChanged"]);
+            _resetting = null;
+        });
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (_deleting is null) return;
+        await RunAsync(async () =>
+        {
+            await Api.AdminDeleteUserAsync(_deleting.Id);
+            Ui.Notify(L["users.deleted"]);
+        });
+        _deleting = null;
+        await LoadAsync();
+    }
+
+    private async Task RunAsync(Func<Task> action)
+    {
+        try
+        {
+            await action();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+    }
+}

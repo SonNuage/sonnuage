@@ -1,7 +1,7 @@
 {
-  "name": "localify-app",
+  "name": "sonnuage-app",
   "version": "1.0.0",
-  "description": "Localify — lecteur de musique local (Spotify local)",
+  "description": "SonNuage — lecteur de musique local (Spotify local)",
   "main": "index.js",
   "scripts": {
     "sync": "cap sync android",

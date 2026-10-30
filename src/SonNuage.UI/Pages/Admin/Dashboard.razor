@@ -1,0 +1,296 @@
+@page "/admin"
+@using System.Globalization
+@implements IDisposable
+@inject ApiClient Api
+@inject UiState Ui
+
+<PageTitle>@L["admin.title"] · SonNuage</PageTitle>
+
+<div class="page">
+    <AdminNav Title="@L["admin.nav.overview"]">
+        <Loader Loading="_stats is null && _error is null" Error="@_error" OnRetry="LoadAsync">
+            @if (_dashboard is { } d)
+            {
+                @if (Todo().ToList() is { Count: > 0 } todo)
+                {
+                    <div class="todo">
+                        @foreach (var (href, text) in todo)
+                        {
+                            <a class="notice warn" href="@href"><span>@text</span><Icon Name="chevron-right" Size="18" /></a>
+                        }
+                    </div>
+                }
+                <div class="stats">
+                    <div class="stat"><span class="stat-value">@N(d.Artists)</span><span class="stat-label">@L["dash.stat.artists"]</span></div>
+                    <div class="stat"><span class="stat-value">@N(d.Albums)</span><span class="stat-label">@L["dash.stat.albums"]</span></div>
+                    <div class="stat"><span class="stat-value">@N(d.Tracks)</span><span class="stat-label">@L["dash.stat.tracks"]</span></div>
+                    <div class="stat"><span class="stat-value">@N(d.Playlists)</span><span class="stat-label">@L["dash.stat.playlists"]</span></div>
+                    <div class="stat"><span class="stat-value">@N(d.Users)</span><span class="stat-label">@L["dash.stat.users"]</span></div>
+                </div>
+
+                <div class="dash-grid">
+                    <section class="panel viz">
+                        <h2>@L["dash.totalDuration"]</h2>
+                        @{ var totalSeconds = d.Sources.Sum(s => s.DurationSeconds); }
+                        <p class="viz-hero">@Hours(totalSeconds)</p>
+                        <SegmentBar Segments="d.Sources.Where(s => s.Tracks > 0).Select(s => (s.Source, s.DurationSeconds)).ToList()" />
+                        <ul class="viz-legend rows">
+                            @foreach (var s in d.Sources.Where(s => s.Tracks > 0))
+                            {
+                                <li>
+                                    <span class="swatch" style="background: var(--series-@s.Source)"></span>
+                                    <span class="strong">@SourceLabel(s.Source)</span>
+                                    <span>@Hours(s.DurationSeconds)</span>
+                                    <span class="muted">@L["common.tracks", ("count", s.Tracks)] · @L["dash.average", ("duration", Format.Duration(s.DurationSeconds / s.Tracks))]</span>
+                                </li>
+                            }
+                        </ul>
+                    </section>
+
+                    @if (d.Storage is { } st)
+                    {
+                        <section class="panel viz">
+                            <h2>@L["dash.storage"]</h2>
+                            <p class="viz-hero">@Format.Bytes(st.FreeBytes) <span class="muted viz-hero-sub">@L["dash.freeOf", ("total", Format.Bytes(st.TotalBytes)), ("disk", st.Disk)]</span></p>
+                            <SegmentBar Segments="st.Slices.Where(s => s.Bytes > 0).Select(s => (s.Key, (double)s.Bytes)).ToList()" />
+                            <ul class="viz-legend rows">
+                                @foreach (var s in st.Slices.Where(s => s.Bytes > 0 || s.Key is "youtube" or "upload"))
+                                {
+                                    <li>
+                                        <span class="swatch" style="background: var(--series-@s.Key)"></span>
+                                        <span class="strong">@SliceLabel(s.Key)</span>
+                                        <span>@Format.Bytes(s.Bytes)</span>
+                                        <span class="muted">@Percent(s.Bytes, st.TotalBytes)</span>
+                                    </li>
+                                }
+                            </ul>
+                        </section>
+                    }
+                </div>
+
+                <section class="panel viz">
+                    <div class="viz-head">
+                        <h2>@L["dash.history"]</h2>
+                        <div class="row">
+                            <div class="segmented" role="group" aria-label="@L["dash.period"]">
+                                @foreach (var key in Ranges)
+                                {
+                                    <button class="@(d.HistoryRange == key ? "on" : null)" @onclick="() => SetRangeAsync(key)">@L["dash.range." + key]</button>
+                                }
+                            </div>
+                            <div class="segmented" role="group" aria-label="@L["dash.scale"]">
+                                <button class="@(!_log ? "on" : null)" @onclick="() => _log = false">@L["dash.linear"]</button>
+                                <button class="@(_log ? "on" : null)" @onclick="() => _log = true">@L["dash.log"]</button>
+                            </div>
+                        </div>
+                    </div>
+                    <ul class="viz-legend">
+                        @foreach (var source in Sources)
+                        {
+                            <li><span class="swatch" style="background: var(--series-@source)"></span>@SourceLabel(source) <span class="muted">@N(d.History.Sum(b => Count(b, source)))</span></li>
+                        }
+                    </ul>
+                    @RenderHistory(d.History, d.HistoryRange)
+                    <details class="viz-table">
+                        <summary>@L["dash.showTable"]</summary>
+                        <div class="table-wrap">
+                            <table class="table">
+                                <thead><tr><th>@L["dash.period"]</th>@foreach (var s in Sources) { <th>@SourceLabel(s)</th> }<th>@L["common.total"]</th></tr></thead>
+                                <tbody>
+                                    @foreach (var b in d.History.Where(b => b.Library + b.Upload + b.Youtube > 0))
+                                    {
+                                        <tr><td>@BucketLabel(b.Start, d.HistoryRange, true)</td>@foreach (var s in Sources) { <td>@Count(b, s)</td> }<td>@(b.Library + b.Upload + b.Youtube)</td></tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </details>
+                </section>
+            }
+
+        </Loader>
+    </AdminNav>
+</div>
+
+@code {
+    private static readonly string[] Sources = ["library", "upload", "youtube"];
+    private static readonly string[] Ranges = ["day", "week", "month", "year", "all"];
+
+    private LibraryStatsDto? _stats;
+    private DashboardDto? _dashboard;
+    private YoutubeStatusDto? _youtube;
+    private string _range = "month";
+    private bool _log;
+    private int? _hover;
+    private string? _error;
+    private Timer? _timer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _error = null;
+        try
+        {
+            var stats = Api.AdminStatsAsync();
+            var dashboard = Api.AdminDashboardAsync(_range);
+            var youtube = Api.YoutubeStatusAsync();
+            _stats = await stats;
+            _dashboard = await dashboard;
+            _youtube = await youtube;
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            _error = L.Server(ex.Message);
+        }
+    }
+
+    private async Task SetRangeAsync(string range)
+    {
+        _range = range;
+        _hover = null;
+        _dashboard = await Api.AdminDashboardAsync(range) ?? _dashboard;
+    }
+
+    /// <summary>Ce qui demande une action de l'admin, avec la page où la faire.</summary>
+    private IEnumerable<(string Href, string Text)> Todo()
+    {
+        if (_youtube is { } yt)
+        {
+            if (yt.Tools.YtDlp is null) yield return ("admin/settings", L["dash.todo.ytdlp"]);
+            if (yt.HoldUntil is { } until && until > DateTimeOffset.Now)
+                yield return ("admin/imports", L["dash.todo.hold", ("time", until.ToLocalTime().ToString("HH:mm"))]);
+            if (yt.NeedsReview > 0) yield return ("admin/imports", L["dash.todo.review", ("count", yt.NeedsReview)]);
+            if (yt.Failed > 0) yield return ("admin/imports", L["dash.todo.failed", ("count", yt.Failed)]);
+        }
+        if (_stats?.Scan.LastError is not null) yield return ("admin/settings", L["dash.todo.scan"]);
+    }
+
+    public void Dispose() => _timer?.Dispose();
+
+    // ---- Histogramme empilé (SVG) ----
+
+    private const double W = 720, H = 220, Left = 36, Bottom = 22, Top = 8;
+
+    private RenderFragment RenderHistory(IReadOnlyList<ImportBucketDto> buckets, string range) => __builder =>
+    {
+        var max = Math.Max(1, buckets.Max(b => b.Library + b.Upload + b.Youtube));
+        var plotH = H - Bottom - Top;
+        var slot = (W - Left) / buckets.Count;
+        var barW = Math.Max(2, Math.Min(28, slot - 2));
+        double Height(int total) => total == 0 ? 0 : _log ? plotH * Math.Log10(total + 1) / Math.Log10(max + 1) : plotH * total / max;
+        var ticks = _log
+            ? new[] { 1, 10, 100, 1000, 10000, 100000 }.Where(t => t <= max).ToArray()
+            : NiceTicks(max);
+        var labelEvery = Math.Max(1, (int)Math.Ceiling(buckets.Count / 8.0));
+        <div class="viz-plot">
+            <svg viewBox="0 0 @W @H" class="viz-svg" role="img" aria-label="@L["dash.historyAria"]">
+                @foreach (var t in ticks)
+                {
+                    var y = H - Bottom - Height(t);
+                    <line x1="@Left" x2="@W" y1="@F(y)" y2="@F(y)" class="viz-grid" />
+                }
+                <line x1="@Left" x2="@W" y1="@(H - Bottom)" y2="@(H - Bottom)" class="viz-baseline" />
+                @for (var i = 0; i < buckets.Count; i++)
+                {
+                    var index = i;
+                    var b = buckets[i];
+                    var total = b.Library + b.Upload + b.Youtube;
+                    var x = Left + slot * i + (slot - barW) / 2;
+                    var stackTop = H - Bottom - Height(total);
+                    var y = H - Bottom;
+                    var drawn = Sources.Where(s => Count(b, s) > 0).ToList();
+                    foreach (var source in drawn)
+                    {
+                        var h = total == 0 ? 0 : (H - Bottom - stackTop) * Count(b, source) / total;
+                        var isTop = source == drawn[^1];
+                        // 2 px de fond entre segments ; extrémité arrondie seulement en haut de la pile.
+                        var gap = isTop ? 0 : 2;
+                        <path d="@BarPath(x, y - h + gap, barW, Math.Max(0, h - gap), isTop)" style="fill: var(--series-@source)" class="@(_hover is { } hv && hv != index ? "dim" : null)" />
+                        y -= h;
+                    }
+                    <rect x="@F(Left + slot * i)" y="0" width="@F(slot)" height="@(H - Bottom)" class="viz-hit"
+                          @onmouseenter="() => _hover = index" @onmouseleave="() => _hover = null" @onclick="() => _hover = index" />
+                }
+            </svg>
+            @* Libellés en HTML par-dessus le SVG : taille de police constante quelle que soit la largeur du graphique. *@
+            @foreach (var t in ticks)
+            {
+                <span class="viz-axis-label y" style="right: @F(100 - (Left - 6) / W * 100)%; top: @F((H - Bottom - Height(t)) / H * 100)%">@N(t)</span>
+            }
+            @for (var i = 0; i < buckets.Count; i += labelEvery)
+            {
+                <span class="viz-axis-label x" style="left: @F((Left + slot * i + slot / 2) / W * 100)%">@BucketLabel(buckets[i].Start, range, false)</span>
+            }
+            @if (_hover is { } hi && hi < buckets.Count)
+            {
+                var b = buckets[hi];
+                var leftPct = (Left + (W - Left) / buckets.Count * (hi + 0.5)) / W * 100;
+                <div class="viz-tip" style="left: @F(Math.Clamp(leftPct, 12, 88))%">
+                    <div class="strong">@BucketLabel(b.Start, range, true)</div>
+                    @foreach (var s in Sources)
+                    {
+                        <div class="viz-tip-row"><span class="swatch" style="background: var(--series-@s)"></span>@SourceLabel(s)<span class="viz-tip-value">@Count(b, s)</span></div>
+                    }
+                    <div class="viz-tip-row strong">@L["common.total"]<span class="viz-tip-value">@(b.Library + b.Upload + b.Youtube)</span></div>
+                </div>
+            }
+        </div>
+    };
+
+    private static string BarPath(double x, double y, double w, double h, bool roundTop)
+    {
+        if (h <= 0) return "";
+        var r = roundTop ? Math.Min(4, Math.Min(w / 2, h)) : 0;
+        return $"M{F(x)},{F(y + h)}V{F(y + r)}Q{F(x)},{F(y)} {F(x + r)},{F(y)}H{F(x + w - r)}Q{F(x + w)},{F(y)} {F(x + w)},{F(y + r)}V{F(y + h)}Z";
+    }
+
+    private static int[] NiceTicks(int max)
+    {
+        var raw = max / 4.0;
+        var magnitude = Math.Pow(10, Math.Floor(Math.Log10(raw)));
+        var step = (int)Math.Max(1, new[] { 1, 2, 5, 10 }.Select(m => m * magnitude).First(s => s >= raw));
+        return Enumerable.Range(1, max / step).Select(i => i * step).ToArray();
+    }
+
+    private static int Count(ImportBucketDto b, string source) => source switch
+    {
+        "library" => b.Library,
+        "upload" => b.Upload,
+        _ => b.Youtube,
+    };
+
+    // Noms de mois et de jours fournis par le fichier de langue (le client WebAssembly tourne en globalisation invariante).
+    private string BucketLabel(DateTimeOffset d, string range, bool full)
+    {
+        (string, object?)[] parts =
+        [
+            ("weekday", L.Format.Day(d.DayOfWeek)), ("month", L.Format.Month(d.Month)), ("d", d.Day.ToString()),
+            ("dd", d.Day.ToString("00")), ("MM", d.Month.ToString("00")), ("yyyy", d.Year.ToString()),
+            ("yy", (d.Year % 100).ToString("00")), ("HH", d.Hour.ToString("00")),
+        ];
+        return range switch
+        {
+            "day" => L[full ? "dash.bucket.hour" : "dash.bucket.hourShort", parts],
+            "year" => full ? L["dash.bucket.month", parts] : L.Format.ShortMonth(d.Month),
+            "all" when d.Month == 1 && d.Day == 1 && full => d.Year.ToString(),
+            "all" => L[full ? "dash.bucket.month" : "dash.bucket.monthShort", parts],
+            _ => L[full ? "dash.bucket.day" : "dash.bucket.dayShort", parts],
+        };
+    }
+
+    private string SourceLabel(string source) => L.Has("dash.source." + source) ? L["dash.source." + source] : source;
+
+    private string SliceLabel(string key) => L.Has("dash.slice." + key) ? L["dash.slice." + key] : SourceLabel(key);
+
+    private string Hours(double seconds) => seconds >= 3600 ? L["format.hoursShort", ("value", L.Number(seconds / 3600, 1))] : Format.LongDuration(seconds);
+    private static string Percent(long part, long total) => total == 0 ? "" : Format.Percent(part * 100.0 / total);
+    private string N(int n) => L.Number(n);
+    private static string F(double v) => v.ToString("0.##", CultureInfo.InvariantCulture);
+
+    private string SearchLabel(string engine) =>
+        L[engine is "elasticsearch" or "indexing" or "degraded" ? "dash.searchEngine." + engine : "dash.searchEngine.database"];
+}

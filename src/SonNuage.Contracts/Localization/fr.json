@@ -1,0 +1,906 @@
+{
+  "_meta": {
+    "name": "Français",
+    "decimalSeparator": ",",
+    "groupSeparator": " ",
+    "months": [
+      "janvier",
+      "février",
+      "mars",
+      "avril",
+      "mai",
+      "juin",
+      "juillet",
+      "août",
+      "septembre",
+      "octobre",
+      "novembre",
+      "décembre"
+    ],
+    "shortMonths": [
+      "janv.",
+      "févr.",
+      "mars",
+      "avr.",
+      "mai",
+      "juin",
+      "juil.",
+      "août",
+      "sept.",
+      "oct.",
+      "nov.",
+      "déc."
+    ],
+    "days": [
+      "dimanche",
+      "lundi",
+      "mardi",
+      "mercredi",
+      "jeudi",
+      "vendredi",
+      "samedi"
+    ],
+    "shortDays": [
+      "dim.",
+      "lun.",
+      "mar.",
+      "mer.",
+      "jeu.",
+      "ven.",
+      "sam."
+    ]
+  },
+  "common": {
+    "tracks": {
+      "one": "{count} titre",
+      "other": "{count} titres"
+    },
+    "albums": {
+      "one": "{count} album",
+      "other": "{count} albums"
+    },
+    "videos": {
+      "one": "{count} vidéo",
+      "other": "{count} vidéos"
+    },
+    "create": "Créer",
+    "retry": "Réessayer",
+    "close": "Fermer",
+    "play": "Lire",
+    "favorite": "Favori",
+    "remove": "Retirer",
+    "more": "Plus d'actions",
+    "showAll": "Tout afficher",
+    "playlist": "Playlist",
+    "album": "Album",
+    "artist": "Artiste",
+    "addToQueue": "Ajouter à la file",
+    "edit": "Modifier",
+    "showMore": "Afficher plus",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "never": "jamais",
+    "total": "Total"
+  },
+  "format": {
+    "hoursMinutes": "{hours} h {minutes} min",
+    "minutes": "{minutes} min",
+    "bytes": {
+      "tb": "{value} To",
+      "gb": "{value} Go",
+      "mb": "{value} Mo",
+      "kb": "{value} Ko",
+      "b": "{value} o"
+    },
+    "date": "{dd}/{MM}/{yyyy}",
+    "dateTime": "{dd}/{MM}/{yyyy} {HH}:{mm}",
+    "percent": "{value} %",
+    "hoursShort": "{value} h"
+  },
+  "toast": {
+    "favoriteAdded": "Ajouté aux favoris",
+    "favoriteRemoved": "Retiré des favoris",
+    "addedTo": "Ajouté à {name}",
+    "addedManyTo": {
+      "one": "{count} titre ajouté à {name}",
+      "other": "{count} titres ajoutés à {name}"
+    },
+    "thePlaylist": "la playlist",
+    "playlistCreated": "Playlist « {name} » créée",
+    "playNext": "Sera lu ensuite",
+    "queued": "Ajouté à la file d'attente"
+  },
+  "errors": {
+    "serverNotConfigured": "Adresse du serveur non configurée.",
+    "sessionExpired": "Session expirée.",
+    "generic": "Erreur",
+    "http": "Erreur {status}",
+    "unknownLanguage": "Langue inconnue : {language}",
+    "upload": {
+      "unknownFormat": "Format audio non reconnu.",
+      "badSize": "Taille de fichier invalide.",
+      "unknownSession": "Session d'upload inconnue ou expirée.",
+      "offset": "Offset attendu : {offset}.",
+      "chunkTooLarge": "Morceau trop grand.",
+      "incomplete": "Fichier incomplet : {received}/{size} octets."
+    },
+    "admin": {
+      "readOnlyFile": "Ce fichier fait partie de la bibliothèque principale (lecture seule). Supprimez-le directement sur le disque.",
+      "badCover": "Image vide ou trop lourde (10 Mo max).",
+      "unreadable": "Fichier reçu mais illisible.",
+      "lastAdmin": "Il faut garder au moins un administrateur.",
+      "deleteSelf": "Impossible de supprimer son propre compte.",
+      "emptyTitle": "Le titre ne peut pas être vide."
+    },
+    "unknownRole": "Rôle inconnu.",
+    "passwordMin": "Mot de passe : {min} caractères minimum.",
+    "auth": {
+      "invalid": "Identifiants invalides.",
+      "wrongPassword": "Mot de passe actuel incorrect."
+    },
+    "keys": {
+      "nameRequired": "Nom requis (100 caractères au plus)."
+    },
+    "badVideoId": "Identifiant de vidéo invalide.",
+    "nameRequired": "Nom requis.",
+    "playlistLimit": "Une playlist est limitée à {max} titres.",
+    "unknownQuality": "Qualité inconnue : {quality}",
+    "yt": {
+      "updateFailed": "Mise à jour impossible : {message}",
+      "batchSize": "Entre 1 et 1000 vidéos par demande.",
+      "retryOnlyFailed": "Seuls les imports en échec ou ignorés se relancent.",
+      "badFormat": "Format yt-dlp invalide (ex. « 140 », « bestaudio », « 251/140 »).",
+      "inProgress": "Import en cours.",
+      "unreachable": "Service injoignable : {message}",
+      "notFound": "Import introuvable ou pas encore terminé.",
+      "titleArtistRequired": "Titre et artiste sont obligatoires.",
+      "fileGone": "Le fichier du morceau a disparu.",
+      "syncInterval": "Intervalle de synchronisation : entre 0 (jamais) et 168 heures.",
+      "audioFormat": "Format audio : « original » ou « mp3 ».",
+      "threshold": "Seuil d'acceptation : entre 0 et 1.",
+      "noCookies": "Aucun cookie youtube.com trouvé : exportez les cookies au format Netscape (cookies.txt) depuis un navigateur connecté à YouTube.",
+      "subNotFound": "Abonnement introuvable.",
+      "alreadySubscribed": "Déjà abonné à cette adresse.",
+      "isVideo": "Cette adresse est une vidéo : importez-la directement, ou abonnez-vous à sa playlist ou à sa chaîne.",
+      "checksumMissing": "Somme de contrôle de {asset} absente de la release yt-dlp.",
+      "checksumUnreadable": "Somme de contrôle de {asset} illisible.",
+      "checksumMismatch": "{asset} : somme SHA-256 inattendue, téléchargement refusé.",
+      "formatsAvailable": "Formats proposés :",
+      "formatsSignedIn": "Connecté (cookies) :",
+      "formatsAnonymous": "Sans les cookies :",
+      "formatsFailed": "(liste impossible : {message})",
+      "formatsNoTable": "(aucune table)",
+      "missing": "yt-dlp introuvable : installez-le ou utilisez « Mettre à jour yt-dlp » dans l'admin.",
+      "cannotStart": "Impossible de lancer yt-dlp.",
+      "timeout": "yt-dlp n'a pas terminé à temps.",
+      "addCookies": " — Ajoutez dans les réglages les cookies d'un compte YouTube (majeur) qui y a accès.",
+      "cookiesInsufficient": " — Les cookies enregistrés ne suffisent pas : compte mineur, non membre ou session expirée ?",
+      "parallelDownloads": "Téléchargements simultanés : entre 1 et {max}."
+    },
+    "users": {
+      "usernameLength": "Nom d'utilisateur : 2 à 64 caractères.",
+      "exists": "Ce nom d'utilisateur existe déjà."
+    },
+    "jobs": {
+      "noAcoustIdKey": "Aucune clé AcoustID : à renseigner dans l'admin YouTube (Réglages).",
+      "noFpcalc": "fpcalc (Chromaprint) est introuvable sur le serveur : impossible de calculer les empreintes.",
+      "unknownKind": "Type de tâche inconnu.",
+      "unknownArtist": "Artiste introuvable.",
+      "notCancelable": "Cette tâche est déjà terminée.",
+      "notRetryable": "Seule une tâche en échec ou annulée, dont l'étape précédente a réussi, peut être relancée.",
+      "suiteActive": "Cette suite a encore des tâches en cours ou en attente : annulez-la d’abord."
+    }
+  },
+  "login": {
+    "unreachable": "Serveur injoignable : {message}",
+    "tooManyAttempts": "Trop de tentatives, réessayez dans une minute.",
+    "invalid": "Identifiants invalides.",
+    "title": "Connexion",
+    "server": "Serveur : {host}",
+    "changeServer": "changer",
+    "username": "Utilisateur",
+    "password": "Mot de passe",
+    "submitting": "Connexion…",
+    "submit": "Se connecter",
+    "expired": "La session de {user} a expiré : reconnectez-vous."
+  },
+  "player": {
+    "errors": {
+      "unsupported": "Format non lu par ce navigateur",
+      "network": "Lecture impossible (réseau)",
+      "sessionExpired": "Session expirée"
+    },
+    "shuffle": "Lecture aléatoire",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "pause": "Pause",
+    "play": "Lecture",
+    "repeat": "Répéter",
+    "position": "Position",
+    "volume": "Volume",
+    "mute": "Couper le son",
+    "collapse": "Réduire",
+    "nowPlaying": "En cours de lecture",
+    "remote": {
+      "title": "Faire jouer la musique dans cet onglet",
+      "elsewhere": "Lecture dans un autre onglet",
+      "elsewhereShort": "Dans un autre onglet",
+      "playHere": "Lire ici"
+    }
+  },
+  "nav": {
+    "home": "Accueil",
+    "search": "Rechercher",
+    "library": "Bibliothèque",
+    "queue": "File d'attente",
+    "admin": "Administration",
+    "settings": "Réglages",
+    "playlists": "Playlists",
+    "newPlaylist": "Nouvelle playlist",
+    "likedSongs": "Titres likés",
+    "defaultPlaylistName": "Ma playlist n° {number}",
+    "myAccount": "Mon compte",
+    "accountMenu": "Menu du compte",
+    "switchAccount": "Changer de compte",
+    "theme": "Thème",
+    "themeMode": {
+      "system": "Système",
+      "light": "Clair",
+      "dark": "Sombre"
+    }
+  },
+  "app": {
+    "notFound": "Page introuvable.",
+    "updateAvailable": "Une nouvelle version de SonNuage est disponible.",
+    "reload": "Recharger"
+  },
+  "server": {
+    "title": "Votre serveur",
+    "hint": "Adresse de votre serveur SonNuage, par exemple",
+    "address": "Adresse",
+    "checking": "Vérification…",
+    "continue": "Continuer",
+    "invalid": "Adresse invalide.",
+    "notSonNuage": "Ce serveur ne répond pas comme un serveur SonNuage.",
+    "cannotConnect": "Connexion impossible : {message}",
+    "addTitle": "Ajouter un compte"
+  },
+  "picker": {
+    "title": "Ajouter à une playlist",
+    "newPlaceholder": "Nouvelle playlist…"
+  },
+  "track": {
+    "lossless": "Fichier source sans perte",
+    "playNext": "Lire ensuite",
+    "addToQueue": "Ajouter à la file",
+    "addToPlaylist": "Ajouter à une playlist",
+    "goToAlbum": "Voir l'album",
+    "goToArtist": "Voir l'artiste"
+  },
+  "home": {
+    "shuffleAll": "Mélanger toute la bibliothèque",
+    "yourPlaylists": "Vos playlists",
+    "recentlyPlayed": "Écoutés récemment",
+    "recentlyAdded": "Ajouts récents",
+    "emptyLibrary": "La bibliothèque est vide.",
+    "emptyLibraryAdmin": "Ajoutez de la musique depuis l'administration.",
+    "greeting": {
+      "night": "Bonne nuit",
+      "day": "Bonjour",
+      "evening": "Bonsoir"
+    }
+  },
+  "favorites": {
+    "empty": "Touchez le cœur d'un titre pour le retrouver ici."
+  },
+  "queue": {
+    "nothing": "Rien en cours de lecture.",
+    "current": "En cours",
+    "next": "À suivre",
+    "shuffled": "(aléatoire)",
+    "end": "Fin de la file.",
+    "endRepeat": "Fin de la file : la lecture reprendra au début."
+  },
+  "artist": {
+    "playAll": "Tout lire",
+    "discography": "Discographie",
+    "notFound": "Artiste introuvable."
+  },
+  "search": {
+    "placeholder": "Artistes, albums, titres…",
+    "didYouMean": "Vouliez-vous dire",
+    "noResults": "Aucun résultat pour « {query} ».",
+    "tracks": "Titres",
+    "artists": "Artistes",
+    "albums": "Albums",
+    "shortcut": "Rechercher (raccourci : /)"
+  },
+  "library": {
+    "playlists": "Playlists",
+    "albums": "Albums",
+    "artists": "Artistes",
+    "autoPlaylist": "Playlist automatique",
+    "sort": {
+      "recent": "Ajout récent",
+      "title": "Titre",
+      "artist": "Artiste",
+      "year": "Année",
+      "label": "Trier par"
+    }
+  },
+  "playlist": {
+    "descriptionPlaceholder": "Description (facultatif)",
+    "rename": "Renommer",
+    "done": "Terminer",
+    "reorder": "Réordonner",
+    "delete": "Supprimer la playlist",
+    "deleteConfirm": "Supprimer la playlist ?",
+    "empty": "Playlist vide. Ajoutez des titres depuis un album ou la recherche (menu ⋮ → « Ajouter à une playlist »).",
+    "moveUp": "Monter",
+    "moveDown": "Descendre",
+    "removeFrom": "Retirer de la playlist",
+    "notFound": "Playlist introuvable."
+  },
+  "album": {
+    "notFound": "Album introuvable."
+  },
+  "settings": {
+    "audioQuality": "Qualité audio",
+    "noTranscoding": "Le transcodage n'est pas disponible sur ce serveur : les fichiers originaux sont envoyés.",
+    "onWifi": "En Wi-Fi",
+    "playbackQuality": "Qualité de lecture",
+    "onMobile": "En réseau mobile",
+    "prefetch": "Pistes pré-chargées d'avance",
+    "prefetchHint": "Les pistes suivantes sont téléchargées pendant l'écoute pour ne pas couper en cas de mauvais réseau.",
+    "account": "Compte",
+    "loggedInAs": "Connecté en tant que",
+    "roleAdmin": "administrateur",
+    "roleUser": "utilisateur",
+    "onServer": "sur {host}",
+    "currentPassword": "Mot de passe actuel",
+    "newPassword": "Nouveau mot de passe ({min} caractères min.)",
+    "changePassword": "Changer le mot de passe",
+    "logout": "Se déconnecter",
+    "saved": "Réglages enregistrés. Ils s'appliquent à partir de la piste suivante.",
+    "passwordChanged": "Mot de passe changé. Reconnectez-vous.",
+    "language": "Langue",
+    "languageHint": "Suivie sur tous vos appareils connectés à ce compte.",
+    "languageSaved": "Langue enregistrée"
+  },
+  "quality": {
+    "original": "Originale",
+    "lossless": "Sans perte (FLAC)",
+    "high": "Très haute (320 kbit/s)",
+    "normal": "Normale (192 kbit/s)",
+    "low": "Basse (128 kbit/s)",
+    "datasaver": "Économie de données (64 kbit/s)"
+  },
+  "admin": {
+    "restricted": "Accès réservé aux administrateurs.",
+    "title": "Administration",
+    "tabs": {
+      "dashboard": "Tableau de bord",
+      "upload": "Ajouter des œuvres",
+      "youtube": "YouTube",
+      "metadata": "Métadonnées",
+      "users": "Utilisateurs",
+      "keys": "Clés API",
+      "tasks": "Tâches"
+    },
+    "nav": {
+      "back": "Retour à la musique",
+      "overview": "Vue d'ensemble",
+      "music": "Musique",
+      "youtube": "Importer depuis YouTube",
+      "subscriptions": "Abonnements",
+      "upload": "Envoyer des fichiers",
+      "imports": "Suivi des imports",
+      "metadata": "Métadonnées",
+      "server": "Serveur",
+      "tasks": "Tâches",
+      "users": "Utilisateurs",
+      "keys": "Clés d'API",
+      "settings": "Réglages",
+      "about": "À propos"
+    }
+  },
+  "users": {
+    "new": "Nouvel utilisateur",
+    "username": "Nom d'utilisateur",
+    "passwordMin": "Mot de passe ({min} car. min.)",
+    "roleUser": "Utilisateur",
+    "roleAdmin": "Administrateur",
+    "colUser": "Utilisateur",
+    "colRole": "Rôle",
+    "colCreated": "Créé le",
+    "you": "vous",
+    "resetPassword": "Réinitialiser le mot de passe",
+    "passwordOf": "Mot de passe de {name}",
+    "newPassword": "Nouveau mot de passe",
+    "resetHint": "Toutes les sessions de cet utilisateur seront déconnectées.",
+    "deleteConfirm": "Supprimer l'utilisateur ?",
+    "deleteHint": "Le compte « {name} », ses playlists et ses favoris seront supprimés.",
+    "created": "Utilisateur {name} créé",
+    "roleChanged": "Rôle modifié",
+    "passwordChanged": "Mot de passe modifié",
+    "deleted": "Utilisateur supprimé"
+  },
+  "upload": {
+    "intro": "Les fichiers sont rangés par artiste et album d'après leurs tags. Pour des fichiers sans tags, indiquez l'artiste et l'album ci-dessous.",
+    "resumable": "Les envois se font par morceaux de 8 Mo et reprennent après une coupure réseau.",
+    "artistHint": "Artiste (si absent des tags)",
+    "albumHint": "Album (si absent des tags)",
+    "drop": "Glissez des fichiers audio ici ou cliquez pour choisir",
+    "list": "Envois",
+    "status": {
+      "pending": "en attente",
+      "processing": "analyse…",
+      "done": "ajouté",
+      "failed": "échec"
+    },
+    "summary": "{ok}/{total} fichier(s) ajouté(s)",
+    "tooLarge": "fichier trop volumineux",
+    "sessionRefused": "session refusée",
+    "sessionExpired": "session expirée",
+    "desync": "désynchronisation de l'envoi"
+  },
+  "editor": {
+    "title": "Titre",
+    "artist": "Artiste",
+    "albumArtist": "Artiste de l'album",
+    "year": "Année",
+    "album": "Album",
+    "trackNumber": "N° de piste",
+    "discNumber": "N° de disque",
+    "genre": "Genre",
+    "file": "Fichier",
+    "fileIs": "Fichier : {path}",
+    "saveAlbum": "Enregistrer l'album",
+    "changeCover": "Changer la pochette",
+    "dbOnly": "Les modifications sont enregistrées dans la base de SonNuage ; les fichiers ne sont pas modifiés et ces valeurs ne seront plus écrasées par les analyses.",
+    "searchPlaceholder": "Rechercher un titre, un artiste, un album…",
+    "wholeLibrary": "Toute la bibliothèque",
+    "edited": "édité",
+    "editedHint": "Modifié à la main",
+    "count": "{shown} / {total} titres",
+    "editTrack": "Modifier le titre",
+    "deleteConfirm": "Supprimer ce fichier ?",
+    "deleteHint": "« {title} » sera supprimé du disque et de la bibliothèque.",
+    "trackUpdated": "Titre mis à jour",
+    "albumUpdated": "Album mis à jour",
+    "coverUpdated": "Pochette mise à jour",
+    "fileDeleted": "Fichier supprimé"
+  },
+  "dash": {
+    "stat": {
+      "artists": "artistes",
+      "albums": "albums",
+      "tracks": "titres",
+      "playlists": "playlists",
+      "users": "utilisateurs"
+    },
+    "yt": {
+      "queued": "imports YouTube en attente",
+      "review": " · {count} à vérifier",
+      "failed": " · {count} en échec"
+    },
+    "totalDuration": "Durée totale",
+    "average": "moy. {duration}",
+    "storage": "Stockage",
+    "freeOf": "libres sur {total} ({disk})",
+    "history": "Historique des ajouts",
+    "period": "Période",
+    "scale": "Échelle",
+    "linear": "Linéaire",
+    "log": "Log",
+    "showTable": "Voir le tableau",
+    "historyAria": "Morceaux ajoutés par période et par provenance",
+    "range": {
+      "day": "Jour",
+      "week": "Semaine",
+      "month": "Mois",
+      "year": "Année",
+      "all": "Tout"
+    },
+    "bucket": {
+      "hour": "{weekday} {d} {month}, {HH} h",
+      "hourShort": "{HH}h",
+      "month": "{month} {yyyy}",
+      "monthShort": "{MM}/{yy}",
+      "day": "{weekday} {d} {month} {yyyy}",
+      "dayShort": "{dd}/{MM}"
+    },
+    "source": {
+      "library": "Bibliothèque",
+      "upload": "Envois",
+      "youtube": "YouTube"
+    },
+    "slice": {
+      "cache": "Caches",
+      "other": "Autres fichiers du disque",
+      "free": "Libre"
+    },
+    "scan": {
+      "title": "Analyse de la bibliothèque",
+      "running": "Analyse en cours : {seen} fichiers vus, {added} ajoutés, {updated} mis à jour.",
+      "last": "Dernière analyse : {date}",
+      "lastStats": " — {seen} fichiers, {added} ajoutés, {updated} mis à jour, {removed} retirés.",
+      "hint": "Les changements sur disque sont détectés automatiquement. L'analyse complète est incrémentale : seuls les fichiers modifiés sont relus.",
+      "now": "Analyser maintenant"
+    },
+    "search": "Recherche : {engine} · cache de transcodage : {cache}",
+    "searchEngine": {
+      "elasticsearch": "Elasticsearch (tolérance aux fautes, suggestions)",
+      "indexing": "Elasticsearch, indexation initiale en cours (recherche en base en attendant)",
+      "degraded": "Elasticsearch injoignable, recherche en base en attendant son retour",
+      "database": "en base (aucun Elasticsearch configuré)"
+    },
+    "clearCache": "Vider le cache de transcodage",
+    "cacheCleared": "Cache de transcodage vidé",
+    "todo": {
+      "ytdlp": "yt-dlp n'est pas installé : les imports YouTube sont impossibles.",
+      "hold": "YouTube a bloqué les imports : reprise à {time}.",
+      "review": "{count} import(s) à vérifier",
+      "failed": "{count} import(s) en échec",
+      "scan": "La dernière analyse de la bibliothèque a échoué."
+    }
+  },
+  "keys": {
+    "title": "Extension de navigateur",
+    "intro": "L'extension SonNuage ajoute un bouton « Ajouter à SonNuage » sur YouTube et YouTube Music (dossier extension/ du dépôt, à charger « non empaquetée »). Elle se connecte avec une clé créée ici : la clé permet seulement d'ajouter des vidéos à la file, de s'abonner et d'envoyer des cookies YouTube. Elle ne donne accès ni à la bibliothèque ni au reste de l'administration. Une clé cesse de fonctionner dès qu'elle est révoquée, ou si son créateur n'est plus administrateur.",
+    "namePlaceholder": "Nom (ex. Firefox du salon)",
+    "create": "Créer une clé",
+    "created": "Clé « {name} » : copiez-la maintenant dans les options de l'extension, elle ne sera plus affichée.",
+    "colName": "Nom",
+    "colKey": "Clé",
+    "colCreated": "Créée",
+    "colLastUsed": "Dernière utilisation",
+    "by": "par {name}",
+    "revoke": "Révoquer",
+    "none": "Aucune clé.",
+    "revokeConfirm": "Révoquer la clé ?",
+    "revokeHint": "L'extension qui utilise « {name} » ne pourra plus rien envoyer.",
+    "revoked": "Clé révoquée",
+    "serverUrl": "Adresse du serveur à indiquer dans l'extension"
+  },
+  "yt": {
+    "notInstalled": "yt-dlp n'est pas installé sur le serveur.",
+    "installing": "Installation…",
+    "install": "Installer yt-dlp et Deno",
+    "hold": "YouTube refuse les téléchargements pour l'instant : reprise automatique à {time}.",
+    "holdCookies": " Ajouter les cookies d'un compte YouTube (Réglages) évite le plus souvent ce blocage.",
+    "resumeNow": "Reprendre maintenant",
+    "tab": {
+      "explore": "Explorer",
+      "queue": "File d'attente",
+      "subs": "Abonnements",
+      "settings": "Réglages"
+    },
+    "filter": {
+      "all": "Tout",
+      "queued": "En cours",
+      "review": "À vérifier",
+      "failed": "En échec",
+      "done": "Importés",
+      "skipped": "Ignorés"
+    },
+    "filterAria": "Filtre",
+    "formats": {
+      "title": "Formats proposés",
+      "hint": "YouTube ne propose aucun des formats audio demandés. Choisissez un identifiant (colonne ID) ou un sélecteur yt-dlp pour cette seule tentative : « 140 » (AAC), « 251 » (Opus), « 18 » (vidéo 360p dont seul l'audio sera gardé), ou « 251/140/18 ».",
+      "none": "Aucune liste relevée : relancez une fois l'import pour la récupérer.",
+      "placeholder": "ex. 140/18",
+      "aria": "Format yt-dlp",
+      "retry": "Réessayer avec ce format"
+    },
+    "review": {
+      "title": "Vérifier les métadonnées",
+      "watch": "voir la vidéo",
+      "candidates": "Propositions",
+      "trackNo": "piste {number}",
+      "applied": "Métadonnées appliquées",
+      "track": "Piste",
+      "keep": "Garder l'actuel",
+      "applying": "Application…",
+      "apply": "Appliquer",
+      "noResults": "Aucun résultat sur MusicBrainz"
+    },
+    "explore": {
+      "placeholder": "Rechercher, ou coller l'adresse d'une vidéo, d'une playlist ou d'une chaîne",
+      "search": "Chercher",
+      "hint": "YouTube Music donne les meilleures métadonnées (titre, artistes, album). Les titres importés sont reconnus via MusicBrainz, puis rangés avec leur pochette dans la bibliothèque. Importez uniquement ce que vous avez le droit de conserver.",
+      "searching": "Recherche sur YouTube…",
+      "selectAll": "Tout sélectionner",
+      "deselectAll": "Tout désélectionner",
+      "import": "Importer ({count})",
+      "isAlbum": "C'est un album",
+      "albumName": "Nom de l'album",
+      "subscribeNew": "S'abonner (nouveautés seulement)",
+      "subscribeAll": "S'abonner et tout importer",
+      "select": "Sélectionner {title}",
+      "open": "Ouvrir sur YouTube",
+      "queued": "{queued} ajoutée(s) à la file d'import",
+      "queuedKnown": "{queued} ajoutée(s) à la file, {known} déjà connue(s)"
+    },
+    "queue": {
+      "filterPlaceholder": "Filtrer par titre ou chaîne",
+      "retryFailed": "Relancer les échecs",
+      "empty": "Rien ici pour l'instant. Utilisez l'onglet Explorer pour importer des titres.",
+      "from": "depuis « {title} »",
+      "subscription": "abonnement « {name} »",
+      "toReview": "à vérifier",
+      "match": "{source}, confiance {confidence}",
+      "editMetadata": "Modifier les métadonnées",
+      "formats": "Formats proposés, réessayer avec un autre",
+      "retry": "Importer / réessayer",
+      "removeItem": "Retirer de la liste",
+      "deleteTrack": "Supprimer le morceau importé",
+      "retried": "Import relancé",
+      "failedRequeued": "Échecs remis dans la file",
+      "trackDeleted": "Morceau supprimé"
+    },
+    "status": {
+      "Queued": "en attente",
+      "Downloading": "téléchargement",
+      "Processing": "traitement",
+      "Done": "importé",
+      "Failed": "échec",
+      "Skipped": "ignoré",
+      "Downloaded": "téléchargé"
+    },
+    "stage": {
+      "download": "téléchargement",
+      "metadata": "recherche des métadonnées",
+      "tagging": "tags et pochette",
+      "acoustid": "empreinte AcoustID"
+    },
+    "source": {
+      "musicbrainz": "MusicBrainz",
+      "acoustid": "empreinte AcoustID",
+      "youtube-music": "YouTube Music",
+      "titre": "titre de la vidéo",
+      "manuel": "saisie manuelle"
+    },
+    "subs": {
+      "new": "Nouvel abonnement",
+      "placeholder": "Adresse d'une playlist, d'un album YouTube Music ou d'une chaîne",
+      "importExisting": "Importer les vidéos existantes",
+      "subscribe": "S'abonner",
+      "hint": "Les nouvelles vidéos sont importées à chaque synchronisation (intervalle dans les Réglages).",
+      "colName": "Abonnement",
+      "colImported": "Importés",
+      "colLastSync": "Dernière synchro",
+      "colEnabled": "Actif",
+      "album": "album",
+      "syncNow": "Synchroniser maintenant",
+      "unsubscribe": "Se désabonner (les morceaux importés restent)",
+      "none": "Aucun abonnement.",
+      "created": "Abonnement créé",
+      "synced": "Synchronisé",
+      "deleted": "Abonnement supprimé"
+    },
+    "tools": {
+      "title": "Outils",
+      "missing": "absent",
+      "hint": "YouTube change souvent : quand les imports échouent sans raison, commencez par mettre yt-dlp à jour. Les binaires viennent des releases officielles GitHub, sommes SHA-256 vérifiées.",
+      "updating": "Mise à jour…",
+      "update": "Mettre à jour yt-dlp",
+      "updateAll": "Mettre à jour yt-dlp et Deno"
+    },
+    "cookies": {
+      "title": "Cookies YouTube",
+      "saved": "Cookies enregistrés le {date}.",
+      "none": "Aucun cookie enregistré.",
+      "hint": "Si YouTube demande de « confirmer que vous n'êtes pas un robot », exportez les cookies d'un navigateur connecté à YouTube au format Netscape (cookies.txt, par exemple avec l'extension « Get cookies.txt LOCALLY ») et collez-les ici. Seuls les cookies youtube.com / google.com sont gardés ; ils ne quittent pas le serveur. Un compte secondaire est préférable.",
+      "adult": "Avec les cookies d'un compte majeur, les vidéos réservées aux personnes connectées ou aux adultes se téléchargent aussi : chaque import est d'abord tenté connecté.",
+      "retryWithout": "Réessayer sans les cookies quand, connecté, YouTube ne propose pas le format audio demandé",
+      "savedToast": "Cookies enregistrés",
+      "deleted": "Cookies supprimés"
+    },
+    "settings": {
+      "import": "Import",
+      "sync": "Synchronisation des abonnements",
+      "syncNever": "jamais (manuelle)",
+      "syncHours": "toutes les {count} h",
+      "syncDaily": "chaque jour",
+      "syncDays": "tous les {count} jours",
+      "audioFormat": "Format audio",
+      "original": "Original (Opus / AAC, sans réencodage)",
+      "mp3": "MP3 (compatibilité maximale)",
+      "threshold": "Seuil d'acceptation automatique : {value}",
+      "acoustid": "Clé d'API AcoustID (facultatif)",
+      "acoustidHint": "Avec une clé AcoustID (gratuite) et fpcalc sur le serveur, chaque titre est aussi reconnu à son empreinte sonore : fiable même quand le titre de la vidéo ne dit rien. Sous le seuil, l'import est rangé mais signalé « à vérifier ».",
+      "saved": "Réglages enregistrés",
+      "parallel": "Téléchargements simultanés",
+      "parallelHint": "Une vidéo que YouTube ralentit ne bloque plus les autres. Au-delà de 3 ou 4, YouTube risque de demander une vérification anti-robot."
+    }
+  },
+  "accounts": {
+    "title": "Comptes",
+    "hint": "La bibliothèque affichée et la lecture sont celles du compte actif. Changer de compte arrête la lecture.",
+    "active": "actif",
+    "use": "Utiliser",
+    "useOther": "Utiliser {account}",
+    "logout": "Déconnecter",
+    "logoutTitle": "Se déconnecter de ce compte",
+    "add": "Ajouter un compte",
+    "cancelAdd": "Annuler, revenir à {account}",
+    "switched": "Compte actif : {account}",
+    "loggedOut": "Déconnecté de {account}"
+  },
+  "android": {
+    "recent": "Récents",
+    "sessionExpired": "Session expirée : reconnectez-vous dans l'application."
+  },
+  "crash": {
+    "copy": "Copier le rapport",
+    "copied": "Copié ✓",
+    "continue": "Continuer",
+    "startFailed": "SonNuage n'a pas pu démarrer",
+    "stoppedLastTime": "SonNuage s'est arrêté la dernière fois",
+    "intro": "Voici le rapport d'erreur. Copiez-le pour le transmettre."
+  },
+  "jobs": {
+    "search": "Rechercher une suite…",
+    "none": "Aucune tâche ici.",
+    "pick": "Choisissez une suite pour voir ses étapes et leur journal.",
+    "stepsTitle": "Étapes",
+    "cancelSuite": "Tout annuler",
+    "deleteSuite": "Supprimer",
+    "retry": "Relancer",
+    "noLogs": "Pas encore de journal.",
+    "data": "Paramètres et résultat",
+    "more": "Afficher plus ({count} de plus)",
+    "progress": "{done} / {total}",
+    "failedCount": {
+      "one": "{count} échec",
+      "other": "{count} échecs"
+    },
+    "attempts": "tentative {n}/{max}",
+    "duration": "{seconds} s",
+    "inLane": "file « {lane} »",
+    "startedAt": "démarrée le {date}",
+    "notBefore": "pas avant le {date}",
+    "laneLoad": "{running}/{capacity} en cours · {queued} en attente",
+    "filter": {
+      "active": "En cours et en attente",
+      "failed": "En échec",
+      "finished": "Terminées",
+      "all": "Toutes"
+    },
+    "status": {
+      "Pending": "attend l’étape précédente",
+      "Queued": "en attente",
+      "Running": "en cours",
+      "Succeeded": "terminée",
+      "Failed": "échec",
+      "Canceled": "annulée"
+    },
+    "lane": {
+      "download": "Téléchargements",
+      "acoustid": "AcoustID",
+      "metadata": "Métadonnées",
+      "library": "Bibliothèque"
+    },
+    "kind": {
+      "youtube_download": "Téléchargement YouTube",
+      "acoustid_identify": "Empreinte AcoustID",
+      "youtube_metadata": "Métadonnées et rangement",
+      "library_acoustid_scan": "Préparation du rescan",
+      "library_match": "Comparaison MusicBrainz"
+    },
+    "suiteKind": {
+      "youtube_import": "Import YouTube",
+      "library_acoustid_rescan": "Rescan AcoustID"
+    },
+    "suites": {
+      "rescanAll": "Rescan AcoustID de toute la bibliothèque",
+      "rescanArtist": "Rescan AcoustID : {artist}"
+    },
+    "steps": {
+      "download": "Téléchargement",
+      "acoustid": "Empreinte AcoustID",
+      "metadata": "Métadonnées, tags et rangement",
+      "plan": "Liste des morceaux à vérifier"
+    },
+    "create": {
+      "title": "Nouvelle tâche : rescan AcoustID",
+      "intro": "Calcule l'empreinte acoustique de chaque morceau et la compare aux fiches MusicBrainz. Une seule recherche AcoustID tourne à la fois (une par seconde au plus), imports compris : compter environ deux secondes par morceau. Les imports YouTube passent devant.",
+      "all": "Toute la bibliothèque",
+      "artist": "Un artiste",
+      "artistPlaceholder": "Nom de l’artiste…",
+      "otherArtist": "Changer",
+      "apply": "Corriger automatiquement les correspondances sûres (au-dessus du seuil choisi ci-dessous ; les morceaux modifiés à la main ne sont pas touchés). Sinon, propositions dans le journal seulement.",
+      "start": "Lancer",
+      "started": "Tâche créée.",
+      "button": "Nouvelle tâche",
+      "thresholdHint": "Pour cette tâche seulement. En dessous, la correction est seulement proposée dans le journal."
+    },
+    "log": {
+      "canceled": "Annulée.",
+      "retried": "Relancée depuis l’admin.",
+      "unknownKind": "Type de tâche inconnu : {kind}.",
+      "attempt": "Tentative {n} sur {max}.",
+      "deferred": "Remise à plus tard : {reason}",
+      "dependencyFailed": "Étape précédente en échec ou annulée.",
+      "lost": "Abandonnée : interrompue trop de fois (arrêt du serveur pendant son exécution).",
+      "resumed": "Reprise après une interruption du serveur."
+    },
+    "yt": {
+      "notQueued": "Import supprimé ou déjà traité : rien à faire.",
+      "notDownloaded": "Import supprimé ou pas encore téléchargé : rien à faire.",
+      "downloading": "Téléchargement de la vidéo {video}",
+      "noFile": "yt-dlp n'a produit aucun fichier audio.",
+      "downloaded": "Fichier prêt : {file} ({size} Kio).",
+      "fileGone": "Fichier téléchargé introuvable : la vidéo repart au téléchargement.",
+      "resolved": "Retenu : {artist} — {title} ({album}), source {source}, confiance {score} %.",
+      "filed": "Rangé dans {path}.",
+      "needsReview": "Confiance sous le seuil : à vérifier dans la file YouTube.",
+      "canceled": "Import annulé depuis les tâches."
+    },
+    "acoustid": {
+      "noFile": "Fichier audio introuvable.",
+      "noKey": "Pas de clé AcoustID : étape passée.",
+      "noFingerprint": "Empreinte impossible (fpcalc absent ou fichier illisible).",
+      "error": "AcoustID : {message}",
+      "none": "Aucune correspondance AcoustID (durée {duration} s).",
+      "found": {
+        "one": "{count} correspondance, meilleur score {score} %.",
+        "other": "{count} correspondances, meilleur score {score} %."
+      }
+    },
+    "rescan": {
+      "planned": {
+        "one": "{count} morceau à vérifier.",
+        "other": "{count} morceaux à vérifier."
+      },
+      "trackGone": "Morceau supprimé de la bibliothèque entre-temps.",
+      "noMatch": "Aucune fiche MusicBrainz reconnue.",
+      "best": "Meilleure fiche : {artist} — {title} ({album}), {score} %.",
+      "unchanged": "Les tags concordent : rien à changer.",
+      "change": "{field} : « {from} » → « {to} »",
+      "result": {
+        "proposed": "Proposition seulement (correction automatique désactivée).",
+        "locked": "Morceau modifié à la main : laissé tel quel.",
+        "low": "Confiance {score} % sous le seuil de {threshold} % : laissé tel quel.",
+        "applied": "Corrigé (confiance {score} %)."
+      }
+    },
+    "fields": {
+      "title": "Titre",
+      "artist": "Artiste",
+      "album": "Album",
+      "albumArtist": "Artiste de l'album",
+      "trackNumber": "N° de piste",
+      "discNumber": "N° de disque",
+      "year": "Année",
+      "genre": "Genre"
+    }
+  },
+  "about": {
+    "tagline": "Serveur de musique personnel : votre bibliothèque, YouTube et vos appareils.",
+    "version": "Version",
+    "server": "Serveur",
+    "build": "Interface web",
+    "runtime": "Environnement",
+    "client": "Client",
+    "source": "Code source",
+    "repository": "Voir le dépôt",
+    "issues": "Signaler un problème",
+    "releases": "Versions publiées",
+    "noRepository": "Le dépôt public n'est pas encore en ligne.",
+    "components": "Composants",
+    "transcoding": "Transcodage (FFmpeg)",
+    "available": "disponible",
+    "unavailable": "indisponible",
+    "credits": "Remerciements",
+    "credit": {
+      "metadata": "identification des morceaux et métadonnées",
+      "youtube": "import depuis YouTube",
+      "search": "recherche tolérante aux fautes",
+      "audio": "lecture des tags et transcodage",
+      "icons": "icônes (Apache 2.0)"
+    }
+  }
+}

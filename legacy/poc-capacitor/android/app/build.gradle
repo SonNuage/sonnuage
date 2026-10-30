@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "com.localify.player"
+    namespace "com.sonnuage.player"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.localify.player"
+        applicationId "com.sonnuage.player"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

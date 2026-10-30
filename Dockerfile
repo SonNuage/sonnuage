@@ -3,14 +3,14 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY global.json Directory.Build.props Directory.Packages.props ./
-COPY src/Localify.Contracts/*.csproj src/Localify.Contracts/
-COPY src/Localify.UI/*.csproj src/Localify.UI/
-COPY src/Localify.Web/*.csproj src/Localify.Web/
-COPY src/Localify.Server/*.csproj src/Localify.Server/
-RUN dotnet restore src/Localify.Server/Localify.Server.csproj
+COPY src/SonNuage.Contracts/*.csproj src/SonNuage.Contracts/
+COPY src/SonNuage.UI/*.csproj src/SonNuage.UI/
+COPY src/SonNuage.Web/*.csproj src/SonNuage.Web/
+COPY src/SonNuage.Server/*.csproj src/SonNuage.Server/
+RUN dotnet restore src/SonNuage.Server/SonNuage.Server.csproj
 COPY src/ src/
 ARG VERSION=
-RUN dotnet publish src/Localify.Server/Localify.Server.csproj -c Release -o /app --no-restore \
+RUN dotnet publish src/SonNuage.Server/SonNuage.Server.csproj -c Release -o /app --no-restore \
     ${VERSION:+-p:Version=$VERSION} -p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
@@ -43,9 +43,9 @@ USER $APP_UID
 ENV ASPNETCORE_URLS=http://+:8080 \
     ASPNETCORE_ENVIRONMENT=Production \
     DOTNET_gcServer=0 \
-    Localify__YtDlpPath=/opt/tools/yt-dlp \
-    Localify__DenoPath=/opt/tools/deno
+    SonNuage__YtDlpPath=/opt/tools/yt-dlp \
+    SonNuage__DenoPath=/opt/tools/deno
 EXPOSE 8080
 VOLUME ["/config", "/uploads"]
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s CMD curl -fsS http://localhost:8080/healthz || exit 1
-ENTRYPOINT ["dotnet", "Localify.Server.dll"]
+ENTRYPOINT ["dotnet", "SonNuage.Server.dll"]

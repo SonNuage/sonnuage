@@ -1,0 +1,73 @@
+@page "/album/{Id:guid}"
+@inject ApiClient Api
+@inject IPlayer Player
+@inject AuthSession Auth
+
+<PageTitle>@(_album?.Album.Title ?? L["common.album"]) · SonNuage</PageTitle>
+
+<Loader Loading="_album is null && _error is null" Error="@_error" OnRetry="LoadAsync">
+    @if (_album is { } a)
+    {
+        <div class="page">
+            <header class="hero">
+                <Cover AlbumId="a.Album.Id" HasCover="a.Album.HasCover" Size="600" Class="hero-cover" Seed="@a.Album.Title" />
+                <div class="hero-meta">
+                    <span class="eyebrow">@L["common.album"]</span>
+                    <h1>@a.Album.Title</h1>
+                    <p>
+                        <a href="artist/@a.Album.ArtistId" class="strong">@a.Album.ArtistName</a>
+                        @if (a.Album.Year is { } year) { <span class="sep">·</span>@year }
+                        <span class="sep">·</span>@L["common.tracks", ("count", a.Tracks.Count)], @Format.LongDuration(a.Album.DurationSeconds)
+                    </p>
+                </div>
+            </header>
+
+            <div class="actions">
+                <button class="play-btn large" title="@L["common.play"]" @onclick="() => Player.PlayAsync(a.Tracks, 0, shuffle: false)"><Icon Name="play" Size="32" /></button>
+                <button class="icon-btn" title="@L["player.shuffle"]" @onclick="() => Player.PlayAsync(a.Tracks, -1, shuffle: true)"><Icon Name="shuffle" Size="28" /></button>
+                <button class="icon-btn" title="@L["track.addToPlaylist"]" @onclick="() => _picker = true"><Icon Name="playlist-add" Size="28" /></button>
+                <button class="icon-btn" title="@L["common.addToQueue"]" @onclick="() => Player.EnqueueAsync(a.Tracks, playNext: false)"><Icon Name="queue" Size="28" /></button>
+                @if (Auth.IsAdmin)
+                {
+                    <a class="icon-btn" title="@L["common.edit"]" href="admin/library?album=@a.Album.Id"><Icon Name="edit" Size="24" /></a>
+                }
+            </div>
+
+            <TrackList Tracks="_tracks" ShowAlbum="false" ShowTrackNumbers="true" />
+        </div>
+        <PlaylistPicker @bind-Open="_picker" TrackIds="a.Tracks.Select(t => t.Id).ToList()" />
+    }
+</Loader>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private AlbumDetailDto? _album;
+    private List<TrackDto> _tracks = [];
+    private string? _error;
+    private bool _picker;
+    private Guid _loaded;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loaded == Id) return;
+        _loaded = Id;
+        _album = null;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _error = null;
+        try
+        {
+            _album = await Api.AlbumAsync(Id);
+            if (_album is null) _error = L["album.notFound"];
+            else _tracks = _album.Tracks.ToList();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            _error = L.Server(ex.Message);
+        }
+    }
+}

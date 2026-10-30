@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Localify</string>
-    <string name="title_activity_main">Localify</string>
-    <string name="package_name">com.localify.player</string>
-    <string name="custom_url_scheme">com.localify.player</string>
+    <string name="app_name">SonNuage</string>
+    <string name="title_activity_main">SonNuage</string>
+    <string name="package_name">com.sonnuage.player</string>
+    <string name="custom_url_scheme">com.sonnuage.player</string>
 </resources>

@@ -34,7 +34,7 @@ if (-not $ip) {
   exit 1
 }
 
-Set-Content -Path "$PSScriptRoot\.env" -Value "LOCALIFY_PUBLIC_IP=$ip" -Encoding ascii
+Set-Content -Path "$PSScriptRoot\.env" -Value "SONNUAGE_PUBLIC_IP=$ip" -Encoding ascii
 Write-Output "IP détectée : $ip (écrite dans .env)"
 
 docker compose up -d --build
@@ -43,4 +43,4 @@ if ($LASTEXITCODE -ne 0) { Write-Output 'Échec du lancement.'; exit 1 }
 Start-Sleep -Seconds 3
 Write-Output '---'
 Write-Output "Téléphone -> http://$ip`:3000"
-docker ps --filter name=localify --format '{{.Names}}  {{.Status}}  {{.Ports}}'
+docker ps --filter name=sonnuage --format '{{.Names}}  {{.Status}}  {{.Ports}}'

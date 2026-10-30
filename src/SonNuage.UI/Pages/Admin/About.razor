@@ -1,0 +1,87 @@
+@page "/admin/about"
+@inject ApiClient Api
+@inject IPlatformInfo Platform
+
+<PageTitle>@L["admin.nav.about"] · SonNuage</PageTitle>
+
+<div class="page narrow">
+    <AdminNav Title="@L["admin.nav.about"]">
+        <section class="panel about-hero">
+            <svg viewBox="0 0 64 64" width="56" height="56" aria-hidden="true"><rect width="64" height="64" rx="14" fill="var(--accent)" /><path d="M24 44V20l22 12z" fill="#121212" /></svg>
+            <div>
+                <h2>SonNuage</h2>
+                <p class="muted">@L["about.tagline"]</p>
+            </div>
+        </section>
+
+        <section class="panel">
+            <h2>@L["about.version"]</h2>
+            <dl class="facts">
+                <dt>@L["about.server"]</dt><dd>@(_info?.Version ?? "…")</dd>
+                <dt>@L["about.build"]</dt><dd><code>@(_info?.Build ?? "—")</code></dd>
+                <dt>@L["about.runtime"]</dt><dd>@(_info?.Runtime ?? "—")</dd>
+                <dt>@L["about.client"]</dt><dd>@Platform.Name</dd>
+            </dl>
+        </section>
+
+        <section class="panel">
+            <h2>@L["about.source"]</h2>
+            @if (RepositoryUrl is { } repo)
+            {
+                <div class="row">
+                    <a class="btn" href="@repo" target="_blank" rel="noopener">@L["about.repository"]</a>
+                    <a class="btn" href="@($"{repo}/issues")" target="_blank" rel="noopener">@L["about.issues"]</a>
+                    <a class="btn" href="@($"{repo}/releases")" target="_blank" rel="noopener">@L["about.releases"]</a>
+                </div>
+            }
+            else
+            {
+                <p class="muted">@L["about.noRepository"]</p>
+            }
+        </section>
+
+        <section class="panel">
+            <h2>@L["about.components"]</h2>
+            <dl class="facts">
+                <dt>yt-dlp</dt><dd>@(_tools?.YtDlp ?? L["yt.tools.missing"])</dd>
+                <dt>Deno</dt><dd>@(_tools?.Deno ?? L["yt.tools.missing"])</dd>
+                <dt>fpcalc (AcoustID)</dt><dd>@(_tools?.Fpcalc ?? L["yt.tools.missing"])</dd>
+                <dt>@L["about.transcoding"]</dt><dd>@(_info is null ? "…" : _info.TranscodingAvailable ? L["about.available"] : L["about.unavailable"])</dd>
+            </dl>
+        </section>
+
+        <section class="panel">
+            <h2>@L["about.credits"]</h2>
+            <ul class="credits">
+                <li><a href="https://musicbrainz.org" target="_blank" rel="noopener">MusicBrainz</a> · <a href="https://acoustid.org" target="_blank" rel="noopener">AcoustID</a> — @L["about.credit.metadata"]</li>
+                <li><a href="https://github.com/yt-dlp/yt-dlp" target="_blank" rel="noopener">yt-dlp</a> · <a href="https://deno.com" target="_blank" rel="noopener">Deno</a> — @L["about.credit.youtube"]</li>
+                <li><a href="https://www.elastic.co/elasticsearch" target="_blank" rel="noopener">Elasticsearch</a> — @L["about.credit.search"]</li>
+                <li><a href="https://github.com/mono/taglib-sharp" target="_blank" rel="noopener">TagLib#</a> · <a href="https://ffmpeg.org" target="_blank" rel="noopener">FFmpeg</a> — @L["about.credit.audio"]</li>
+                <li><a href="https://fonts.google.com/icons" target="_blank" rel="noopener">Material Icons</a> — @L["about.credit.icons"]</li>
+            </ul>
+        </section>
+    </AdminNav>
+</div>
+
+@code {
+    /// <summary>Dépôt public du projet ; à renseigner quand il sera en ligne (la section « Code source » apparaît alors).</summary>
+    private const string? RepositoryUrl = null;
+
+    private ServerInfoDto? _info;
+    private ToolsStatusDto? _tools;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var info = Api.InfoAsync();
+            var status = Api.YoutubeStatusAsync();
+            _info = await info;
+            _tools = (await status)?.Tools;
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            // Page d'information : ce qui manque s'affiche « — ».
+        }
+    }
+}

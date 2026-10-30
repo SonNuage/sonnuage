@@ -1,4 +1,4 @@
-# Runner GitLab pour Localify
+# Runner GitLab pour SonNuage
 
 Le pipeline ([.gitlab-ci.yml](../.gitlab-ci.yml)) a besoin d'un runner **Docker** en mode **privileged**
 (les jobs `server-image` et `android-sdk-image` construisent des images avec docker-in-docker).
@@ -6,7 +6,7 @@ Sans runner rattaché au projet, les jobs restent « stuck ».
 
 ## 1. Créer le runner dans GitLab
 
-Projet `pmj.bailly/localify` → **Settings → CI/CD → Runners → New project runner** :
+Projet `pmj.bailly/sonnuage` → **Settings → CI/CD → Runners → New project runner** :
 
 - *Tags* : aucun, et cocher **Run untagged jobs** (les jobs du pipeline n'ont pas de tags) ;
 - *Description* : `homelab-docker` ;
@@ -53,7 +53,7 @@ relancer le pipeline bloqué (**Pipelines → Run pipeline** ou **Retry**).
 Au premier pipeline, l'image de build Android n'existe pas encore dans le registre : **Run pipeline** avec la
 variable `BUILD_ANDROID_SDK` = `1` la construit (une fois, ~15 min) avant le job `android-apk`.
 
-Sur homelab, le runner est dans `/home/selfhost/stacks/localify-runner` (conteneur `localify-gitlab-runner`).
+Sur homelab, le runner est dans `/home/selfhost/stacks/sonnuage-runner` (conteneur `sonnuage-gitlab-runner`).
 
 ## 3. Points d'attention
 
@@ -83,14 +83,14 @@ confiance (runner de projet ou de groupe plutôt que d'instance si d'autres pers
 ## 4. Signature de l'APK (facultatif)
 
 ```bash
-keytool -genkeypair -v -keystore localify.keystore -alias localify -keyalg RSA -keysize 4096 -validity 10000
+keytool -genkeypair -v -keystore sonnuage.keystore -alias sonnuage -keyalg RSA -keysize 4096 -validity 10000
 ```
 
 ```bash
-base64 -w0 localify.keystore
+base64 -w0 sonnuage.keystore
 ```
 
 Settings → CI/CD → Variables, toutes **Masked** et **Protected** :
 `ANDROID_KEYSTORE_BASE64` (sortie de la commande ci-dessus), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`
-(`localify`), `ANDROID_KEY_PASSWORD`. Garder le keystore en lieu sûr : sans lui, impossible de publier une mise à
+(`sonnuage`), `ANDROID_KEY_PASSWORD`. Garder le keystore en lieu sûr : sans lui, impossible de publier une mise à
 jour installable par-dessus l'APK existant.

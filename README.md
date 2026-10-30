@@ -1,25 +1,27 @@
-# Localify
+# SonNuage
 
 Serveur de musique auto-hébergé façon Spotify : bibliothèque scannée depuis vos dossiers, lecteur web,
 application Android (avec Android Auto), playlists, favoris, transcodage à la volée, administration.
 
+*SonNuage* : SoundCloud, traduit. Le projet s'appelait auparavant *Localify*.
+
 | Projet | Rôle |
 |---|---|
-| `src/Localify.Server` | API ASP.NET Core (.NET 10), scan, transcodage ffmpeg, auth JWT, héberge le client web |
-| `src/Localify.UI` | Pages Razor partagées web / Android (lecteur + admin) |
-| `src/Localify.Web` | Client Blazor WebAssembly |
-| `tests/Localify.Server.Tests` | Tests unitaires et d'intégration (xUnit v3) |
+| `src/SonNuage.Server` | API ASP.NET Core (.NET 10), scan, transcodage ffmpeg, auth JWT, héberge le client web |
+| `src/SonNuage.UI` | Pages Razor partagées web / Android (lecteur + admin) |
+| `src/SonNuage.Web` | Client Blazor WebAssembly |
+| `tests/SonNuage.Server.Tests` | Tests unitaires et d'intégration (xUnit v3) |
 | `legacy/` | Anciens POC Node.js / Capacitor, gardés pour référence |
 
 Les autres parties du projet ont leur propre dépôt :
 
 | Dépôt | Contenu |
 |---|---|
-| [localify](https://git.pmjb.org/pmj.bailly/localify) (celui-ci) | Serveur, client web, bibliothèques partagées `Localify.Contracts` et `Localify.UI` |
-| [localify-android](https://git.pmjb.org/pmj.bailly/localify-android) | Application Android (.NET MAUI Blazor Hybrid, Media3, Android Auto) |
-| [localify-extension](https://git.pmjb.org/pmj.bailly/localify-extension) | Extension de navigateur (import YouTube, envoi des cookies) |
+| [sonnuage](https://git.pmjb.org/pmj.bailly/sonnuage) (celui-ci) | Serveur, client web, bibliothèques partagées `SonNuage.Contracts` et `SonNuage.UI` |
+| [sonnuage-android](https://git.pmjb.org/pmj.bailly/sonnuage-android) | Application Android (.NET MAUI Blazor Hybrid, Media3, Android Auto) |
+| [sonnuage-extension](https://git.pmjb.org/pmj.bailly/sonnuage-extension) | Extension de navigateur (import YouTube, envoi des cookies) |
 
-`Localify.Contracts` et `Localify.UI` sont publiés en paquets NuGet dans le registre de ce dépôt à chaque build de
+`SonNuage.Contracts` et `SonNuage.UI` sont publiés en paquets NuGet dans le registre de ce dépôt à chaque build de
 `main` (version `0.1.0-ci.N`) et à chaque tag `vX.Y.Z` ; l'application Android les utilise.
 
 Le plan de refonte et les choix d'architecture sont dans [docs/PLAN.md](docs/PLAN.md).
@@ -42,14 +44,14 @@ Le plan de refonte et les choix d'architecture sont dans [docs/PLAN.md](docs/PLA
 
 ## Traductions
 
-Les textes de l'interface et les messages du serveur sont dans `src/Localify.Contracts/Localization/{code}.json`
+Les textes de l'interface et les messages du serveur sont dans `src/SonNuage.Contracts/Localization/{code}.json`
 (un fichier par langue, embarqué dans l'assembly et découvert automatiquement). **Ajouter une langue** :
 
 1. copier `en.json` en `de.json` (code ISO 639-1) et traduire les valeurs, sans toucher aux clés ;
 2. remplir `_meta` : `name` (nom affiché dans le sélecteur, dans la langue elle-même), séparateurs décimal et
    de milliers, noms des mois et des jours ;
 3. si les pluriels de la langue ne suivent pas la règle anglaise (`one` pour 1, sinon `other`), ajouter sa règle
-   dans `PluralRules` ([Translations.cs](src/Localify.Contracts/Localization/Translations.cs)) ;
+   dans `PluralRules` ([Translations.cs](src/SonNuage.Contracts/Localization/Translations.cs)) ;
 4. `dotnet test` : un test vérifie que chaque langue a exactement les clés et les variables (`{count}`, `{name}`…) de l'anglais.
 
 Une clé absente retombe sur l'anglais. Format des valeurs : variables nommées `{name}`, pluriels en objet
@@ -85,7 +87,7 @@ L'image Docker embarque yt-dlp, Deno et fpcalc. Ne téléchargez que ce que vous
 
 ### Extension de navigateur
 
-L'extension (Chrome, Edge, Firefox) a son propre dépôt : [localify-extension](https://git.pmjb.org/pmj.bailly/localify-extension).
+L'extension (Chrome, Edge, Firefox) a son propre dépôt : [sonnuage-extension](https://git.pmjb.org/pmj.bailly/sonnuage-extension).
 Elle s'authentifie avec une clé créée dans *Administration → Clés d'API* ; cette clé ne permet que d'ajouter des
 vidéos à la file, de lire une adresse YouTube, de s'abonner, d'envoyer des cookies YouTube et de lire l'état d'une
 vidéo.
@@ -106,8 +108,8 @@ terminées), leurs étapes et le journal de chaque étape en direct ; on y annul
   sur un morceau modifié à la main) ou simples propositions dans le journal.
 - La file vit dans la base : les tâches interrompues par un arrêt reprennent au redémarrage, et plusieurs
   instances partageant la base peuvent consommer la file sans dépasser les plafonds
-  (`Localify__Jobs__Worker`, `Localify__Jobs__WorkerName`). Suites terminées gardées 14 jours
-  (`Localify__Jobs__RetentionDays`).
+  (`SonNuage__Jobs__Worker`, `SonNuage__Jobs__WorkerName`). Suites terminées gardées 14 jours
+  (`SonNuage__Jobs__RetentionDays`).
 
 Ce qui vient ensuite : [docs/ROADMAP.md](docs/ROADMAP.md).
 
@@ -121,24 +123,24 @@ Avec **Elasticsearch** (8.x ou 9.x), elle devient instantanée et tolérante :
 - suggestions pendant la saisie, y compris au milieu d'un nom (`gilm` → David Gilmour) ;
 - `AC/DC`, `T.N.T.` trouvés en tapant `acdc`, `tnt` ;
 - titres les plus écoutés favorisés ;
-- recherche sémantique vectorielle en option (`Localify__Search__SemanticInferenceId` : identifiant d'un endpoint
+- recherche sémantique vectorielle en option (`SonNuage__Search__SemanticInferenceId` : identifiant d'un endpoint
   d'inférence Elasticsearch, par exemple un modèle E5 multilingue ; selon la licence de votre cluster).
 
 L'index est reconstruit automatiquement après chaque scan, chaque modification depuis l'admin, au retour
 d'Elasticsearch après une panne et toutes les 30 minutes.
 
-**Résilience** : une requête qui n'aboutit pas en 2 s (`Localify__Search__TimeoutMilliseconds`) est servie
+**Résilience** : une requête qui n'aboutit pas en 2 s (`SonNuage__Search__TimeoutMilliseconds`) est servie
 par la recherche en base ; la requête Elasticsearch continue en arrière-plan avec nouvelles tentatives et
 son résultat sert la frappe suivante. Après des échecs répétés, Elasticsearch est mis de côté (réponse en
 base immédiate) et sondé en arrière-plan jusqu'à son retour. L'état est visible dans l'admin.
 
 | Variable | Rôle |
 |---|---|
-| `Localify__Search__Url` | URL d'Elasticsearch ; vide = recherche en base |
-| `Localify__Search__ApiKey` ou `__Username` / `__Password` | Authentification |
-| `Localify__Search__CertificateFingerprint` | Empreinte SHA-256 du certificat auto-signé d'Elasticsearch |
-| `Localify__Search__Index` | Préfixe des index (`localify`) |
-| `Localify__Search__TimeoutMilliseconds` | Délai avant repli sur la base (`2000`) |
+| `SonNuage__Search__Url` | URL d'Elasticsearch ; vide = recherche en base |
+| `SonNuage__Search__ApiKey` ou `__Username` / `__Password` | Authentification |
+| `SonNuage__Search__CertificateFingerprint` | Empreinte SHA-256 du certificat auto-signé d'Elasticsearch |
+| `SonNuage__Search__Index` | Préfixe des index (`sonnuage`) |
+| `SonNuage__Search__TimeoutMilliseconds` | Délai avant repli sur la base (`2000`) |
 
 En local : `docker run -d -p 127.0.0.1:9200:9200 -e discovery.type=single-node -e xpack.security.enabled=false docker.elastic.co/elasticsearch/elasticsearch:9.2.0`
 (la configuration de dev pointe déjà sur `http://localhost:9200`).
@@ -148,22 +150,22 @@ En local : `docker run -d -p 127.0.0.1:9200:9200 -e discovery.type=single-node -
 Prérequis : SDK .NET 10, ffmpeg (dans le `PATH` ou `bin/ffmpeg.exe`).
 
 ```bash
-dotnet run --project src/Localify.Server --launch-profile Localify.Server
+dotnet run --project src/SonNuage.Server --launch-profile SonNuage.Server
 ```
 
-Puis http://localhost:5080. La configuration de dev ([appsettings.Development.json](src/Localify.Server/appsettings.Development.json))
+Puis http://localhost:5080. La configuration de dev ([appsettings.Development.json](src/SonNuage.Server/appsettings.Development.json))
 lit la musique dans `data/`, écrit base et caches dans `var/` et crée le compte `admin` au premier démarrage.
 
-Tests (`LOCALIFY_TEST_FFMPEG` active les tests de transcodage, `LOCALIFY_TEST_ELASTICSEARCH` ceux de la recherche avancée) :
+Tests (`SONNUAGE_TEST_FFMPEG` active les tests de transcodage, `SONNUAGE_TEST_ELASTICSEARCH` ceux de la recherche avancée) :
 
 ```bash
-dotnet test --project tests/Localify.Server.Tests
+dotnet test --project tests/SonNuage.Server.Tests
 ```
 
 ### Application Android
 
-Elle a son propre dépôt : [localify-android](https://git.pmjb.org/pmj.bailly/localify-android). Elle compile contre les paquets
-`Localify.Contracts` et `Localify.UI` publiés par ce dépôt, ou directement contre ses sources si les deux dépôts
+Elle a son propre dépôt : [sonnuage-android](https://git.pmjb.org/pmj.bailly/sonnuage-android). Elle compile contre les paquets
+`SonNuage.Contracts` et `SonNuage.UI` publiés par ce dépôt, ou directement contre ses sources si les deux dépôts
 sont clonés côte à côte (voir son README).
 
 ## Déploiement derrière Cloudflare
@@ -171,7 +173,7 @@ sont clonés côte à côte (voir son README).
 Le serveur est prévu pour être joint uniquement par un **tunnel Cloudflare** (aucun port ouvert) :
 
 1. Cloudflare Zero Trust → Networks → Tunnels : créer un tunnel, router le nom d'hôte
-   (ex. `musique.example.org`) vers `http://localify:8080`, copier le jeton.
+   (ex. `musique.example.org`) vers `http://sonnuage:8080`, copier le jeton.
 2. Sur la machine hôte :
    ```bash
    cd deploy && cp .env.example .env   # renseigner image, dossier musique, mot de passe admin, jeton
@@ -186,26 +188,26 @@ Points spécifiques Cloudflare, déjà gérés :
 - le transcodage envoie ses premiers octets immédiatement (pas de timeout 524 sur les longs fichiers) ;
 - `/healthz` pour les sondes.
 
-`Localify__BehindProxy=true` (défaut) fait confiance aux en-têtes du proxy : ne pas exposer le port 8080
+`SonNuage__BehindProxy=true` (défaut) fait confiance aux en-têtes du proxy : ne pas exposer le port 8080
 directement sur Internet dans ce mode.
 
 ### Configuration (variables d'environnement)
 
 | Variable | Défaut | Rôle |
 |---|---|---|
-| `Localify__MusicPaths__0` | `/music` | Dossier(s) de musique (lecture seule) |
-| `Localify__UploadPath` | `/uploads` | Destination des envois de l'admin |
-| `Localify__DataPath` | `/config` | Base SQLite, clé de signature, caches |
-| `Localify__InitialAdminUser` / `__InitialAdminPassword` | `admin` / — | Compte créé si la base est vide |
-| `Localify__TranscodeCacheMaxMegabytes` | `10240` | Taille du cache de transcodage |
-| `Localify__MaxConcurrentTranscodes` | `4` | Encodages ffmpeg simultanés |
-| `Localify__ScanIntervalMinutes` | `360` | Rescan complet périodique (0 = jamais) |
-| `Localify__BehindProxy` | `true` | Faire confiance à `CF-Connecting-IP` / `X-Forwarded-*` |
+| `SonNuage__MusicPaths__0` | `/music` | Dossier(s) de musique (lecture seule) |
+| `SonNuage__UploadPath` | `/uploads` | Destination des envois de l'admin |
+| `SonNuage__DataPath` | `/config` | Base SQLite, clé de signature, caches |
+| `SonNuage__InitialAdminUser` / `__InitialAdminPassword` | `admin` / — | Compte créé si la base est vide |
+| `SonNuage__TranscodeCacheMaxMegabytes` | `10240` | Taille du cache de transcodage |
+| `SonNuage__MaxConcurrentTranscodes` | `4` | Encodages ffmpeg simultanés |
+| `SonNuage__ScanIntervalMinutes` | `360` | Rescan complet périodique (0 = jamais) |
+| `SonNuage__BehindProxy` | `true` | Faire confiance à `CF-Connecting-IP` / `X-Forwarded-*` |
 
 ## CI/CD GitLab
 
 [.gitlab-ci.yml](.gitlab-ci.yml) : tests serveur → image Docker poussée sur le registre du projet
-(`:sha`, `:latest` sur la branche par défaut, `:X.Y.Z` sur tag) et paquets NuGet `Localify.Contracts` /
-`Localify.UI` (branche par défaut et tags) → release GitLab sur les tags `vX.Y.Z`.
+(`:sha`, `:latest` sur la branche par défaut, `:X.Y.Z` sur tag) et paquets NuGet `SonNuage.Contracts` /
+`SonNuage.UI` (branche par défaut et tags) → release GitLab sur les tags `vX.Y.Z`.
 
 Le runner doit accepter docker-in-docker (`privileged = true`) : procédure complète dans [docs/CI-RUNNER.md](docs/CI-RUNNER.md).

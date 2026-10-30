@@ -1,6 +1,6 @@
 {
-  "appId": "com.localify.player",
-  "appName": "Localify",
+  "appId": "com.sonnuage.player",
+  "appName": "SonNuage",
   "webDir": "www",
   "android": {
     "allowMixedContent": true,

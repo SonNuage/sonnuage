@@ -1,0 +1,34 @@
+@page "/search"
+@inject NavigationManager Nav
+
+<PageTitle>@L["nav.search"] · SonNuage</PageTitle>
+
+<div class="page">
+    <div class="search-box">
+        <Icon Name="search" />
+        <input @ref="_input" class="input" type="search" placeholder="@L["search.placeholder"]" value="@_query" autofocus autocomplete="off"
+               @oninput="e => _query = e.Value?.ToString() ?? string.Empty" />
+    </div>
+
+    <SearchResults Query="@_query" OnSearched="UpdateAddress" OnCorrection="q => _query = q" />
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "q")] public string? Q { get; set; }
+
+    private string _query = "";
+    private ElementReference _input;
+
+    protected override void OnInitialized() => _query = Q ?? "";
+
+    // « autofocus » ne joue qu'au chargement de la page, pas après une navigation dans l'appli.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) await _input.FocusAsync();
+    }
+
+    private void UpdateAddress(string q)
+    {
+        if (q != (Q ?? "")) Nav.NavigateTo($"search?q={Uri.EscapeDataString(q)}", replace: true);
+    }
+}

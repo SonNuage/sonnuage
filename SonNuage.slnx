@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SonNuage.Contracts/SonNuage.Contracts.csproj" />
+    <Project Path="src/SonNuage.Server/SonNuage.Server.csproj" />
+    <Project Path="src/SonNuage.UI/SonNuage.UI.csproj" />
+    <Project Path="src/SonNuage.Web/SonNuage.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SonNuage.Server.Tests/SonNuage.Server.Tests.csproj" />
+  </Folder>
+</Solution>
