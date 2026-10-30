@@ -92,6 +92,9 @@ public sealed class YoutubeLibraryWriter(
             }];
         }
         file.Save();
+        file.Dispose();
+        // TagLib# laisse parfois le paquet de tags Ogg non terminé (taille multiple de 255) : tags illisibles ensuite.
+        if (Library.OggRepair.IsOgg(path)) Library.OggRepair.Repair(path);
     }
 
     /// <summary>Miniature de la vidéo recadrée au carré (les pochettes YouTube Music le sont déjà).</summary>

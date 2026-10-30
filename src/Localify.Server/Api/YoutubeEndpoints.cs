@@ -5,6 +5,7 @@ using Localify.Server.Auth;
 using Localify.Server.Data;
 using Localify.Server.Jobs;
 using Localify.Server.Library;
+using Localify.Server.Search;
 using Localify.Server.Youtube;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -160,7 +161,7 @@ public static class YoutubeEndpoints
             return Results.Ok(n);
         });
 
-        g.MapDelete("/items/{id:guid}", async (Guid id, bool? deleteTrack, LocalifyDbContext db, YoutubeLibraryWriter writer, IOptions<LocalifyOptions> options, CancellationToken ct) =>
+        g.MapDelete("/items/{id:guid}", async (Guid id, bool? deleteTrack, LocalifyDbContext db, YoutubeLibraryWriter writer, SearchIndexer search, IOptions<LocalifyOptions> options, CancellationToken ct) =>
         {
             var item = await db.YoutubeItems.Include(i => i.Track).FirstOrDefaultAsync(i => i.Id == id, ct);
             if (item is null) return Results.NotFound();
@@ -183,7 +184,11 @@ public static class YoutubeEndpoints
                 db.YoutubeItems.Remove(item);
             }
             await db.SaveChangesAsync(ct);
-            if (deleteTrack == true) await LibraryIndexer.PruneAsync(db, ct);
+            if (deleteTrack == true)
+            {
+                await LibraryIndexer.PruneAsync(db, ct);
+                search.RequestReindex();
+            }
             return Results.NoContent();
         });
 

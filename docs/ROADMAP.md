@@ -77,7 +77,10 @@ Constat sur le homelab : certains imports prenaient plus de 3 minutes, là où T
    pourrait alors sauter les morceaux déjà identifiés, et l'admin pourrait lier un album à sa fiche.
 4. 🔜 **Réécrire les tags des fichiers d'`uploads/`** quand un rescan les corrige. Les fichiers de `music/`
    restent en lecture seule ; seule la base change pour eux.
-5. 🔜 **Autres traitements en tâches** : scan complet de la bibliothèque, réindexation Elasticsearch,
+5. 🔜 **Rattacher les featurings à l'artiste principal** : un titre crédité « OrelSan feat. Damso » crée
+   aujourd'hui un artiste à part (masqué des listes car sans album). Le rattacher à « OrelSan » le ferait
+   apparaître dans sa page, et chaque invité pourrait avoir sa liste « Apparaît sur ».
+6. 🔜 **Autres traitements en tâches** : scan complet de la bibliothèque, réindexation Elasticsearch,
    synchronisation des abonnements, purge du cache de transcodage. Ils gagneraient le journal, l'annulation
    et l'historique.
 

@@ -38,7 +38,7 @@ public static class DashboardEndpoints
             }).ToList();
 
             return new DashboardDto(
-                await db.Artists.CountAsync(ct),
+                await db.Artists.CountAsync(a => a.Albums.Any(), ct),
                 await db.Albums.CountAsync(ct),
                 tracks.Count,
                 await db.Playlists.CountAsync(ct),

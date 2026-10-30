@@ -109,7 +109,7 @@ public sealed class SearchIndexer(
         var albums = await db.Albums.AsNoTracking()
             .Select(a => new { a.Id, a.Title, a.Year, a.ArtistId, Artist = a.Artist.Name })
             .ToListAsync(ct);
-        var artists = await db.Artists.AsNoTracking().Select(a => new { a.Id, a.Name }).ToListAsync(ct);
+        var artists = await db.Artists.AsNoTracking().Where(a => a.Albums.Any()).Select(a => new { a.Id, a.Name }).ToListAsync(ct);
 
         var albumPlays = tracks.GroupBy(t => t.AlbumId).ToDictionary(g => g.Key, g => g.Sum(t => plays.GetValueOrDefault(t.Id)));
         var artistPlays = albums.GroupBy(a => a.ArtistId).ToDictionary(g => g.Key, g => g.Sum(a => albumPlays.GetValueOrDefault(a.Id)));

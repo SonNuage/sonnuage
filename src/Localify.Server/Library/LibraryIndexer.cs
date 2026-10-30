@@ -78,11 +78,13 @@ public sealed class LibraryIndexer(LocalifyDbContext db)
     }
 
     /// <summary>Supprime albums et artistes devenus vides.</summary>
-    public static async Task PruneAsync(LocalifyDbContext db, CancellationToken ct)
+    /// <summary>Supprime les albums sans titre, puis les artistes sans album ni titre ; renvoie le nombre supprimé.</summary>
+    public static async Task<int> PruneAsync(LocalifyDbContext db, CancellationToken ct)
     {
-        await db.Albums.Where(a => !a.Tracks.Any()).ExecuteDeleteAsync(ct);
-        await db.Artists
+        var albums = await db.Albums.Where(a => !a.Tracks.Any()).ExecuteDeleteAsync(ct);
+        var artists = await db.Artists
             .Where(ar => !ar.Albums.Any() && !db.Tracks.Any(t => t.ArtistId == ar.Id))
             .ExecuteDeleteAsync(ct);
+        return albums + artists;
     }
 }

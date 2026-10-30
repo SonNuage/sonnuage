@@ -30,7 +30,7 @@ public static class AdminEndpoints
 
         g.MapGet("/stats", async (LocalifyDbContext db, ScanCoordinator scans, TranscodeService transcoder, SearchGateway search, CancellationToken ct) =>
             new LibraryStatsDto(
-                await db.Artists.CountAsync(ct),
+                await db.Artists.CountAsync(a => a.Albums.Any(), ct),
                 await db.Albums.CountAsync(ct),
                 await db.Tracks.CountAsync(ct),
                 await db.Tracks.SumAsync(t => t.FileSize, ct),

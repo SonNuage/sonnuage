@@ -42,7 +42,8 @@ public static class LibraryEndpoints
 
         g.MapGet("/artists", async (string? q, int? offset, int? limit, LocalifyDbContext db, CancellationToken ct) =>
         {
-            var query = db.Artists.AsQueryable();
+            // Seulement les artistes qui ont un album : un crédit de titre (« X feat. Y ») n'est pas un artiste de la bibliothèque.
+            var query = db.Artists.Where(a => a.Albums.Any());
             if (!string.IsNullOrWhiteSpace(q))
             {
                 var key = NameNormalizer.Key(q);

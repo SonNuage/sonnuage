@@ -39,7 +39,7 @@ public sealed class SearchService(LocalifyDbContext db, SearchGateway gateway, E
         var tokens = query.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(NameNormalizer.Key).Where(k => k.Length > 0).ToList();
         var whole = NameNormalizer.Key(query);
 
-        var artists = await db.Artists.Where(a => a.NormalizedName.Contains(whole))
+        var artists = await db.Artists.Where(a => a.Albums.Any() && a.NormalizedName.Contains(whole))
             .OrderBy(a => a.NormalizedName.Length).Take(limit).Select(a => a.Id).ToListAsync(ct);
         var albums = await db.Albums.Where(a => a.NormalizedTitle.Contains(whole) || a.Artist.NormalizedName.Contains(whole))
             .OrderBy(a => a.NormalizedTitle.Length).Take(limit).Select(a => a.Id).ToListAsync(ct);
@@ -51,7 +51,7 @@ public sealed class SearchService(LocalifyDbContext db, SearchGateway gateway, E
 
     private async Task<IReadOnlyList<string>> DatabaseSuggestAsync(string key, int limit, CancellationToken ct)
     {
-        var names = await db.Artists.Where(a => a.NormalizedName.StartsWith(key)).OrderBy(a => a.NormalizedName).Select(a => a.Name).Take(limit).ToListAsync(ct);
+        var names = await db.Artists.Where(a => a.Albums.Any() && a.NormalizedName.StartsWith(key)).OrderBy(a => a.NormalizedName).Select(a => a.Name).Take(limit).ToListAsync(ct);
         names.AddRange(await db.Albums.Where(a => a.NormalizedTitle.StartsWith(key)).OrderBy(a => a.NormalizedTitle).Select(a => a.Title).Take(limit).ToListAsync(ct));
         names.AddRange(await db.Tracks.Where(t => t.SearchKey.StartsWith(key)).OrderBy(t => t.Title).Select(t => t.Title).Take(limit).ToListAsync(ct));
         return names.Distinct(StringComparer.OrdinalIgnoreCase).Take(limit).ToList();

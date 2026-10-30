@@ -27,6 +27,32 @@ public sealed class ScanCoordinator(
 
     public void RequestFullScan() => _fullScanRequests.Writer.TryWrite(true);
 
+    private static readonly TimeSpan PurgeInterval = TimeSpan.FromHours(1);
+
+    /// <summary>
+    /// Filet de sécurité, chaque heure (en plus des purges faites après chaque scan ou suppression) : albums restés
+    /// sans aucun titre et artistes sans album ni titre disparaissent, l'index de recherche suit.
+    /// </summary>
+    public async Task<int> PurgeEmptyAsync(CancellationToken ct)
+    {
+        await _lock.WaitAsync(ct);
+        try
+        {
+            using var scope = scopes.CreateScope();
+            var removed = await LibraryIndexer.PruneAsync(scope.ServiceProvider.GetRequiredService<Data.LocalifyDbContext>(), ct);
+            if (removed > 0)
+            {
+                logger.LogInformation("{Count} album(s) ou artiste(s) vide(s) supprimé(s)", removed);
+                LibraryChanged?.Invoke();
+            }
+            return removed;
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
     /// <summary>Indexe immédiatement des fichiers (upload) en attendant la fin d'un scan éventuel.</summary>
     public async Task<IReadOnlyList<Data.Track>> ScanFilesNowAsync(IReadOnlyList<string> files, CancellationToken ct)
     {
@@ -52,6 +78,7 @@ public sealed class ScanCoordinator(
 
         var interval = options.Value.ScanIntervalMinutes > 0 ? TimeSpan.FromMinutes(options.Value.ScanIntervalMinutes) : Timeout.InfiniteTimeSpan;
         var nextPeriodic = DateTime.UtcNow + interval;
+        var nextPurge = DateTime.UtcNow + PurgeInterval;
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -76,6 +103,11 @@ public sealed class ScanCoordinator(
             {
                 if (full) await RunFullScanAsync(stoppingToken);
                 else await FlushChangedFilesAsync(stoppingToken);
+                if (DateTime.UtcNow >= nextPurge)
+                {
+                    nextPurge = DateTime.UtcNow + PurgeInterval;
+                    await PurgeEmptyAsync(stoppingToken);
+                }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
