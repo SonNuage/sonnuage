@@ -182,6 +182,15 @@ public sealed class JobTests(JobsFactory factory) : IClassFixture<JobsFactory>
     }
 
     [Fact]
+    public void A_rescan_carries_its_own_threshold()
+    {
+        var withThreshold = AcoustIdRescanJob.Plan("t", null, true, 0.75, null);
+        Assert.Contains("\"threshold\":0.75", Assert.Single(withThreshold.Jobs).Payload);
+        var withDefault = AcoustIdRescanJob.Plan("t", null, true, null, null);
+        Assert.Contains("\"threshold\":null", Assert.Single(withDefault.Jobs).Payload);
+    }
+
+    [Fact]
     public async Task AcoustId_requests_are_sent_one_at_a_time_a_second_apart()
     {
         var handler = new RecordingHandler();

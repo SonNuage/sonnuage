@@ -3,13 +3,14 @@
 @implements IDisposable
 @inject ApiClient Api
 @inject UiState Ui
+@using System.Globalization
 
 <PageTitle>@L["admin.tabs.tasks"] · Localify</PageTitle>
 
 <div class="page">
     <AdminNav Title="@L["admin.nav.tasks"]">
         <Actions>
-            <button class="btn primary" @onclick="() => _newTask = true"><Icon Name="add" Size="18" /> @L["jobs.create.button"]</button>
+            <button class="btn primary" @onclick="OpenNewTaskAsync"><Icon Name="add" Size="18" /> @L["jobs.create.button"]</button>
         </Actions>
         <ChildContent>
         @if (_overview is { } ov)
@@ -193,6 +194,16 @@
             <input type="checkbox" @bind="_apply" />
             <span>@L["jobs.create.apply"]</span>
         </label>
+        @if (_apply)
+        {
+            <label class="field">
+                <span>@L["yt.settings.threshold", ("value", L["format.percent", ("value", L.Number(Math.Round(_threshold * 100)))])]</span>
+                <input class="slider" type="range" min="0.5" max="1" step="0.01" value="@_threshold.ToString(CultureInfo.InvariantCulture)"
+                       style="--pct: @(((_threshold - 0.5) * 200).ToString("0", CultureInfo.InvariantCulture))%"
+                       @oninput="e => _threshold = double.Parse(e.Value!.ToString()!, CultureInfo.InvariantCulture)" />
+                <small class="muted">@L["jobs.create.thresholdHint"]</small>
+            </label>
+        }
     </ChildContent>
     <Footer>
         <button class="btn" @onclick="() => _newTask = false">@L["common.cancel"]</button>
@@ -220,6 +231,7 @@
     private List<ArtistDto>? _artists;
     private ArtistDto? _artist;
     private bool _apply = true;
+    private double _threshold = 0.9;
     private bool _creating;
 
     private Timer? _timer;
@@ -331,12 +343,25 @@
 
     private bool _newTask;
 
+    // Le curseur part du seuil des réglages YouTube, réglable pour cette tâche seulement.
+    private async Task OpenNewTaskAsync()
+    {
+        _newTask = true;
+        try
+        {
+            if (await Api.YoutubeSettingsAsync() is { } s) _threshold = s.AutoAcceptThreshold;
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+        }
+    }
+
     private async Task CreateAsync()
     {
         _creating = true;
         await TryAsync(async () =>
         {
-            var suite = await Api.CreateJobAsync(new CreateJobRequest("acoustid-rescan", _byArtist ? _artist?.Id : null, _apply));
+            var suite = await Api.CreateJobAsync(new CreateJobRequest("acoustid-rescan", _byArtist ? _artist?.Id : null, _apply, _apply ? _threshold : null));
             Ui.Notify(L["jobs.create.started"]);
             _newTask = false;
             _filter = "active";

@@ -19,6 +19,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<PlaybackSettings>();
         services.AddSingleton<UiState>();
         services.AddSingleton<Localizer>();
+        services.AddSingleton<ThemeSettings>();
         return services;
     }
 }

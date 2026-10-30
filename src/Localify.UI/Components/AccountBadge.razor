@@ -3,6 +3,9 @@
 @inject AccountStore Accounts
 @inject IServerEndpoint Endpoint
 @inject NavigationManager Nav
+@inject ThemeSettings Theme
+@inject ApiClient Api
+@inject UiState Ui
 
 @* Pastille du compte connecté, en bas du menu : réglages du compte, administration, changement de compte, déconnexion. *@
 <div class="account-badge desktop-only">
@@ -27,6 +30,21 @@
                 }
                 <button role="menuitem" @onclick="AddAccount"><Icon Name="add" Size="18" /> @L["accounts.add"]</button>
             }
+            <hr />
+            <div class="muted">@L["nav.theme"]</div>
+            <div class="segmented theme-switch" role="group" aria-label="@L["nav.theme"]">
+                @foreach (var mode in ThemeSettings.Modes)
+                {
+                    <button class="@(Theme.Mode == mode ? "on" : null)" @onclick="() => Theme.SetAsync(mode)">@L["nav.themeMode." + mode]</button>
+                }
+            </div>
+            <div class="muted">@L["settings.language"]</div>
+            <select class="input lang" value="@L.Language" @onchange="e => SetLanguageAsync(e.Value?.ToString())">
+                @foreach (var lang in L.Available)
+                {
+                    <option value="@lang.Code">@lang.Name</option>
+                }
+            </select>
             <hr />
             <button role="menuitem" @onclick="LogoutAsync"><Icon Name="logout" Size="18" /> @L["settings.logout"]</button>
         </div>
@@ -59,6 +77,21 @@
     {
         _open = false;
         Accounts.BeginAdd();
+    }
+
+    private async Task SetLanguageAsync(string? code)
+    {
+        if (string.IsNullOrEmpty(code)) return;
+        try
+        {
+            // Sur le compte d'abord (suivie sur les autres appareils), puis ici : l'interface se redessine.
+            if (await Api.SetLanguageAsync(code) is { } user) await Auth.UpdateUserAsync(user);
+            await L.SetAsync(code);
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
     }
 
     private async Task LogoutAsync()

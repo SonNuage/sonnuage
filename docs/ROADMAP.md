@@ -37,6 +37,11 @@ Légende : ✅ fait · 🔜 prochain · 💡 idée à creuser · ⚠️ limite c
   imports, métadonnées) et Serveur (tâches, utilisateurs, clés d'API, réglages), avec « Retour à la musique » en
   tête. Fini les deux niveaux d'onglets. La vue d'ensemble commence par ce qui demande une action ; l'analyse
   de la bibliothèque et le cache rejoignent les Réglages ; création de tâche et d'utilisateur en fenêtre.
+- **Menu du compte** : thème clair, sombre ou celui du système (par appareil) et langue de l'interface.
+- **Mises à jour du client web** : l'onglet ouvert propose de recharger après un déploiement, sans couper la
+  musique ; les fichiers de l'interface portent leur version dans l'adresse (le cache de Cloudflare ne sert plus
+  l'ancienne interface).
+- **Rescan AcoustID** : seuil de correction automatique réglable pour chaque tâche.
 - **Bibliothèque** : purge horaire des albums vides, artistes sans album masqués, réparation automatique des
   fichiers Ogg/Opus dont les tags écrits par TagLib étaient illisibles.
 

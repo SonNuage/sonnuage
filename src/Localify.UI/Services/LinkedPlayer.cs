@@ -46,6 +46,9 @@ public sealed class LinkedPlayer : IPlayer, IRestorablePlayer, IConnectPlayer
         if (!IsRemote && _local is IRestorablePlayer restorable) await restorable.RestoreAsync();
     }
 
+    public Task PrepareReloadAsync() =>
+        !IsRemote && _local is IRestorablePlayer restorable ? restorable.PrepareReloadAsync() : Task.CompletedTask;
+
     private Task EnsureStartedAsync() => _started ??= StartAsync();
 
     private async Task StartAsync()

@@ -7,6 +7,7 @@
 @inject UiState Ui
 @inject NavigationManager Nav
 @inject IJSRuntime JS
+@inject ThemeSettings Theme
 
 @if (!_ready)
 {
@@ -88,6 +89,7 @@ else
         Ui.Changed += Refresh;
         await Auth.EnsureLoadedAsync();
         await L.InitAsync(Auth.User?.Language, JS);
+        await Theme.LoadAsync();
         _ready = true;
         await AfterLoginAsync();
     }

@@ -13,7 +13,8 @@ namespace Localify.Server.Jobs;
 /// <summary>
 /// Rescan AcoustID de la bibliothèque (toute, ou un artiste) : prépare, dans sa propre suite, une paire de tâches
 /// par morceau — empreinte AcoustID (file « acoustid ») puis comparaison avec MusicBrainz (<see cref="LibraryMatchJob"/>).
-/// Paramètres : <c>artistId</c> (facultatif), <c>apply</c> (appliquer les correspondances sûres).
+/// Paramètres : <c>artistId</c> (facultatif), <c>apply</c> (appliquer les correspondances sûres),
+/// <c>threshold</c> (seuil d'acceptation propre à la tâche, sinon celui des réglages).
 /// </summary>
 public sealed class AcoustIdRescanJob(YoutubeSettingsStore settings) : IJobHandler
 {
@@ -21,9 +22,9 @@ public sealed class AcoustIdRescanJob(YoutubeSettingsStore settings) : IJobHandl
 
     public JobKind Kind => JobKinds.LibraryAcoustIdScan;
 
-    public static JobPlan Plan(string title, Guid? artistId, bool apply, Guid? createdById) =>
+    public static JobPlan Plan(string title, Guid? artistId, bool apply, double? threshold, Guid? createdById) =>
         new JobPlan(JobSuiteKinds.AcoustIdRescan, title, createdById)
-            .Then(JobKinds.LibraryAcoustIdScan, Tx.Key("jobs.steps.plan"), new { artistId, apply });
+            .Then(JobKinds.LibraryAcoustIdScan, Tx.Key("jobs.steps.plan"), new { artistId, apply, threshold });
 
     public async Task RunAsync(JobContext ctx)
     {
@@ -32,6 +33,7 @@ public sealed class AcoustIdRescanJob(YoutubeSettingsStore settings) : IJobHandl
         var db = ctx.Services.GetRequiredService<LocalifyDbContext>();
         var artistId = ctx.Get<Guid?>("artistId");
         var apply = ctx.Get<bool>("apply");
+        var threshold = ctx.Get<double?>("threshold");
 
         var query = db.Tracks.AsNoTracking();
         if (artistId is { } a) query = query.Where(t => t.ArtistId == a || t.Album.ArtistId == a);
@@ -48,7 +50,7 @@ public sealed class AcoustIdRescanJob(YoutubeSettingsStore settings) : IJobHandl
             {
                 var title = $"{t.ArtistName} – {t.Title}";
                 plan.Add(JobKinds.AcoustIdIdentify, title, new { path = t.FilePath }, subjectId: t.Id);
-                plan.Then(JobKinds.LibraryMatch, title, new { trackId = t.Id, apply }, subjectId: t.Id);
+                plan.Then(JobKinds.LibraryMatch, title, new { trackId = t.Id, apply, threshold }, subjectId: t.Id);
             }
             await ctx.AppendAsync(db, plan);
             ctx.Report((double)Math.Min(tracks.Count, i + Chunk) / Math.Max(1, tracks.Count));
@@ -58,7 +60,8 @@ public sealed class AcoustIdRescanJob(YoutubeSettingsStore settings) : IJobHandl
 
 /// <summary>
 /// Compare un morceau de la bibliothèque aux enregistrements MusicBrainz reconnus par son empreinte.
-/// Prudence : titre et artiste sont corrigés si la correspondance dépasse le seuil d'acceptation (réglage YouTube) ;
+/// Prudence : titre et artiste sont corrigés si la correspondance dépasse le seuil d'acceptation (celui de la tâche,
+/// sinon le réglage YouTube) ;
 /// album, numéros et année seulement si l'édition trouvée est le même album ; le genre seulement s'il manque.
 /// Les morceaux modifiés à la main (verrouillés) ne sont jamais touchés. Sans « appliquer », tout est seulement journalisé.
 /// </summary>
@@ -105,7 +108,7 @@ public sealed class LibraryMatchJob(MetadataResolver resolver, YoutubeSettingsSt
         foreach (var (field, from, to, _) in changes)
             ctx.Info(Tx.Key("jobs.rescan.change", ("field", Tx.Key("jobs.fields." + field)), ("from", Tx.Literal(from ?? "∅")), ("to", Tx.Literal(to))));
 
-        var threshold = settings.Settings.AutoAcceptThreshold;
+        var threshold = ctx.Get<double?>("threshold") ?? settings.Settings.AutoAcceptThreshold;
         string result;
         if (!apply) result = "proposed";
         else if (track.MetadataLocked) result = "locked";

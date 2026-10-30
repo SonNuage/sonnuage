@@ -26,7 +26,19 @@ document.addEventListener('keydown', (e) => {
 });
 
 // Langue : celles du navigateur ou du téléphone, et l'attribut lang du document (lecteurs d'écran, césure).
+// Thème : appliqué dès le chargement pour ne pas afficher l'autre thème le temps du démarrage.
+const applyTheme = (mode) => {
+  if (mode === 'light' || mode === 'dark') document.documentElement.dataset.theme = mode;
+  else delete document.documentElement.dataset.theme;
+};
+try {
+  applyTheme(localStorage.getItem('localify.theme'));
+} catch {
+  // Stockage indisponible (navigation privée stricte) : thème du système.
+}
+
 window.localify = {
   languages: () => (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language]).join(','),
   setLanguage: (code) => { document.documentElement.lang = code; },
+  setTheme: applyTheme,
 };

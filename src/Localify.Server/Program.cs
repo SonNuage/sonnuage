@@ -151,10 +151,7 @@ app.MapExtensionEndpoints();
 app.MapDashboardEndpoints();
 
 app.MapFallback("/api/{**path}", () => Results.NotFound());
-app.MapFallbackToFile("index.html", new StaticFileOptions
-{
-    OnPrepareResponse = ctx => ctx.Context.Response.Headers.CacheControl = "no-cache",
-});
+app.MapFallback(WebApp.Index);
 
 app.Run();
 

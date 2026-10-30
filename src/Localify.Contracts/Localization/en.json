@@ -242,7 +242,13 @@
     "defaultPlaylistName": "My Playlist #{number}",
     "myAccount": "My account",
     "accountMenu": "Account menu",
-    "switchAccount": "Switch account"
+    "switchAccount": "Switch account",
+    "theme": "Theme",
+    "themeMode": {
+      "system": "System",
+      "light": "Light",
+      "dark": "Dark"
+    }
   },
   "app": {
     "notFound": "Page not found.",
@@ -804,10 +810,11 @@
       "artist": "One artist",
       "artistPlaceholder": "Artist name…",
       "otherArtist": "Change",
-      "apply": "Automatically fix confident matches (above the threshold set in YouTube; hand-edited tracks are left alone). Otherwise, suggestions are only logged.",
+      "apply": "Automatically fix confident matches (above the threshold chosen below; hand-edited tracks are left alone). Otherwise, suggestions are only logged.",
       "start": "Start",
       "started": "Task created.",
-      "button": "New task"
+      "button": "New task",
+      "thresholdHint": "For this task only. Below it, the fix is only suggested in the log."
     },
     "log": {
       "canceled": "Canceled.",

@@ -8,7 +8,7 @@
     <base href="/" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="_content/Localify.UI/app.css" />
+    <link rel="stylesheet" href="_content/Localify.UI/app.css?v=__BUILD__" />
 </head>
 <body>
     <div id="app">
@@ -17,7 +17,9 @@
     <div id="blazor-error-ui" hidden>
         Une erreur est survenue. <a href="" class="reload">Recharger</a>
     </div>
-    <script src="_content/Localify.UI/ui.js"></script>
-    <script src="_framework/blazor.webassembly.js"></script>
+    <!-- __BUILD__ : version du client, remplacée par le serveur (voir WebApp). -->
+    <script src="_content/Localify.UI/ui.js?v=__BUILD__"></script>
+    <script src="_framework/blazor.webassembly.js?v=__BUILD__" autostart="false"></script>
+    <script src="js/boot.js?v=__BUILD__"></script>
 </body>
 </html>

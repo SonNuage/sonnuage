@@ -242,7 +242,13 @@
     "defaultPlaylistName": "Ma playlist n° {number}",
     "myAccount": "Mon compte",
     "accountMenu": "Menu du compte",
-    "switchAccount": "Changer de compte"
+    "switchAccount": "Changer de compte",
+    "theme": "Thème",
+    "themeMode": {
+      "system": "Système",
+      "light": "Clair",
+      "dark": "Sombre"
+    }
   },
   "app": {
     "notFound": "Page introuvable.",
@@ -804,10 +810,11 @@
       "artist": "Un artiste",
       "artistPlaceholder": "Nom de l’artiste…",
       "otherArtist": "Changer",
-      "apply": "Corriger automatiquement les correspondances sûres (au-dessus du seuil réglé dans YouTube ; les morceaux modifiés à la main ne sont pas touchés). Sinon, propositions dans le journal seulement.",
+      "apply": "Corriger automatiquement les correspondances sûres (au-dessus du seuil choisi ci-dessous ; les morceaux modifiés à la main ne sont pas touchés). Sinon, propositions dans le journal seulement.",
       "start": "Lancer",
       "started": "Tâche créée.",
-      "button": "Nouvelle tâche"
+      "button": "Nouvelle tâche",
+      "thresholdHint": "Pour cette tâche seulement. En dessous, la correction est seulement proposée dans le journal."
     },
     "log": {
       "canceled": "Annulée.",

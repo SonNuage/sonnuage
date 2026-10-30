@@ -9,6 +9,7 @@ namespace Localify.Web.Services;
 public sealed class WebPlayer(IJSRuntime js, ApiClient api, PlaybackSettings settings, IKeyValueStore store) : IPlayer, IRestorablePlayer, IAdoptablePlayer, IAsyncDisposable
 {
     private const string QueueStorageKey = "localify.queue";
+    private const string ResumeStorageKey = "localify.resume";
     /// <summary>Une écoute compte dans l'historique au-delà de 30 s (ou à la fin d'une piste plus courte).</summary>
     private const double PlayThresholdSeconds = 30;
 
@@ -40,6 +41,8 @@ public sealed class WebPlayer(IJSRuntime js, ApiClient api, PlaybackSettings set
     /// <summary>Restaure la file de la session précédente, en pause.</summary>
     public async Task RestoreAsync()
     {
+        var resume = await store.GetAsync(ResumeStorageKey) == "1";
+        if (resume) await store.SetAsync(ResumeStorageKey, null);
         var raw = await store.GetAsync(QueueStorageKey);
         if (raw is null) return;
         try
@@ -52,7 +55,8 @@ public sealed class WebPlayer(IJSRuntime js, ApiClient api, PlaybackSettings set
             _queue.Load(tracks, index, false);
             _queue.Repeat = saved.Repeat;
             _position = saved.Position;
-            await LoadCurrentAsync(autoplay: false, startAt: saved.Position);
+            // Après un rechargement pour mise à jour, la musique reprend (si le navigateur autorise la lecture automatique).
+            await LoadCurrentAsync(autoplay: resume, startAt: saved.Position);
         }
         catch (Exception ex) when (ex is JsonException or ApiException or HttpRequestException)
         {
@@ -258,6 +262,12 @@ public sealed class WebPlayer(IJSRuntime js, ApiClient api, PlaybackSettings set
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
         }
+    }
+
+    public async Task PrepareReloadAsync()
+    {
+        await SaveAsync();
+        await store.SetAsync(ResumeStorageKey, _playing ? "1" : null);
     }
 
     private async Task SaveAsync()

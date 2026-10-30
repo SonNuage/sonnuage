@@ -13,26 +13,6 @@ public static class LibraryEndpoints
     private const int DefaultLimit = 50;
     private const int MaxLimit = 500;
 
-    private static string? _webBuild;
-
-    /// <summary>
-    /// Empreinte du client web : dotnet.js embarque la liste des assemblies avec leur empreinte, il change donc dès
-    /// qu'une ligne de l'interface change. Calculée une fois (les fichiers ne bougent pas pendant la vie du processus).
-    /// </summary>
-    private static string? WebBuild(IWebHostEnvironment env)
-    {
-        if (_webBuild is not null) return _webBuild.Length == 0 ? null : _webBuild;
-        var file = env.WebRootFileProvider.GetFileInfo("_framework/dotnet.js");
-        if (!file.Exists || file.PhysicalPath is null)
-        {
-            _webBuild = "";
-            return null;
-        }
-        using var stream = file.CreateReadStream();
-        _webBuild = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(stream))[..16].ToLowerInvariant();
-        return _webBuild;
-    }
-
     public static void MapLibraryEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapGet("/api/info", (TranscodeService transcoder, IWebHostEnvironment env) =>
@@ -44,7 +24,7 @@ public static class LibraryEndpoints
                     : new QualityDto(q.ToWire(), q.Label(), "original", null))
                 .ToList();
             var version = typeof(LibraryEndpoints).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
-            return new ServerInfoDto("Localify", version, qualities, transcoder.Available, WebBuild(env));
+            return new ServerInfoDto("Localify", version, qualities, transcoder.Available, WebApp.Build(env));
         }).AllowAnonymous();
 
         var g = app.MapGroup("/api").RequireAuthorization().WithTags("Library");

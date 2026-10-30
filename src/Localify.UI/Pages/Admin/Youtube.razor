@@ -136,13 +136,24 @@
     private string? _route;
     private string TabTitle => L[Routes.TryGetValue(_route ?? "", out var r) ? r.Title : "admin.nav.youtube"];
 
-    protected override async Task OnParametersSetAsync()
+    // Les quatre adresses partagent ce composant : Blazor le garde d'une adresse à l'autre sans lui redonner de
+    // paramètres, d'où l'écoute de la navigation en plus du premier affichage.
+    protected override Task OnParametersSetAsync() => FollowRouteAsync();
+
+    private async Task FollowRouteAsync()
     {
         var route = Nav.ToBaseRelativePath(Nav.Uri).Split('?', '#')[0].TrimEnd('/');
-        if (route == _route) return;
+        if (route == _route || !Routes.TryGetValue(route, out var r)) return;
         _route = route;
-        await SwitchAsync(Routes.TryGetValue(route, out var r) ? r.Tab : "explore");
+        await SwitchAsync(r.Tab);
     }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e) =>
+        InvokeAsync(async () =>
+        {
+            await FollowRouteAsync();
+            StateHasChanged();
+        });
     private static readonly (string? Status, bool Review, string Key)[] Filters =
         [(null, false, "all"), ("Queued", false, "queued"), (null, true, "review"), ("Failed", false, "failed"), ("Done", false, "done"), ("Skipped", false, "skipped")];
 
@@ -153,6 +164,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Nav.LocationChanged += OnLocationChanged;
         await RefreshStatusAsync();
         _timer = new Timer(_ => InvokeAsync(async () =>
         {
@@ -162,7 +174,11 @@
         }), null, TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(3));
     }
 
-    public void Dispose() => _timer?.Dispose();
+    public void Dispose()
+    {
+        _timer?.Dispose();
+        Nav.LocationChanged -= OnLocationChanged;
+    }
 
     private async Task RefreshStatusAsync()
     {

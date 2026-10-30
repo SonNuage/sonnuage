@@ -2,6 +2,7 @@
 @inject ApiClient Api
 @inject IPlatformInfo Platform
 @inject NavigationManager Nav
+@inject IPlayer Player
 
 @* Web : l'interface est chargée une fois et ne se recharge jamais d'elle-même. Après un déploiement, on le dit. *@
 @if (_outdated)
@@ -49,7 +50,11 @@
         }
     }
 
-    private void Reload() => Nav.NavigateTo(Nav.Uri, forceLoad: true);
+    private async Task Reload()
+    {
+        if (Player is IRestorablePlayer restorable) await restorable.PrepareReloadAsync();
+        Nav.NavigateTo(Nav.Uri, forceLoad: true);
+    }
 
     public void Dispose() => _timer?.Dispose();
 }

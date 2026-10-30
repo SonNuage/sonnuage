@@ -81,4 +81,6 @@ public interface IPlatformInfo
 public interface IRestorablePlayer
 {
     Task RestoreAsync();
+    /// <summary>Avant un rechargement de la page : file et position enregistrées, lecture reprise après.</summary>
+    Task PrepareReloadAsync() => Task.CompletedTask;
 }
