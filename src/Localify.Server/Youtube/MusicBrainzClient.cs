@@ -19,6 +19,12 @@ public sealed record MbRelease(
     int? TrackNumber,
     int? DiscNumber);
 
+public sealed record AcoustIdMatch(string RecordingId, double Score);
+
+public sealed record AudioFingerprint(double DurationSeconds, string Fingerprint);
+
+public sealed class AcoustIdException(string message) : Exception(message);
+
 public sealed record MbRecording(
     string Id,
     string Title,
@@ -38,6 +44,11 @@ public sealed class MusicBrainzClient(IHttpClientFactory httpFactory, YoutubeToo
     public const string HttpClientName = "musicbrainz";
     private static readonly SemaphoreSlim Gate = new(1, 1);
     private static DateTime _lastCall = DateTime.MinValue;
+    private static readonly SemaphoreSlim AcoustIdGate = new(1, 1);
+    private static DateTime _lastAcoustId = DateTime.MinValue;
+    internal static string AcoustIdUrl = "https://api.acoustid.org/v2/lookup";
+    /// <summary>Écart minimal entre deux requêtes AcoustID (une par seconde, leur limite étant de trois).</summary>
+    internal static TimeSpan AcoustIdSpacing = TimeSpan.FromSeconds(1);
 
     public static void ConfigureHttp(IHttpClientBuilder builder) => builder.ConfigureHttpClient((sp, http) =>
     {
@@ -116,38 +127,63 @@ public sealed class MusicBrainzClient(IHttpClientFactory httpFactory, YoutubeToo
     }
 
     /// <summary>Identifiants MusicBrainz reconnus par AcoustID d'après l'empreinte du fichier (clé d'API gratuite requise).</summary>
-    public async Task<IReadOnlyList<(string RecordingId, double Score)>> AcoustIdAsync(string audioPath, string apiKey, CancellationToken ct)
+    public async Task<IReadOnlyList<AcoustIdMatch>> AcoustIdAsync(string audioPath, string apiKey, CancellationToken ct) =>
+        await FingerprintAsync(audioPath, ct) is { } fp ? await AcoustIdLookupAsync(fp, apiKey, ct) : [];
+
+    /// <summary>Empreinte Chromaprint (fpcalc) : calcul local, sans limite de débit.</summary>
+    public async Task<AudioFingerprint?> FingerprintAsync(string audioPath, CancellationToken ct)
     {
-        if (tools.Fpcalc is not { } fpcalc) return [];
+        if (tools.Fpcalc is not { } fpcalc) return null;
         var start = new ProcessStartInfo(fpcalc) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
         start.ArgumentList.Add("-json");
         start.ArgumentList.Add(audioPath);
         using var process = Process.Start(start);
-        if (process is null) return [];
+        if (process is null) return null;
         var output = await process.StandardOutput.ReadToEndAsync(ct);
         await process.WaitForExitAsync(ct);
-        if (process.ExitCode != 0) return [];
+        if (process.ExitCode != 0) return null;
         var fp = JsonNode.Parse(output)!.AsObject();
+        return new AudioFingerprint(fp["duration"]!.GetValue<double>(), fp["fingerprint"]!.GetValue<string>());
+    }
 
+    /// <summary>
+    /// Recherche AcoustID. AcoustID tolère 3 requêtes par seconde ; Localify s'en tient à une à la fois, espacées
+    /// d'au moins <see cref="AcoustIdSpacing"/>, quel que soit l'appelant (import, tâche de rescan…).
+    /// </summary>
+    /// <exception cref="AcoustIdException">Réponse en erreur (clé refusée, limite dépassée…).</exception>
+    public async Task<IReadOnlyList<AcoustIdMatch>> AcoustIdLookupAsync(AudioFingerprint fp, string apiKey, CancellationToken ct)
+    {
         var http = httpFactory.CreateClient(HttpClientName);
-        using var response = await http.PostAsync("https://api.acoustid.org/v2/lookup", new FormUrlEncodedContent(new Dictionary<string, string>
+        JsonObject? json;
+        HttpStatusCode status;
+        await AcoustIdGate.WaitAsync(ct);
+        try
         {
-            ["client"] = apiKey,
-            ["meta"] = "recordingids",
-            ["duration"] = ((int)fp["duration"]!.GetValue<double>()).ToString(),
-            ["fingerprint"] = fp["fingerprint"]!.GetValue<string>(),
-        }), ct);
-        var json = JsonNode.Parse(await response.Content.ReadAsStringAsync(ct))?.AsObject();
-        if (json?["status"]?.GetValue<string>() != "ok")
-        {
-            logger.LogWarning("AcoustID : {Error}", json?["error"]?["message"]?.GetValue<string>() ?? response.StatusCode.ToString());
-            return [];
+            var wait = _lastAcoustId + AcoustIdSpacing - DateTime.UtcNow;
+            if (wait > TimeSpan.Zero) await Task.Delay(wait, ct);
+            using var response = await http.PostAsync(AcoustIdUrl, new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["client"] = apiKey,
+                ["meta"] = "recordingids",
+                ["duration"] = ((int)fp.DurationSeconds).ToString(),
+                ["fingerprint"] = fp.Fingerprint,
+            }), ct);
+            status = response.StatusCode;
+            json = JsonNode.Parse(await response.Content.ReadAsStringAsync(ct))?.AsObject();
         }
+        finally
+        {
+            // Compté depuis la fin de la requête : même une réponse lente laisse une seconde d'écart.
+            _lastAcoustId = DateTime.UtcNow;
+            AcoustIdGate.Release();
+        }
+        if (json?["status"]?.GetValue<string>() != "ok")
+            throw new AcoustIdException(json?["error"]?["message"]?.GetValue<string>() ?? status.ToString());
         return (json["results"]?.AsArray() ?? []).OfType<JsonObject>()
             .SelectMany(r => (r["recordings"]?.AsArray() ?? []).OfType<JsonObject>()
-                .Select(rec => (rec["id"]!.GetValue<string>(), r["score"]!.GetValue<double>())))
-            .DistinctBy(x => x.Item1)
-            .OrderByDescending(x => x.Item2)
+                .Select(rec => new AcoustIdMatch(rec["id"]!.GetValue<string>(), r["score"]!.GetValue<double>())))
+            .DistinctBy(x => x.RecordingId)
+            .OrderByDescending(x => x.Score)
             .ToList();
     }
 

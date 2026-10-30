@@ -118,6 +118,20 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     public Task YoutubeDeleteSubscriptionAsync(Guid id) => SendAsync(HttpMethod.Delete, $"{Yt}/subscriptions/{id}");
     public Task YoutubeSyncSubscriptionAsync(Guid id) => SendAsync(HttpMethod.Post, $"{Yt}/subscriptions/{id}/sync");
 
+    // ---- Tâches ----
+
+    private const string Jobs = "api/admin/jobs";
+    public Task<JobsOverviewDto?> JobsAsync(string? status, string? q, int offset, int limit) =>
+        GetAsync<JobsOverviewDto>($"{Jobs}?offset={offset}&limit={limit}{(status is null ? "" : $"&status={status}")}{Q(q)}");
+    public Task<PagedResult<JobDto>?> JobSuiteAsync(Guid id, int offset, int limit) => GetAsync<PagedResult<JobDto>>($"{Jobs}/suites/{id}?offset={offset}&limit={limit}");
+    public Task<JobDetailDto?> JobAsync(Guid id) => GetAsync<JobDetailDto>($"{Jobs}/{id}");
+    public Task<List<JobLogDto>?> JobLogsAsync(Guid id, long after) => GetAsync<List<JobLogDto>>($"{Jobs}/{id}/logs?after={after}");
+    public Task<Guid> CreateJobAsync(CreateJobRequest req) => SendAsync<Guid>(HttpMethod.Post, Jobs, req);
+    public Task CancelJobAsync(Guid id) => SendAsync(HttpMethod.Post, $"{Jobs}/{id}/cancel");
+    public Task RetryJobAsync(Guid id) => SendAsync(HttpMethod.Post, $"{Jobs}/{id}/retry");
+    public Task CancelJobSuiteAsync(Guid id) => SendAsync(HttpMethod.Post, $"{Jobs}/suites/{id}/cancel");
+    public Task DeleteJobSuiteAsync(Guid id) => SendAsync(HttpMethod.Delete, $"{Jobs}/suites/{id}");
+
     // ---- URL média (jeton en query) ----
 
     public string? CoverUrl(Guid? albumId, int size)

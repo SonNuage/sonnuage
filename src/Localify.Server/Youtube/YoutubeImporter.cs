@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 using System.Threading.Channels;
 using Localify.Contracts;
 using Localify.Server.Data;
+using Localify.Server.Jobs;
 using Localify.Server.Library;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -11,9 +12,9 @@ using Microsoft.Extensions.Options;
 namespace Localify.Server.Youtube;
 
 /// <summary>
-/// File d'import YouTube en deux étapes : plusieurs téléchargements en parallèle (réglage ParallelDownloads :
-/// une vidéo bridée par YouTube ne bloque plus toute la file), puis, à mesure qu'ils arrivent, un traitement à la fois :
-/// conversion → métadonnées → tags et pochette → rangement → indexation immédiate.
+/// Import YouTube, sous forme de suites de tâches (voir <see cref="JobEngine"/>) : téléchargement et conversion
+/// (plusieurs en parallèle, réglage ParallelDownloads : une vidéo bridée ne bloque pas les autres) → empreinte
+/// AcoustID (une à la fois, tous imports et rescans confondus) → métadonnées, tags, pochette, rangement, indexation.
 /// Quand YouTube refuse (trop de requêtes, vérification anti-robot), la file se met en pause et reprend
 /// seule, avec une attente qui double à chaque refus (30 min → 12 h) ; l'admin peut la relancer.
 /// </summary>
@@ -33,7 +34,6 @@ public sealed class YoutubeImporter(
     internal static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
     private readonly Channel<bool> _wake = Channel.CreateBounded<bool>(new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropWrite });
-    private readonly Channel<bool> _processWake = Channel.CreateBounded<bool>(new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropWrite });
     private readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, YoutubeProgressDto> _active = new();
     private readonly Lock _holdLock = new();
     private TimeSpan _nextHold = FirstHold;
@@ -54,11 +54,16 @@ public sealed class YoutubeImporter(
     /// <summary>Formats proposés par YouTube, relevés lors du dernier échec « format indisponible ».</summary>
     public string FormatsPath(string videoId) => Path.Combine(options.Value.YoutubeDataPath, "formats", $"{videoId}.txt");
 
-    public void Resume()
+    /// <summary>Fin de la pause : les téléchargements mis en attente repartent tout de suite.</summary>
+    public async Task ResumeAsync(LocalifyDbContext db, JobEngine engine, CancellationToken ct)
     {
         HoldUntil = null;
         HoldReason = null;
         _nextHold = FirstHold;
+        var now = time.GetUtcNow();
+        await db.Jobs.Where(j => j.Kind == JobKinds.YoutubeDownload.Name && j.Status == JobStatus.Queued && j.NotBefore > now)
+            .ExecuteUpdateAsync(s => s.SetProperty(j => j.NotBefore, now), ct);
+        engine.Wake(JobLanes.Download);
         Wake();
     }
 
@@ -124,148 +129,126 @@ public sealed class YoutubeImporter(
         return null;
     }
 
+    /// <summary>
+    /// Chaque vidéo en file reçoit sa suite de tâches : téléchargement (+ conversion) → empreinte AcoustID →
+    /// métadonnées, tags et rangement. Les vidéos ajoutées, relancées depuis l'admin ou rendues à la file
+    /// (fichier disparu) sont prises en charge ici, sans que les appelants aient à connaître les tâches.
+    /// </summary>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await RecoverAsync(stoppingToken);
-        await Task.WhenAll(DownloadLoopAsync(stoppingToken), ProcessLoopAsync(stoppingToken));
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                await FeedAsync(stoppingToken);
+            }
+            catch (Exception ex) when (ex is System.Data.Common.DbException or InvalidOperationException && !stoppingToken.IsCancellationRequested)
+            {
+                logger.LogWarning(ex, "Import YouTube : création des tâches impossible");
+            }
+            await WaitAsync(_wake, TimeSpan.FromMinutes(1), stoppingToken);
+        }
     }
 
     private string WorkDir(string videoId) => Path.Combine(options.Value.YoutubeDataPath, "tmp", videoId);
 
     /// <summary>
-    /// Après un redémarrage : un téléchargement interrompu repart de zéro ; une vidéo déjà téléchargée passe
-    /// directement aux métadonnées (sans être téléchargée à nouveau) si son fichier est toujours là.
+    /// Imports laissés à mi-chemin sans tâche active (version précédente, suite supprimée) : ils repartent du début.
+    /// Les dossiers temporaires sans import actif sont supprimés.
     /// </summary>
     private async Task RecoverAsync(CancellationToken ct)
     {
         using var scope = scopes.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<LocalifyDbContext>();
-        await db.YoutubeItems.Where(i => i.Status == YoutubeItemStatus.Downloading)
+        var orphans = await db.YoutubeItems
+            .Where(i => (i.Status == YoutubeItemStatus.Downloading || i.Status == YoutubeItemStatus.Downloaded || i.Status == YoutubeItemStatus.Processing)
+                && !db.Jobs.Any(j => j.SubjectId == i.Id && (j.Status == JobStatus.Pending || j.Status == JobStatus.Queued || j.Status == JobStatus.Running)))
             .ExecuteUpdateAsync(s => s.SetProperty(i => i.Status, YoutubeItemStatus.Queued), ct);
-        await db.YoutubeItems.Where(i => i.Status == YoutubeItemStatus.Processing)
-            .ExecuteUpdateAsync(s => s.SetProperty(i => i.Status, YoutubeItemStatus.Downloaded), ct);
-        var downloaded = await db.YoutubeItems.Where(i => i.Status == YoutubeItemStatus.Downloaded).ToListAsync(ct);
-        var kept = new HashSet<string>();
-        foreach (var item in downloaded)
-        {
-            if (await YtDlp.ReadDownloadAsync(WorkDir(item.VideoId), item.VideoId, ct) is null) item.Status = YoutubeItemStatus.Queued;
-            else kept.Add(item.VideoId);
-        }
-        await db.SaveChangesAsync(ct);
+        if (orphans > 0) logger.LogInformation("{Count} import(s) YouTube interrompu(s) remis en file", orphans);
 
         var tmpRoot = Path.Combine(options.Value.YoutubeDataPath, "tmp");
         if (!Directory.Exists(tmpRoot)) return;
-        foreach (var dir in Directory.EnumerateDirectories(tmpRoot).Where(d => !kept.Contains(Path.GetFileName(d))))
-            Directory.Delete(dir, recursive: true);
+        var active = (await db.YoutubeItems.Where(i => i.Status == YoutubeItemStatus.Downloading || i.Status == YoutubeItemStatus.Downloaded || i.Status == YoutubeItemStatus.Processing)
+            .Select(i => i.VideoId).ToListAsync(ct)).ToHashSet();
+        foreach (var dir in Directory.EnumerateDirectories(tmpRoot).Where(d => !active.Contains(Path.GetFileName(d))))
+            DeleteQuietly(dir);
     }
 
-    /// <summary>Lance jusqu'à <see cref="YoutubeSettingsDto.ParallelDownloads"/> téléchargements à la fois, dans l'ordre de la file.</summary>
-    private async Task DownloadLoopAsync(CancellationToken ct)
+    private async Task FeedAsync(CancellationToken ct)
     {
-        var running = new Dictionary<Guid, Task>();
-        while (!ct.IsCancellationRequested)
+        using var scope = scopes.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<LocalifyDbContext>();
+        while (true)
         {
-            foreach (var id in running.Where(r => r.Value.IsCompleted).Select(r => r.Key).ToList()) running.Remove(id);
-
-            if (HoldUntil is { } until && until > time.GetUtcNow())
-            {
-                await WaitAsync(_wake, until - time.GetUtcNow(), running.Values, ct);
-                continue;
-            }
-            HoldUntil = null;
-
-            var slots = Math.Clamp(settings.Settings.ParallelDownloads, 1, YoutubeSettingsStore.MaxParallelDownloads) - running.Count;
-            if (slots > 0)
-            {
-                var busy = running.Keys.ToList();
-                List<Guid> next;
-                using (var scope = scopes.CreateScope())
-                {
-                    next = await scope.ServiceProvider.GetRequiredService<LocalifyDbContext>().YoutubeItems
-                        .Where(i => i.Status == YoutubeItemStatus.Queued && !busy.Contains(i.Id))
-                        .OrderBy(i => i.CreatedAt).Select(i => i.Id).Take(slots).ToListAsync(ct);
-                }
-                foreach (var id in next) running[id] = Task.Run(() => DownloadAsync(id, ct), CancellationToken.None);
-            }
-            // Réveil : nouvel import, fin d'un téléchargement (place libre) ou fin de la pause.
-            await WaitAsync(_wake, Timeout.InfiniteTimeSpan, running.Values, ct);
-        }
-        await Task.WhenAll(running.Values);
-    }
-
-    /// <summary>Métadonnées, tags et rangement des vidéos téléchargées, une à la fois (MusicBrainz : une requête par seconde).</summary>
-    private async Task ProcessLoopAsync(CancellationToken ct)
-    {
-        while (!ct.IsCancellationRequested)
-        {
-            Guid? next;
-            using (var scope = scopes.CreateScope())
-            {
-                next = await scope.ServiceProvider.GetRequiredService<LocalifyDbContext>().YoutubeItems
-                    .Where(i => i.Status == YoutubeItemStatus.Downloaded)
-                    .OrderBy(i => i.CreatedAt).Select(i => (Guid?)i.Id).FirstOrDefaultAsync(ct);
-            }
-            if (next is null)
-            {
-                await WaitAsync(_processWake, Timeout.InfiniteTimeSpan, [], ct);
-                continue;
-            }
-            try
-            {
-                await ProcessAsync(next.Value, ct);
-            }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested)
-            {
-                break;
-            }
+            var items = await db.YoutubeItems
+                .Where(i => i.Status == YoutubeItemStatus.Queued
+                    && !db.Jobs.Any(j => j.SubjectId == i.Id && (j.Status == JobStatus.Pending || j.Status == JobStatus.Queued || j.Status == JobStatus.Running)))
+                .OrderBy(i => i.CreatedAt).Take(200).Select(i => new { i.Id, i.Title }).ToListAsync(ct);
+            if (items.Count == 0) return;
+            await scope.ServiceProvider.GetRequiredService<JobEngine>().EnqueueAsync(db, items.Select(i => ImportPlan(i.Id, i.Title)).ToList(), ct);
         }
     }
 
-    private static async Task WaitAsync(Channel<bool> wake, TimeSpan delay, IEnumerable<Task> running, CancellationToken ct)
+    internal static JobPlan ImportPlan(Guid itemId, string title) =>
+        new JobPlan(JobSuiteKinds.YoutubeImport, title)
+            .Then(JobKinds.YoutubeDownload, Tx.Key("jobs.steps.download"), subjectId: itemId)
+            .Then(JobKinds.AcoustIdIdentify, Tx.Key("jobs.steps.acoustid"), subjectId: itemId, priority: JobKinds.YoutubeDownload.Priority)
+            .Then(JobKinds.YoutubeMetadata, Tx.Key("jobs.steps.metadata"), subjectId: itemId);
+
+    private static async Task WaitAsync(Channel<bool> wake, TimeSpan delay, CancellationToken ct)
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        if (delay != Timeout.InfiniteTimeSpan) cts.CancelAfter(delay < TimeSpan.Zero ? TimeSpan.Zero : delay);
-        var read = wake.Reader.ReadAsync(cts.Token).AsTask();
-        await Task.WhenAny(running.Append(read));
-        await cts.CancelAsync();
+        cts.CancelAfter(delay);
         try
         {
-            await read;
+            await wake.Reader.ReadAsync(cts.Token);
         }
         catch (OperationCanceledException)
         {
         }
     }
 
-    private async Task DownloadAsync(Guid id, CancellationToken ct)
+    /// <summary>Étape 1 : téléchargement et conversion au format choisi (plusieurs en parallèle, file « download »).</summary>
+    internal async Task DownloadAsync(JobContext ctx)
     {
-        using var scope = scopes.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<LocalifyDbContext>();
-        var item = await db.YoutubeItems.FirstOrDefaultAsync(i => i.Id == id && i.Status == YoutubeItemStatus.Queued, ct);
-        if (item is null) return;
+        var ct = ctx.CancellationToken;
+        var db = ctx.Services.GetRequiredService<LocalifyDbContext>();
+        var item = await db.YoutubeItems.FirstOrDefaultAsync(i => i.Id == ctx.SubjectId, ct);
+        if (item is null || item.Status is not (YoutubeItemStatus.Queued or YoutubeItemStatus.Downloading or YoutubeItemStatus.Failed))
+            throw new JobAbortedException(Tx.Key("jobs.yt.notQueued"));
+        if (HoldUntil is { } until && until > time.GetUtcNow()) throw new JobDeferredException(until, HoldReason ?? "");
+
+        var id = item.Id;
         var workDir = WorkDir(item.VideoId);
-        var keepFiles = false;
         item.Attempts++;
+        item.Error = null;
         await SetAsync(db, item, YoutubeItemStatus.Downloading, ct);
         _active[id] = new YoutubeProgressDto(id, item.Title, "download", 0);
-
         try
         {
             if (Directory.Exists(workDir)) Directory.Delete(workDir, recursive: true);
             _formatOverrides.TryRemove(id, out var format);
-            await ytDlp.DownloadAsync(item.VideoId, workDir, format, settings.Settings.RetryWithoutCookies,
-                p => { if (_active.TryGetValue(id, out var cur)) _active[id] = cur with { Percent = p }; }, ct);
+            ctx.Info(Tx.Key("jobs.yt.downloading", ("video", item.VideoId)) + (format is null ? "" : $" ({format})"));
+            await ytDlp.DownloadAsync(item.VideoId, workDir, format, settings.Settings.RetryWithoutCookies, p =>
+            {
+                if (_active.TryGetValue(id, out var cur)) _active[id] = cur with { Percent = p };
+                ctx.Report(p / 100);
+            }, ct);
             if (File.Exists(FormatsPath(item.VideoId))) File.Delete(FormatsPath(item.VideoId));
+            var download = await YtDlp.ReadDownloadAsync(workDir, item.VideoId, ct) ?? throw new IOException(Tx.Key("jobs.yt.noFile"));
+            var audio = await writer.PrepareAudioAsync(download.AudioPath, settings.Settings.AudioFormat, ct);
+            ctx.Info(Tx.Key("jobs.yt.downloaded", ("file", Path.GetFileName(audio)), ("size", new FileInfo(audio).Length / 1024)));
+            ctx.Set("audio", audio);
             await SetAsync(db, item, YoutubeItemStatus.Downloaded, ct);
-            keepFiles = true;
             _nextHold = FirstHold;
-            _processWake.Writer.TryWrite(true);
         }
         catch (YtDlpException ex) when (ex.Kind == YtDlpFailure.Throttled)
         {
             item.Attempts--;
             item.Error = ex.Message;
             await SetAsync(db, item, YoutubeItemStatus.Queued, CancellationToken.None);
+            DeleteQuietly(workDir);
             // Plusieurs téléchargements peuvent être refusés en même temps : une seule pause (et un seul doublement).
             lock (_holdLock)
             {
@@ -277,30 +260,35 @@ public sealed class YoutubeImporter(
                     _nextHold = TimeSpan.FromTicks(Math.Min(MaxHold.Ticks, _nextHold.Ticks * 2));
                 }
             }
+            throw new JobDeferredException(HoldUntil ?? time.GetUtcNow() + FirstHold, ex.Message);
         }
         catch (Exception ex) when (IsImportFailure(ex) && !ct.IsCancellationRequested)
         {
             await FailAsync(db, item, ex);
+            DeleteQuietly(workDir);
+            throw;
         }
         finally
         {
             _active.TryRemove(id, out _);
-            // Arrêt du serveur en plein téléchargement : le fichier partiel est jeté au redémarrage.
-            if (!keepFiles && !ct.IsCancellationRequested) DeleteQuietly(workDir);
         }
     }
 
-    private async Task ProcessAsync(Guid id, CancellationToken ct)
+    /// <summary>Étape 3 : métadonnées (MusicBrainz, avec l'empreinte de l'étape 2), tags, pochette, rangement, indexation.</summary>
+    internal async Task ProcessAsync(JobContext ctx)
     {
-        using var scope = scopes.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<LocalifyDbContext>();
-        var item = await db.YoutubeItems.FirstOrDefaultAsync(i => i.Id == id && i.Status == YoutubeItemStatus.Downloaded, ct);
-        if (item is null) return;
+        var ct = ctx.CancellationToken;
+        var db = ctx.Services.GetRequiredService<LocalifyDbContext>();
+        var item = await db.YoutubeItems.FirstOrDefaultAsync(i => i.Id == ctx.SubjectId, ct);
+        if (item is null || item.Status is not (YoutubeItemStatus.Downloaded or YoutubeItemStatus.Processing))
+            throw new JobAbortedException(Tx.Key("jobs.yt.notDownloaded"));
+        var id = item.Id;
         var workDir = WorkDir(item.VideoId);
         var download = await YtDlp.ReadDownloadAsync(workDir, item.VideoId, ct);
         if (download is null)
         {
-            // Fichier disparu entre-temps : retour dans la file de téléchargement.
+            // Fichier disparu entre-temps : la vidéo repart au téléchargement (nouvelle suite).
+            ctx.Warn(Tx.Key("jobs.yt.fileGone"));
             await SetAsync(db, item, YoutubeItemStatus.Queued, ct);
             Wake();
             return;
@@ -311,13 +299,16 @@ public sealed class YoutubeImporter(
         try
         {
             var current = settings.Settings;
-            var audio = await writer.PrepareAudioAsync(download.AudioPath, current.AudioFormat, ct);
-            var resolution = await resolver.ResolveAsync(download.Info, audio, item.AlbumHint, current.AcoustIdKey, ct);
+            var matches = ctx.Input["acoustid"]?.Deserialize<List<AcoustIdMatch>>(JobContext.Json) ?? [];
+            var resolution = await resolver.ResolveAsync(download.Info, item.AlbumHint, matches, ct);
+            ctx.Info(Tx.Key("jobs.yt.resolved", ("artist", resolution.Best.Artist), ("title", resolution.Best.Title),
+                ("album", resolution.Best.Album ?? "?"), ("source", resolution.Best.Source), ("score", Math.Round(resolution.Confidence * 100))));
 
             _active[id] = _active[id] with { Stage = "tagging" };
             var thumbnail = YtDlp.BestThumbnail(download.Info) ?? item.ThumbnailUrl;
-            var final = await writer.WriteAsync(audio, resolution.Best, item.VideoId, thumbnail, ct);
+            var final = await writer.WriteAsync(download.AudioPath, resolution.Best, item.VideoId, thumbnail, ct);
             var track = (await scans.ScanFilesNowAsync([final], ct)).FirstOrDefault();
+            ctx.Info(Tx.Key("jobs.yt.filed", ("path", Path.GetRelativePath(options.Value.UploadPath, final).Replace('\\', '/'))));
 
             item.Title = Truncate(YtDlp.Str(download.Info, "title"), 500) ?? item.Title;
             item.Channel = Truncate(YtDlp.Str(download.Info, "channel") ?? YtDlp.Str(download.Info, "uploader"), 200) ?? item.Channel;
@@ -327,23 +318,36 @@ public sealed class YoutubeImporter(
             item.MatchConfidence = resolution.Confidence;
             item.MatchSource = resolution.Best.Source;
             item.NeedsReview = resolution.Confidence < current.AutoAcceptThreshold;
+            if (item.NeedsReview) ctx.Warn(Tx.Key("jobs.yt.needsReview"));
             item.CandidatesJson = JsonSerializer.Serialize(resolution.Candidates, Json);
             item.Error = null;
             item.CompletedAt = time.GetUtcNow();
             await SetAsync(db, item, YoutubeItemStatus.Done, ct);
+            DeleteQuietly(workDir);
             logger.LogInformation("YouTube {VideoId} importé : {Artist} - {Title} ({Source}, {Confidence:P0})",
                 item.VideoId, resolution.Best.Artist, resolution.Best.Title, resolution.Best.Source, resolution.Confidence);
         }
         catch (Exception ex) when (IsImportFailure(ex) && !ct.IsCancellationRequested)
         {
             await FailAsync(db, item, ex);
+            DeleteQuietly(workDir);
+            throw;
         }
         finally
         {
             _active.TryRemove(id, out _);
-            // Arrêt du serveur pendant le traitement : les fichiers restent, l'import reprendra aux métadonnées.
-            if (!ct.IsCancellationRequested) DeleteQuietly(workDir);
         }
+    }
+
+    /// <summary>Suite annulée depuis l'admin : l'import passe en échec (relançable) au lieu de repartir seul.</summary>
+    internal async Task CanceledAsync(IServiceProvider services, Guid? itemId, CancellationToken ct)
+    {
+        var db = services.GetRequiredService<LocalifyDbContext>();
+        var item = await db.YoutubeItems.FirstOrDefaultAsync(i => i.Id == itemId, ct);
+        if (item is null || item.Status is YoutubeItemStatus.Done or YoutubeItemStatus.Failed or YoutubeItemStatus.Skipped) return;
+        item.Error = Tx.Key("jobs.yt.canceled");
+        await SetAsync(db, item, YoutubeItemStatus.Failed, ct);
+        DeleteQuietly(WorkDir(item.VideoId));
     }
 
     private static bool IsImportFailure(Exception ex) =>

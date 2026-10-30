@@ -23,7 +23,8 @@ public sealed record MetadataResolution(MetadataCandidateDto Best, IReadOnlyList
 /// </summary>
 public sealed class MetadataResolver(MusicBrainzClient musicBrainz, ILogger<MetadataResolver> logger)
 {
-    public async Task<MetadataResolution> ResolveAsync(JsonObject info, string audioPath, string? albumHint, string? acoustIdKey, CancellationToken ct)
+    /// <param name="acoustId">Correspondances AcoustID déjà obtenues (étape « empreinte » de l'import), vide sans clé.</param>
+    public async Task<MetadataResolution> ResolveAsync(JsonObject info, string? albumHint, IReadOnlyList<AcoustIdMatch> acoustId, CancellationToken ct)
     {
         var videoTitle = YtDlp.Str(info, "title") ?? "";
         var channel = YtDlp.Str(info, "channel") ?? YtDlp.Str(info, "uploader");
@@ -44,17 +45,7 @@ public sealed class MetadataResolver(MusicBrainzClient musicBrainz, ILogger<Meta
 
         try
         {
-            if (!string.IsNullOrWhiteSpace(acoustIdKey))
-            {
-                var matches = await musicBrainz.AcoustIdAsync(audioPath, acoustIdKey, ct);
-                var byId = matches.ToDictionary(m => m.RecordingId, m => m.Score);
-                foreach (var rec in await musicBrainz.RecordingsByIdAsync(matches.Select(m => m.RecordingId).ToList(), ct))
-                {
-                    var text = TextScore(rec, queryTitle, queryArtist, duration);
-                    var score = Math.Min(1, 0.55 * byId.GetValueOrDefault(rec.Id) + 0.25 * TitleParser.Similarity(rec.Title, queryTitle) + 0.2 * Math.Max(ArtistScore(rec.ArtistCredit, queryArtist), text));
-                    candidates.Add(ToCandidate(rec, queryAlbum, score, "acoustid"));
-                }
-            }
+            candidates.AddRange(await FromAcoustIdAsync(acoustId, queryTitle, queryArtist, queryAlbum, duration, ct));
 
             foreach (var rec in await musicBrainz.SearchRecordingsAsync(queryTitle, queryArtist, ct))
                 candidates.Add(ToCandidate(rec, queryAlbum, TextScore(rec, queryTitle, queryArtist, duration), "musicbrainz"));
@@ -87,6 +78,24 @@ public sealed class MetadataResolver(MusicBrainzClient musicBrainz, ILogger<Meta
             .Select(c => c with { Score = Math.Round(c.Score, 3) })
             .ToList();
         return new MetadataResolution(ranked[0], ranked);
+    }
+
+    /// <summary>
+    /// Fiches MusicBrainz des enregistrements reconnus par AcoustID, notées sur l'empreinte (55 %) puis sur l'accord
+    /// avec le titre et l'artiste attendus : une empreinte seule ne suffit pas à dépasser le seuil d'acceptation.
+    /// </summary>
+    public async Task<IReadOnlyList<MetadataCandidateDto>> FromAcoustIdAsync(IReadOnlyList<AcoustIdMatch> matches, string title, string? artist, string? album, double? duration, CancellationToken ct)
+    {
+        if (matches.Count == 0) return [];
+        var byId = matches.ToDictionary(m => m.RecordingId, m => m.Score);
+        var result = new List<MetadataCandidateDto>();
+        foreach (var rec in await musicBrainz.RecordingsByIdAsync(matches.Select(m => m.RecordingId).ToList(), ct))
+        {
+            var text = TextScore(rec, title, artist, duration);
+            var score = Math.Min(1, 0.55 * byId.GetValueOrDefault(rec.Id) + 0.25 * TitleParser.Similarity(rec.Title, title) + 0.2 * Math.Max(ArtistScore(rec.ArtistCredit, artist), text));
+            result.Add(ToCandidate(rec, album, score, "acoustid"));
+        }
+        return result.OrderByDescending(c => c.Score).ToList();
     }
 
     /// <summary>Champs « track », « artists », « album » que yt-dlp lit sur les vidéos YouTube Music et les fiches musique.</summary>

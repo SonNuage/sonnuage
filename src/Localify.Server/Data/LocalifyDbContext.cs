@@ -16,6 +16,9 @@ public sealed class LocalifyDbContext(DbContextOptions<LocalifyDbContext> option
     public DbSet<YoutubeItem> YoutubeItems => Set<YoutubeItem>();
     public DbSet<YoutubeSubscription> YoutubeSubscriptions => Set<YoutubeSubscription>();
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
+    public DbSet<JobSuite> JobSuites => Set<JobSuite>();
+    public DbSet<Job> Jobs => Set<Job>();
+    public DbSet<JobLog> JobLogs => Set<JobLog>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -104,6 +107,37 @@ public sealed class LocalifyDbContext(DbContextOptions<LocalifyDbContext> option
             e.Property(x => x.Name).HasMaxLength(100);
             e.Property(x => x.Kind).HasConversion<string>().HasMaxLength(32);
             e.HasOne(x => x.CreatedBy).WithMany().HasForeignKey(x => x.CreatedById).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<JobSuite>(e =>
+        {
+            e.HasIndex(x => x.CreatedAt);
+            e.Property(x => x.Kind).HasMaxLength(64);
+            e.Property(x => x.Title).HasMaxLength(300);
+        });
+
+        b.Entity<Job>(e =>
+        {
+            // Index de la requête de réservation (file, état, priorité, date d'éligibilité).
+            e.HasIndex(x => new { x.Lane, x.Status, x.Priority, x.NotBefore });
+            e.HasIndex(x => x.Status);
+            e.HasIndex(x => x.DependsOnId);
+            e.HasIndex(x => x.SubjectId);
+            e.Property(x => x.Kind).HasMaxLength(64);
+            e.Property(x => x.Lane).HasMaxLength(32);
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
+            e.Property(x => x.Title).HasMaxLength(300);
+            e.Property(x => x.Error).HasMaxLength(2000);
+            e.Property(x => x.WorkerId).HasMaxLength(100);
+            e.HasOne(x => x.Suite).WithMany(x => x.Jobs).HasForeignKey(x => x.SuiteId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<JobLog>(e =>
+        {
+            e.HasIndex(x => new { x.JobId, x.Id });
+            e.Property(x => x.Level).HasMaxLength(8);
+            e.Property(x => x.Message).HasMaxLength(4000);
+            e.HasOne<Job>().WithMany().HasForeignKey(x => x.JobId).OnDelete(DeleteBehavior.Cascade);
         });
 
         // SQLite ne sait pas trier/comparer des DateTimeOffset : stockage en ticks UTC.

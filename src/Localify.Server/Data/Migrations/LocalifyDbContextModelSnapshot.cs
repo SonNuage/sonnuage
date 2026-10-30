@@ -149,6 +149,158 @@ namespace Localify.Server.Data.Migrations
                     b.ToTable("Favorites");
                 });
 
+            modelBuilder.Entity("Localify.Server.Data.Job", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("CancelRequested")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid?>("DependsOnId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Error")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("FinishedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Lane")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("LeaseUntil")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MaxAttempts")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("NotBefore")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Output")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Payload")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double?>("Progress")
+                        .HasColumnType("REAL");
+
+                    b.Property<long?>("StartedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("SubjectId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("SuiteId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("WorkerId")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DependsOnId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("SubjectId");
+
+                    b.HasIndex("SuiteId");
+
+                    b.HasIndex("Lane", "Status", "Priority", "NotBefore");
+
+                    b.ToTable("Jobs");
+                });
+
+            modelBuilder.Entity("Localify.Server.Data.JobLog", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("At")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("JobId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Level")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JobId", "Id");
+
+                    b.ToTable("JobLogs");
+                });
+
+            modelBuilder.Entity("Localify.Server.Data.JobSuite", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.ToTable("JobSuites");
+                });
+
             modelBuilder.Entity("Localify.Server.Data.PlayEvent", b =>
                 {
                     b.Property<long>("Id")
@@ -564,6 +716,26 @@ namespace Localify.Server.Data.Migrations
                     b.Navigation("Track");
                 });
 
+            modelBuilder.Entity("Localify.Server.Data.Job", b =>
+                {
+                    b.HasOne("Localify.Server.Data.JobSuite", "Suite")
+                        .WithMany("Jobs")
+                        .HasForeignKey("SuiteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Suite");
+                });
+
+            modelBuilder.Entity("Localify.Server.Data.JobLog", b =>
+                {
+                    b.HasOne("Localify.Server.Data.Job", null)
+                        .WithMany()
+                        .HasForeignKey("JobId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Localify.Server.Data.PlayEvent", b =>
                 {
                     b.HasOne("Localify.Server.Data.Track", "Track")
@@ -666,6 +838,11 @@ namespace Localify.Server.Data.Migrations
             modelBuilder.Entity("Localify.Server.Data.Artist", b =>
                 {
                     b.Navigation("Albums");
+                });
+
+            modelBuilder.Entity("Localify.Server.Data.JobSuite", b =>
+                {
+                    b.Navigation("Jobs");
                 });
 
             modelBuilder.Entity("Localify.Server.Data.Playlist", b =>

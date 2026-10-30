@@ -181,6 +181,15 @@
     "users": {
       "usernameLength": "Username: 2 to 64 characters.",
       "exists": "This username already exists."
+    },
+    "jobs": {
+      "noAcoustIdKey": "No AcoustID key: set one in the YouTube admin (Settings).",
+      "noFpcalc": "fpcalc (Chromaprint) was not found on the server: fingerprints cannot be computed.",
+      "unknownKind": "Unknown task type.",
+      "unknownArtist": "Artist not found.",
+      "notCancelable": "This task has already finished.",
+      "notRetryable": "Only a failed or canceled task whose previous step succeeded can be retried.",
+      "suiteActive": "This suite still has running or waiting tasks: cancel it first."
     }
   },
   "login": {
@@ -364,7 +373,8 @@
       "youtube": "YouTube",
       "metadata": "Metadata",
       "users": "Users",
-      "keys": "API keys"
+      "keys": "API keys",
+      "tasks": "Tasks"
     }
   },
   "users": {
@@ -607,7 +617,8 @@
     "stage": {
       "download": "downloading",
       "metadata": "looking up metadata",
-      "tagging": "tags and cover"
+      "tagging": "tags and cover",
+      "acoustid": "AcoustID fingerprint"
     },
     "source": {
       "musicbrainz": "MusicBrainz",
@@ -694,5 +705,140 @@
     "startFailed": "Localify couldn’t start",
     "stoppedLastTime": "Localify stopped last time",
     "intro": "Here is the error report. Copy it to pass it on."
+  },
+  "jobs": {
+    "search": "Search suites…",
+    "none": "No tasks here.",
+    "pick": "Pick a suite to see its steps and their log.",
+    "stepsTitle": "Steps",
+    "cancelSuite": "Cancel all",
+    "deleteSuite": "Delete",
+    "retry": "Retry",
+    "noLogs": "No log yet.",
+    "data": "Parameters and result",
+    "more": "Show more ({count} more)",
+    "progress": "{done} / {total}",
+    "failedCount": {
+      "one": "{count} failure",
+      "other": "{count} failures"
+    },
+    "attempts": "attempt {n}/{max}",
+    "duration": "{seconds} s",
+    "inLane": "“{lane}” lane",
+    "startedAt": "started {date}",
+    "notBefore": "not before {date}",
+    "laneLoad": "{running}/{capacity} running · {queued} waiting",
+    "filter": {
+      "active": "Running and waiting",
+      "failed": "Failed",
+      "finished": "Finished",
+      "all": "All"
+    },
+    "status": {
+      "Pending": "waiting for previous step",
+      "Queued": "queued",
+      "Running": "running",
+      "Succeeded": "done",
+      "Failed": "failed",
+      "Canceled": "canceled"
+    },
+    "lane": {
+      "download": "Downloads",
+      "acoustid": "AcoustID",
+      "metadata": "Metadata",
+      "library": "Library"
+    },
+    "kind": {
+      "youtube_download": "YouTube download",
+      "acoustid_identify": "AcoustID fingerprint",
+      "youtube_metadata": "Metadata and filing",
+      "library_acoustid_scan": "Rescan planning",
+      "library_match": "MusicBrainz comparison"
+    },
+    "suiteKind": {
+      "youtube_import": "YouTube import",
+      "library_acoustid_rescan": "AcoustID rescan"
+    },
+    "suites": {
+      "rescanAll": "AcoustID rescan of the whole library",
+      "rescanArtist": "AcoustID rescan: {artist}"
+    },
+    "steps": {
+      "download": "Download",
+      "acoustid": "AcoustID fingerprint",
+      "metadata": "Metadata, tags and filing",
+      "plan": "List the tracks to check"
+    },
+    "create": {
+      "title": "New task: AcoustID rescan",
+      "intro": "Computes the acoustic fingerprint of each track and compares it with MusicBrainz. Only one AcoustID lookup runs at a time (at most one per second), imports included: count about two seconds per track. YouTube imports go first.",
+      "all": "Whole library",
+      "artist": "One artist",
+      "artistPlaceholder": "Artist name…",
+      "otherArtist": "Change",
+      "apply": "Automatically fix confident matches (above the threshold set in YouTube; hand-edited tracks are left alone). Otherwise, suggestions are only logged.",
+      "start": "Start",
+      "started": "Task created."
+    },
+    "log": {
+      "canceled": "Canceled.",
+      "retried": "Retried from the admin.",
+      "unknownKind": "Unknown task type: {kind}.",
+      "attempt": "Attempt {n} of {max}.",
+      "deferred": "Postponed: {reason}",
+      "dependencyFailed": "Previous step failed or was canceled.",
+      "lost": "Abandoned: interrupted too many times (server stopped while it ran).",
+      "resumed": "Resumed after a server interruption."
+    },
+    "yt": {
+      "notQueued": "Import deleted or already handled: nothing to do.",
+      "notDownloaded": "Import deleted or not downloaded yet: nothing to do.",
+      "downloading": "Downloading video {video}",
+      "noFile": "yt-dlp produced no audio file.",
+      "downloaded": "File ready: {file} ({size} KiB).",
+      "fileGone": "Downloaded file is missing: the video goes back to download.",
+      "resolved": "Picked: {artist} — {title} ({album}), source {source}, confidence {score}%.",
+      "filed": "Filed as {path}.",
+      "needsReview": "Confidence below threshold: to review in the YouTube queue.",
+      "canceled": "Import canceled from the tasks."
+    },
+    "acoustid": {
+      "noFile": "Audio file not found.",
+      "noKey": "No AcoustID key: step skipped.",
+      "noFingerprint": "No fingerprint (fpcalc missing or unreadable file).",
+      "error": "AcoustID: {message}",
+      "none": "No AcoustID match (duration {duration} s).",
+      "found": {
+        "one": "{count} match, best score {score}%.",
+        "other": "{count} matches, best score {score}%."
+      }
+    },
+    "rescan": {
+      "planned": {
+        "one": "{count} track to check.",
+        "other": "{count} tracks to check."
+      },
+      "trackGone": "Track removed from the library in the meantime.",
+      "noMatch": "No MusicBrainz match recognized.",
+      "best": "Best match: {artist} — {title} ({album}), {score}%.",
+      "unchanged": "Tags match: nothing to change.",
+      "change": "{field}: “{from}” → “{to}”",
+      "result": {
+        "proposed": "Suggestion only (automatic fixes disabled).",
+        "locked": "Hand-edited track: left as is.",
+        "low": "Confidence {score}% below the {threshold}% threshold: left as is.",
+        "applied": "Fixed (confidence {score}%)."
+      }
+    },
+    "fields": {
+      "title": "Title",
+      "artist": "Artist",
+      "album": "Album",
+      "albumArtist": "Album artist",
+      "trackNumber": "Track no.",
+      "discNumber": "Disc no.",
+      "year": "Year",
+      "genre": "Genre"
+    }
   }
 }

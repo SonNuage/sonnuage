@@ -5,6 +5,7 @@ using Localify.Server.Admin;
 using Localify.Server.Api;
 using Localify.Server.Auth;
 using Localify.Server.Data;
+using Localify.Server.Jobs;
 using Localify.Server.Library;
 using Localify.Server.Search;
 using Localify.Server.Streaming;
@@ -73,6 +74,15 @@ builder.Services.AddHostedService(sp => sp.GetRequiredService<YoutubeImporter>()
 builder.Services.AddSingleton<YoutubeSyncService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<YoutubeSyncService>());
 
+// Gestionnaire de tâches : un consommateur par file, types de tâches déclarés par leurs exécutants.
+builder.Services.AddSingleton<JobEngine>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<JobEngine>());
+builder.Services.AddSingleton<IJobHandler, YoutubeDownloadJob>();
+builder.Services.AddSingleton<IJobHandler, AcoustIdIdentifyJob>();
+builder.Services.AddSingleton<IJobHandler, YoutubeMetadataJob>();
+builder.Services.AddSingleton<IJobHandler, AcoustIdRescanJob>();
+builder.Services.AddSingleton<IJobHandler, LibraryMatchJob>();
+
 ConfigureAuthentication(builder.Services);
 
 builder.Services.AddRateLimiter(o =>
@@ -136,6 +146,7 @@ app.MapMeEndpoints();
 app.MapPlaylistEndpoints();
 app.MapAdminEndpoints();
 app.MapYoutubeEndpoints();
+app.MapJobEndpoints();
 app.MapExtensionEndpoints();
 app.MapDashboardEndpoints();
 

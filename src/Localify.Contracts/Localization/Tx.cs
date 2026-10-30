@@ -22,6 +22,14 @@ public static partial class Tx
         return sb.Append('⟧').ToString();
     }
 
+    /// <summary>
+    /// Valeur à afficher telle quelle, même si elle ressemble à un nombre (une année, un numéro de piste : pas de
+    /// séparateur de milliers).
+    /// </summary>
+    public static string Literal(object? value) => LiteralPrefix + Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture);
+
+    private const char LiteralPrefix = '\u2060';
+
     /// <summary>Remplace chaque marqueur par son texte dans la langue demandée ; le reste est laissé tel quel.</summary>
     public static string Translate(this Translations t, string language, string text) =>
         !text.Contains('⟦') ? text : Marker().Replace(text, m =>
@@ -32,6 +40,7 @@ public static partial class Tx
                 : [];
             // Un nombre redevient un nombre (pluriels, séparateurs de milliers).
             args = args.Select(a => a.Item2 is not string s ? a
+                : s.Length > 0 && s[0] == LiteralPrefix ? (a.Item1, (object?)s[1..])
                 : long.TryParse(s, out var n) ? (a.Item1, (object?)n)
                 : s.Contains('⟦') ? (a.Item1, (object?)t.Translate(language, s))
                 : a).ToArray();

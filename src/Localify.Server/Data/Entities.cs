@@ -216,3 +216,65 @@ public sealed class ApiKey
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? LastUsedAt { get; set; }
 }
+
+public enum JobStatus
+{
+    /// <summary>Attend la fin de la tâche dont elle dépend.</summary>
+    Pending,
+    Queued,
+    Running,
+    Succeeded,
+    Failed,
+    Canceled,
+}
+
+/// <summary>Suite de tâches créées ensemble (un import YouTube, un rescan AcoustID…), affichée comme un tout.</summary>
+public sealed class JobSuite
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public required string Kind { get; set; }
+    public required string Title { get; set; }
+    public Guid? CreatedById { get; set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public List<Job> Jobs { get; set; } = [];
+}
+
+/// <summary>Une tâche : exécutée par un consommateur de sa file (<see cref="Lane"/>), dont la capacité est bornée.</summary>
+public sealed class Job
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid SuiteId { get; set; }
+    public JobSuite Suite { get; set; } = null!;
+    /// <summary>Tâche à terminer avec succès avant celle-ci ; sa sortie devient l'entrée de celle-ci.</summary>
+    public Guid? DependsOnId { get; set; }
+    /// <summary>Objet traité (import YouTube, morceau…), pour retrouver ses tâches.</summary>
+    public Guid? SubjectId { get; set; }
+    public required string Kind { get; set; }
+    public required string Lane { get; set; }
+    public JobStatus Status { get; set; }
+    public required string Title { get; set; }
+    public string? Payload { get; set; }
+    public string? Output { get; set; }
+    public string? Error { get; set; }
+    public int Attempts { get; set; }
+    public int MaxAttempts { get; set; } = 1;
+    public double? Progress { get; set; }
+    /// <summary>Plus grand = servi d'abord (les imports passent devant un rescan de la bibliothèque).</summary>
+    public int Priority { get; set; }
+    public DateTimeOffset NotBefore { get; set; }
+    public DateTimeOffset? LeaseUntil { get; set; }
+    public string? WorkerId { get; set; }
+    public bool CancelRequested { get; set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? StartedAt { get; set; }
+    public DateTimeOffset? FinishedAt { get; set; }
+}
+
+public sealed class JobLog
+{
+    public long Id { get; set; }
+    public Guid JobId { get; set; }
+    public DateTimeOffset At { get; set; }
+    public required string Level { get; set; }
+    public required string Message { get; set; }
+}

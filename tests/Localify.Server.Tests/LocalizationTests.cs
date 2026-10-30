@@ -62,6 +62,14 @@ public partial class LocalizationTests
         Assert.Equal("plain text", T.Translate("en", "plain text"));
     }
 
+    [Fact]
+    public void Literal_values_are_shown_as_is_and_numbers_get_separators()
+    {
+        var change = Tx.Key("jobs.rescan.change", ("field", Tx.Key("jobs.fields.year")), ("from", Tx.Literal("∅")), ("to", Tx.Literal(2021)));
+        Assert.Equal("Year: “∅” → “2021”", T.Translate("en", change));
+        Assert.Equal("12,500 tracks to check.", T.Translate("en", Tx.Key("jobs.rescan.planned", ("count", 12500))));
+    }
+
     private static Dictionary<string, HashSet<string>> Flatten(string language)
     {
         var path = Path.Combine(RepoRoot(), "src", "Localify.Contracts", "Localization", language + ".json");

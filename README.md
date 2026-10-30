@@ -54,9 +54,11 @@ Réservé aux administrateurs (`/admin/youtube`), avec [yt-dlp](https://github.c
 
 - **Explorer** : recherche YouTube Music (meilleures métadonnées) ou YouTube, ou adresse collée d'une vidéo,
   d'une playlist, d'un album ou d'une chaîne ; sélection puis import.
-- **File d'attente** : un téléchargement à la fois, progression en direct. La meilleure piste audio est gardée
-  telle quelle (Opus ou AAC, aucun réencodage ; MP3 en option). Quand YouTube refuse (trop de requêtes,
-  « confirmez que vous n'êtes pas un robot »), la file se met en pause et reprend seule (30 min, puis le double).
+- **File d'attente** : chaque vidéo devient une suite de tâches (téléchargement → empreinte AcoustID →
+  métadonnées et rangement, voir [Tâches](#tâches)) ; plusieurs téléchargements en parallèle (3 par défaut),
+  progression en direct. La meilleure piste audio est gardée telle quelle (Opus ou AAC, aucun réencodage ;
+  MP3 en option). Quand YouTube refuse (trop de requêtes, « confirmez que vous n'êtes pas un robot »), les
+  téléchargements se mettent en pause et reprennent seuls (30 min, puis le double).
 - **Métadonnées** recomposées automatiquement : champs YouTube Music, recherche MusicBrainz notée sur titre,
   artiste et durée (l'album studio officiel est préféré aux compilations), empreinte sonore AcoustID en option
   (clé gratuite + `fpcalc`). Pochette de Cover Art Archive, sinon miniature recadrée au carré. Tags complets
@@ -109,6 +111,24 @@ d'erreur venus du serveur restent en français.
 
 Derrière Cloudflare Access, autorisez l'en-tête `Authorization: ApiKey …` (règle *Bypass* ou jeton de
 service) pour les chemins `/api/admin/youtube/*` et `/api/extension/*`.
+
+## Tâches
+
+**Admin → Tâches** montre les files d'exécution, les suites de tâches (en cours, en attente, en échec,
+terminées), leurs étapes et le journal de chaque étape en direct ; on y annule, relance et crée des tâches.
+
+- Chaque file a un plafond de tâches simultanées : téléchargements (réglage YouTube, 1 à 6), **AcoustID : une
+  seule à la fois**, imports et rescans confondus (et une requête par seconde au plus, imposée aussi par le
+  client), métadonnées MusicBrainz : une à la fois.
+- **Rescan AcoustID** de toute la bibliothèque ou d'un artiste : empreinte de chaque morceau, comparaison avec
+  MusicBrainz, correction automatique des correspondances sûres (au-dessus du seuil réglé dans YouTube, jamais
+  sur un morceau modifié à la main) ou simples propositions dans le journal.
+- La file vit dans la base : les tâches interrompues par un arrêt reprennent au redémarrage, et plusieurs
+  instances partageant la base peuvent consommer la file sans dépasser les plafonds
+  (`Localify__Jobs__Worker`, `Localify__Jobs__WorkerName`). Suites terminées gardées 14 jours
+  (`Localify__Jobs__RetentionDays`).
+
+Ce qui vient ensuite : [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Recherche
 

@@ -245,7 +245,8 @@ public static class AdminEndpoints
         });
     }
 
-    private static async Task ReassignAsync(LocalifyDbContext db, CoverLocator covers, IReadOnlyList<Track> tracks, CancellationToken ct)
+    /// <summary>Range les morceaux modifiés dans le bon album / artiste, supprime les vides, met à jour les pochettes.</summary>
+    internal static async Task ReassignAsync(LocalifyDbContext db, CoverLocator covers, IReadOnlyList<Track> tracks, CancellationToken ct)
     {
         var indexer = new LibraryIndexer(db);
         await indexer.LoadAsync(ct);

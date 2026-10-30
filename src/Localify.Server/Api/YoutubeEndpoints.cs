@@ -3,6 +3,7 @@ using System.Text.Json;
 using Localify.Contracts;
 using Localify.Server.Auth;
 using Localify.Server.Data;
+using Localify.Server.Jobs;
 using Localify.Server.Library;
 using Localify.Server.Youtube;
 using Microsoft.EntityFrameworkCore;
@@ -36,9 +37,9 @@ public static class YoutubeEndpoints
                 importer.Active);
         });
 
-        g.MapPost("/resume", (YoutubeImporter importer) =>
+        g.MapPost("/resume", async (YoutubeImporter importer, LocalifyDbContext db, JobEngine engine, CancellationToken ct) =>
         {
-            importer.Resume();
+            await importer.ResumeAsync(db, engine, ct);
             return Results.NoContent();
         });
 

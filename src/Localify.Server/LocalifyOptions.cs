@@ -58,6 +58,9 @@ public sealed class LocalifyOptions
     /// <summary>Moteur de recherche externe facultatif. Sans URL, la recherche se fait en base.</summary>
     public SearchOptions Search { get; set; } = new();
 
+    /// <summary>Gestionnaire de tâches (imports, rescans).</summary>
+    public JobOptions Jobs { get; set; } = new();
+
     public string DatabasePath => Path.Combine(DataPath, "localify.db");
     public string TranscodeCachePath => Path.Combine(DataPath, "cache", "transcode");
     public string CoverCachePath => Path.Combine(DataPath, "cache", "covers");
@@ -67,6 +70,21 @@ public sealed class LocalifyOptions
     public string YoutubeDataPath => Path.Combine(DataPath, "youtube");
     /// <summary>yt-dlp et Deno téléchargés par la mise à jour depuis l'admin (prioritaires sur ceux de l'image).</summary>
     public string ToolsPath => Path.Combine(DataPath, "tools");
+}
+
+public sealed class JobOptions
+{
+    /// <summary>
+    /// Exécute les tâches dans ce processus. Plusieurs instances partageant la même base peuvent consommer la file
+    /// ensemble : les plafonds par file (une seule recherche AcoustID à la fois…) restent globaux.
+    /// </summary>
+    public bool Worker { get; set; } = true;
+
+    /// <summary>Nom stable de l'instance : à son redémarrage, ses tâches interrompues repartent aussitôt.</summary>
+    public string WorkerName { get; set; } = "main";
+
+    /// <summary>Durée de conservation des suites terminées.</summary>
+    public int RetentionDays { get; set; } = 14;
 }
 
 public sealed class SearchOptions
