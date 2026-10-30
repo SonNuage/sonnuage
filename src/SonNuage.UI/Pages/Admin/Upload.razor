@@ -34,12 +34,12 @@
                         <li class="upload-item @item.Status.ToString().ToLowerInvariant()">
                             <div class="upload-name">
                                 <span>@item.Name</span>
-                                <small>@Format.Bytes(item.Size) — @StatusLabel(item)</small>
+                                <small>@Format.Bytes(item.Size) - @StatusLabel(item)</small>
                             </div>
                             <progress max="100" value="@item.Percent"></progress>
                             @if (item.Result is { } t)
                             {
-                                <a href="album/@t.AlbumId" class="link">@t.ArtistName — @t.AlbumTitle</a>
+                                <a href="album/@t.AlbumId" class="link">@t.ArtistName - @t.AlbumTitle</a>
                             }
                         </li>
                     }
@@ -149,7 +149,7 @@
         }
     }
 
-    /// <summary>Envoie un morceau ; sur erreur réseau, relit l'offset côté serveur et renvoie ce qui manque.</summary>
+    /// <summary>Envoie un morceau. Sur erreur réseau, relit l'offset côté serveur et renvoie ce qui manque.</summary>
     private async Task<long> SendChunkWithRetryAsync(Guid id, long offset, ReadOnlyMemory<byte> chunk)
     {
         for (var attempt = 0; ; attempt++)

@@ -108,7 +108,7 @@ public sealed class JobPlan(string kind, string title, Guid? createdById = null)
     public List<Job> Jobs { get; } = [];
     private Job? _last;
 
-    /// <summary>Ajoute une tâche ; <paramref name="after"/> = celle qui doit réussir avant (sa sortie devient l'entrée).</summary>
+    /// <summary>Ajoute une tâche. <paramref name="after"/> = celle qui doit réussir avant (sa sortie devient l'entrée).</summary>
     public JobPlan Add(JobKind kind, string title, object? payload = null, Job? after = null, Guid? subjectId = null, int? priority = null)
     {
         var job = new Job

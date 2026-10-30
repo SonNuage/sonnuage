@@ -73,7 +73,7 @@ public sealed partial class YtDlp(YoutubeTools tools, FfmpegLocator ffmpeg, Yout
     /// <remarks>
     /// Racine d'une chaîne d'artiste : yt-dlp n'en donne que les onglets Vidéos et Shorts, pas « Sorties » où sont
     /// rangés albums, EP et singles (titres « auto-générés » aux métadonnées propres). Si la chaîne a des sorties,
-    /// ce sont elles qu'on lit, album par album ; sinon (chaîne sans discographie), ses vidéos.
+    /// ce sont elles qu'on lit, album par album. Sinon (chaîne sans discographie), ses vidéos.
     /// </remarks>
     public async Task<YtListing> ListAsync(string url, int? limit, CancellationToken ct)
     {
@@ -90,7 +90,7 @@ public sealed partial class YtDlp(YoutubeTools tools, FfmpegLocator ffmpeg, Yout
 
     private async Task<YtListing?> ReleasesAsync(string channelUrl, int? limit, CancellationToken ct)
     {
-        // music.youtube.com/@x : même identifiant ; l'onglet Sorties est sur www.youtube.com.
+        // music.youtube.com/@x : même identifiant. L'onglet Sorties est sur www.youtube.com.
         var path = new Uri(channelUrl).AbsolutePath.TrimEnd('/');
         JsonObject json;
         try
@@ -248,7 +248,7 @@ public sealed partial class YtDlp(YoutubeTools tools, FfmpegLocator ffmpeg, Yout
         return run.Failure is { } f ? throw f : run.Output;
     }
 
-    /// <summary>Lance yt-dlp ; un échec d'exécution est renvoyé (pas levé) pour qu'on puisse réessayer autrement.</summary>
+    /// <summary>Lance yt-dlp. Un échec d'exécution est renvoyé (pas levé) pour qu'on puisse réessayer autrement.</summary>
     /// <param name="signedIn">Avec les cookies, s'il y en a.</param>
     private async Task<Run> TryRunAsync(List<string> args, Action<string>? onLine, TimeSpan timeout, bool signedIn, CancellationToken ct)
     {
@@ -304,9 +304,9 @@ public sealed partial class YtDlp(YoutubeTools tools, FfmpegLocator ffmpeg, Yout
         var kind = Classify(error);
         var message = Shorten(error);
         if (kind == YtDlpFailure.NeedsAccount)
-            message += cookies is null
+            message = message.TrimEnd('.', ' ') + (cookies is null
                 ? Tx.Key("errors.yt.addCookies")
-                : Tx.Key("errors.yt.cookiesInsufficient");
+                : Tx.Key("errors.yt.cookiesInsufficient"));
         return new Run(stdout.ToString(), new YtDlpException(kind, message), cookies is not null);
     }
 

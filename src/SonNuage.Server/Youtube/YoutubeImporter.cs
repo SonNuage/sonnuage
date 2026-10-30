@@ -16,7 +16,7 @@ namespace SonNuage.Server.Youtube;
 /// (plusieurs en parallèle, réglage ParallelDownloads : une vidéo bridée ne bloque pas les autres) → empreinte
 /// AcoustID (une à la fois, tous imports et rescans confondus) → métadonnées, tags, pochette, rangement, indexation.
 /// Quand YouTube refuse (trop de requêtes, vérification anti-robot), la file se met en pause et reprend
-/// seule, avec une attente qui double à chaque refus (30 min → 12 h) ; l'admin peut la relancer.
+/// seule, avec une attente qui double à chaque refus (30 min → 12 h). L'admin peut la relancer.
 /// </summary>
 public sealed class YoutubeImporter(
     IServiceScopeFactory scopes,
@@ -67,7 +67,7 @@ public sealed class YoutubeImporter(
         Wake();
     }
 
-    /// <summary>Ajoute des vidéos à la file ; une vidéo déjà importée est ignorée, une vidéo en échec est relancée.</summary>
+    /// <summary>Ajoute des vidéos à la file. Une vidéo déjà importée est ignorée, une vidéo en échec est relancée.</summary>
     public async Task<YoutubeImportResultDto> EnqueueAsync(SonNuageDbContext db, IEnumerable<YoutubeVideoDto> videos, string? albumHint, Guid? subscriptionId, CancellationToken ct)
     {
         var list = videos.Where(v => IsVideoId(v.VideoId)).DistinctBy(v => v.VideoId).ToList();

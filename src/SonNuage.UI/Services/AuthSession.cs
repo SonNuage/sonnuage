@@ -249,7 +249,7 @@ public sealed class AuthSession
         }
     }
 
-    /// <summary>Le serveur d'un compte est fixe ; en mono-compte c'est l'adresse de l'hôte (l'origine sur le web).</summary>
+    /// <summary>Le serveur d'un compte est fixe. En mono-compte c'est l'adresse de l'hôte (l'origine sur le web).</summary>
     private Uri? ServerOf(Slot slot) => slot.Server ?? _endpoint.BaseAddress;
 
     private HttpClient CreateClient(Uri server)

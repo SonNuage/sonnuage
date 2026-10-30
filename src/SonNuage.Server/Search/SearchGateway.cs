@@ -7,10 +7,10 @@ namespace SonNuage.Server.Search;
 /// Garde-fou devant Elasticsearch : la recherche ne doit jamais attendre plus que <see cref="SearchOptions.TimeoutMilliseconds"/>.
 /// <list type="bullet">
 /// <item>Réponse dans le délai : résultat Elasticsearch.</item>
-/// <item>Hors délai : l'appelant retombe sur la recherche en base ; la requête continue en arrière-plan
+/// <item>Hors délai : l'appelant retombe sur la recherche en base. La requête continue en arrière-plan
 ///   (avec nouvelles tentatives) et son résultat est gardé une minute, servi à la prochaine frappe identique.</item>
 /// <item>Échecs répétés : Elasticsearch est mis de côté (recherche en base immédiate, sans attendre le délai)
-///   et sondé en arrière-plan jusqu'à son retour ; l'index est alors reconstruit.</item>
+///   et sondé en arrière-plan jusqu'à son retour. L'index est alors reconstruit.</item>
 /// </list>
 /// </summary>
 public sealed class SearchGateway(ElasticsearchClient es, IOptions<SonNuageOptions> options, TimeProvider time, ILogger<SearchGateway> logger)

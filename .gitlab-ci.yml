@@ -1,6 +1,6 @@
 # Pipeline SonNuage (serveur + client web)
 #  - test        : build + tests du serveur (avec ffmpeg et Elasticsearch)
-#  - build       : image Docker du serveur (registre GitLab) ; paquets NuGet SonNuage.Contracts et SonNuage.UI
+#  - build       : image Docker du serveur (registre GitLab). Paquets NuGet SonNuage.Contracts et SonNuage.UI
 #                  (registre NuGet du projet), utilisés par l'application Android (dépôt sonnuage-android)
 #  - release     : sur tag vX.Y.Z, release GitLab
 #
@@ -56,7 +56,7 @@ server-test:
     - apt-get update -qq && apt-get install -y -qq --no-install-recommends ffmpeg > /dev/null
   script:
     - dotnet build src/SonNuage.Server/SonNuage.Server.csproj -c Release
-    # Elasticsearch démarre pendant le build ; on l'attend avant les tests (ses tests échouent sinon).
+    # Elasticsearch démarre pendant le build. On l'attend avant les tests (ses tests échouent sinon).
     - for i in $(seq 1 60); do curl -fs "$SONNUAGE_TEST_ELASTICSEARCH/_cluster/health?wait_for_status=yellow&timeout=1s" > /dev/null && break; sleep 2; done
     - dotnet test --project tests/SonNuage.Server.Tests/SonNuage.Server.Tests.csproj -c Release --report-trx --results-directory TestResults
   artifacts:

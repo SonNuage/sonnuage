@@ -16,7 +16,7 @@ public class OggRepairTests
             var source = Path.Combine(dir, "source.opus");
             File.WriteAllBytes(source, MinimalOpus());
 
-            // TagLib écrit le paquet de tags ; on cherche une longueur de commentaire qui le rend multiple de 255.
+            // TagLib écrit le paquet de tags. On cherche une longueur de commentaire qui le rend multiple de 255.
             string? broken = null;
             for (var pad = 0; pad < 600 && broken is null; pad++)
             {

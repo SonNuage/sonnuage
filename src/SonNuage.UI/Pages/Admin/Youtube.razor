@@ -34,7 +34,7 @@
             {
                 <div class="notice" @key="cur.ItemId">
                     <span class="spinner inline"></span>
-                    <span class="grow"><span class="strong">@cur.Title</span> — @StageLabel(cur.Stage)@(cur.Percent is { } p ? " " + L["format.percent", ("value", L.Number(p))] : "")</span>
+                    <span class="grow"><span class="strong">@cur.Title</span> - @StageLabel(cur.Stage)@(cur.Percent is { } p ? " " + L["format.percent", ("value", L.Number(p))] : "")</span>
                     @if (cur.Percent is { } pc) { <progress max="100" value="@pc.ToString(CultureInfo.InvariantCulture)"></progress> }
                 </div>
             }
@@ -91,7 +91,7 @@
                     <li class="@(ReferenceEquals(c, r.Selected) ? "on" : null)" @onclick="() => Select(r, c)">
                         <span class="score @(c.Score >= 0.8 ? "good" : c.Score >= 0.5 ? "mid" : "low")">@((c.Score * 100).ToString("0"))</span>
                         <span class="grow">
-                            <span class="strong">@c.Title</span> — @c.Artist
+                            <span class="strong">@c.Title</span> - @c.Artist
                             <span class="muted small block">@c.Album@(c.Year is { } y ? $" ({y})" : "")@(c.TrackNumber is { } n ? " · " + L["yt.review.trackNo", ("number", n)] : "") · @SourceLabel(c.Source)</span>
                         </span>
                     </li>
@@ -389,7 +389,7 @@
                         <span class="grow">
                             @if (item.TrackTitle is not null)
                             {
-                                <span class="strong">@item.TrackTitle</span><span> — @item.TrackArtist</span>
+                                <span class="strong">@item.TrackTitle</span><span> - @item.TrackArtist</span>
                                 <span class="muted small block">@item.TrackAlbum · @L["yt.queue.from", ("title", item.Title)]</span>
                             }
                             else

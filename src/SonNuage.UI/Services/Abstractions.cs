@@ -9,7 +9,7 @@ public interface IKeyValueStore
     Task SetAsync(string key, string? value);
 }
 
-/// <summary>Adresse du serveur. Sur le web c'est l'origine de la page ; sur Android elle est saisie par l'utilisateur.</summary>
+/// <summary>Adresse du serveur. Sur le web c'est l'origine de la page. Sur Android elle est saisie par l'utilisateur.</summary>
 public interface IServerEndpoint
 {
     Uri? BaseAddress { get; }
@@ -59,7 +59,7 @@ public interface IPlayer
     Task SetShuffleAsync(bool shuffle);
     Task SetRepeatAsync(RepeatMode mode);
     Task SetVolumeAsync(double volume);
-    /// <param name="playNext">true : juste après la piste en cours ; false : en fin de file.</param>
+    /// <param name="playNext">true : juste après la piste en cours. False : en fin de file.</param>
     Task EnqueueAsync(IReadOnlyList<TrackDto> tracks, bool playNext);
     Task RemoveAtAsync(int queueIndex);
     /// <summary>Relit les réglages (qualité, pré-chargement) et les applique aux pistes suivantes.</summary>

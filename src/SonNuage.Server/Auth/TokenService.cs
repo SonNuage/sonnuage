@@ -109,7 +109,7 @@ public sealed class TokenService(
         if (stored.RevokedAt is not null)
         {
             // Renouvelé à l'instant : deux onglets du même navigateur l'ont fait en même temps. Le perdant relit
-            // les jetons partagés par l'autre ; ce n'est pas un jeton volé rejoué plus tard.
+            // les jetons partagés par l'autre. Ce n'est pas un jeton volé rejoué plus tard.
             if (stored.ReplacedById is not null && now - stored.RevokedAt.Value > ConcurrentRefreshGrace)
             {
                 await db.RefreshTokens.Where(r => r.UserId == stored.UserId && r.RevokedAt == null)

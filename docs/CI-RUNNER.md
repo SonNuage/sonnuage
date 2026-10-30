@@ -8,8 +8,8 @@ Sans runner rattaché au projet, les jobs restent « stuck ».
 
 Projet `pmj.bailly/sonnuage` → **Settings → CI/CD → Runners → New project runner** :
 
-- *Tags* : aucun, et cocher **Run untagged jobs** (les jobs du pipeline n'ont pas de tags) ;
-- *Description* : `homelab-docker` ;
+- *Tags* : aucun, et cocher **Run untagged jobs** (les jobs du pipeline n'ont pas de tags)
+- *Description* : `homelab-docker`
 - **Create runner**, puis copier le jeton `glrt-…` affiché (il n'est montré qu'une fois).
 
 Pour le partager entre plusieurs projets : même chose dans le groupe ou dans **Admin → CI/CD → Runners**
@@ -47,8 +47,8 @@ volumes = ["/certs/client", "/cache"]
 shm_size = 268435456          # 256 Mo : le build Android (D8/R8) en profite
 ```
 
-puis `docker restart gitlab-runner`. Le runner doit apparaître en vert dans Settings → CI/CD → Runners ;
-relancer le pipeline bloqué (**Pipelines → Run pipeline** ou **Retry**).
+puis `docker restart gitlab-runner`. Le runner doit apparaître en vert dans Settings → CI/CD → Runners.
+Relancer le pipeline bloqué (**Pipelines → Run pipeline** ou **Retry**).
 
 Au premier pipeline, l'image de build Android n'existe pas encore dans le registre : **Run pipeline** avec la
 variable `BUILD_ANDROID_SDK` = `1` la construit (une fois, ~15 min) avant le job `android-apk`.
@@ -64,13 +64,13 @@ sudo sysctl -w vm.max_map_count=262144 && echo 'vm.max_map_count=262144' | sudo 
 ```
 
 **Mémoire.** Le build Android consomme 3 à 4 Go. Avec `concurrent = 1` (défaut dans `config.toml`), un seul
-job tourne à la fois ; à augmenter si la machine le permet.
+job tourne à la fois. À augmenter si la machine le permet.
 
 **Cloudflare et le registre.** Si le registre (`$CI_REGISTRY`) passe par Cloudflare, chaque requête est limitée
 à 100 Mo : la poussée d'une couche d'image plus grosse (l'étape `apt-get install ffmpeg` du serveur pèse ~150 Mo)
 échoue en 413. Deux solutions :
 - exposer le registre sur un nom d'hôte **non proxifié** (DNS seulement, nuage gris dans Cloudflare) ou
-  joignable en LAN, et le déclarer comme `registry_external_url` ;
+  joignable en LAN, et le déclarer comme `registry_external_url`.
 - ou faire résoudre ce nom vers l'IP locale pour les jobs : dans `config.toml`,
   `extra_hosts = ["registry.example.org:192.168.1.10"]` (le certificat présenté en local doit alors être valide
   pour ce nom).

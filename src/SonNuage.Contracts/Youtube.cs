@@ -27,7 +27,7 @@ public sealed record YoutubeSettingsDto(
     // « original » (opus/AAC tel que publié, sans perte supplémentaire) ou « mp3 ».
     string AudioFormat,
     string? AcoustIdKey,
-    // Au-dessus, les métadonnées trouvées sont appliquées sans demander ; en dessous, l'import attend une vérification.
+    // Au-dessus, les métadonnées trouvées sont appliquées sans demander. En dessous, l'import attend une vérification.
     double AutoAcceptThreshold,
     // Avec des cookies, relancer sans eux quand le format demandé manque une fois connecté.
     bool RetryWithoutCookies = true,

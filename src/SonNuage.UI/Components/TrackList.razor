@@ -17,7 +17,7 @@
                 }
                 else
                 {
-                    <span class="num">@(ShowTrackNumbers ? track.TrackNumber?.ToString() ?? "–" : (index + 1).ToString())</span>
+                    <span class="num">@(ShowTrackNumbers ? track.TrackNumber?.ToString() ?? "-" : (index + 1).ToString())</span>
                     <Icon Name="play" Size="18" Class="hover-play" />
                 }
             </button>

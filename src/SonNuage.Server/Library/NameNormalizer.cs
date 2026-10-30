@@ -64,7 +64,7 @@ public static partial class NameNormalizer
     {
         var sb = new StringBuilder(s.Length);
         foreach (var c in s)
-            sb.Append(c is '‐' or '‑' or '‒' or '–' or '—' or '―' or '−' ? '-' : c);
+            sb.Append(c is '‐' or '‑' or '‒' or '\u2013' or '\u2014' or '―' or '−' ? '-' : c);
         return sb.ToString();
     }
 

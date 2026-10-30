@@ -20,7 +20,7 @@ public sealed record AudioMetadata(
 /// </summary>
 public sealed class MetadataReader(ILogger<MetadataReader> logger)
 {
-    /// <summary>Ouvre les tags ; un Ogg abîmé par TagLib (voir <see cref="OggRepair"/>) est réparé puis relu, s'il est modifiable.</summary>
+    /// <summary>Ouvre les tags. Un Ogg abîmé par TagLib (voir <see cref="OggRepair"/>) est réparé puis relu, s'il est modifiable.</summary>
     private TagLib.File OpenTags(string path)
     {
         try

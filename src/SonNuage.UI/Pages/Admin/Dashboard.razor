@@ -207,7 +207,7 @@
                     {
                         var h = total == 0 ? 0 : (H - Bottom - stackTop) * Count(b, source) / total;
                         var isTop = source == drawn[^1];
-                        // 2 px de fond entre segments ; extrémité arrondie seulement en haut de la pile.
+                        // 2 px de fond entre segments. Extrémité arrondie seulement en haut de la pile.
                         var gap = isTop ? 0 : 2;
                         <path d="@BarPath(x, y - h + gap, barW, Math.Max(0, h - gap), isTop)" style="fill: var(--series-@source)" class="@(_hover is { } hv && hv != index ? "dim" : null)" />
                         y -= h;

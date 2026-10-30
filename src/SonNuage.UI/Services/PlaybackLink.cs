@@ -26,8 +26,8 @@ public sealed record PlaybackMessage(
     PlayerCommand? Command = null);
 
 /// <summary>
-/// Canal entre les lecteurs d'un même utilisateur. Les onglets d'un navigateur passent par BroadcastChannel ;
-/// un transport serveur (SignalR) pourra relier PC et téléphone sans changer <see cref="LinkedPlayer"/>.
+/// Canal entre les lecteurs d'un même utilisateur. Les onglets d'un navigateur passent par BroadcastChannel.
+/// Un transport serveur (SignalR) pourra relier PC et téléphone sans changer <see cref="LinkedPlayer"/>.
 /// </summary>
 public interface IPlaybackLink
 {

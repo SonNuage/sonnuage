@@ -13,11 +13,11 @@ using Microsoft.Extensions.Options;
 namespace SonNuage.Server.Jobs;
 
 /// <summary>
-/// Gestionnaire de tâches. La file vit en base (table Jobs) ; chaque file d'exécution (<see cref="JobLanes"/>) a son
+/// Gestionnaire de tâches. La file vit en base (table Jobs). Chaque file d'exécution (<see cref="JobLanes"/>) a son
 /// consommateur, qui réserve les tâches une à une par une requête atomique vérifiant la capacité de la file
 /// pour toutes les instances à la fois. Une tâche réservée porte un bail renouvelé tant qu'elle tourne : si son
 /// instance disparaît, elle revient dans la file à l'expiration du bail. À la réussite, les tâches qui en
-/// dépendent passent dans la file ; à l'échec ou à l'annulation, elles sont annulées.
+/// dépendent passent dans la file. À l'échec ou à l'annulation, elles sont annulées.
 /// </summary>
 public sealed class JobEngine(
     IServiceScopeFactory scopes,

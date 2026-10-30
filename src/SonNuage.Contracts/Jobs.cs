@@ -48,5 +48,5 @@ public sealed record JobDetailDto(JobDto Job, string? Payload, string? Output);
 public sealed record JobLogDto(long Id, DateTimeOffset At, string Level, string Message);
 
 /// <summary>Tâches créables depuis l'admin. Kind : « acoustid-rescan » (ArtistId absent = toute la bibliothèque).</summary>
-/// <param name="Threshold">Seuil de correction automatique (0,5 à 1) ; null = celui des réglages YouTube.</param>
+/// <param name="Threshold">Seuil de correction automatique (0,5 à 1). Null = celui des réglages YouTube.</param>
 public sealed record CreateJobRequest(string Kind, Guid? ArtistId, bool Apply, double? Threshold = null);

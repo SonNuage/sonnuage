@@ -47,7 +47,7 @@ public sealed class Translations
 
     /// <summary>
     /// Meilleure langue disponible pour une liste de préférences (« fr-CA », « en-US,en;q=0.9 »…) :
-    /// correspondance exacte, puis sur la langue seule ; l'anglais sinon.
+    /// correspondance exacte, puis sur la langue seule. L'anglais sinon.
     /// </summary>
     public string Resolve(params string?[] preferences)
     {
@@ -212,7 +212,7 @@ public static class PluralRules
         var isInt = i == Math.Abs(n);
         return language.Split('-')[0].ToLowerInvariant() switch
         {
-            // Français, portugais : 0 et 1 au singulier ; les grands nombres ronds au « many ».
+            // Français, portugais : 0 et 1 au singulier. Les grands nombres ronds au « many ».
             "fr" or "pt" => i is 0 or 1 ? "one" : isInt && i != 0 && i % 1_000_000 == 0 ? "many" : "other",
             // Langues sans pluriel grammatical.
             "ja" or "zh" or "ko" or "vi" or "th" or "id" => "other",

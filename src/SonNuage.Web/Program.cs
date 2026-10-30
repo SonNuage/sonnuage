@@ -13,7 +13,7 @@ builder.Services.AddSingleton<IKeyValueStore, BrowserStore>();
 builder.Services.AddSingleton<IPlatformInfo, BrowserPlatform>();
 builder.Services.AddSingleton<WebPlayer>();
 builder.Services.AddSingleton<BroadcastPlaybackLink>();
-// Un seul onglet joue ; les autres le pilotent (voir LinkedPlayer).
+// Un seul onglet joue. Les autres le pilotent (voir LinkedPlayer).
 builder.Services.AddSingleton<IPlayer>(sp => new LinkedPlayer(
     sp.GetRequiredService<WebPlayer>(), sp.GetRequiredService<WebPlayer>(), sp.GetRequiredService<BroadcastPlaybackLink>()));
 builder.Services.AddSonNuageUi();

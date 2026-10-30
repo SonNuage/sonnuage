@@ -1,5 +1,5 @@
-// Moteur audio du lecteur web. La file d'attente est gérée en C# (PlayQueue) ;
-// ce module joue une piste, pré-télécharge les suivantes en mémoire et relaie MediaSession.
+// Moteur audio du lecteur web. La file d'attente est gérée en C# (PlayQueue).
+// Ce module joue une piste, pré-télécharge les suivantes en mémoire et relaie MediaSession.
 
 const MAX_RETRIES = 6;
 const MAX_PREFETCHED = 4;

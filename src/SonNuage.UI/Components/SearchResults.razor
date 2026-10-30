@@ -49,7 +49,7 @@ else if (_result is { } r)
 }
 
 @code {
-    /// <summary>Texte saisi ; la recherche part 250 ms après la dernière frappe.</summary>
+    /// <summary>Texte saisi. La recherche part 250 ms après la dernière frappe.</summary>
     [Parameter] public string Query { get; set; } = "";
     /// <summary>Appelé quand une recherche part réellement (après l'attente), par exemple pour mettre l'adresse à jour.</summary>
     [Parameter] public EventCallback<string> OnSearched { get; set; }

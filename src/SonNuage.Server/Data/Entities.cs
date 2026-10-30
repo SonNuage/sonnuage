@@ -76,7 +76,7 @@ public sealed class User
     /// <summary>Changé au changement de mot de passe : invalide tous les jetons média émis.</summary>
     public string SecurityStamp { get; set; } = Guid.NewGuid().ToString("N");
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
-    /// <summary>Langue préférée de l'interface (« fr », « en »…), suivie sur tous ses appareils ; null = celle de l'appareil.</summary>
+    /// <summary>Langue préférée de l'interface (« fr », « en »…), suivie sur tous ses appareils. Null = celle de l'appareil.</summary>
     public string? Language { get; set; }
 }
 
@@ -202,7 +202,7 @@ public enum ApiKeyKind
     BrowserExtension,
 }
 
-/// <summary>Clé d'API créée par un admin ; seule son empreinte SHA-256 est conservée.</summary>
+/// <summary>Clé d'API créée par un admin. Seule son empreinte SHA-256 est conservée.</summary>
 public sealed class ApiKey
 {
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -245,7 +245,7 @@ public sealed class Job
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid SuiteId { get; set; }
     public JobSuite Suite { get; set; } = null!;
-    /// <summary>Tâche à terminer avec succès avant celle-ci ; sa sortie devient l'entrée de celle-ci.</summary>
+    /// <summary>Tâche à terminer avec succès avant celle-ci. Sa sortie devient l'entrée de celle-ci.</summary>
     public Guid? DependsOnId { get; set; }
     /// <summary>Objet traité (import YouTube, morceau…), pour retrouver ses tâches.</summary>
     public Guid? SubjectId { get; set; }

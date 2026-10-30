@@ -139,7 +139,7 @@ select.input { cursor: pointer; }
   border-radius: 3px; background: var(--bg-hover); color: var(--text-muted); margin-left: .4rem; white-space: nowrap;
 }
 
-/* Curseurs : la partie jouée (jusqu'au pouce, --pct) est remplie ; au survol elle passe à l'accent et le pouce apparaît. */
+/* Curseurs : la partie jouée (jusqu'au pouce, --pct) est remplie. Au survol elle passe à l'accent et le pouce apparaît. */
 .slider {
   --pct: 0%; --fill: var(--text);
   -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: 2px; cursor: pointer;
@@ -202,7 +202,7 @@ select.input { cursor: pointer; }
 .credits { margin: 0; padding-left: 1.1rem; line-height: 1.9; }
 .credits a { text-decoration: underline; }
 
-/* Pastille du compte, en bas du menu ; son menu s'ouvre vers le haut. */
+/* Pastille du compte, en bas du menu. Son menu s'ouvre vers le haut. */
 .account-badge { position: relative; margin-top: .75rem; border-top: 1px solid var(--line); padding-top: .75rem; }
 .account-trigger {
   display: flex; align-items: center; gap: .65rem; width: 100%; padding: .45rem .6rem; border: 0; border-radius: 8px;
@@ -247,7 +247,7 @@ select.input { cursor: pointer; }
 .content { grid-row: 1; position: relative; display: flex; flex-direction: column; min-height: 0; overflow: hidden; background: var(--bg); }
 .content-scroll { flex: 1; min-height: 0; overflow-y: auto; background: linear-gradient(var(--header) 0, var(--bg) 320px); }
 
-/* En-tête : recherche toujours à portée ; ses résultats s'ouvrent par-dessus la page, fermés par la croix ou Échap. */
+/* En-tête : recherche toujours à portée. Ses résultats s'ouvrent par-dessus la page, fermés par la croix ou Échap. */
 .topbar { display: flex; align-items: center; padding: .75rem 2rem; background: var(--header); }
 .topbar-search {
   display: flex; align-items: center; gap: .6rem; width: min(100%, 420px); padding: .55rem .9rem;
@@ -536,7 +536,7 @@ select.input { cursor: pointer; }
 }
 
 /* ---------- Graphiques du tableau de bord ---------- */
-/* Palette catégorielle validée (daltonisme, contraste) sur le fond sombre ; le libre et les autres fichiers restent neutres. */
+/* Palette catégorielle validée (daltonisme, contraste) sur le fond sombre. Le libre et les autres fichiers restent neutres. */
 :root {
   --series-library: #3987e5;
   --series-upload: #d95926;

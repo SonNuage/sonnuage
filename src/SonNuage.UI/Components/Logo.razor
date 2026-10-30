@@ -1,6 +1,6 @@
 @implements IDisposable
 @inject IPlayer Player
-@* Logo SonNuage : barres d'égaliseur découpées en nuage. Au repos, un nuage plein ; animé, les barres dansent.
+@* Logo SonNuage : barres d'égaliseur découpées en nuage. Au repos, un nuage plein. Animé, les barres dansent.
    FollowPlayback : animé pendant la lecture (menu de gauche). Mêmes couleurs dans les deux thèmes. *@
 <svg class="logo @(Animated || (FollowPlayback && Player.State.IsPlaying) ? "playing" : null)" viewBox="0 0 64 64" width="@Size" height="@Size" aria-hidden="true">
     <defs><clipPath id="@_clip"><path d="@Cloud" /></clipPath></defs>

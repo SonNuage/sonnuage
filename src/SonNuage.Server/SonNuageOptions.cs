@@ -36,10 +36,10 @@ public sealed class SonNuageOptions
     /// <summary>Tentatives de connexion/refresh par minute et par IP (limite le brute-force).</summary>
     public int LoginAttemptsPerMinute { get; set; } = 10;
 
-    /// <summary>yt-dlp et son moteur JavaScript (YouTube l'exige) ; vides : dossier des outils puis PATH.</summary>
+    /// <summary>yt-dlp et son moteur JavaScript (YouTube l'exige). Vides : dossier des outils puis PATH.</summary>
     public string? YtDlpPath { get; set; }
     public string? DenoPath { get; set; }
-    /// <summary>fpcalc (Chromaprint) pour l'empreinte acoustique AcoustID ; facultatif.</summary>
+    /// <summary>fpcalc (Chromaprint) pour l'empreinte acoustique AcoustID. Facultatif.</summary>
     public string FpcalcPath { get; set; } = "fpcalc";
     /// <summary>Contact transmis à MusicBrainz dans le User-Agent, comme l'exigent ses règles d'usage.</summary>
     public string MusicBrainzContact { get; set; } = "https://git.pmjb.org/pmj.bailly/sonnuage";

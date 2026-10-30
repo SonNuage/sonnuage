@@ -241,7 +241,7 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadAsync();
-        // Journal de la tâche ouverte : chaque seconde ; listes : toutes les trois secondes.
+        // Journal de la tâche ouverte : chaque seconde. Listes : toutes les trois secondes.
         _timer = new Timer(_ => InvokeAsync(async () =>
         {
             if (_busy) return;

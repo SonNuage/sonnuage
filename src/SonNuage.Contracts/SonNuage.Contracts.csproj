@@ -7,7 +7,7 @@
     <Description>SonNuage : contrats de l'API (DTO) et traductions.</Description>
   </PropertyGroup>
 
-  <!-- Une langue par fichier ; un fichier ajouté ici est une langue de plus dans l'application. -->
+  <!-- Une langue par fichier. Un fichier ajouté ici est une langue de plus dans l'application. -->
   <ItemGroup>
     <EmbeddedResource Include="Localization\*.json" LogicalName="SonNuage.Contracts.Localization.%(Filename).json" />
   </ItemGroup>

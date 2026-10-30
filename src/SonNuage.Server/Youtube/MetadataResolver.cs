@@ -13,13 +13,13 @@ public sealed record MetadataResolution(MetadataCandidateDto Best, IReadOnlyList
 /// <summary>
 /// Reconstitue les métadonnées d'une vidéo en croisant les sources, de la plus sûre à la moins sûre :
 /// <list type="number">
-/// <item>empreinte acoustique AcoustID (si clé et fpcalc) : reconnaît le morceau quel que soit le titre de la vidéo ;</item>
-/// <item>métadonnées YouTube Music (piste, artistes, album, année) que yt-dlp extrait des titres « auto-générés » ;</item>
-/// <item>recherche MusicBrainz sur artiste + titre (déduits du titre de la vidéo si besoin), notée sur le titre,
-///       l'artiste et la durée ; l'édition retenue privilégie l'album studio officiel le plus ancien ;</item>
-/// <item>à défaut, le titre de la vidéo découpé « Artiste - Titre ».</item>
+/// <item>empreinte acoustique AcoustID (si clé et fpcalc) : reconnaît le morceau quel que soit le titre de la vidéo.</item>
+/// <item>Métadonnées YouTube Music (piste, artistes, album, année) que yt-dlp extrait des titres « auto-générés ».</item>
+/// <item>Recherche MusicBrainz sur artiste + titre (déduits du titre de la vidéo si besoin), notée sur le titre,
+///       l'artiste et la durée. L'édition retenue privilégie l'album studio officiel le plus ancien.</item>
+/// <item>À défaut, le titre de la vidéo découpé « Artiste - Titre ».</item>
 /// </list>
-/// Chaque candidat reçoit un score de 0 à 1 ; sous le seuil réglé dans l'admin, l'import attend une vérification.
+/// Chaque candidat reçoit un score de 0 à 1. Sous le seuil réglé dans l'admin, l'import attend une vérification.
 /// </summary>
 public sealed class MetadataResolver(MusicBrainzClient musicBrainz, ILogger<MetadataResolver> logger)
 {

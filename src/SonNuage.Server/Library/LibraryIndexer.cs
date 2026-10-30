@@ -78,7 +78,7 @@ public sealed class LibraryIndexer(SonNuageDbContext db)
     }
 
     /// <summary>Supprime albums et artistes devenus vides.</summary>
-    /// <summary>Supprime les albums sans titre, puis les artistes sans album ni titre ; renvoie le nombre supprimé.</summary>
+    /// <summary>Supprime les albums sans titre, puis les artistes sans album ni titre. Renvoie le nombre supprimé.</summary>
     public static async Task<int> PruneAsync(SonNuageDbContext db, CancellationToken ct)
     {
         var albums = await db.Albums.Where(a => !a.Tracks.Any()).ExecuteDeleteAsync(ct);

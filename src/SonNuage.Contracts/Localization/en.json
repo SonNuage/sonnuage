@@ -174,8 +174,8 @@
       "missing": "yt-dlp not found: install it or use “Update yt-dlp” in the admin pages.",
       "cannotStart": "Couldn’t start yt-dlp.",
       "timeout": "yt-dlp didn’t finish in time.",
-      "addCookies": " — Add, in the settings, the cookies of an (adult) YouTube account that has access.",
-      "cookiesInsufficient": " — The saved cookies aren’t enough: underage account, not a member, or expired session?",
+      "addCookies": ". Add, in the settings, the cookies of an (adult) YouTube account that has access.",
+      "cookiesInsufficient": ". The saved cookies aren’t enough: underage account, not a member, or expired session?",
       "parallelDownloads": "Simultaneous downloads: between 1 and {max}."
     },
     "users": {
@@ -458,7 +458,7 @@
     "fileIs": "File: {path}",
     "saveAlbum": "Save album",
     "changeCover": "Change cover",
-    "dbOnly": "Changes are saved in SonNuage’s database; files aren’t modified and these values won’t be overwritten by later scans.",
+    "dbOnly": "Changes are saved in SonNuage’s database. Files aren’t modified, and these values won’t be overwritten by later scans.",
     "searchPlaceholder": "Search a track, artist or album…",
     "wholeLibrary": "Whole library",
     "edited": "edited",
@@ -525,7 +525,7 @@
       "title": "Library scan",
       "running": "Scanning: {seen} files seen, {added} added, {updated} updated.",
       "last": "Last scan: {date}",
-      "lastStats": " — {seen} files, {added} added, {updated} updated, {removed} removed.",
+      "lastStats": "({seen} files, {added} added, {updated} updated, {removed} removed)",
       "hint": "Changes on disk are detected automatically. A full scan is incremental: only modified files are read again.",
       "now": "Scan now"
     },
@@ -811,7 +811,7 @@
       "artist": "One artist",
       "artistPlaceholder": "Artist name…",
       "otherArtist": "Change",
-      "apply": "Automatically fix confident matches (above the threshold chosen below; hand-edited tracks are left alone). Otherwise, suggestions are only logged.",
+      "apply": "Automatically fix confident matches above the threshold chosen below. Hand-edited tracks are left alone. Otherwise, suggestions are only logged.",
       "start": "Start",
       "started": "Task created.",
       "button": "New task",
@@ -834,7 +834,7 @@
       "noFile": "yt-dlp produced no audio file.",
       "downloaded": "File ready: {file} ({size} KiB).",
       "fileGone": "Downloaded file is missing: the video goes back to download.",
-      "resolved": "Picked: {artist} — {title} ({album}), source {source}, confidence {score}%.",
+      "resolved": "Picked: {artist} - {title} ({album}), source {source}, confidence {score}%.",
       "filed": "Filed as {path}.",
       "needsReview": "Confidence below threshold: to review in the YouTube queue.",
       "canceled": "Import canceled from the tasks."
@@ -857,7 +857,7 @@
       },
       "trackGone": "Track removed from the library in the meantime.",
       "noMatch": "No MusicBrainz match recognized.",
-      "best": "Best match: {artist} — {title} ({album}), {score}%.",
+      "best": "Best match: {artist} - {title} ({album}), {score}%.",
       "unchanged": "Tags match: nothing to change.",
       "change": "{field}: “{from}” → “{to}”",
       "result": {

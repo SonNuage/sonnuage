@@ -24,8 +24,8 @@ public sealed record Account(Guid Id, Uri Server, Guid UserId, string Username)
 }
 
 /// <summary>
-/// Comptes connectés et compte actif. Le compte actif fixe le serveur, la bibliothèque affichée et la lecture ;
-/// les données qui lui sont propres (session, file, réglages de lecture) sont rangées sous des clés suffixées par
+/// Comptes connectés et compte actif. Le compte actif fixe le serveur, la bibliothèque affichée et la lecture.
+/// Les données qui lui sont propres (session, file, réglages de lecture) sont rangées sous des clés suffixées par
 /// son identifiant (<see cref="ScopedKey"/>).
 /// <para>
 /// Sur le web (mono-compte, même origine), rien n'est géré ici : <see cref="ScopedKey"/> renvoie la clé telle

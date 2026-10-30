@@ -5,7 +5,7 @@ namespace SonNuage.UI.Services;
 /// <summary>
 /// Un seul lecteur actif à la fois parmi ceux reliés par <see cref="IPlaybackLink"/> : celui qui se met à jouer
 /// le signale (claim) et les autres se taisent, puis affichent son état et lui transmettent leurs commandes,
-/// comme une télécommande. Quand il disparaît, chacun reprend sa file, en pause ; « Lire ici » ramène la lecture.
+/// comme une télécommande. Quand il disparaît, chacun reprend sa file, en pause. « Lire ici » ramène la lecture.
 /// </summary>
 public sealed class LinkedPlayer : IPlayer, IRestorablePlayer, IConnectPlayer
 {
@@ -165,7 +165,7 @@ public sealed class LinkedPlayer : IPlayer, IRestorablePlayer, IConnectPlayer
 
     private Task PublishAsync(PlayerState state)
     {
-        // La file (jusqu'à des centaines de pistes) ne part que quand elle change ; la position, à chaque seconde.
+        // La file (jusqu'à des centaines de pistes) ne part que quand elle change. La position, à chaque seconde.
         var full = !ReferenceEquals(state.Queue, _sentQueue) || state.Queue.Count != _sentCount;
         if (full)
         {

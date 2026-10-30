@@ -19,7 +19,7 @@ public class LinkedPlayerTests
         Assert.Equal("B", b.State.Current?.Title);
         Assert.Equal(3, b.State.Queue.Count);
 
-        // Les commandes de l'onglet B s'exécutent dans l'onglet A ; B ne lit rien lui-même.
+        // Les commandes de l'onglet B s'exécutent dans l'onglet A. B ne lit rien lui-même.
         await b.NextAsync();
         await b.SeekAsync(42);
         Assert.Equal("C", localA.State.Current?.Title);

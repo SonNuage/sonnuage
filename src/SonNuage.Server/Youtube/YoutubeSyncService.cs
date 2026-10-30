@@ -69,7 +69,7 @@ public sealed partial class YoutubeSyncService(
         }
     }
 
-    /// <summary>Nouvel abonnement ; sans <paramref name="importExisting"/>, les vidéos déjà publiées sont marquées « ignorées ».</summary>
+    /// <summary>Nouvel abonnement. Sans <paramref name="importExisting"/>, les vidéos déjà publiées sont marquées « ignorées ».</summary>
     public async Task<(YoutubeSubscription? Subscription, string? Error)> CreateAsync(SonNuageDbContext db, CreateSubscriptionRequest req, CancellationToken ct)
     {
         if (NormalizeUrl(req.Url) is not { } url) return (null, "Adresse YouTube invalide.");

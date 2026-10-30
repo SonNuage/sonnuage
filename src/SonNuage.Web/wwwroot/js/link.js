@@ -1,5 +1,5 @@
 // Canal entre les onglets du lecteur (même navigateur, même origine). Les messages sont des chaînes JSON
-// construites et lues côté C# (LinkedPlayer) ; ce module ne fait que les transporter.
+// construites et lues côté C# (LinkedPlayer). Ce module ne fait que les transporter.
 
 const CHANNEL = 'sonnuage-player';
 

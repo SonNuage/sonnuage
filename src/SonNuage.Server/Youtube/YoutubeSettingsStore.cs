@@ -67,7 +67,7 @@ public sealed class YoutubeSettingsStore
 
     public DateTimeOffset? CookiesUpdatedAt => File.Exists(_cookiesPath) ? File.GetLastWriteTimeUtc(_cookiesPath) : null;
 
-    /// <summary>Enregistre un export cookies.txt ; seules les lignes YouTube/Google sont gardées.</summary>
+    /// <summary>Enregistre un export cookies.txt. Seules les lignes YouTube/Google sont gardées.</summary>
     public string? SaveCookies(string content)
     {
         var lines = content.Replace("\r", "").Split('\n');

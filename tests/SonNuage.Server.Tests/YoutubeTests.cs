@@ -16,7 +16,7 @@ public class YoutubeTitleTests
     [InlineData("Get Lucky", "Daft Punk - Topic", "Daft Punk", "Get Lucky")]
     [InlineData("Bad Romance (Official Music Video)", "LadyGagaVEVO", "LadyGaga", "Bad Romance")]
     [InlineData("Angèle \"Balance ton quoi\"", null, "Angèle", "Balance ton quoi")]
-    [InlineData("AC/DC – Thunderstruck (Official Video) [HD]", "AC/DC", "AC/DC", "Thunderstruck")]
+    [InlineData("AC/DC \u2013 Thunderstruck (Official Video) [HD]", "AC/DC", "AC/DC", "Thunderstruck")]
     [InlineData("Some song without artist", null, null, "Some song without artist")]
     [InlineData("Kevin MacLeod: Monkeys Spinning Monkeys", "Kevin MacLeod Archive", "Kevin MacLeod", "Monkeys Spinning Monkeys")]
     public void Splits_artist_and_title(string video, string? channel, string? artist, string title)

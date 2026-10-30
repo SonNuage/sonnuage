@@ -35,7 +35,7 @@ public sealed record SearchDocument(
 /// <item>Requête floue (fuzziness AUTO) : tolère les fautes de frappe (« metalica », « beatels »).</item>
 /// <item>Suggesteur de termes : « Vouliez-vous dire … » quand un mot n'existe pas dans la bibliothèque.</item>
 /// <item>Complétion floue : propositions pendant la saisie.</item>
-/// <item>Analyse insensible aux accents et à la casse ; popularité (écoutes) en bonus de score.</item>
+/// <item>Analyse insensible aux accents et à la casse. Popularité (écoutes) en bonus de score.</item>
 /// <item>Option sémantique (semantic_text) si un endpoint d'inférence est configuré.</item>
 /// </list>
 /// </summary>
@@ -273,7 +273,7 @@ public sealed class ElasticsearchClient(IHttpClientFactory httpFactory, IOptions
             .Where(id => id != Guid.Empty)
             .ToList() ?? [];
 
-    /// <summary>Remplace chaque mot inconnu par la meilleure suggestion ; null si rien à corriger.</summary>
+    /// <summary>Remplace chaque mot inconnu par la meilleure suggestion. Null si rien à corriger.</summary>
     private static string? Correction(string query, JsonNode? response)
     {
         var entries = response?["suggest"]?["fix"]?.AsArray();

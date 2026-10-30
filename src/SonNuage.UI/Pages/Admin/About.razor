@@ -18,8 +18,8 @@
             <h2>@L["about.version"]</h2>
             <dl class="facts">
                 <dt>@L["about.server"]</dt><dd>@(_info?.Version ?? "…")</dd>
-                <dt>@L["about.build"]</dt><dd><code>@(_info?.Build ?? "—")</code></dd>
-                <dt>@L["about.runtime"]</dt><dd>@(_info?.Runtime ?? "—")</dd>
+                <dt>@L["about.build"]</dt><dd><code>@(_info?.Build ?? "-")</code></dd>
+                <dt>@L["about.runtime"]</dt><dd>@(_info?.Runtime ?? "-")</dd>
                 <dt>@L["about.client"]</dt><dd>@Platform.Name</dd>
             </dl>
         </section>
@@ -53,18 +53,18 @@
         <section class="panel">
             <h2>@L["about.credits"]</h2>
             <ul class="credits">
-                <li><a href="https://musicbrainz.org" target="_blank" rel="noopener">MusicBrainz</a> · <a href="https://acoustid.org" target="_blank" rel="noopener">AcoustID</a> — @L["about.credit.metadata"]</li>
-                <li><a href="https://github.com/yt-dlp/yt-dlp" target="_blank" rel="noopener">yt-dlp</a> · <a href="https://deno.com" target="_blank" rel="noopener">Deno</a> — @L["about.credit.youtube"]</li>
-                <li><a href="https://www.elastic.co/elasticsearch" target="_blank" rel="noopener">Elasticsearch</a> — @L["about.credit.search"]</li>
-                <li><a href="https://github.com/mono/taglib-sharp" target="_blank" rel="noopener">TagLib#</a> · <a href="https://ffmpeg.org" target="_blank" rel="noopener">FFmpeg</a> — @L["about.credit.audio"]</li>
-                <li><a href="https://fonts.google.com/icons" target="_blank" rel="noopener">Material Icons</a> — @L["about.credit.icons"]</li>
+                <li><a href="https://musicbrainz.org" target="_blank" rel="noopener">MusicBrainz</a> · <a href="https://acoustid.org" target="_blank" rel="noopener">AcoustID</a> - @L["about.credit.metadata"]</li>
+                <li><a href="https://github.com/yt-dlp/yt-dlp" target="_blank" rel="noopener">yt-dlp</a> · <a href="https://deno.com" target="_blank" rel="noopener">Deno</a> - @L["about.credit.youtube"]</li>
+                <li><a href="https://www.elastic.co/elasticsearch" target="_blank" rel="noopener">Elasticsearch</a> - @L["about.credit.search"]</li>
+                <li><a href="https://github.com/mono/taglib-sharp" target="_blank" rel="noopener">TagLib#</a> · <a href="https://ffmpeg.org" target="_blank" rel="noopener">FFmpeg</a> - @L["about.credit.audio"]</li>
+                <li><a href="https://fonts.google.com/icons" target="_blank" rel="noopener">Material Icons</a> - @L["about.credit.icons"]</li>
             </ul>
         </section>
     </AdminNav>
 </div>
 
 @code {
-    /// <summary>Dépôt public du projet ; à renseigner quand il sera en ligne (la section « Code source » apparaît alors).</summary>
+    /// <summary>Dépôt public du projet. À renseigner quand il sera en ligne (la section « Code source » apparaît alors).</summary>
     private const string? RepositoryUrl = null;
 
     private ServerInfoDto? _info;
@@ -81,7 +81,7 @@
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
-            // Page d'information : ce qui manque s'affiche « — ».
+            // Page d'information : ce qui manque s'affiche « - ».
         }
     }
 }

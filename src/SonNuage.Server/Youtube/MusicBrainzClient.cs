@@ -147,7 +147,7 @@ public sealed class MusicBrainzClient(IHttpClientFactory httpFactory, YoutubeToo
     }
 
     /// <summary>
-    /// Recherche AcoustID. AcoustID tolère 3 requêtes par seconde ; SonNuage s'en tient à une à la fois, espacées
+    /// Recherche AcoustID. AcoustID tolère 3 requêtes par seconde. SonNuage s'en tient à une à la fois, espacées
     /// d'au moins <see cref="AcoustIdSpacing"/>, quel que soit l'appelant (import, tâche de rescan…).
     /// </summary>
     /// <exception cref="AcoustIdException">Réponse en erreur (clé refusée, limite dépassée…).</exception>

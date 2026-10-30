@@ -62,7 +62,7 @@
         await _input.FocusAsync();
     }
 
-    // Un résultat ouvert (artiste, album…) referme le volet ; la saisie reste pour la prochaine ouverture.
+    // Un résultat ouvert (artiste, album…) referme le volet. La saisie reste pour la prochaine ouverture.
     private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e) =>
         InvokeAsync(() =>
         {

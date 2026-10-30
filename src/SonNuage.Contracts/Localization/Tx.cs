@@ -5,7 +5,7 @@ namespace SonNuage.Contracts.Localization;
 
 /// <summary>
 /// Message à traduire plus tard, là où l'on connaît la langue du lecteur. Un service sans requête HTTP
-/// (import YouTube, file d'attente…) produit <c>Tx.Key("youtube.alreadySubscribed")</c> ; le texte peut être stocké,
+/// (import YouTube, file d'attente…) produit <c>Tx.Key("youtube.alreadySubscribed")</c>. Le texte peut être stocké,
 /// mêlé à un texte brut (erreur yt-dlp), puis traduit à l'affichage par <see cref="Translate"/>.
 /// Forme : <c>⟦clé|nom=valeur&amp;…⟧</c>, valeurs encodées.
 /// </summary>
@@ -30,7 +30,7 @@ public static partial class Tx
 
     private const char LiteralPrefix = '\u2060';
 
-    /// <summary>Remplace chaque marqueur par son texte dans la langue demandée ; le reste est laissé tel quel.</summary>
+    /// <summary>Remplace chaque marqueur par son texte dans la langue demandée. Le reste est laissé tel quel.</summary>
     public static string Translate(this Translations t, string language, string text) =>
         !text.Contains('⟦') ? text : Marker().Replace(text, m =>
         {

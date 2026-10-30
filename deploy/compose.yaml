@@ -20,7 +20,7 @@ services:
       - ${MUSIC_DIR:?dossier de musique requis}:/music:ro
       - ./uploads:/uploads
       - ./config:/config
-    # Accès direct sur le LAN (facultatif) ; sans cette ligne, seul le tunnel atteint le serveur.
+    # Accès direct sur le LAN (facultatif). Sans cette ligne, seul le tunnel atteint le serveur.
     ports:
       - "127.0.0.1:8080:8080"
 

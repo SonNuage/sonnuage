@@ -5,7 +5,7 @@ namespace SonNuage.Server.Jobs;
 
 /// <summary>
 /// Empreinte Chromaprint d'un fichier puis recherche AcoustID. Tâche de la file « acoustid » (une seule à la fois,
-/// imports et rescans confondus) ; le client AcoustID espace en plus ses requêtes d'une seconde.
+/// imports et rescans confondus). Le client AcoustID espace en plus ses requêtes d'une seconde.
 /// Entrée : <c>path</c> (paramètre) ou <c>audio</c> (sortie de l'étape précédente). Sortie : l'entrée reçue,
 /// complétée de <c>acoustid</c> (identifiants MusicBrainz et scores).
 /// </summary>
@@ -45,7 +45,7 @@ public sealed class AcoustIdIdentifyJob(MusicBrainzClient musicBrainz, YoutubeSe
         }
         catch (Exception ex) when (ex is AcoustIdException or HttpRequestException or TaskCanceledException && !ct.IsCancellationRequested)
         {
-            // Nouvelle tentative plus tard ; à la dernière, on continue sans empreinte plutôt que de bloquer l'import.
+            // Nouvelle tentative plus tard. À la dernière, on continue sans empreinte plutôt que de bloquer l'import.
             if (ctx.Attempt < Kind.MaxAttempts) throw new HttpRequestException(Tx.Key("jobs.acoustid.error", ("message", ex.Message)), ex);
             ctx.Warn(Tx.Key("jobs.acoustid.error", ("message", ex.Message)));
             return;

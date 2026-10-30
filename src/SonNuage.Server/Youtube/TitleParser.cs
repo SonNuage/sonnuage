@@ -50,7 +50,7 @@ public static partial class TitleParser
         return new ParsedTitle(string.IsNullOrWhiteSpace(artist) ? null : artist, title.Length > 0 ? title : videoTitle.Trim(), featuring);
     }
 
-    /// <summary>« Daft Punk - Topic » → Daft Punk ; « DaftPunkVEVO » → DaftPunk ; « Daft Punk Official » → Daft Punk.</summary>
+    /// <summary>« Daft Punk - Topic » → Daft Punk. « DaftPunkVEVO » → DaftPunk. « Daft Punk Official » → Daft Punk.</summary>
     public static string? ChannelArtist(string? channel)
     {
         if (string.IsNullOrWhiteSpace(channel)) return null;

@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 namespace SonNuage.Server.Streaming;
 
 /// <summary>
-/// Transcodage à la volée. ffmpeg écrit dans un fichier temporaire du cache ; les clients lisent ce fichier
+/// Transcodage à la volée. ffmpeg écrit dans un fichier temporaire du cache. Les clients lisent ce fichier
 /// au fur et à mesure qu'il grossit (premier octet en quelques centaines de ms) et plusieurs clients partagent
 /// le même encodage. Une fois terminé, le fichier devient une entrée de cache servie avec Range.
 /// </summary>

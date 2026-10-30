@@ -1,0 +1,135 @@
+# Pipeline GitHub Actions, équivalent de .gitlab-ci.yml (les deux peuvent coexister, chacun sur sa forge).
+#  - test     : build et tests du serveur, avec ffmpeg et un vrai Elasticsearch
+#  - image    : image Docker du serveur dans le registre GitHub (ghcr.io)
+#  - packages : SonNuage.Contracts et SonNuage.UI dans le registre NuGet GitHub (pour l'appli Android)
+#  - release  : sur tag vX.Y.Z, release GitHub
+# Version : X.Y.Z sur tag, 0.1.0-ci.N sur les branches (N = numéro d'exécution du workflow).
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: '1'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:9.2.0
+        env:
+          discovery.type: single-node
+          xpack.security.enabled: 'false'
+          ES_JAVA_OPTS: -Xms512m -Xmx512m
+        ports: ['9200:9200']
+    env:
+      SONNUAGE_TEST_FFMPEG: /usr/bin/ffmpeg
+      SONNUAGE_TEST_ELASTICSEARCH: http://localhost:9200
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends ffmpeg > /dev/null
+      - run: dotnet build src/SonNuage.Server/SonNuage.Server.csproj -c Release
+      # Elasticsearch démarre pendant le build : on l'attend avant les tests.
+      - run: for i in $(seq 1 60); do curl -fs "$SONNUAGE_TEST_ELASTICSEARCH/_cluster/health?wait_for_status=yellow&timeout=1s" > /dev/null && break; sleep 2; done
+      - run: dotnet test --project tests/SonNuage.Server.Tests/SonNuage.Server.Tests.csproj -c Release --report-trx --results-directory TestResults
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: TestResults/
+          retention-days: 7
+
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      value: ${{ steps.v.outputs.value }}
+    steps:
+      - id: v
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = tag ]; then v="${GITHUB_REF_NAME#v}"; else v="0.1.0-ci.${GITHUB_RUN_NUMBER}"; fi
+          echo "value=$v" >> "$GITHUB_OUTPUT"
+          echo "Version $v"
+
+  image:
+    if: github.event_name != 'pull_request'
+    needs: [test, version]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: tags
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY,,}"
+          tags="$image:${GITHUB_SHA::8}"
+          [ "${GITHUB_REF}" = "refs/heads/${{ github.event.repository.default_branch }}" ] && tags="$tags,$image:latest"
+          [ "${GITHUB_REF_TYPE}" = tag ] && tags="$tags,$image:${{ needs.version.outputs.value }}"
+          echo "list=$tags" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.tags.outputs.list }}
+          build-args: VERSION=${{ needs.version.outputs.value }}
+
+  packages:
+    if: github.event_name != 'pull_request'
+    needs: [test, version]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      VERSION: ${{ needs.version.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: dotnet pack src/SonNuage.Contracts/SonNuage.Contracts.csproj -c Release -o packages -p:Version="$VERSION"
+      - run: dotnet pack src/SonNuage.UI/SonNuage.UI.csproj -c Release -o packages -p:Version="$VERSION"
+      - run: dotnet nuget push "packages/*.nupkg" --source "https://nuget.pkg.github.com/${GITHUB_REPOSITORY_OWNER}/index.json" --api-key "${{ secrets.GITHUB_TOKEN }}" --skip-duplicate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: packages/
+          retention-days: 30
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [image, packages, version]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages
+          path: packages
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.version.outputs.value }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" packages/*.nupkg --repo "$GITHUB_REPOSITORY" --title "SonNuage $VERSION" \
+            --notes "Image serveur : \`ghcr.io/${GITHUB_REPOSITORY,,}:$VERSION\`. Paquets NuGet SonNuage.Contracts et SonNuage.UI $VERSION."

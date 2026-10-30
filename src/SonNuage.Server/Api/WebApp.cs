@@ -30,7 +30,7 @@ public static class WebApp
         return _build.Length == 0 ? null : _build;
     }
 
-    /// <summary>index.html avec la version du client ; jamais mis en cache (c'est lui qui pointe vers la bonne version).</summary>
+    /// <summary>index.html avec la version du client. Jamais mis en cache (c'est lui qui pointe vers la bonne version).</summary>
     public static IResult Index(HttpContext context, IWebHostEnvironment env)
     {
         if (_index is null)

@@ -12,7 +12,7 @@ namespace SonNuage.Server.Jobs;
 
 /// <summary>
 /// Rescan AcoustID de la bibliothèque (toute, ou un artiste) : prépare, dans sa propre suite, une paire de tâches
-/// par morceau — empreinte AcoustID (file « acoustid ») puis comparaison avec MusicBrainz (<see cref="LibraryMatchJob"/>).
+/// par morceau - empreinte AcoustID (file « acoustid ») puis comparaison avec MusicBrainz (<see cref="LibraryMatchJob"/>).
 /// Paramètres : <c>artistId</c> (facultatif), <c>apply</c> (appliquer les correspondances sûres),
 /// <c>threshold</c> (seuil d'acceptation propre à la tâche, sinon celui des réglages).
 /// </summary>
@@ -48,7 +48,7 @@ public sealed class AcoustIdRescanJob(YoutubeSettingsStore settings) : IJobHandl
             var plan = new JobPlan(JobSuiteKinds.AcoustIdRescan, "");
             foreach (var t in tracks.Skip(i).Take(Chunk))
             {
-                var title = $"{t.ArtistName} – {t.Title}";
+                var title = $"{t.ArtistName} - {t.Title}";
                 plan.Add(JobKinds.AcoustIdIdentify, title, new { path = t.FilePath }, subjectId: t.Id);
                 plan.Then(JobKinds.LibraryMatch, title, new { trackId = t.Id, apply, threshold }, subjectId: t.Id);
             }
@@ -61,8 +61,8 @@ public sealed class AcoustIdRescanJob(YoutubeSettingsStore settings) : IJobHandl
 /// <summary>
 /// Compare un morceau de la bibliothèque aux enregistrements MusicBrainz reconnus par son empreinte.
 /// Prudence : titre et artiste sont corrigés si la correspondance dépasse le seuil d'acceptation (celui de la tâche,
-/// sinon le réglage YouTube) ;
-/// album, numéros et année seulement si l'édition trouvée est le même album ; le genre seulement s'il manque.
+/// sinon le réglage YouTube).
+/// Album, numéros et année seulement si l'édition trouvée est le même album. Le genre seulement s'il manque.
 /// Les morceaux modifiés à la main (verrouillés) ne sont jamais touchés. Sans « appliquer », tout est seulement journalisé.
 /// </summary>
 public sealed class LibraryMatchJob(MetadataResolver resolver, YoutubeSettingsStore settings, CoverLocator covers, SearchIndexer search) : IJobHandler

@@ -14,7 +14,7 @@ RUN dotnet publish src/SonNuage.Server/SonNuage.Server.csproj -c Release -o /app
     ${VERSION:+-p:Version=$VERSION} -p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
-# Import YouTube : yt-dlp et Deno (moteur JavaScript exigé par YouTube) épinglés et vérifiés ; l'admin peut les
+# Import YouTube : yt-dlp et Deno (moteur JavaScript exigé par YouTube) épinglés et vérifiés. L'admin peut les
 # mettre à jour sans reconstruire l'image (copie dans /config/tools, prioritaire). fpcalc pour AcoustID.
 ARG YTDLP_VERSION=2026.10.26
 ARG DENO_VERSION=2.9.8
