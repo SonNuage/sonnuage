@@ -6,21 +6,11 @@
 <PageTitle>@L["admin.tabs.users"] · Localify</PageTitle>
 
 <div class="page">
-    <header class="page-header"><h1>@L["admin.title"]</h1></header>
-    <AdminNav>
-        <section class="panel">
-            <h2>@L["users.new"]</h2>
-            <form class="inline-form" @onsubmit="CreateAsync" @onsubmit:preventDefault="true">
-                <input class="input" placeholder="@L["users.username"]" @bind="_username" autocomplete="off" required />
-                <input class="input" type="password" placeholder="@L["users.passwordMin", ("min", 8)]" @bind="_password" autocomplete="new-password" minlength="8" required />
-                <select class="input" @bind="_role">
-                    <option value="@Roles.User">@L["users.roleUser"]</option>
-                    <option value="@Roles.Admin">@L["users.roleAdmin"]</option>
-                </select>
-                <button class="btn primary" type="submit">@L["common.create"]</button>
-            </form>
-        </section>
-
+    <AdminNav Title="@L["admin.nav.users"]">
+        <Actions>
+            <button class="btn primary" @onclick="() => _adding = true"><Icon Name="add" Size="18" /> @L["users.new"]</button>
+        </Actions>
+        <ChildContent>
         <div class="table-wrap">
             <table class="table">
                 <thead><tr><th>@L["users.colUser"]</th><th>@L["users.colRole"]</th><th>@L["users.colCreated"]</th><th></th></tr></thead>
@@ -48,6 +38,7 @@
                 </tbody>
             </table>
         </div>
+        </ChildContent>
     </AdminNav>
 </div>
 
@@ -72,6 +63,21 @@
     </Footer>
 </Modal>
 
+
+<Modal @bind-Open="_adding" Title="@L["users.new"]">
+    <form id="new-user" class="stack" @onsubmit="CreateAsync" @onsubmit:preventDefault="true">
+        <input class="input" placeholder="@L["users.username"]" @bind="_username" autocomplete="off" required />
+        <input class="input" type="password" placeholder="@L["users.passwordMin", ("min", 8)]" @bind="_password" autocomplete="new-password" minlength="8" required />
+        <select class="input" @bind="_role">
+            <option value="@Roles.User">@L["users.roleUser"]</option>
+            <option value="@Roles.Admin">@L["users.roleAdmin"]</option>
+        </select>
+        <div class="row">
+            <button class="btn" type="button" @onclick="() => _adding = false">@L["common.cancel"]</button>
+            <button class="btn primary" type="submit">@L["common.create"]</button>
+        </div>
+    </form>
+</Modal>
 @code {
     private List<UserDto> _users = [];
     private string _username = "";
@@ -94,12 +100,15 @@
         await RunAsync(async () => _users = await Api.AdminUsersAsync() ?? []);
     }
 
+    private bool _adding;
+
     private async Task CreateAsync()
     {
         await RunAsync(async () =>
         {
             await Api.AdminCreateUserAsync(new CreateUserRequest(_username.Trim(), _password, _role));
             Ui.Notify(L["users.created", ("name", _username)]);
+            _adding = false;
             _username = _password = "";
             await LoadAsync();
         });

@@ -1,0 +1,18 @@
+@* Menu de gauche en mode administration : remplace Accueil, Rechercher… ; on en sort par « Retour à la musique ». *@
+<a class="nav-item admin-back" href=""><Icon Name="arrow-back" /><span>@L["admin.nav.back"]</span></a>
+
+<div class="nav-group">@L["admin.title"]</div>
+<NavLink class="nav-item" href="admin" Match="NavLinkMatch.All"><Icon Name="dashboard" /><span>@L["admin.nav.overview"]</span></NavLink>
+
+<div class="nav-group">@L["admin.nav.music"]</div>
+<NavLink class="nav-item" href="admin/youtube"><Icon Name="play-circle" /><span>@L["admin.nav.youtube"]</span></NavLink>
+<NavLink class="nav-item" href="admin/subscriptions"><Icon Name="subscriptions" /><span>@L["admin.nav.subscriptions"]</span></NavLink>
+<NavLink class="nav-item" href="admin/upload"><Icon Name="upload" /><span>@L["admin.nav.upload"]</span></NavLink>
+<NavLink class="nav-item" href="admin/imports"><Icon Name="download" /><span>@L["admin.nav.imports"]</span></NavLink>
+<NavLink class="nav-item" href="admin/library"><Icon Name="edit" /><span>@L["admin.nav.metadata"]</span></NavLink>
+
+<div class="nav-group">@L["admin.nav.server"]</div>
+<NavLink class="nav-item" href="admin/tasks"><Icon Name="tasks" /><span>@L["admin.nav.tasks"]</span></NavLink>
+<NavLink class="nav-item" href="admin/users"><Icon Name="users" /><span>@L["admin.nav.users"]</span></NavLink>
+<NavLink class="nav-item" href="admin/keys"><Icon Name="key" /><span>@L["admin.nav.keys"]</span></NavLink>
+<NavLink class="nav-item" href="admin/settings"><Icon Name="settings" /><span>@L["admin.nav.settings"]</span></NavLink>

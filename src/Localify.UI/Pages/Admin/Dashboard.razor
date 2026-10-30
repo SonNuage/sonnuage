@@ -7,24 +7,25 @@
 <PageTitle>@L["admin.title"] · Localify</PageTitle>
 
 <div class="page">
-    <header class="page-header"><h1>@L["admin.title"]</h1></header>
-    <AdminNav>
+    <AdminNav Title="@L["admin.nav.overview"]">
         <Loader Loading="_stats is null && _error is null" Error="@_error" OnRetry="LoadAsync">
             @if (_dashboard is { } d)
             {
+                @if (Todo().ToList() is { Count: > 0 } todo)
+                {
+                    <div class="todo">
+                        @foreach (var (href, text) in todo)
+                        {
+                            <a class="notice warn" href="@href"><span>@text</span><Icon Name="chevron-right" Size="18" /></a>
+                        }
+                    </div>
+                }
                 <div class="stats">
                     <div class="stat"><span class="stat-value">@N(d.Artists)</span><span class="stat-label">@L["dash.stat.artists"]</span></div>
                     <div class="stat"><span class="stat-value">@N(d.Albums)</span><span class="stat-label">@L["dash.stat.albums"]</span></div>
                     <div class="stat"><span class="stat-value">@N(d.Tracks)</span><span class="stat-label">@L["dash.stat.tracks"]</span></div>
                     <div class="stat"><span class="stat-value">@N(d.Playlists)</span><span class="stat-label">@L["dash.stat.playlists"]</span></div>
                     <div class="stat"><span class="stat-value">@N(d.Users)</span><span class="stat-label">@L["dash.stat.users"]</span></div>
-                    @if (_youtube is { } yt && yt.Queued + yt.Failed + yt.NeedsReview > 0)
-                    {
-                        <a class="stat" href="admin/youtube">
-                            <span class="stat-value">@yt.Queued</span>
-                            <span class="stat-label">@L["dash.yt.queued"]@(yt.NeedsReview > 0 ? L["dash.yt.review", ("count", yt.NeedsReview)] : "")@(yt.Failed > 0 ? L["dash.yt.failed", ("count", yt.Failed)] : "")</span>
-                        </a>
-                    }
                 </div>
 
                 <div class="dash-grid">
@@ -107,36 +108,6 @@
                 </section>
             }
 
-            @if (_stats is { } stats)
-            {
-                <section class="panel">
-                    <h2>@L["dash.scan.title"]</h2>
-                    @if (stats.Scan.Running)
-                    {
-                        <p><span class="spinner inline"></span> @L["dash.scan.running", ("seen", stats.Scan.FilesSeen), ("added", stats.Scan.Added), ("updated", stats.Scan.Updated)]</p>
-                    }
-                    else
-                    {
-                        <p>
-                            @L["dash.scan.last", ("date", stats.Scan.LastFinishedAt is { } last ? L.DateTime(last) : L["common.never"])]
-                            @if (stats.Scan.LastFinishedAt is not null)
-                            {
-                                <span>@L["dash.scan.lastStats", ("seen", stats.Scan.FilesSeen), ("added", stats.Scan.Added), ("updated", stats.Scan.Updated), ("removed", stats.Scan.Removed)]</span>
-                            }
-                        </p>
-                    }
-                    @if (stats.Scan.LastError is { } err)
-                    {
-                        <p class="form-error">@err</p>
-                    }
-                    <p class="muted">@L["dash.search", ("engine", SearchLabel(stats.SearchEngine)), ("cache", Format.Bytes(stats.TranscodeCacheBytes))]</p>
-                    <p class="muted">@L["dash.scan.hint"]</p>
-                    <div class="row">
-                        <button class="btn primary" disabled="@stats.Scan.Running" @onclick="ScanAsync"><Icon Name="refresh" Size="18" /> @L["dash.scan.now"]</button>
-                        <button class="btn" @onclick="ClearCacheAsync"><Icon Name="delete" Size="18" /> @L["dash.clearCache"]</button>
-                    </div>
-                </section>
-            }
         </Loader>
     </AdminNav>
 </div>
@@ -157,14 +128,6 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadAsync();
-        _timer = new Timer(_ => InvokeAsync(async () =>
-        {
-            if (_stats?.Scan.Running == true)
-            {
-                await LoadAsync();
-                StateHasChanged();
-            }
-        }), null, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2));
     }
 
     private async Task LoadAsync()
@@ -192,18 +155,18 @@
         _dashboard = await Api.AdminDashboardAsync(range) ?? _dashboard;
     }
 
-    private async Task ScanAsync()
+    /// <summary>Ce qui demande une action de l'admin, avec la page où la faire.</summary>
+    private IEnumerable<(string Href, string Text)> Todo()
     {
-        await Api.AdminScanAsync();
-        await Task.Delay(500);
-        await LoadAsync();
-    }
-
-    private async Task ClearCacheAsync()
-    {
-        await Api.AdminClearCacheAsync();
-        Ui.Notify(L["dash.cacheCleared"]);
-        await LoadAsync();
+        if (_youtube is { } yt)
+        {
+            if (yt.Tools.YtDlp is null) yield return ("admin/settings", L["dash.todo.ytdlp"]);
+            if (yt.HoldUntil is { } until && until > DateTimeOffset.Now)
+                yield return ("admin/imports", L["dash.todo.hold", ("time", until.ToLocalTime().ToString("HH:mm"))]);
+            if (yt.NeedsReview > 0) yield return ("admin/imports", L["dash.todo.review", ("count", yt.NeedsReview)]);
+            if (yt.Failed > 0) yield return ("admin/imports", L["dash.todo.failed", ("count", yt.Failed)]);
+        }
+        if (_stats?.Scan.LastError is not null) yield return ("admin/settings", L["dash.todo.scan"]);
     }
 
     public void Dispose() => _timer?.Dispose();

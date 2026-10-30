@@ -381,6 +381,21 @@
       "users": "Utilisateurs",
       "keys": "Clés API",
       "tasks": "Tâches"
+    },
+    "nav": {
+      "back": "Retour à la musique",
+      "overview": "Vue d'ensemble",
+      "music": "Musique",
+      "youtube": "Importer depuis YouTube",
+      "subscriptions": "Abonnements",
+      "upload": "Envoyer des fichiers",
+      "imports": "Suivi des imports",
+      "metadata": "Métadonnées",
+      "server": "Serveur",
+      "tasks": "Tâches",
+      "users": "Utilisateurs",
+      "keys": "Clés d'API",
+      "settings": "Réglages"
     }
   },
   "users": {
@@ -515,7 +530,14 @@
       "database": "en base (aucun Elasticsearch configuré)"
     },
     "clearCache": "Vider le cache de transcodage",
-    "cacheCleared": "Cache de transcodage vidé"
+    "cacheCleared": "Cache de transcodage vidé",
+    "todo": {
+      "ytdlp": "yt-dlp n'est pas installé : les imports YouTube sont impossibles.",
+      "hold": "YouTube a bloqué les imports : reprise à {time}.",
+      "review": "{count} import(s) à vérifier",
+      "failed": "{count} import(s) en échec",
+      "scan": "La dernière analyse de la bibliothèque a échoué."
+    }
   },
   "keys": {
     "title": "Extension de navigateur",
@@ -784,7 +806,8 @@
       "otherArtist": "Changer",
       "apply": "Corriger automatiquement les correspondances sûres (au-dessus du seuil réglé dans YouTube ; les morceaux modifiés à la main ne sont pas touchés). Sinon, propositions dans le journal seulement.",
       "start": "Lancer",
-      "started": "Tâche créée."
+      "started": "Tâche créée.",
+      "button": "Nouvelle tâche"
     },
     "log": {
       "canceled": "Annulée.",

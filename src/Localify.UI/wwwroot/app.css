@@ -143,6 +143,16 @@ select.input { cursor: pointer; }
 .nav-sub:hover, .nav-sub.active { color: var(--text); text-decoration: none; }
 .sidebar-playlists { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 
+/* Menu d'administration : groupes discrets, retour à la musique en tête. */
+.nav-group { padding: 1rem .75rem .35rem; color: var(--text-muted); font-weight: 700; font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; }
+.admin-back { margin-bottom: .25rem; }
+.sidebar.admin .nav-item { padding: .5rem .75rem; }
+.sidebar.admin .account-badge { margin-top: auto; }
+.todo { display: grid; gap: .5rem; margin-bottom: 1.25rem; }
+.todo .notice { margin: 0; color: var(--text); }
+.todo .notice:hover { text-decoration: none; background: var(--bg-hover); }
+.todo .notice .icon { color: var(--text-muted); }
+
 /* Pastille du compte, en bas du menu ; son menu s'ouvre vers le haut. */
 .account-badge { position: relative; margin-top: .75rem; border-top: 1px solid #282828; padding-top: .75rem; }
 .account-trigger {
@@ -440,6 +450,9 @@ select.input { cursor: pointer; }
     background: linear-gradient(transparent, #000 30%);
   }
   .brand { display: none; }
+  .sidebar.admin { justify-content: flex-start; overflow-x: auto; scrollbar-width: none; }
+  .sidebar.admin .nav-group { display: none; }
+  .sidebar.admin .nav-item { flex: 0 0 auto; min-width: 72px; }
   .nav-item { flex-direction: column; gap: .15rem; font-size: .68rem; padding: .3rem .5rem; flex: 1; }
   .nav-item.active { background: none; }
   .player-bar {

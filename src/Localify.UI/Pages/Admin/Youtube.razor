@@ -1,14 +1,17 @@
 @page "/admin/youtube"
+@page "/admin/imports"
+@page "/admin/subscriptions"
+@page "/admin/settings"
 @using System.Globalization
 @implements IDisposable
 @inject ApiClient Api
 @inject UiState Ui
+@inject NavigationManager Nav
 
-<PageTitle>YouTube · Localify</PageTitle>
+<PageTitle>@TabTitle · Localify</PageTitle>
 
 <div class="page">
-    <header class="page-header"><h1>@L["admin.title"]</h1></header>
-    <AdminNav>
+    <AdminNav Title="@TabTitle">
         @if (_status is { } st)
         {
             @if (st.Tools.YtDlp is null)
@@ -27,7 +30,7 @@
                     <button class="btn" @onclick="ResumeAsync">@L["yt.resumeNow"]</button>
                 </div>
             }
-            @foreach (var cur in st.Active)
+            @foreach (var cur in _tab == "queue" ? st.Active : [])
             {
                 <div class="notice" @key="cur.ItemId">
                     <span class="spinner inline"></span>
@@ -36,19 +39,6 @@
                 </div>
             }
         }
-
-        <div class="tabs sub">
-            @foreach (var key in Tabs)
-            {
-                <button class="tab @(_tab == key ? "active" : null)" @onclick="() => SwitchAsync(key)">
-                    @L["yt.tab." + key]
-                    @if (key == "queue" && _status is { } s && s.Queued + s.NeedsReview + s.Failed > 0)
-                    {
-                        <span class="badge">@(s.Queued + s.NeedsReview + s.Failed)</span>
-                    }
-                </button>
-            }
-        </div>
 
         @switch (_tab)
         {
@@ -134,7 +124,25 @@
 </Modal>
 
 @code {
-    private static readonly string[] Tabs = ["explore", "queue", "subs", "settings"];
+    // Une adresse par entrée du menu d'administration.
+    private static readonly Dictionary<string, (string Tab, string Title)> Routes = new()
+    {
+        ["admin/youtube"] = ("explore", "admin.nav.youtube"),
+        ["admin/imports"] = ("queue", "admin.nav.imports"),
+        ["admin/subscriptions"] = ("subs", "admin.nav.subscriptions"),
+        ["admin/settings"] = ("settings", "admin.nav.settings"),
+    };
+
+    private string? _route;
+    private string TabTitle => L[Routes.TryGetValue(_route ?? "", out var r) ? r.Title : "admin.nav.youtube"];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var route = Nav.ToBaseRelativePath(Nav.Uri).Split('?', '#')[0].TrimEnd('/');
+        if (route == _route) return;
+        _route = route;
+        await SwitchAsync(Routes.TryGetValue(route, out var r) ? r.Tab : "explore");
+    }
     private static readonly (string? Status, bool Review, string Key)[] Filters =
         [(null, false, "all"), ("Queued", false, "queued"), (null, true, "review"), ("Failed", false, "failed"), ("Done", false, "done"), ("Skipped", false, "skipped")];
 
@@ -650,6 +658,8 @@
 
     private RenderFragment Settings => __builder =>
     {
+        <LibraryMaintenance />
+
         <section class="panel">
             <h2>@L["yt.tools.title"]</h2>
             <p>

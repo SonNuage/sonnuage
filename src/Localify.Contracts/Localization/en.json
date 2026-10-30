@@ -381,6 +381,21 @@
       "users": "Users",
       "keys": "API keys",
       "tasks": "Tasks"
+    },
+    "nav": {
+      "back": "Back to music",
+      "overview": "Overview",
+      "music": "Music",
+      "youtube": "Import from YouTube",
+      "subscriptions": "Subscriptions",
+      "upload": "Upload files",
+      "imports": "Import tracking",
+      "metadata": "Metadata",
+      "server": "Server",
+      "tasks": "Tasks",
+      "users": "Users",
+      "keys": "API keys",
+      "settings": "Settings"
     }
   },
   "users": {
@@ -515,7 +530,14 @@
       "database": "database (no Elasticsearch configured)"
     },
     "clearCache": "Clear transcoding cache",
-    "cacheCleared": "Transcoding cache cleared"
+    "cacheCleared": "Transcoding cache cleared",
+    "todo": {
+      "ytdlp": "yt-dlp is not installed: YouTube imports are unavailable.",
+      "hold": "YouTube blocked imports: resuming at {time}.",
+      "review": "{count} import(s) to review",
+      "failed": "{count} failed import(s)",
+      "scan": "The last library scan failed."
+    }
   },
   "keys": {
     "title": "Browser extension",
@@ -784,7 +806,8 @@
       "otherArtist": "Change",
       "apply": "Automatically fix confident matches (above the threshold set in YouTube; hand-edited tracks are left alone). Otherwise, suggestions are only logged.",
       "start": "Start",
-      "started": "Task created."
+      "started": "Task created.",
+      "button": "New task"
     },
     "log": {
       "canceled": "Canceled.",

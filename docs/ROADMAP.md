@@ -32,6 +32,11 @@ Légende : ✅ fait · 🔜 prochain · 💡 idée à creuser · ⚠️ limite c
   et Shorts. Les albums n'arrivaient donc que par leurs clips : 4 titres de « Perdu d'avance » sur 14 pour
   OrelSan. Désormais, une chaîne qui a un onglet **Sorties** est lue album par album (albums, EP, singles),
   avec le nom de l'album ; une chaîne sans discographie reste lue par ses vidéos.
+- **Administration réorganisée** : on y entre par la pastille du compte (en bas du menu). Le menu de gauche
+  devient celui de l'administration, en deux groupes, Musique (YouTube, abonnements, envoi de fichiers, suivi des
+  imports, métadonnées) et Serveur (tâches, utilisateurs, clés d'API, réglages), avec « Retour à la musique » en
+  tête. Fini les deux niveaux d'onglets. La vue d'ensemble commence par ce qui demande une action ; l'analyse
+  de la bibliothèque et le cache rejoignent les Réglages ; création de tâche et d'utilisateur en fenêtre.
 - **Bibliothèque** : purge horaire des albums vides, artistes sans album masqués, réparation automatique des
   fichiers Ogg/Opus dont les tags écrits par TagLib étaient illisibles.
 

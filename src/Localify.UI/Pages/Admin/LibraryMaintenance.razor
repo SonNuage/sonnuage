@@ -1,0 +1,86 @@
+@implements IDisposable
+@inject ApiClient Api
+@inject UiState Ui
+
+@* Réglages → Bibliothèque : analyse des fichiers, moteur de recherche, cache de transcodage. *@
+<section class="panel">
+    <h2>@L["dash.scan.title"]</h2>
+    @if (_stats is { } stats)
+    {
+        @if (stats.Scan.Running)
+        {
+            <p><span class="spinner inline"></span> @L["dash.scan.running", ("seen", stats.Scan.FilesSeen), ("added", stats.Scan.Added), ("updated", stats.Scan.Updated)]</p>
+        }
+        else
+        {
+            <p>
+                @L["dash.scan.last", ("date", stats.Scan.LastFinishedAt is { } last ? L.DateTime(last) : L["common.never"])]
+                @if (stats.Scan.LastFinishedAt is not null)
+                {
+                    <span>@L["dash.scan.lastStats", ("seen", stats.Scan.FilesSeen), ("added", stats.Scan.Added), ("updated", stats.Scan.Updated), ("removed", stats.Scan.Removed)]</span>
+                }
+            </p>
+        }
+        @if (stats.Scan.LastError is { } err)
+        {
+            <p class="form-error">@err</p>
+        }
+        <p class="muted small">@L["dash.scan.hint"]</p>
+        <p class="muted small">@L["dash.search", ("engine", SearchLabel(stats.SearchEngine)), ("cache", Format.Bytes(stats.TranscodeCacheBytes))]</p>
+        <div class="row">
+            <button class="btn primary" disabled="@stats.Scan.Running" @onclick="ScanAsync"><Icon Name="refresh" Size="18" /> @L["dash.scan.now"]</button>
+            <button class="btn" @onclick="ClearCacheAsync"><Icon Name="delete" Size="18" /> @L["dash.clearCache"]</button>
+        </div>
+    }
+    else
+    {
+        <div class="spinner inline"></div>
+    }
+</section>
+
+@code {
+    private LibraryStatsDto? _stats;
+    private Timer? _timer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+        _timer = new Timer(_ => InvokeAsync(async () =>
+        {
+            if (_stats?.Scan.Running != true) return;
+            await LoadAsync();
+            StateHasChanged();
+        }), null, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2));
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _stats = await Api.AdminStatsAsync();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+    }
+
+    private async Task ScanAsync()
+    {
+        await Api.AdminScanAsync();
+        await Task.Delay(500);
+        await LoadAsync();
+    }
+
+    private async Task ClearCacheAsync()
+    {
+        await Api.AdminClearCacheAsync();
+        Ui.Notify(L["dash.cacheCleared"]);
+        await LoadAsync();
+    }
+
+    private string SearchLabel(string engine) =>
+        L[engine is "elasticsearch" or "indexing" or "degraded" ? "dash.searchEngine." + engine : "dash.searchEngine.database"];
+
+    public void Dispose() => _timer?.Dispose();
+}

@@ -36,7 +36,9 @@
     private string _query = "";
     private ElementReference _input;
 
-    private bool OnSearchPage => Nav.ToBaseRelativePath(Nav.Uri).StartsWith("search", StringComparison.OrdinalIgnoreCase);
+    // Ni sur la page Recherche (doublon) ni en administration (on n'y cherche pas de musique).
+    private bool OnSearchPage => Nav.ToBaseRelativePath(Nav.Uri) is var path
+        && (path.StartsWith("search", StringComparison.OrdinalIgnoreCase) || path == "admin" || path.StartsWith("admin/", StringComparison.Ordinal));
 
     protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
 

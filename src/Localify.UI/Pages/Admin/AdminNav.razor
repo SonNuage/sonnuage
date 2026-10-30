@@ -1,23 +1,24 @@
 @inject AuthSession Auth
 
+@* Cadre d'une page d'administration : accès réservé, titre et actions de la page (la navigation est dans le menu de gauche). *@
 @if (!Auth.IsAdmin)
 {
     <div class="empty"><p>@L["admin.restricted"]</p></div>
 }
 else
 {
-    <div class="tabs">
-        <NavLink class="tab" href="admin" Match="NavLinkMatch.All">@L["admin.tabs.dashboard"]</NavLink>
-        <NavLink class="tab" href="admin/upload">@L["admin.tabs.upload"]</NavLink>
-        <NavLink class="tab" href="admin/youtube">@L["admin.tabs.youtube"]</NavLink>
-        <NavLink class="tab" href="admin/tasks">@L["admin.tabs.tasks"]</NavLink>
-        <NavLink class="tab" href="admin/library">@L["admin.tabs.metadata"]</NavLink>
-        <NavLink class="tab" href="admin/users">@L["admin.tabs.users"]</NavLink>
-        <NavLink class="tab" href="admin/keys">@L["admin.tabs.keys"]</NavLink>
-    </div>
+    <header class="page-header">
+        <h1>@Title</h1>
+        @if (Actions is not null)
+        {
+            <div class="row">@Actions</div>
+        }
+    </header>
     @ChildContent
 }
 
 @code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public RenderFragment? Actions { get; set; }
     [Parameter] public RenderFragment? ChildContent { get; set; }
 }

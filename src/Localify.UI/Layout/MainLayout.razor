@@ -23,19 +23,21 @@ else if (Accounts.IsAdding || !Auth.IsAuthenticated)
 else
 {
     <div class="shell @(Player.State.Current is null ? "" : "has-player")">
-        <nav class="sidebar">
+        <nav class="sidebar @(InAdmin ? "admin" : null)">
             <a class="brand" href="">
                 <svg viewBox="0 0 64 64" width="32" height="32" aria-hidden="true"><rect width="64" height="64" rx="14" fill="var(--accent)" /><path d="M24 44V20l22 12z" fill="#121212" /></svg>
                 <span>Localify</span>
             </a>
+            @if (InAdmin)
+            {
+                <AdminSidebar />
+            }
+            else
+            {
             <NavLink class="nav-item" href="" Match="NavLinkMatch.All"><Icon Name="home" /><span>@L["nav.home"]</span></NavLink>
             <NavLink class="nav-item" href="search"><Icon Name="search" /><span>@L["nav.search"]</span></NavLink>
             <NavLink class="nav-item" href="library"><Icon Name="library" /><span>@L["nav.library"]</span></NavLink>
             <NavLink class="nav-item desktop-only" href="queue"><Icon Name="queue" /><span>@L["nav.queue"]</span></NavLink>
-            @if (Auth.IsAdmin)
-            {
-                <NavLink class="nav-item desktop-only" href="admin"><Icon Name="admin" /><span>@L["nav.admin"]</span></NavLink>
-            }
             <NavLink class="nav-item" href="settings"><Icon Name="settings" /><span>@L["nav.settings"]</span></NavLink>
 
             <div class="sidebar-playlists desktop-only">
@@ -49,6 +51,7 @@ else
                     <NavLink class="nav-sub" href="@($"playlist/{p.Id}")">@p.Name</NavLink>
                 }
             </div>
+            }
 
             <AccountBadge />
         </nav>
@@ -73,6 +76,8 @@ else
 
 @code {
     private bool _ready;
+
+    private bool InAdmin => Nav.ToBaseRelativePath(Nav.Uri) is var path && (path == "admin" || path.StartsWith("admin/") || path.StartsWith("admin?"));
     private bool _restored;
 
     protected override async Task OnInitializedAsync()

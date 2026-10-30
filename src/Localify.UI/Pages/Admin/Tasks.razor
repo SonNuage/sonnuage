@@ -7,8 +7,11 @@
 <PageTitle>@L["admin.tabs.tasks"] · Localify</PageTitle>
 
 <div class="page">
-    <header class="page-header"><h1>@L["admin.title"]</h1></header>
-    <AdminNav>
+    <AdminNav Title="@L["admin.nav.tasks"]">
+        <Actions>
+            <button class="btn primary" @onclick="() => _newTask = true"><Icon Name="add" Size="18" /> @L["jobs.create.button"]</button>
+        </Actions>
+        <ChildContent>
         @if (_overview is { } ov)
         {
             <div class="lanes">
@@ -21,47 +24,6 @@
                 }
             </div>
         }
-
-        <section class="panel">
-            <h2>@L["jobs.create.title"]</h2>
-            <p class="muted small">@L["jobs.create.intro"]</p>
-            <div class="row">
-                <label class="row small"><input type="radio" name="scope" checked="@(!_byArtist)" @onchange="() => _byArtist = false" /> @L["jobs.create.all"]</label>
-                <label class="row small"><input type="radio" name="scope" checked="@_byArtist" @onchange="() => _byArtist = true" /> @L["jobs.create.artist"]</label>
-            </div>
-            @if (_byArtist)
-            {
-                <div class="field" style="margin-top: .6rem">
-                    @if (_artist is { } picked)
-                    {
-                        <div class="row">
-                            <span class="badge info">@picked.Name</span>
-                            <button class="btn" @onclick="() => _artist = null">@L["jobs.create.otherArtist"]</button>
-                        </div>
-                    }
-                    else
-                    {
-                        <input class="input" placeholder="@L["jobs.create.artistPlaceholder"]" @bind="_artistQuery" @bind:event="oninput" @bind:after="SearchArtistsAsync" autocomplete="off" />
-                        @if (_artists is { Count: > 0 })
-                        {
-                            <div class="list">
-                                @foreach (var a in _artists)
-                                {
-                                    <button class="list-item" @key="a.Id" @onclick="() => { _artist = a; _artists = null; }">
-                                        <div><span class="list-title">@a.Name</span><span class="list-sub">@L["library.tracks", ("count", a.TrackCount)]</span></div>
-                                    </button>
-                                }
-                            </div>
-                        }
-                    }
-                </div>
-            }
-            <label class="row small" style="margin: .6rem 0">
-                <input type="checkbox" @bind="_apply" />
-                <span>@L["jobs.create.apply"]</span>
-            </label>
-            <button class="btn primary" disabled="@(_creating || (_byArtist && _artist is null))" @onclick="CreateAsync">@L["jobs.create.start"]</button>
-        </section>
 
         <div class="toolbar">
             <div class="tabs sub" style="margin: 0">
@@ -188,9 +150,55 @@
                 }
             </section>
         </div>
+        </ChildContent>
     </AdminNav>
 </div>
 
+
+<Modal @bind-Open="_newTask" Title="@L["jobs.create.title"]">
+    <ChildContent>
+        <p class="muted small">@L["jobs.create.intro"]</p>
+        <div class="row">
+            <label class="row small"><input type="radio" name="scope" checked="@(!_byArtist)" @onchange="() => _byArtist = false" /> @L["jobs.create.all"]</label>
+            <label class="row small"><input type="radio" name="scope" checked="@_byArtist" @onchange="() => _byArtist = true" /> @L["jobs.create.artist"]</label>
+        </div>
+        @if (_byArtist)
+        {
+            <div class="field" style="margin-top: .6rem">
+                @if (_artist is { } picked)
+                {
+                    <div class="row">
+                        <span class="badge info">@picked.Name</span>
+                        <button class="btn" @onclick="() => _artist = null">@L["jobs.create.otherArtist"]</button>
+                    </div>
+                }
+                else
+                {
+                    <input class="input" placeholder="@L["jobs.create.artistPlaceholder"]" @bind="_artistQuery" @bind:event="oninput" @bind:after="SearchArtistsAsync" autocomplete="off" />
+                    @if (_artists is { Count: > 0 })
+                    {
+                        <div class="list">
+                            @foreach (var a in _artists)
+                            {
+                                <button class="list-item" @key="a.Id" @onclick="() => { _artist = a; _artists = null; }">
+                                    <div><span class="list-title">@a.Name</span><span class="list-sub">@L["library.tracks", ("count", a.TrackCount)]</span></div>
+                                </button>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        }
+        <label class="row small" style="margin: .6rem 0; flex-wrap: nowrap; align-items: flex-start">
+            <input type="checkbox" @bind="_apply" />
+            <span>@L["jobs.create.apply"]</span>
+        </label>
+    </ChildContent>
+    <Footer>
+        <button class="btn" @onclick="() => _newTask = false">@L["common.cancel"]</button>
+        <button class="btn primary" disabled="@(_creating || (_byArtist && _artist is null))" @onclick="CreateAsync">@L["jobs.create.start"]</button>
+    </Footer>
+</Modal>
 @code {
     private static readonly string[] Filters = ["active", "failed", "finished", "all"];
     private const int SuitePage = 30;
@@ -321,6 +329,8 @@
         });
     }
 
+    private bool _newTask;
+
     private async Task CreateAsync()
     {
         _creating = true;
@@ -328,6 +338,7 @@
         {
             var suite = await Api.CreateJobAsync(new CreateJobRequest("acoustid-rescan", _byArtist ? _artist?.Id : null, _apply));
             Ui.Notify(L["jobs.create.started"]);
+            _newTask = false;
             _filter = "active";
             await LoadAsync();
             await OpenSuiteAsync(suite);
