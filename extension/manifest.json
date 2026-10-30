@@ -3,8 +3,8 @@
   "name": "__MSG_extName__",
   "description": "__MSG_extDescription__",
   "default_locale": "en",
-  "version": "1.1.0",
-  "permissions": ["storage", "alarms"],
+  "version": "1.2.0",
+  "permissions": ["storage", "alarms", "activeTab", "scripting"],
   "optional_permissions": ["cookies"],
   "host_permissions": [
     "https://www.youtube.com/*",
@@ -19,19 +19,13 @@
     "service_worker": "background.js",
     "scripts": ["background.js"]
   },
-  "content_scripts": [
-    {
-      "matches": ["https://www.youtube.com/*", "https://music.youtube.com/*", "https://m.youtube.com/*"],
-      "js": ["content.js"],
-      "run_at": "document_idle"
-    }
-  ],
   "options_ui": {
     "page": "options.html",
     "open_in_tab": true
   },
   "action": {
-    "default_title": "__MSG_actionTitle__"
+    "default_title": "__MSG_actionTitle__",
+    "default_popup": "popup.html"
   },
   "browser_specific_settings": {
     "gecko": {

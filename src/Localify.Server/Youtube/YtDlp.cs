@@ -70,8 +70,14 @@ public sealed partial class YtDlp(YoutubeTools tools, FfmpegLocator ffmpeg, Yout
     /// d'onglets (Vidéos, Sorties…) ou de playlists (« Albums et singles ») : ces sous-listes sont lues à leur tour
     /// (sauf Shorts et directs), et le titre d'une playlist devient l'album de ses vidéos.
     /// </summary>
+    /// <remarks>
+    /// Racine d'une chaîne d'artiste : yt-dlp n'en donne que les onglets Vidéos et Shorts, pas « Sorties » où sont
+    /// rangés albums, EP et singles (titres « auto-générés » aux métadonnées propres). Si la chaîne a des sorties,
+    /// ce sont elles qu'on lit, album par album ; sinon (chaîne sans discographie), ses vidéos.
+    /// </remarks>
     public async Task<YtListing> ListAsync(string url, int? limit, CancellationToken ct)
     {
+        if (YoutubeSyncService.IsChannelRoot(url) && await ReleasesAsync(url, limit, ct) is { } releases) return releases;
         var json = await DumpAsync(url, limit, ct);
         if (Str(json, "_type") is not "playlist")
             return new YtListing("video", Str(json, "title") ?? url, Str(json, "channel"), [ToEntry(json)]);
@@ -80,6 +86,29 @@ public sealed partial class YtDlp(YoutubeTools tools, FfmpegLocator ffmpeg, Yout
         await CollectAsync(json, null, depth: 0, limit, entries, ct);
         return new YtListing("playlist", Str(json, "title") ?? url, Str(json, "channel") ?? Str(json, "uploader"),
             entries.DistinctBy(e => e.Id).ToList());
+    }
+
+    private async Task<YtListing?> ReleasesAsync(string channelUrl, int? limit, CancellationToken ct)
+    {
+        // music.youtube.com/@x : même identifiant ; l'onglet Sorties est sur www.youtube.com.
+        var path = new Uri(channelUrl).AbsolutePath.TrimEnd('/');
+        JsonObject json;
+        try
+        {
+            json = await DumpAsync($"https://www.youtube.com{path}/releases", null, ct);
+        }
+        catch (YtDlpException ex) when (ex.Kind is not YtDlpFailure.Throttled)
+        {
+            // Pas d'onglet Sorties : chaîne ordinaire.
+            logger.LogDebug("Pas de sorties pour {Url} : {Message}", channelUrl, ex.Message);
+            return null;
+        }
+        if (json["entries"] is not JsonArray { Count: > 0 }) return null;
+        var entries = new List<YtEntry>();
+        await CollectAsync(json, null, depth: 0, limit, entries, ct);
+        if (entries.Count == 0) return null;
+        var title = Str(json, "channel") ?? Str(json, "uploader") ?? Regex.Replace(Str(json, "title") ?? channelUrl, @"\s-\s\w+$", "");
+        return new YtListing("playlist", title, Str(json, "channel") ?? Str(json, "uploader"), entries.DistinctBy(e => e.Id).ToList());
     }
 
     private async Task<JsonObject> DumpAsync(string url, int? limit, CancellationToken ct)

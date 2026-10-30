@@ -14,6 +14,17 @@
   });
 })();
 
+// « / » ouvre la recherche de l'en-tête, sauf pendant une saisie.
+document.addEventListener('keydown', (e) => {
+  if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+  const t = e.target;
+  if (t instanceof HTMLElement && (t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName))) return;
+  const button = document.querySelector('.topbar-search');
+  if (!button) return;
+  e.preventDefault();
+  button.click();
+});
+
 // Langue : celles du navigateur ou du téléphone, et l'attribut lang du document (lecteurs d'écran, césure).
 window.localify = {
   languages: () => (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language]).join(','),

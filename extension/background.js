@@ -1,9 +1,9 @@
-// Localify : toutes les requêtes vers les serveurs partent d'ici (le script de page n'y a pas accès, CORS).
+// Localify : toutes les requêtes vers les serveurs partent d'ici (menu de l'icône et page d'options passent par des messages).
 // Une clé d'extension n'ouvre que : POST /imports, GET /resolve, POST /subscriptions, PUT /cookies et GET /api/extension/status.
 //
 // Stockage local :
 //   servers         [{ id, name, url, apiKey, sendCookies }]  instances Localify
-//   defaultServerId instance qui reçoit les clics sur les boutons YouTube
+//   defaultServerId instance choisie par défaut dans le menu de l'extension
 //   cookieHours     intervalle d'envoi automatique des cookies
 //   cookieState     { [id]: { at, error } } dernier envoi par instance (séparé de servers : écrit ici, lu par les options)
 
@@ -79,8 +79,8 @@ async function call(target, method, path, body) {
 
 const q = (params) => new URLSearchParams(Object.entries(params).filter(([, v]) => v != null)).toString();
 
-async function importVideo({ videoId, url, title, channel }) {
-  const target = await server();
+async function importVideo({ serverId, videoId, url, title, channel }) {
+  const target = await server(serverId);
   // yt-dlp donne le titre exact, la durée et la miniature ; à défaut, ce qu'affiche la page.
   let video = { videoId, title: title || videoId, channel: channel || null, durationSeconds: null, thumbnailUrl: null, importStatus: null };
   try {
@@ -91,6 +91,15 @@ async function importVideo({ videoId, url, title, channel }) {
     if (e.status === 401 || e.status === 0) throw e;
   }
   return call(target, "POST", "/api/admin/youtube/imports", { videos: [video], albumHint: null });
+}
+
+/** Import ponctuel d'une playlist ou d'un album : le serveur lit la liste, puis tout part dans la file. */
+async function importList({ serverId, url, isAlbum }) {
+  const target = await server(serverId);
+  const listing = await call(target, "GET", `/api/admin/youtube/resolve?${q({ url })}`);
+  const videos = listing?.entries ?? [];
+  if (!videos.length) return { queued: 0, alreadyKnown: 0 };
+  return call(target, "POST", "/api/admin/youtube/imports", { videos, albumHint: isAlbum ? listing.title : null });
 }
 
 // ---------- Cookies (facultatif, désactivé par défaut, par instance) ----------
@@ -156,18 +165,17 @@ chrome.storage.onChanged.addListener((changes) => {
   if (changes.servers || changes.cookieHours) scheduleCookies();
 });
 
-chrome.action.onClicked.addListener(() => chrome.runtime.openOptionsPage());
-
-// ---------- Messages du script de page et des options ----------
+// ---------- Messages du menu de l'extension et des options ----------
 
 const handlers = {
-  status: async ({ videoId, url }) => {
-    const target = await server();
+  status: async ({ serverId, videoId, url }) => {
+    const target = await server(serverId);
     return { ...(await call(target, "GET", `/api/extension/status?${q({ videoId, url })}`)), serverName: target.name };
   },
   import: importVideo,
-  subscribe: async ({ url, isAlbum, importExisting }) =>
-    call(await server(), "POST", "/api/admin/youtube/subscriptions", { url, isAlbum: !!isAlbum, importExisting: !!importExisting }),
+  importList,
+  subscribe: async ({ serverId, url, isAlbum, importExisting }) =>
+    call(await server(serverId), "POST", "/api/admin/youtube/subscriptions", { url, isAlbum: !!isAlbum, importExisting: !!importExisting }),
   uploadCookies,
   test: async ({ serverId }) => call(await server(serverId), "GET", "/api/extension/status?videoId=dQw4w9WgXcQ"),
   openOptions: () => chrome.runtime.openOptionsPage(),

@@ -34,6 +34,9 @@ public sealed partial class YoutubeSyncService(
         return ChannelRoot().IsMatch(uri.AbsolutePath) ? url.TrimEnd('/') : url;
     }
 
+    /// <summary>Adresse de la racine d'une chaîne (sans onglet) : « …/@orelsan », « …/channel/UC… ».</summary>
+    public static bool IsChannelRoot(string url) => Uri.TryCreate(url, UriKind.Absolute, out var uri) && ChannelRoot().IsMatch(uri.AbsolutePath);
+
     public async Task<string?> SyncAsync(Guid subscriptionId, CancellationToken ct)
     {
         await _lock.WaitAsync(ct);

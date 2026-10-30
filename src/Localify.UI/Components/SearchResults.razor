@@ -1,0 +1,108 @@
+@implements IDisposable
+@inject ApiClient Api
+
+@* Résultats d'une recherche (titres, artistes, albums), partagés par la page Recherche et le volet de l'en-tête. *@
+@if (_error is not null)
+{
+    <p class="form-error">@_error</p>
+}
+else if (_result is { } r)
+{
+    @if (r.Correction is { } fix)
+    {
+        <p class="muted">@L["search.didYouMean"] <a href="search?q=@Uri.EscapeDataString(fix)" @onclick="() => OnCorrection.InvokeAsync(fix)" @onclick:preventDefault="true"><strong>@fix</strong></a> ?</p>
+    }
+    @if (r.Artists.Count + r.Albums.Count + r.Tracks.Count == 0)
+    {
+        <p class="empty">@L["search.noResults", ("query", _shown)]</p>
+    }
+    @if (r.Tracks.Count > 0)
+    {
+        <section>
+            <h2>@L["search.tracks"]</h2>
+            <TrackList Tracks="r.Tracks" ShowCover="true" />
+        </section>
+    }
+    @if (r.Artists.Count > 0)
+    {
+        <section>
+            <h2>@L["search.artists"]</h2>
+            <div class="grid">
+                @foreach (var a in r.Artists)
+                {
+                    <a class="card" href="artist/@a.Id">
+                        <div class="card-cover round"><Cover AlbumId="a.CoverAlbumId" HasCover="a.CoverAlbumId is not null" Round="true" Seed="@a.Name" /></div>
+                        <span class="card-title">@a.Name</span>
+                        <span class="card-sub">@L["common.artist"]</span>
+                    </a>
+                }
+            </div>
+        </section>
+    }
+    @if (r.Albums.Count > 0)
+    {
+        <section>
+            <h2>@L["search.albums"]</h2>
+            <AlbumGrid Albums="r.Albums" />
+        </section>
+    }
+}
+
+@code {
+    /// <summary>Texte saisi ; la recherche part 250 ms après la dernière frappe.</summary>
+    [Parameter] public string Query { get; set; } = "";
+    /// <summary>Appelé quand une recherche part réellement (après l'attente), par exemple pour mettre l'adresse à jour.</summary>
+    [Parameter] public EventCallback<string> OnSearched { get; set; }
+    /// <summary>Clic sur « Vouliez-vous dire … ? ».</summary>
+    [Parameter] public EventCallback<string> OnCorrection { get; set; }
+
+    private string? _requested;
+    private string _shown = "";
+    private SearchResultDto? _result;
+    private string? _error;
+    private CancellationTokenSource? _debounce;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Query == _requested) return;
+        var first = _requested is null;
+        _requested = Query;
+        _debounce?.Cancel();
+        _debounce = new CancellationTokenSource();
+        var token = _debounce.Token;
+        if (!first)
+        {
+            try
+            {
+                await Task.Delay(250, token);
+            }
+            catch (TaskCanceledException)
+            {
+                return;
+            }
+        }
+        await RunAsync(Query, token);
+    }
+
+    private async Task RunAsync(string q, CancellationToken token)
+    {
+        await OnSearched.InvokeAsync(q);
+        if (string.IsNullOrWhiteSpace(q))
+        {
+            (_result, _error) = (null, null);
+            return;
+        }
+        try
+        {
+            var result = await Api.SearchAsync(q);
+            if (token.IsCancellationRequested) return;
+            (_result, _error, _shown) = (result, null, q);
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            if (!token.IsCancellationRequested) _error = L.Server(ex.Message);
+        }
+    }
+
+    public void Dispose() => _debounce?.Cancel();
+}

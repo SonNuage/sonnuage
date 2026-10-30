@@ -302,7 +302,8 @@
     "noResults": "Aucun résultat pour « {query} ».",
     "tracks": "Titres",
     "artists": "Artistes",
-    "albums": "Albums"
+    "albums": "Albums",
+    "shortcut": "Rechercher (raccourci : /)"
   },
   "library": {
     "playlists": "Playlists",

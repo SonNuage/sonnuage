@@ -8,68 +8,8 @@
     "description": "Extension description (store, extensions page)."
   },
   "actionTitle": {
-    "message": "Localify : réglages",
-    "description": "Tooltip of the toolbar icon, which opens the settings."
-  },
-  "btnLoading": {
-    "message": "Localify…",
-    "description": "Button label while the extension checks the page with the server."
-  },
-  "btnAdd": {
-    "message": "Ajouter à Localify",
-    "description": "Button on a video page: queue the video for import."
-  },
-  "btnAdding": {
-    "message": "Ajout…",
-    "description": "Button label while the import request is sent."
-  },
-  "btnImported": {
-    "message": "Déjà importé",
-    "description": "Disabled button: the video is already in the library."
-  },
-  "btnImportedReview": {
-    "message": "Déjà importé (à vérifier)",
-    "description": "Disabled button: imported, but the metadata must be checked by an admin."
-  },
-  "btnQueued": {
-    "message": "En attente…",
-    "description": "Disabled button: the video waits in the import queue."
-  },
-  "btnImporting": {
-    "message": "Import en cours…",
-    "description": "Disabled button: the server is downloading or processing the video."
-  },
-  "btnAlreadyKnown": {
-    "message": "Déjà connu",
-    "description": "Disabled button: the server already knew this video."
-  },
-  "btnRetryImport": {
-    "message": "Réessayer l'import",
-    "description": "Button after a failed import: queue it again."
-  },
-  "btnRetry": {
-    "message": "Réessayer",
-    "description": "Button: retry the last action after an error."
-  },
-  "btnConfigure": {
-    "message": "Configurer Localify",
-    "description": "Button shown when no server is set up: opens the settings."
-  },
-  "btnSubscribe": {
-    "message": "S'abonner dans Localify",
-    "description": "Button on a playlist or channel page."
-  },
-  "btnSubscribing": {
-    "message": "Abonnement…",
-    "description": "Button label while the subscription is created."
-  },
-  "btnSubscribed": {
-    "message": "Abonné dans Localify",
-    "description": "Disabled button: the playlist or channel is already followed."
-  },
-  "msgQueued": {
-    "message": "Ajouté à la file d'import de Localify.",
-    "description": "Message after a video was queued."
+    "message": "Localify",
+    "description": "Tooltip of the toolbar icon, which opens the extension menu."
   },
   "msgFailed": {
     "message": "L'import a échoué.",
@@ -98,38 +38,16 @@
     "description": "Message after subscribing without the existing videos."
   },
   "optAlbum": {
-    "message": "C'est un album (titre de la playlist = album)",
-    "description": "Checkbox in the subscription options."
+    "message": "C'est un album",
+    "description": "Checkbox: the playlist title is used as the album name."
   },
   "optExisting": {
     "message": "Importer aussi les vidéos déjà publiées",
     "description": "Checkbox in the subscription options."
   },
-  "titleMoreOptions": {
-    "message": "Options d'abonnement",
-    "description": "Tooltip of the ⋯ button."
-  },
-  "titleHide": {
-    "message": "Masquer sur cette page",
-    "description": "Tooltip of the ✕ button."
-  },
-  "titleTarget": {
-    "message": "Envoyé à $NAME$",
-    "description": "Tooltip of the button: which Localify instance receives the action; NAME is the instance name.",
-    "placeholders": {
-      "name": {
-        "content": "$1",
-        "example": "Home"
-      }
-    }
-  },
   "errNoResponse": {
     "message": "Pas de réponse de l'extension.",
     "description": "Error: the background script did not answer."
-  },
-  "errReloaded": {
-    "message": "Extension rechargée : actualisez la page.",
-    "description": "Error: the extension was updated or reloaded while the page was open."
   },
   "errNotConfigured": {
     "message": "Extension non configurée : renseignez l'adresse du serveur et la clé.",
@@ -242,8 +160,8 @@
     "description": "Label of the API key field."
   },
   "fieldDefault": {
-    "message": "Utilisée par les boutons YouTube",
-    "description": "Radio button: this instance receives the clicks on the YouTube buttons."
+    "message": "Instance par défaut (menu de l'extension)",
+    "description": "Radio button: this instance is preselected in the toolbar menu."
   },
   "fieldSendCookies": {
     "message": "Envoyer les cookies YouTube automatiquement",
@@ -346,5 +264,203 @@
   "cookiesInterval": {
     "message": "Envoyer toutes les (heures)",
     "description": "Label of the sending interval, in hours."
+  },
+  "popupSettings": {
+    "message": "Réglages",
+    "description": "Cog button and footer link: open the settings page."
+  },
+  "popupNoServer": {
+    "message": "Aucun serveur Localify n'est configuré.",
+    "description": "Menu message when no instance has an address and a key."
+  },
+  "popupConfigure": {
+    "message": "Configurer un serveur",
+    "description": "Menu button: open the settings to add an instance."
+  },
+  "popupTargetServer": {
+    "message": "Instance Localify qui reçoit les actions",
+    "description": "Tooltip of the instance selector in the menu."
+  },
+  "popupCookies": {
+    "message": "Cookies YouTube",
+    "description": "Heading of the cookie block in the menu."
+  },
+  "popupCookiesSent": {
+    "message": "Cookies envoyés $WHEN$",
+    "description": "Cookie state; WHEN is a relative time such as '5 min ago'.",
+    "placeholders": {
+      "when": {
+        "content": "$1",
+        "example": "il y a 5 min"
+      }
+    }
+  },
+  "popupCookiesNext": {
+    "message": "prochain envoi $WHEN$",
+    "description": "Next automatic sending; WHEN is a relative time such as 'in 3 hr'.",
+    "placeholders": {
+      "when": {
+        "content": "$1",
+        "example": "dans 3 h"
+      }
+    }
+  },
+  "popupCookiesDone": {
+    "message": "Cookies envoyés.",
+    "description": "Success message after sending the cookies."
+  },
+  "badgeChecking": {
+    "message": "Vérification…",
+    "description": "Server badge while the connection is tested."
+  },
+  "badgeConnected": {
+    "message": "Connecté",
+    "description": "Server badge: the server accepts the key."
+  },
+  "badgeKeyRejected": {
+    "message": "Clé refusée",
+    "description": "Server badge: HTTP 401."
+  },
+  "badgeUnreachable": {
+    "message": "Injoignable",
+    "description": "Server badge: network failure."
+  },
+  "badgeError": {
+    "message": "Erreur",
+    "description": "Server badge: other error."
+  },
+  "kindVideo": {
+    "message": "Vidéo",
+    "description": "Card heading in the menu."
+  },
+  "kindPlaylist": {
+    "message": "Playlist",
+    "description": "Card heading in the menu."
+  },
+  "kindAlbum": {
+    "message": "Album",
+    "description": "Card heading in the menu."
+  },
+  "kindChannel": {
+    "message": "Chaîne",
+    "description": "Card heading in the menu."
+  },
+  "stateQueued": {
+    "message": "En file",
+    "description": "Import state of the video."
+  },
+  "stateDownloading": {
+    "message": "Téléchargement",
+    "description": "Import state of the video."
+  },
+  "stateProcessing": {
+    "message": "Traitement",
+    "description": "Import state of the video."
+  },
+  "stateDone": {
+    "message": "Importée",
+    "description": "Import state of the video."
+  },
+  "stateDoneReview": {
+    "message": "Importée, à vérifier",
+    "description": "Import state: imported, an admin must check the metadata."
+  },
+  "stateFailed": {
+    "message": "Échec",
+    "description": "Import state of the video."
+  },
+  "stateSkipped": {
+    "message": "Ignorée",
+    "description": "Import state of the video."
+  },
+  "stateSubscribed": {
+    "message": "Synchronisé",
+    "description": "State of a playlist or channel already followed by the server."
+  },
+  "popupImportVideo": {
+    "message": "Importer cette vidéo",
+    "description": "Menu button on a video page."
+  },
+  "popupRetryImport": {
+    "message": "Réessayer l'import",
+    "description": "Menu button after a failed import."
+  },
+  "popupAlreadyImported": {
+    "message": "Déjà dans la bibliothèque",
+    "description": "Disabled menu button: the video is imported."
+  },
+  "popupImporting": {
+    "message": "Import en cours…",
+    "description": "Disabled menu button: the video is queued, downloading or processing."
+  },
+  "popupAdding": {
+    "message": "Envoi au serveur…",
+    "description": "Progress message."
+  },
+  "popupQueued": {
+    "message": "Ajouté à la file.",
+    "description": "Message after a video was queued."
+  },
+  "popupAlreadyKnown": {
+    "message": "Le serveur connaît déjà cette vidéo.",
+    "description": "Message: nothing queued, the video was known."
+  },
+  "popupSyncPlaylist": {
+    "message": "Synchroniser cette playlist",
+    "description": "Menu button: subscribe to the playlist."
+  },
+  "popupSyncAlbum": {
+    "message": "Synchroniser cet album",
+    "description": "Menu button: subscribe to the album."
+  },
+  "popupImportOnce": {
+    "message": "Importer une fois",
+    "description": "Menu button: import the current videos without subscribing."
+  },
+  "popupSynced": {
+    "message": "Déjà synchronisé",
+    "description": "Disabled menu button: the list is already followed."
+  },
+  "popupSubscribed": {
+    "message": "Abonnement créé.",
+    "description": "Message after subscribing (followed by what happens next)."
+  },
+  "popupReadingList": {
+    "message": "Lecture de la liste par le serveur…",
+    "description": "Progress message during a one-time import."
+  },
+  "popupListQueued": {
+    "message": "$QUEUED$ vidéo(s) ajoutée(s) à la file, $KNOWN$ déjà connue(s).",
+    "description": "Result of a one-time import.",
+    "placeholders": {
+      "queued": {
+        "content": "$1",
+        "example": "12"
+      },
+      "known": {
+        "content": "$2",
+        "example": "3"
+      }
+    }
+  },
+  "optExistingChannel": {
+    "message": "Importer aussi les sorties déjà publiées",
+    "description": "Checkbox when subscribing to a channel."
+  },
+  "popupSyncChannel": {
+    "message": "Synchroniser toute la chaîne",
+    "description": "Menu button: subscribe to the channel."
+  },
+  "popupChannelSynced": {
+    "message": "Chaîne déjà synchronisée",
+    "description": "Disabled menu button: the channel is already followed."
+  },
+  "popupChannelHint": {
+    "message": "Albums, EP et singles de la chaîne",
+    "description": "Helper text: what a channel subscription imports."
+  },
+  "popupNoPage": {
+    "message": "Ouvrez une vidéo, une playlist ou une chaîne YouTube.",
+    "description": "Menu message on a page that is not a YouTube video, playlist or channel."
   }
 }

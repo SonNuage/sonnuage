@@ -20,6 +20,21 @@ Légende : ✅ fait · 🔜 prochain · 💡 idée à creuser · ⚠️ limite c
 
 ## Livré récemment
 
+### Recherche, extension, chaînes YouTube (fin octobre 2026)
+
+- **Recherche dans l'en-tête** de l'appli web : un champ toujours visible (raccourci `/`) ouvre les résultats
+  par-dessus la page ; une croix en haut à droite ou Échap referme. La page Recherche n'affiche plus la liste
+  de suggestions du navigateur qui doublait les résultats.
+- **Extension de navigateur** : le bouton flottant posé sur YouTube laisse la place à un menu qui s'ouvre
+  depuis l'icône de l'extension. Selon la page, il propose d'importer la vidéo, de synchroniser la playlist ou
+  l'album, ou toute la chaîne ; il montre aussi l'état du serveur et l'envoi des cookies.
+- **Synchronisation d'une chaîne complète.** yt-dlp ne lit, à la racine d'une chaîne, que les onglets Vidéos
+  et Shorts. Les albums n'arrivaient donc que par leurs clips : 4 titres de « Perdu d'avance » sur 14 pour
+  OrelSan. Désormais, une chaîne qui a un onglet **Sorties** est lue album par album (albums, EP, singles),
+  avec le nom de l'album ; une chaîne sans discographie reste lue par ses vidéos.
+- **Bibliothèque** : purge horaire des albums vides, artistes sans album masqués, réparation automatique des
+  fichiers Ogg/Opus dont les tags écrits par TagLib étaient illisibles.
+
 ### Gestionnaire de tâches (octobre 2026)
 
 Tout traitement long passe désormais par une file de tâches, visible dans **Admin → Tâches** :
@@ -84,6 +99,25 @@ Constat sur le homelab : certains imports prenaient plus de 3 minutes, là où T
    synchronisation des abonnements, purge du cache de transcodage. Ils gagneraient le journal, l'annulation
    et l'historique.
 
+## Découverte et recommandations (à cadrer)
+
+Deux besoins distincts, à concevoir ensemble plus tard :
+
+- 💡 **Nouveautés (« discovery »)** : ce qui vient d'arriver ou de sortir, chez les artistes qu'on écoute.
+  Pistes :
+  - une rubrique « Nouveautés » de l'accueil, alimentée par les abonnements YouTube synchronisés ;
+  - les sorties récentes des artistes de la bibliothèque via MusicBrainz, avec proposition d'import ;
+  - les ajouts récents à la bibliothèque, par utilisateur (ce qu'il n'a pas encore écouté).
+- 💡 **Recommandations fondées sur les écoutes** : « parce que vous avez écouté… ».
+  Préalable : enregistrer un historique d'écoute par utilisateur (titre, date, écoute complète ou passée).
+  Pistes, du plus simple au plus riche :
+  - artistes et albums les plus écoutés, « à réécouter » ;
+  - co-écoutes entre utilisateurs du serveur ;
+  - artistes proches via MusicBrainz ou ListenBrainz (envoi des écoutes facultatif) ;
+  - similarité sonore ou sémantique via Elasticsearch.
+- Questions ouvertes : confidentialité entre comptes d'un même serveur, place dans l'appli (accueil,
+  Android Auto), recommandations limitées à la bibliothèque ou ouvertes à YouTube (import proposé).
+
 ## Idées
 
 - 💡 Tâches planifiées (« rescan AcoustID chaque dimanche à 3 h »).
@@ -104,5 +138,7 @@ Constat sur le homelab : certains imports prenaient plus de 3 minutes, là où T
 - ⚠️ **Corrections d'un rescan dans `music/`** : elles ne vivent que dans la base. Si le fichier change sur
   disque (retag par un autre outil), le scan suivant relit ses tags et la correction est perdue.
   Une édition à la main dans l'admin, elle, verrouille le morceau.
+- ⚠️ **Chaînes déjà synchronisées** : les clips et vidéos importés avant la lecture de l'onglet Sorties restent
+  dans la bibliothèque, à côté des titres d'album. On peut les supprimer depuis l'import YouTube.
 - ⚠️ **Bridage YouTube** : il reste possible, mais une vidéo bridée n'occupe plus qu'une place de
   téléchargement sur trois.

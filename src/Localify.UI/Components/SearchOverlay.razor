@@ -1,0 +1,72 @@
+@implements IDisposable
+@inject NavigationManager Nav
+
+@* En-tête de la zone principale : un champ de recherche toujours à portée, qui ouvre les résultats par-dessus la page. *@
+@if (!OnSearchPage)
+{
+    <header class="topbar desktop-only">
+        <button class="topbar-search" title="@L["search.shortcut"]" @onclick="OpenAsync">
+            <Icon Name="search" Size="18" />
+            <span>@L["search.placeholder"]</span>
+            <kbd>/</kbd>
+        </button>
+    </header>
+}
+
+@if (_open)
+{
+    <div class="search-overlay" role="dialog" aria-modal="true" aria-label="@L["nav.search"]" @onkeydown="OnKeyDown">
+        <div class="search-overlay-head">
+            <div class="search-box">
+                <Icon Name="search" />
+                <input @ref="_input" class="input" type="search" placeholder="@L["search.placeholder"]" value="@_query" autocomplete="off"
+                       @oninput="e => _query = e.Value?.ToString() ?? string.Empty" />
+            </div>
+            <button class="icon-btn search-overlay-close" title="@L["common.close"]" @onclick="Close"><Icon Name="close" /></button>
+        </div>
+        <div class="search-overlay-body">
+            <SearchResults Query="@_query" OnCorrection="q => _query = q" />
+        </div>
+    </div>
+}
+
+@code {
+    private bool _open;
+    private bool _focus;
+    private string _query = "";
+    private ElementReference _input;
+
+    private bool OnSearchPage => Nav.ToBaseRelativePath(Nav.Uri).StartsWith("search", StringComparison.OrdinalIgnoreCase);
+
+    protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
+
+    private Task OpenAsync()
+    {
+        _open = _focus = true;
+        return Task.CompletedTask;
+    }
+
+    private void Close() => _open = false;
+
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape") Close();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_focus) return;
+        _focus = false;
+        await _input.FocusAsync();
+    }
+
+    // Un résultat ouvert (artiste, album…) referme le volet ; la saisie reste pour la prochaine ouverture.
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e) =>
+        InvokeAsync(() =>
+        {
+            _open = false;
+            StateHasChanged();
+        });
+
+    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
+}

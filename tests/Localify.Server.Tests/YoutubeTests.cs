@@ -166,6 +166,20 @@ public class YoutubeMiscTests
         Assert.Equal(expected, YoutubeSyncService.NormalizeUrl(input));
     }
 
+    // Racine de chaîne : on y lit l'onglet Sorties (albums, singles) plutôt que les seules vidéos.
+    [Theory]
+    [InlineData("https://www.youtube.com/@orelsan", true)]
+    [InlineData("https://music.youtube.com/@orelsan", true)]
+    [InlineData("https://www.youtube.com/channel/UC123", true)]
+    [InlineData("https://www.youtube.com/@orelsan/videos", false)]
+    [InlineData("https://www.youtube.com/@orelsan/releases", false)]
+    [InlineData("https://www.youtube.com/playlist?list=OLAK5uy_abc", false)]
+    [InlineData("https://www.youtube.com/watch?v=dQw4w9WgXcQ", false)]
+    public void Detects_channel_roots(string url, bool expected)
+    {
+        Assert.Equal(expected, YoutubeSyncService.IsChannelRoot(url));
+    }
+
     [Theory]
     [InlineData("140", true)]
     [InlineData("bestaudio[acodec=opus]/bestaudio[ext=m4a]/18", true)]
