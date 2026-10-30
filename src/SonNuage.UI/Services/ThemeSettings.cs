@@ -3,7 +3,7 @@ using Microsoft.JSInterop;
 namespace SonNuage.UI.Services;
 
 /// <summary>Thème de l'interface, propre à l'appareil : clair, sombre ou celui du système.</summary>
-public sealed class ThemeSettings(IKeyValueStore store, IJSRuntime js)
+public sealed class ThemeSettings(IKeyValueStore store)
 {
     // Même clé que celle lue par ui.js au chargement de la page (pas de flash de l'autre thème).
     private const string Key = "sonnuage.theme";
@@ -14,8 +14,14 @@ public sealed class ThemeSettings(IKeyValueStore store, IJSRuntime js)
 
     public event Action? Changed;
 
-    public async Task LoadAsync()
+    // Fourni par l'interface (LoadAsync), comme pour Localizer : sous Android, IJSRuntime est propre à la WebView
+    // (scoped) et celui d'un singleton n'y est pas rattaché.
+    private IJSRuntime? _js;
+
+    /// <param name="js">Runtime JS de la page (celui injecté dans le composant racine).</param>
+    public async Task LoadAsync(IJSRuntime js)
     {
+        _js = js;
         var saved = await store.GetAsync(Key);
         Mode = saved is "light" or "dark" ? saved : "system";
         await ApplyAsync();
@@ -33,9 +39,9 @@ public sealed class ThemeSettings(IKeyValueStore store, IJSRuntime js)
     {
         try
         {
-            await js.InvokeVoidAsync("sonnuage.setTheme", Mode);
+            if (_js is not null) await _js.InvokeVoidAsync("sonnuage.setTheme", Mode);
         }
-        catch (JSException)
+        catch (Exception ex) when (ex is JSException or InvalidOperationException)
         {
             // ui.js absent (hôte sans lui) : le thème sombre par défaut reste.
         }

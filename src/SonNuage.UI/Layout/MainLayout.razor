@@ -93,7 +93,7 @@ else
         Ui.Changed += Refresh;
         await Auth.EnsureLoadedAsync();
         await L.InitAsync(Auth.User?.Language, JS);
-        await Theme.LoadAsync();
+        await Theme.LoadAsync(JS);
         _ready = true;
         await AfterLoginAsync();
     }
