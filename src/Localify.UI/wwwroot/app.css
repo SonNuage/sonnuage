@@ -66,6 +66,7 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 .75rem; }
 code { background: var(--bg-input); padding: .1em .35em; border-radius: 4px; }
 button { font: inherit; color: inherit; }
 .muted { color: var(--text-muted); }
+@media (min-width: 769px) { .mobile-only { display: none !important; } }
 .small { font-size: .85rem; }
 .strong { font-weight: 600; }
 .sep { margin: 0 .4em; color: var(--text-muted); }

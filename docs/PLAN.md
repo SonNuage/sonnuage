@@ -24,7 +24,7 @@ src/
   Localify.Server/      ASP.NET Core : API, scan, transcodage, auth, héberge le client web
   Localify.UI/          Razor Class Library : toutes les pages (lecteur + admin), partagée web/Android
   Localify.Web/         Blazor WebAssembly : lecteur navigateur (implémentation audio JS)
-  Localify.Mobile/      .NET MAUI Blazor Hybrid : mêmes pages + service natif Media3 (Android Auto)
+  (Localify.Mobile)     .NET MAUI Blazor Hybrid, dépôt localify-android : mêmes pages (paquet Localify.UI) + Media3
 tests/
   Localify.Server.Tests/
 deploy/                 compose.yaml, exemple de tunnel Cloudflare

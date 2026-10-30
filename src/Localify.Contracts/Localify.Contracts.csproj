@@ -2,6 +2,9 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <!-- Publié en paquet NuGet (registre GitLab du projet) pour l'application Android (dépôt localify-android). -->
+    <PackageId>Localify.Contracts</PackageId>
+    <Description>Localify : contrats de l'API (DTO) et traductions.</Description>
   </PropertyGroup>
 
   <!-- Une langue par fichier ; un fichier ajouté ici est une langue de plus dans l'application. -->

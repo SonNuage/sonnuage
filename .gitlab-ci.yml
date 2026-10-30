@@ -1,29 +1,18 @@
-# Pipeline Localify
-#  - test        : build + tests du serveur (avec ffmpeg pour les tests de transcodage)
-#  - build       : image Docker du serveur (registre GitLab) et APK Android
-#  - release     : sur tag vX.Y.Z, publication de l'APK et création de la release GitLab
-#
-# Variables CI optionnelles (Settings > CI/CD > Variables, masquées) pour signer l'APK de release :
-#   ANDROID_KEYSTORE_BASE64   keystore encodé en base64 (type File interdit : base64 -w0 localify.keystore)
-#   ANDROID_KEYSTORE_PASSWORD mot de passe du keystore
-#   ANDROID_KEY_ALIAS         alias de la clé
-#   ANDROID_KEY_PASSWORD      mot de passe de la clé
-# Sans elles l'APK est signé avec une clé de secours générée une fois et gardée dans le cache CI : les builds
-# successifs restent installables par-dessus les précédents tant que ce cache vit (une clé régénérée impose de
-# désinstaller l'appli). Pour une signature pérenne, définir les variables ci-dessus.
-# Un seul APK est publié (dist/localify-X.Y.Z.apk), toujours signé : l'APK non signé que produit aussi
-# `dotnet publish` n'est qu'un intermédiaire qu'Android refuse d'installer.
+# Pipeline Localify (serveur + client web)
+#  - test        : build + tests du serveur (avec ffmpeg et Elasticsearch)
+#  - build       : image Docker du serveur (registre GitLab) ; paquets NuGet Localify.Contracts et Localify.UI
+#                  (registre NuGet du projet), utilisés par l'application Android (dépôt localify-android)
+#  - release     : sur tag vX.Y.Z, release GitLab
 #
 # Les jobs Docker utilisent docker-in-docker : le runner doit être en mode privileged.
 
-stages: [prepare, test, build, release]
+stages: [test, build, release]
 
 variables:
   DOTNET_CLI_TELEMETRY_OPTOUT: "1"
   DOTNET_NOLOGO: "1"
   NUGET_PACKAGES: $CI_PROJECT_DIR/.nuget
   SERVER_IMAGE: $CI_REGISTRY_IMAGE
-  ANDROID_SDK_IMAGE: $CI_REGISTRY_IMAGE/android-sdk:latest
 
 workflow:
   rules:
@@ -46,18 +35,6 @@ default:
     DOCKER_TLS_CERTDIR: "/certs"
   before_script:
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
-
-# Image de build Android (SDK + workload MAUI), reconstruite seulement quand sa recette change,
-# ou à la demande : Run pipeline avec la variable BUILD_ANDROID_SDK=1 (premier pipeline, registre vidé…).
-android-sdk-image:
-  extends: .docker
-  stage: prepare
-  rules:
-    - if: $BUILD_ANDROID_SDK == "1"
-    - changes: [build/android-sdk.Dockerfile]
-  script:
-    - docker build -f build/android-sdk.Dockerfile -t "$ANDROID_SDK_IMAGE" build
-    - docker push "$ANDROID_SDK_IMAGE"
 
 server-test:
   stage: test
@@ -106,54 +83,38 @@ server-image:
         docker push "$SERVER_IMAGE:$VERSION"
       fi
 
-android-apk:
+# Bibliothèques partagées avec l'application Android (dépôt localify-android) : Localify.Contracts et
+# Localify.UI, dans le registre NuGet du projet. Version : X.Y.Z sur tag, 0.1.0-ci.N sur les branches.
+shared-packages:
   stage: build
-  image: $ANDROID_SDK_IMAGE
-  needs:
-    - job: android-sdk-image
-      optional: true
+  image: mcr.microsoft.com/dotnet/sdk:10.0
+  needs: [server-test]
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   cache:
-    key: nuget-android
-    paths: [.nuget/, .android-fallback-key/]
+    key: nuget-server
+    paths: [.nuget/]
+    policy: pull
   script:
     - *version
-    - |
-      if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
-        echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$CI_PROJECT_DIR/localify.keystore"
-        SIGN_ARGS="-p:AndroidKeyStore=true -p:AndroidSigningKeyStore=$CI_PROJECT_DIR/localify.keystore -p:AndroidSigningKeyAlias=$ANDROID_KEY_ALIAS -p:AndroidSigningStorePass=env:ANDROID_KEYSTORE_PASSWORD -p:AndroidSigningKeyPass=env:ANDROID_KEY_PASSWORD"
-      else
-        echo "AVERTISSEMENT : pas de keystore de release, signature avec la clé de secours du cache CI."
-        KEY="$CI_PROJECT_DIR/.android-fallback-key/localify-ci.keystore"
-        if [ ! -f "$KEY" ]; then
-          mkdir -p "$(dirname "$KEY")"
-          keytool -genkeypair -keystore "$KEY" -alias localify -keyalg RSA -keysize 2048 -validity 10000             -storepass localify-ci -keypass localify-ci -dname "CN=Localify CI" -noprompt
-        fi
-        SIGN_ARGS="-p:AndroidKeyStore=true -p:AndroidSigningKeyStore=$KEY -p:AndroidSigningKeyAlias=localify -p:AndroidSigningStorePass=localify-ci -p:AndroidSigningKeyPass=localify-ci"
-      fi
-      export SIGN_ARGS
-    - dotnet publish src/Localify.Mobile/Localify.Mobile.csproj -f net10.0-android -c Release -o out
-        -p:Version="$VERSION" -p:ApplicationVersion="$CI_PIPELINE_IID" $SIGN_ARGS
-    - mkdir -p dist && cp out/*-Signed.apk "dist/localify-$VERSION.apk"
-    - rm -f "$CI_PROJECT_DIR/localify.keystore"
-    # Contrôle : l'APK publié est bien signé (sinon Android refuse de l'installer).
-    - $ANDROID_HOME/build-tools/*/apksigner verify --print-certs "dist/localify-$VERSION.apk" | head -3
+    - dotnet pack src/Localify.Contracts/Localify.Contracts.csproj -c Release -o packages -p:Version="$VERSION"
+    - dotnet pack src/Localify.UI/Localify.UI.csproj -c Release -o packages -p:Version="$VERSION"
+    - dotnet nuget add source "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/nuget/index.json"
+        --name gitlab --username gitlab-ci-token --password "$CI_JOB_TOKEN" --store-password-in-clear-text
+    - dotnet nuget push "packages/*.nupkg" --source gitlab
   artifacts:
-    name: localify-android
-    paths: [dist/]
+    paths: [packages/]
     expire_in: 30 days
 
 release:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
-  needs: [server-image, android-apk]
+  needs: [server-image, shared-packages]
   rules:
     - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+/
   script:
     - *version
-    - apk add --no-cache curl > /dev/null
-    - APK_URL="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/localify-android/${VERSION}/localify-${VERSION}.apk"
-    - 'curl --fail --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file "dist/localify-$VERSION.apk" "$APK_URL"'
     - >
       release-cli create --name "Localify $VERSION" --tag-name "$CI_COMMIT_TAG"
-      --description "Image serveur : \`$SERVER_IMAGE:$VERSION\`"
-      --assets-link "{\"name\":\"localify-$VERSION.apk\",\"url\":\"$APK_URL\",\"link_type\":\"package\"}"
+      --description "Image serveur : \`$SERVER_IMAGE:$VERSION\` · paquets NuGet Localify.Contracts et Localify.UI $VERSION"

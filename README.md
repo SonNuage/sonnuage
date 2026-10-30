@@ -8,9 +8,19 @@ application Android (avec Android Auto), playlists, favoris, transcodage à la v
 | `src/Localify.Server` | API ASP.NET Core (.NET 10), scan, transcodage ffmpeg, auth JWT, héberge le client web |
 | `src/Localify.UI` | Pages Razor partagées web / Android (lecteur + admin) |
 | `src/Localify.Web` | Client Blazor WebAssembly |
-| `src/Localify.Mobile` | App Android .NET MAUI Blazor Hybrid + service de lecture Media3 (notification, Android Auto) |
 | `tests/Localify.Server.Tests` | Tests unitaires et d'intégration (xUnit v3) |
 | `legacy/` | Anciens POC Node.js / Capacitor, gardés pour référence |
+
+Les autres parties du projet ont leur propre dépôt :
+
+| Dépôt | Contenu |
+|---|---|
+| [localify](https://git.pmjb.org/pmj.bailly/localify) (celui-ci) | Serveur, client web, bibliothèques partagées `Localify.Contracts` et `Localify.UI` |
+| [localify-android](https://git.pmjb.org/pmj.bailly/localify-android) | Application Android (.NET MAUI Blazor Hybrid, Media3, Android Auto) |
+| [localify-extension](https://git.pmjb.org/pmj.bailly/localify-extension) | Extension de navigateur (import YouTube, envoi des cookies) |
+
+`Localify.Contracts` et `Localify.UI` sont publiés en paquets NuGet dans le registre de ce dépôt à chaque build de
+`main` (version `0.1.0-ci.N`) et à chaque tag `vX.Y.Z` ; l'application Android les utilise.
 
 Le plan de refonte et les choix d'architecture sont dans [docs/PLAN.md](docs/PLAN.md).
 
@@ -75,55 +85,10 @@ L'image Docker embarque yt-dlp, Deno et fpcalc. Ne téléchargez que ce que vous
 
 ### Extension de navigateur
 
-Le dossier [`extension/`](extension/) contient une extension Manifest V3 (Chrome, Edge, Firefox 128+). Un clic sur
-son icône, dans la barre d'outils, ouvre un menu qui agit sur l'onglet YouTube / YouTube Music affiché, sans rien
-ajouter dans les pages de YouTube :
-
-- **Vidéo** (`watch?v=…`, `/shorts/…`, `youtu.be/…`) : *Importer cette vidéo*, avec son état sur le serveur
-  (en file, téléchargement, traitement, importée, échec, ignorée).
-- **Playlist ou album** (paramètre `list=` ; album si l'identifiant commence par `OLAK5uy_`, ou page
-  `music.youtube.com/browse/MPREb_…`) : *Synchroniser cette playlist / cet album* (abonnement) ou *Importer une fois*,
-  avec les options *C'est un album* et *Importer aussi les vidéos déjà publiées*. Une vidéo ouverte dans une playlist
-  propose les deux. Les mix et listes personnelles (`RD…`, `LL`, `WL`, `LM`) sont ignorés.
-- **Chaîne** (`/@nom`, `/channel/UC…`, `/c/…`, `/user/…`, y compris leurs onglets) : *Synchroniser toute la
-  chaîne*, abonnement à la racine de la chaîne (le serveur en lit les albums, EP et singles). Sur une page de vidéo,
-  la chaîne de la vidéo est aussi proposée quand la page la donne.
-
-Le menu affiche aussi l'instance visée et son état (*Connecté*, *Injoignable*, *Clé refusée*), l'état de l'envoi des
-cookies (« envoyés il y a … · prochain envoi dans … », bouton *Envoyer les cookies maintenant*) et un lien vers les
-réglages. Permissions : `storage`, `alarms` (envoi périodique des cookies), `activeTab` (lire l'adresse de
-l'onglet au clic sur l'icône), `scripting` (lire le titre et la chaîne de la vidéo dans la page YouTube), accès à
-www / music / m.youtube.com ; `cookies` et l'accès à chaque serveur Localify sont demandés à la configuration.
-
-1. Dans Localify : *Administration → YouTube → Réglages → Extension de navigateur*, créer une clé et la copier
-   (elle n'est affichée qu'une fois ; seule son empreinte est conservée). La clé ne permet que quatre actions :
-   ajouter des vidéos à la file, lire une adresse YouTube, s'abonner, envoyer des cookies YouTube ; plus
-   l'état d'une vidéo. Rien d'autre de l'API n'est accessible avec elle. Révoquez-la depuis le même écran.
-2. Charger l'extension non empaquetée :
-   - **Chrome / Edge** : `chrome://extensions` → activer le *mode développeur* → *Charger l'extension non
-     empaquetée* → choisir le dossier `extension/`.
-   - **Firefox** : `about:debugging#/runtime/this-firefox` → *Charger un module complémentaire temporaire* →
-     choisir `extension/manifest.json` (retiré au redémarrage de Firefox).
-3. Cliquer sur l'icône de l'extension puis sur la roue dentée (ou *Options*), saisir le nom, l'adresse du serveur (par exemple
-   `https://musique.exemple.fr`, ou `http://localhost:5080` en développement) et la clé, puis
-   *Enregistrer et tester* : le navigateur demande l'accès à ce seul serveur.
-
-**Plusieurs instances** : *Ajouter une instance* enregistre d'autres serveurs Localify (chacun avec sa propre
-clé). Le menu de l'extension vise l'instance cochée *Instance par défaut* ; une liste déroulante y permet d'en
-choisir une autre le temps d'une action.
-
-**Envoi des cookies** (facultatif, désactivé par défaut, au choix pour chaque instance) : l'extension exporte
-périodiquement les cookies youtube.com / google.com du navigateur au format Netscape vers
-`PUT /api/admin/youtube/cookies` des instances cochées, ce qui évite les blocages « confirmez que vous n'êtes pas
-un robot ». L'intervalle est commun ; *Envoyer les cookies maintenant* fait un envoi ponctuel. Ces cookies
-ouvrent votre compte Google à chaque serveur qui les reçoit : utilisez un profil connecté avec un compte
-secondaire. La permission « cookies » est rendue dès qu'aucune instance ne les reçoit plus.
-
-**Langues** : l'extension suit la langue du navigateur, en français ou en anglais (anglais par défaut pour les
-autres langues). Les textes sont dans `extension/_locales/<langue>/messages.json` (format `chrome.i18n`, avec une
-description par message pour les traducteurs) ; pour ajouter une langue, copier `en/` vers le code de la
-langue (`de`, `es`, `pt_BR`…) et traduire les champs `message` en gardant les `$PARAMÈTRES$`. Les messages
-d'erreur venus du serveur restent en français.
+L'extension (Chrome, Edge, Firefox) a son propre dépôt : [localify-extension](https://git.pmjb.org/pmj.bailly/localify-extension).
+Elle s'authentifie avec une clé créée dans *Administration → Clés d'API* ; cette clé ne permet que d'ajouter des
+vidéos à la file, de lire une adresse YouTube, de s'abonner, d'envoyer des cookies YouTube et de lire l'état d'une
+vidéo.
 
 Derrière Cloudflare Access, autorisez l'en-tête `Authorization: ApiKey …` (règle *Bypass* ou jeton de
 service) pour les chemins `/api/admin/youtube/*` et `/api/extension/*`.
@@ -195,35 +160,11 @@ Tests (`LOCALIFY_TEST_FFMPEG` active les tests de transcodage, `LOCALIFY_TEST_EL
 dotnet test --project tests/Localify.Server.Tests
 ```
 
-### APK Android sans Android Studio
-
-```bash
-docker build -f build/android-sdk.Dockerfile -t localify-android-sdk build
-```
-
-```bash
-docker run --rm -v "$PWD:/host:ro" -v "$PWD/out:/out" -v localify-nuget:/root/.nuget/packages localify-android-sdk sh /host/build/build-apk.sh Release
-```
-
-Un seul fichier est produit : `out/localify-release.apk`, signé et installable. `dotnet publish` génère aussi un
-`org.pmjb.localify.apk` **non signé** : c'est un intermédiaire, Android refuse de l'installer (« application non
-installée » / paquet invalide), il n'est donc plus copié. Sans keystore, l'APK est signé avec la clé de debug de
-l'image : pour mettre à jour par-dessus un APK de la CI (autre clé), il faut d'abord désinstaller l'appli.
-
 ### Application Android
 
-- **Comptes** : au premier lancement, l'application demande l'adresse du serveur puis l'identifiant. Plusieurs
-  comptes (un utilisateur sur un serveur, éventuellement plusieurs serveurs) peuvent être connectés en même temps ;
-  **Réglages › Comptes** affiche le compte actif, permet d'en ajouter un, de changer de compte actif ou de se
-  déconnecter d'un compte précis. Le compte actif fixe la bibliothèque, la lecture, Android Auto et la notification ;
-  en changer arrête la lecture et recharge la file sauvegardée de l'autre compte.
-- Chaque compte a ses propres jetons (SecureStorage, renouvelés un par un avec un verrou par compte), sa file
-  d'attente, ses réglages de lecture et ses entrées du cache audio. Une installation mono-compte antérieure est
-  migrée automatiquement en un premier compte (session, file et réglages compris).
-- **Plantages** : toute exception non gérée (.NET, tâches, Java) est écrite dans `crash.log` (dossier privé de
-  l'appli) et dans logcat (`adb logcat -s Localify`). Au lancement suivant, un écran natif affiche le rapport avec un
-  bouton « Copier le rapport » ; si le démarrage lui-même échoue, cet écran remplace l'interface.
-- Le web reste mono-compte (même origine que le serveur) et garde ses clés de stockage.
+Elle a son propre dépôt : [localify-android](https://git.pmjb.org/pmj.bailly/localify-android). Elle compile contre les paquets
+`Localify.Contracts` et `Localify.UI` publiés par ce dépôt, ou directement contre ses sources si les deux dépôts
+sont clonés côte à côte (voir son README).
 
 ## Déploiement derrière Cloudflare
 
@@ -264,15 +205,7 @@ directement sur Internet dans ce mode.
 ## CI/CD GitLab
 
 [.gitlab-ci.yml](.gitlab-ci.yml) : tests serveur → image Docker poussée sur le registre du projet
-(`:sha`, `:latest` sur la branche par défaut, `:X.Y.Z` sur tag) et APK Android en artefact → release
-GitLab avec l'APK sur les tags `vX.Y.Z`.
+(`:sha`, `:latest` sur la branche par défaut, `:X.Y.Z` sur tag) et paquets NuGet `Localify.Contracts` /
+`Localify.UI` (branche par défaut et tags) → release GitLab sur les tags `vX.Y.Z`.
 
-Le runner doit accepter docker-in-docker (`privileged = true`) : procédure complète dans [docs/CI-RUNNER.md](docs/CI-RUNNER.md). Pour signer l'APK de release, définir
-`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` et `ANDROID_KEY_PASSWORD`
-(variables masquées). Sans elles, la CI signe avec une clé de secours générée une fois et conservée dans son cache
-(les APK successifs restent installables les uns par-dessus les autres tant que ce cache vit). L'artefact contient un
-seul APK, `dist/localify-X.Y.Z.apk`, dont la signature est vérifiée (`apksigner verify`). Un keystore se crée avec :
-
-```bash
-keytool -genkeypair -v -keystore localify.keystore -alias localify -keyalg RSA -keysize 4096 -validity 10000
-```
+Le runner doit accepter docker-in-docker (`privileged = true`) : procédure complète dans [docs/CI-RUNNER.md](docs/CI-RUNNER.md).
