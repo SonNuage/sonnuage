@@ -37,7 +37,7 @@ VOLUME ["/config", "/uploads"]
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s CMD curl -fsS http://localhost:8080/healthz || exit 1
 ENTRYPOINT ["dotnet", "SonNuage.Server.dll"]
 
-# Compilation. Les paquets NuGet restent dans un cache BuildKit d'un build à l'autre.
+# Compilation. Le restore reste en cache tant que les fichiers projet ne changent pas.
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY global.json Directory.Build.props Directory.Packages.props ./
@@ -45,12 +45,10 @@ COPY src/SonNuage.Contracts/*.csproj src/SonNuage.Contracts/
 COPY src/SonNuage.UI/*.csproj src/SonNuage.UI/
 COPY src/SonNuage.Web/*.csproj src/SonNuage.Web/
 COPY src/SonNuage.Server/*.csproj src/SonNuage.Server/
-RUN --mount=type=cache,id=sonnuage-nuget,target=/root/.nuget/packages \
-    dotnet restore src/SonNuage.Server/SonNuage.Server.csproj
+RUN dotnet restore src/SonNuage.Server/SonNuage.Server.csproj
 COPY src/ src/
 ARG VERSION=
-RUN --mount=type=cache,id=sonnuage-nuget,target=/root/.nuget/packages \
-    dotnet publish src/SonNuage.Server/SonNuage.Server.csproj -c Release -o /app --no-restore \
+RUN dotnet publish src/SonNuage.Server/SonNuage.Server.csproj -c Release -o /app --no-restore \
     ${VERSION:+-p:Version=$VERSION} -p:UseAppHost=false
 
 # Par défaut (docker compose, GitHub) : tout est compilé dans l'image. La CI GitLab, elle, publie l'image de la
