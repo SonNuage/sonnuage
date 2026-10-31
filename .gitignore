@@ -26,3 +26,5 @@ node_modules/
 /out/
 *.Backup.tmp
 *.zip
+publish/
+packages/

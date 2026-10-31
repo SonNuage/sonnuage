@@ -1,18 +1,27 @@
 # Pipeline SonNuage (serveur + client web)
-#  - test        : build + tests du serveur (avec ffmpeg et Elasticsearch)
-#  - build       : image Docker du serveur (registre GitLab). Paquets NuGet SonNuage.Contracts et SonNuage.UI
-#                  (registre NuGet du projet), utilisés par l'application Android (dépôt sonnuage-android)
-#  - release     : sur tag vX.Y.Z, release GitLab
+#  - prepare : image des jobs .NET (SDK, ffmpeg, client Docker), reconstruite quand build/ci.Dockerfile change
+#  - test    : en parallèle, les tests du serveur (avec ffmpeg et Elasticsearch) et l'image Docker du serveur
+#              (publiée sous le sha du commit), avec les paquets NuGet SonNuage.Contracts et SonNuage.UI
+#  - publish : une fois les tests passés, l'image reçoit ses tags (latest, version) et les paquets NuGet partent
+#              dans le registre du projet, pour l'application Android (dépôt sonnuage-android)
+#  - release : sur tag vX.Y.Z, release GitLab
 #
-# Les jobs Docker utilisent docker-in-docker : le runner doit être en mode privileged.
+# Rapidité, sur le runner du homelab :
+#  - paquets NuGet dans /nuget, un dossier de la machine monté par le runner (ni zip ni téléversement)
+#  - images publiques téléchargées une seule fois (pull_policy if-not-present du runner)
+#  - image du serveur construite à partir de l'application déjà publiée par le job, sur la couche de base en
+#    cache (cache intégré à l'image latest du registre). Le SDK n'est pas retéléchargé dans docker-in-docker.
+# Le job image utilise docker-in-docker : le runner doit être en mode privileged.
 
-stages: [test, build, release]
+stages: [prepare, test, publish, release]
 
 variables:
-  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
-  DOTNET_NOLOGO: "1"
-  NUGET_PACKAGES: $CI_PROJECT_DIR/.nuget
+  NUGET_PACKAGES: /nuget
   SERVER_IMAGE: $CI_REGISTRY_IMAGE
+  CI_IMAGE: $CI_REGISTRY_IMAGE/ci:latest
+  GIT_DEPTH: "10"
+  FF_USE_FASTZIP: "true"
+  ARTIFACT_COMPRESSION_LEVEL: fastest
 
 workflow:
   rules:
@@ -27,18 +36,40 @@ default:
     if [ -n "$CI_COMMIT_TAG" ]; then export VERSION="${CI_COMMIT_TAG#v}"; else export VERSION="0.1.0-ci.${CI_PIPELINE_IID}"; fi
     echo "Version $VERSION"
 
-.docker:
-  image: docker:28
+.dind:
   services:
     - name: docker:28-dind
   variables:
     DOCKER_TLS_CERTDIR: "/certs"
-  before_script:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_VERIFY: "1"
+    DOCKER_CERT_PATH: /certs/client
+
+# Image de nos jobs, toujours vérifiée auprès du registre (latest peut avoir été reconstruite).
+.dotnet:
+  image:
+    name: $CI_IMAGE
+    pull_policy: always
+  needs:
+    - job: ci-image
+      optional: true
+
+# Reconstruite quand sa recette change, ou à la demande : Run pipeline avec BUILD_CI_IMAGE=1.
+ci-image:
+  extends: .dind
+  stage: prepare
+  image: docker:28
+  rules:
+    - if: $BUILD_CI_IMAGE == "1"
+    - changes: [build/ci.Dockerfile]
+  script:
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - docker build --pull -f build/ci.Dockerfile -t "$CI_IMAGE" build
+    - docker push "$CI_IMAGE"
 
 server-test:
+  extends: .dotnet
   stage: test
-  image: mcr.microsoft.com/dotnet/sdk:10.0
   services:
     - name: docker.elastic.co/elasticsearch/elasticsearch:9.2.0
       alias: elasticsearch
@@ -49,68 +80,68 @@ server-test:
   variables:
     SONNUAGE_TEST_FFMPEG: /usr/bin/ffmpeg
     SONNUAGE_TEST_ELASTICSEARCH: http://elasticsearch:9200
-  cache:
-    key: nuget-server
-    paths: [.nuget/]
-  before_script:
-    - apt-get update -qq && apt-get install -y -qq --no-install-recommends ffmpeg > /dev/null
   script:
-    - dotnet build src/SonNuage.Server/SonNuage.Server.csproj -c Release
+    # Le projet de tests compile aussi le serveur : une seule compilation.
+    - dotnet build tests/SonNuage.Server.Tests/SonNuage.Server.Tests.csproj -c Release
     # Elasticsearch démarre pendant le build. On l'attend avant les tests (ses tests échouent sinon).
     - for i in $(seq 1 60); do curl -fs "$SONNUAGE_TEST_ELASTICSEARCH/_cluster/health?wait_for_status=yellow&timeout=1s" > /dev/null && break; sleep 2; done
-    - dotnet test --project tests/SonNuage.Server.Tests/SonNuage.Server.Tests.csproj -c Release --report-trx --results-directory TestResults
+    - dotnet test --project tests/SonNuage.Server.Tests/SonNuage.Server.Tests.csproj -c Release --no-build --report-trx --results-directory TestResults
   artifacts:
     when: always
     paths: [TestResults/]
     expire_in: 1 week
 
+# En parallèle des tests : publication, image sous le sha du commit, paquets NuGet (poussés après les tests).
 server-image:
-  extends: .docker
-  stage: build
-  needs: [server-test]
+  extends: [.dotnet, .dind]
+  stage: test
   script:
     - *version
-    - docker build --build-arg VERSION="$VERSION" -t "$SERVER_IMAGE:$CI_COMMIT_SHORT_SHA" .
-    - docker push "$SERVER_IMAGE:$CI_COMMIT_SHORT_SHA"
-    - |
-      if [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ]; then
-        docker tag "$SERVER_IMAGE:$CI_COMMIT_SHORT_SHA" "$SERVER_IMAGE:latest"
-        docker push "$SERVER_IMAGE:latest"
-      fi
-    - |
-      if [ -n "$CI_COMMIT_TAG" ]; then
-        docker tag "$SERVER_IMAGE:$CI_COMMIT_SHORT_SHA" "$SERVER_IMAGE:$VERSION"
-        docker push "$SERVER_IMAGE:$VERSION"
-      fi
-
-# Bibliothèques partagées avec l'application Android (dépôt sonnuage-android) : SonNuage.Contracts et
-# SonNuage.UI, dans le registre NuGet du projet. Version : X.Y.Z sur tag, 0.1.0-ci.N sur les branches.
-shared-packages:
-  stage: build
-  image: mcr.microsoft.com/dotnet/sdk:10.0
-  needs: [server-test]
-  rules:
-    - if: $CI_COMMIT_TAG
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-  cache:
-    key: nuget-server
-    paths: [.nuget/]
-    policy: pull
-  script:
-    - *version
+    - dotnet publish src/SonNuage.Server/SonNuage.Server.csproj -c Release -o publish -p:Version="$VERSION" -p:UseAppHost=false
     - dotnet pack src/SonNuage.Contracts/SonNuage.Contracts.csproj -c Release -o packages -p:Version="$VERSION"
     - dotnet pack src/SonNuage.UI/SonNuage.UI.csproj -c Release -o packages -p:Version="$VERSION"
-    - dotnet nuget add source "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/nuget/index.json"
-        --name gitlab --username gitlab-ci-token --password "$CI_JOB_TOKEN" --store-password-in-clear-text
-    - dotnet nuget push "packages/*.nupkg" --source gitlab
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - docker build --target prebuilt --cache-from "$SERVER_IMAGE:latest" --build-arg BUILDKIT_INLINE_CACHE=1
+        -t "$SERVER_IMAGE:$CI_COMMIT_SHORT_SHA" .
+    - docker push "$SERVER_IMAGE:$CI_COMMIT_SHORT_SHA"
   artifacts:
     paths: [packages/]
     expire_in: 30 days
 
+# Tests passés : tags latest (branche principale) et version (tag Git), sans rien retélécharger.
+server-image-tags:
+  stage: publish
+  image:
+    name: gcr.io/go-containerregistry/crane:debug
+    entrypoint: [""]
+  needs: [server-test, server-image]
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  script:
+    - *version
+    - crane auth login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
+    - if [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ]; then crane tag "$SERVER_IMAGE:$CI_COMMIT_SHORT_SHA" latest; fi
+    - if [ -n "$CI_COMMIT_TAG" ]; then crane tag "$SERVER_IMAGE:$CI_COMMIT_SHORT_SHA" "$VERSION"; fi
+
+# Bibliothèques partagées avec l'application Android (dépôt sonnuage-android) : SonNuage.Contracts et
+# SonNuage.UI, dans le registre NuGet du projet. Version : X.Y.Z sur tag, 0.1.0-ci.N sur les branches.
+shared-packages:
+  extends: .dotnet
+  stage: publish
+  needs: [server-test, server-image]
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  script:
+    - dotnet nuget add source "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/nuget/index.json"
+        --name gitlab --username gitlab-ci-token --password "$CI_JOB_TOKEN" --store-password-in-clear-text
+    - dotnet nuget push "packages/*.nupkg" --source gitlab
+
 release:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
-  needs: [server-image, shared-packages]
+  needs: [server-image-tags, shared-packages]
   rules:
     - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+/
   script:
