@@ -63,7 +63,9 @@ ci-image:
   image: docker:28
   rules:
     - if: $BUILD_CI_IMAGE == "1"
-    - changes: [build/ci.Dockerfile]
+    # Sur push seulement : hors push (pipeline manuelle, planifiée), changes est toujours vrai.
+    - if: $CI_PIPELINE_SOURCE == "push"
+      changes: [build/ci.Dockerfile]
   script:
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
     - docker build --pull -f build/ci.Dockerfile -t "$CI_IMAGE" build
