@@ -17,6 +17,8 @@ stages: [prepare, test, publish, release]
 
 variables:
   NUGET_PACKAGES: /nuget
+  # Verrous NuGet dans le dossier partagé : sinon deux jobs en parallèle extraient le même paquet en même temps.
+  NUGET_SCRATCH: /nuget/.scratch
   SERVER_IMAGE: $CI_REGISTRY_IMAGE
   CI_IMAGE: $CI_REGISTRY_IMAGE/ci:latest
   GIT_DEPTH: "10"
