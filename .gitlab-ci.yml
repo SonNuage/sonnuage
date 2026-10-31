@@ -138,13 +138,29 @@ server-image:
     paths: [packages/]
     expire_in: 30 days
 
+# L'image assemblée démarre et répond (/healthz), en parallèle des tests.
+server-smoke:
+  stage: publish
+  image:
+    name: $SERVER_IMAGE:$CI_COMMIT_SHORT_SHA
+    entrypoint: [""]
+  needs: [server-image]
+  variables:
+    GIT_STRATEGY: none
+    ASPNETCORE_URLS: http://127.0.0.1:8080
+  script:
+    - cd /app && (dotnet SonNuage.Server.dll > /tmp/server.log 2>&1 &)
+    - for i in $(seq 1 60); do code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/healthz) && [ "$code" != 000 ] && break; sleep 1; done
+    - echo "healthz : $code" && tail -5 /tmp/server.log
+    - '[ "$code" != 000 ]'
+
 # Tests passés : tags latest (branche principale) et version (tag Git), sans rien retélécharger.
 server-image-tags:
   stage: publish
   image:
     name: gcr.io/go-containerregistry/crane:debug
     entrypoint: [""]
-  needs: [server-test, server-image]
+  needs: [server-test, server-image, server-smoke]
   rules:
     - if: $CI_COMMIT_TAG
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
