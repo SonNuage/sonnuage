@@ -53,10 +53,7 @@ RUN --mount=type=cache,id=sonnuage-nuget,target=/root/.nuget/packages \
     dotnet publish src/SonNuage.Server/SonNuage.Server.csproj -c Release -o /app --no-restore \
     ${VERSION:+-p:Version=$VERSION} -p:UseAppHost=false
 
-# CI : l'application est publiée par le job lui-même (dossier publish/ du contexte), sans repasser par le SDK.
-FROM base AS prebuilt
-COPY publish/ .
-
-# Par défaut (docker compose, GitHub) : tout est compilé dans l'image.
+# Par défaut (docker compose, GitHub) : tout est compilé dans l'image. La CI GitLab, elle, publie l'image de la
+# cible base (runtime-base) et y ajoute l'application publiée par le job (voir .gitlab-ci.yml).
 FROM base AS runtime
 COPY --from=build /app .

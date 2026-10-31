@@ -1,5 +1,6 @@
 # Pipeline SonNuage (serveur + client web)
-#  - prepare : image des jobs .NET (SDK, ffmpeg, client Docker), reconstruite quand build/ci.Dockerfile change
+#  - prepare : image des jobs .NET (SDK, ffmpeg, crane), reconstruite quand build/ci.Dockerfile change. Base
+#              d'exécution du serveur (cible base du Dockerfile), reconstruite quand le Dockerfile change
 #  - test    : en parallèle, les tests du serveur (avec ffmpeg et Elasticsearch) et l'image Docker du serveur
 #              (publiée sous le sha du commit), avec les paquets NuGet SonNuage.Contracts et SonNuage.UI
 #  - publish : une fois les tests passés, l'image reçoit ses tags (latest, version) et les paquets NuGet partent
@@ -9,9 +10,9 @@
 # Rapidité, sur le runner du homelab :
 #  - paquets NuGet dans /nuget, un dossier de la machine monté par le runner (ni zip ni téléversement)
 #  - images publiques téléchargées une seule fois (pull_policy if-not-present du runner)
-#  - image du serveur construite à partir de l'application déjà publiée par le job, sur la couche de base en
-#    cache (cache intégré à l'image latest du registre). Le SDK n'est pas retéléchargé dans docker-in-docker.
-# Le job image utilise docker-in-docker : le runner doit être en mode privileged.
+#  - image du serveur assemblée par crane dans le registre : base d'exécution + une couche avec l'application
+#    publiée par le job. Ni démon Docker ni téléchargement de la base.
+# Les jobs ci-image et runtime-base utilisent docker-in-docker : le runner doit être en mode privileged.
 
 stages: [prepare, test, publish, release]
 
@@ -21,6 +22,7 @@ variables:
   NUGET_SCRATCH: /nuget/.scratch
   SERVER_IMAGE: $CI_REGISTRY_IMAGE
   CI_IMAGE: $CI_REGISTRY_IMAGE/ci:latest
+  RUNTIME_BASE: $CI_REGISTRY_IMAGE/runtime-base:latest
   GIT_DEPTH: "10"
   FF_USE_FASTZIP: "true"
   ARTIFACT_COMPRESSION_LEVEL: fastest
@@ -56,6 +58,9 @@ default:
     - job: ci-image
       optional: true
 
+.registry-login: &registry-login
+  - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+
 # Reconstruite quand sa recette change, ou à la demande : Run pipeline avec BUILD_CI_IMAGE=1.
 ci-image:
   extends: .dind
@@ -67,9 +72,24 @@ ci-image:
     - if: $CI_PIPELINE_SOURCE == "push"
       changes: [build/ci.Dockerfile]
   script:
-    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - *registry-login
     - docker build --pull -f build/ci.Dockerfile -t "$CI_IMAGE" build
     - docker push "$CI_IMAGE"
+
+# Base d'exécution (ASP.NET, ffmpeg, yt-dlp, Deno, fpcalc), reconstruite quand le Dockerfile change,
+# ou à la demande : Run pipeline avec BUILD_RUNTIME_BASE=1 (mises à jour de sécurité de l'image ASP.NET).
+runtime-base:
+  extends: .dind
+  stage: prepare
+  image: docker:28
+  rules:
+    - if: $BUILD_RUNTIME_BASE == "1"
+    - if: $CI_PIPELINE_SOURCE == "push"
+      changes: [Dockerfile]
+  script:
+    - *registry-login
+    - docker build --pull --target base -t "$RUNTIME_BASE" .
+    - docker push "$RUNTIME_BASE"
 
 server-test:
   extends: .dotnet
@@ -97,17 +117,23 @@ server-test:
 
 # En parallèle des tests : publication, image sous le sha du commit, paquets NuGet (poussés après les tests).
 server-image:
-  extends: [.dotnet, .dind]
+  extends: .dotnet
   stage: test
+  needs:
+    - job: ci-image
+      optional: true
+    - job: runtime-base
+      optional: true
   script:
     - *version
     - dotnet publish src/SonNuage.Server/SonNuage.Server.csproj -c Release -o publish -p:Version="$VERSION" -p:UseAppHost=false
     - dotnet pack src/SonNuage.Contracts/SonNuage.Contracts.csproj -c Release -o packages -p:Version="$VERSION"
     - dotnet pack src/SonNuage.UI/SonNuage.UI.csproj -c Release -o packages -p:Version="$VERSION"
-    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
-    - docker build --target prebuilt --cache-from "$SERVER_IMAGE:latest" --build-arg BUILDKIT_INLINE_CACHE=1
-        -t "$SERVER_IMAGE:$CI_COMMIT_SHORT_SHA" .
-    - docker push "$SERVER_IMAGE:$CI_COMMIT_SHORT_SHA"
+    # Image = base d'exécution + l'application dans /app, assemblée directement dans le registre.
+    - mkdir -p layer && mv publish layer/app
+    - tar -C layer --owner=0 --group=0 --numeric-owner -cf app.tar app
+    - crane auth login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD"
+    - crane append -b "$RUNTIME_BASE" -f app.tar -t "$SERVER_IMAGE:$CI_COMMIT_SHORT_SHA"
   artifacts:
     paths: [packages/]
     expire_in: 30 days
