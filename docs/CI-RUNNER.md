@@ -1,7 +1,7 @@
 # Runner GitLab pour SonNuage
 
 Le pipeline ([.gitlab-ci.yml](../.gitlab-ci.yml)) a besoin d'un runner **Docker** en mode **privileged**
-(les jobs `server-image` et `android-sdk-image` construisent des images avec docker-in-docker).
+(les jobs `ci-image`, `runtime-base` et `android-sdk-image` construisent des images avec docker-in-docker).
 Sans runner rattaché au projet, les jobs restent « stuck ».
 
 ## 1. Créer le runner dans GitLab
@@ -39,21 +39,31 @@ docker compose up -d gitlab-runner
 docker exec -it gitlab-runner gitlab-runner register --non-interactive --url https://git.pmjb.org --token glrt-XXXXXXXX --executor docker --docker-image docker:28 --docker-privileged --docker-volumes /certs/client --description homelab-docker
 ```
 
-Ensuite, dans `runner-config/config.toml`, section `[runners.docker]` :
+Ensuite, dans `runner-config/config.toml` :
 
 ```toml
-privileged = true
-volumes = ["/certs/client", "/cache"]
-shm_size = 268435456          # 256 Mo : le build Android (D8/R8) en profite
+concurrent = 3                # en tête de fichier : tests, image et APK en parallèle
+
+[[runners]]
+  request_concurrency = 3
+  [runners.docker]
+    privileged = true
+    # /nuget : paquets NuGet partagés par tous les jobs, sur un dossier de l'hôte (ni zip ni téléversement)
+    volumes = ["/certs/client", "/cache", "/mnt/data/ci-cache/sonnuage/nuget:/nuget"]
+    # Images publiques téléchargées une seule fois. Nos images latest (ci, android-sdk) demandent always.
+    pull_policy = ["if-not-present"]
+    allowed_pull_policies = ["always", "if-not-present"]
+    shm_size = 268435456        # 256 Mo : le build Android (D8/R8) en profite
 ```
 
 puis `docker restart gitlab-runner`. Le runner doit apparaître en vert dans Settings → CI/CD → Runners.
 Relancer le pipeline bloqué (**Pipelines → Run pipeline** ou **Retry**).
 
-Au premier pipeline, l'image de build Android n'existe pas encore dans le registre : **Run pipeline** avec la
-variable `BUILD_ANDROID_SDK` = `1` la construit (une fois, ~15 min) avant le job `android-apk`.
+Au premier pipeline, les images de build n'existent pas encore dans le registre : **Run pipeline** avec les
+variables `BUILD_CI_IMAGE` = `1` et `BUILD_RUNTIME_BASE` = `1` (serveur) ou `BUILD_ANDROID_SDK` = `1` (Android).
+Ensuite, elles ne sont reconstruites que quand leur recette change.
 
-Sur homelab, le runner est dans `/home/selfhost/stacks/sonnuage-runner` (conteneur `sonnuage-gitlab-runner`).
+Sur homelab, le runner est dans `/home/selfhost/stacks/localify-runner` (conteneur `localify-gitlab-runner`).
 
 ## 3. Points d'attention
 
@@ -63,8 +73,12 @@ Sur homelab, le runner est dans `/home/selfhost/stacks/sonnuage-runner` (contene
 sudo sysctl -w vm.max_map_count=262144 && echo 'vm.max_map_count=262144' | sudo tee /etc/sysctl.d/99-elasticsearch.conf
 ```
 
-**Mémoire.** Le build Android consomme 3 à 4 Go. Avec `concurrent = 1` (défaut dans `config.toml`), un seul
-job tourne à la fois. À augmenter si la machine le permet.
+**Mémoire.** Le build Android consomme 3 à 4 Go, les tests serveur (avec Elasticsearch) environ 2 Go. Avec
+`concurrent = 3`, compter 8 Go libres. Réduire si la machine manque de mémoire.
+
+**Images de commit.** Le job `server-smoke` démarre l'image de chaque commit sur l'hôte du runner. Les bases sont
+partagées, chaque commit ajoute environ 70 Mo. De temps en temps :
+`docker image prune -a --filter "until=168h"`.
 
 **Cloudflare et le registre.** Si le registre (`$CI_REGISTRY`) passe par Cloudflare, chaque requête est limitée
 à 100 Mo : la poussée d'une couche d'image plus grosse (l'étape `apt-get install ffmpeg` du serveur pèse ~150 Mo)

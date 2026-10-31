@@ -206,9 +206,11 @@ directement sur Internet dans ce mode.
 
 ## CI/CD GitLab
 
-[.gitlab-ci.yml](.gitlab-ci.yml) : tests serveur → image Docker poussée sur le registre du projet
-(`:sha`, `:latest` sur la branche par défaut, `:X.Y.Z` sur tag) et paquets NuGet `SonNuage.Contracts` /
-`SonNuage.UI` (branche par défaut et tags) → release GitLab sur les tags `vX.Y.Z`.
+[.gitlab-ci.yml](.gitlab-ci.yml), environ 1 min 30 : tests serveur et, en parallèle, image Docker poussée sur le
+registre du projet (`:sha`), vérifiée au démarrage. Une fois les tests passés : `:latest` sur la branche par
+défaut, `:X.Y.Z` sur tag, et paquets NuGet `SonNuage.Contracts` / `SonNuage.UI` → release GitLab sur les tags
+`vX.Y.Z`. L'image est assemblée par `crane` : base d'exécution en cache (`runtime-base`, reconstruite quand le
+Dockerfile change) + une couche avec l'application publiée par le job.
 
 Le runner doit accepter docker-in-docker (`privileged = true`) : procédure complète dans [docs/CI-RUNNER.md](docs/CI-RUNNER.md).
 
