@@ -131,5 +131,5 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ needs.version.outputs.value }}
         run: |
-          gh release create "$GITHUB_REF_NAME" packages/*.nupkg --repo "$GITHUB_REPOSITORY" --title "SonNuage $VERSION" \
+          gh release create "$GITHUB_REF_NAME" packages/*.nupkg --repo "$GITHUB_REPOSITORY" --title "SonNuage $VERSION" --generate-notes \
             --notes "Image serveur : \`ghcr.io/${GITHUB_REPOSITORY,,}:$VERSION\`. Paquets NuGet SonNuage.Contracts et SonNuage.UI $VERSION."
