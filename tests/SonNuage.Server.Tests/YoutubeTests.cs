@@ -208,6 +208,19 @@ public class YoutubeMiscTests
         Assert.Equal("DC", UploadService.SafeFileName("AC/DC"));
     }
 
+    [Fact]
+    public void Folder_names_fit_the_file_system_in_bytes()
+    {
+        // Titre réel : 150 « ㅤ » (U+3164, 3 octets chacun) dépassaient les 255 octets permis par Linux.
+        var name = UploadService.SafeSegment(new string('ㅤ', 150) + "ꞋꞌꞋꞌ");
+        Assert.True(System.Text.Encoding.UTF8.GetByteCount(name) <= 180);
+        Assert.Equal(60, name.Length);
+        // Emoji (paire de substitution) jamais coupé en deux.
+        var emoji = UploadService.SafeSegment(string.Concat(Enumerable.Repeat("🎵", 60)));
+        Assert.True(System.Text.Encoding.UTF8.GetByteCount(emoji) <= 180);
+        Assert.False(char.IsHighSurrogate(emoji[^1]));
+    }
+
     [Theory]
     [InlineData("day", 24)]
     [InlineData("week", 7)]

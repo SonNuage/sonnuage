@@ -111,13 +111,31 @@ public sealed class UploadService(IOptions<SonNuageOptions> options, MetadataRea
 
     internal static string SafeFileName(string name) => SafeSegment(Path.GetFileName(name.Replace('\\', '/')));
 
-    /// <summary>Nom de dossier ou de fichier sûr : « AC/DC » devient « AC_DC » (et non « DC »).</summary>
+    /// <summary>
+    /// Nom de dossier ou de fichier sûr : « AC/DC » devient « AC_DC » (et non « DC »). Borné à 180 octets UTF-8 :
+    /// Linux limite un nom à 255 octets, et un caractère hors ASCII en prend jusqu'à 4.
+    /// </summary>
     internal static string SafeSegment(string name)
     {
         var invalid = Path.GetInvalidFileNameChars().Concat(['/', '\\', ':', '*', '?', '"', '<', '>', '|']).ToHashSet();
         var cleaned = new string(name.Select(c => invalid.Contains(c) || char.IsControl(c) ? '_' : c).ToArray()).Trim(' ', '.');
-        if (cleaned.Length > 180) cleaned = cleaned[..180];
+        cleaned = TruncateUtf8(cleaned, 180).Trim(' ', '.');
         return cleaned.Length == 0 ? "sans-nom" : cleaned;
+    }
+
+    /// <summary>Coupe entre deux caractères, jamais au milieu d'une paire de substitution.</summary>
+    private static string TruncateUtf8(string text, int maxBytes)
+    {
+        if (System.Text.Encoding.UTF8.GetByteCount(text) <= maxBytes) return text;
+        var builder = new System.Text.StringBuilder();
+        var bytes = 0;
+        foreach (var rune in text.EnumerateRunes())
+        {
+            bytes += rune.Utf8SequenceLength;
+            if (bytes > maxBytes) break;
+            builder.Append(rune.ToString());
+        }
+        return builder.ToString();
     }
 
     private static void TryDelete(string path)

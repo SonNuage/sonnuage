@@ -8,9 +8,11 @@ using Microsoft.Extensions.Options;
 namespace SonNuage.Server.Youtube;
 
 /// <summary>
-/// Range un morceau importé dans <c>Uploads/YouTube/Artiste/Album/NN - Titre [id].ext</c> : conteneur
+/// Range un morceau importé dans <c>Uploads/YouTube/{id}/{id}.ext</c>, avec sa pochette (<c>cover.jpg</c>) : conteneur
 /// adapté (webm → opus sans réencodage, ou MP3 si demandé), tags complets (identifiants MusicBrainz compris,
 /// lien vers la vidéo en commentaire) et pochette (Cover Art Archive, sinon miniature recadrée au carré).
+/// Le chemin ne dépend que de l'identifiant de la vidéo : le titre d'une vidéo est un texte libre (caractères
+/// invisibles, noms trop longs pour le système de fichiers), il ne vit que dans les tags.
 /// </summary>
 public sealed class YoutubeLibraryWriter(
     IOptions<SonNuageOptions> options,
@@ -35,9 +37,14 @@ public sealed class YoutubeLibraryWriter(
         return downloaded;
     }
 
-    /// <summary>Tague le fichier, l'installe à sa place définitive (le déplace si besoin) et renvoie son chemin.</summary>
+    /// <summary>
+    /// Tague le fichier, l'installe à sa place définitive (le déplace si besoin, y compris depuis l'ancien rangement
+    /// Artiste/Album) et renvoie son chemin.
+    /// </summary>
     public async Task<string> WriteAsync(string audioPath, MetadataCandidateDto meta, string videoId, string? thumbnailUrl, CancellationToken ct, Func<string, Task>? beforeMove = null)
     {
+        // Seul composant du chemin venu de l'extérieur : 11 caractères [A-Za-z0-9_-], jamais « .. » ni séparateur.
+        if (!YoutubeImporter.IsVideoId(videoId)) throw new ArgumentException($"Identifiant de vidéo invalide : {videoId}", nameof(videoId));
         var albumArtist = Clean(meta.AlbumArtist) ?? Clean(meta.Artist) ?? "Artiste inconnu";
         var album = Clean(meta.Album) ?? Clean(meta.Title) ?? "Album inconnu";
         var title = Clean(meta.Title) ?? videoId;
@@ -48,14 +55,12 @@ public sealed class YoutubeLibraryWriter(
 
         Tag(audioPath, meta, title, albumArtist, album, videoId, cover);
 
-        var dir = Path.Combine(options.Value.YoutubePath, UploadService.SafeSegment(albumArtist), UploadService.SafeSegment(album));
+        // Un dossier par vidéo : sa pochette est la sienne, on la remplace quand les métadonnées changent.
+        var dir = Path.Combine(options.Value.YoutubePath, videoId);
         Directory.CreateDirectory(dir);
-        if (cover is not null && !Directory.EnumerateFiles(dir).Any(f => LibraryFiles.IsImage(f)))
-            await File.WriteAllBytesAsync(Path.Combine(dir, "cover.jpg"), cover, ct);
+        if (cover is not null) await File.WriteAllBytesAsync(Path.Combine(dir, "cover.jpg"), cover, ct);
 
-        var prefix = meta.TrackNumber is { } n ? $"{(meta.DiscNumber is > 1 ? $"{meta.DiscNumber}-" : "")}{n:00} - " : "";
-        var name = UploadService.SafeSegment($"{prefix}{title} [{videoId}]");
-        var target = Path.Combine(dir, name + Path.GetExtension(audioPath).ToLowerInvariant());
+        var target = Path.Combine(dir, videoId + Path.GetExtension(audioPath).ToLowerInvariant());
         if (!string.Equals(Path.GetFullPath(target), Path.GetFullPath(audioPath), StringComparison.OrdinalIgnoreCase))
         {
             var previousDir = Path.GetDirectoryName(audioPath)!;
