@@ -1,14 +1,14 @@
 # SonNuage
 
 Serveur de musique auto-hébergé façon Spotify : bibliothèque scannée depuis vos dossiers, lecteur web,
-application Android (avec Android Auto), playlists, favoris, transcodage à la volée, administration.
+application Android (avec Android Auto), appli de bureau (Windows, macOS, Linux), playlists, favoris, transcodage à la volée, administration.
 
 *SonNuage* : SoundCloud, traduit.
 
 | Projet | Rôle |
 |---|---|
 | `src/SonNuage.Server` | API ASP.NET Core (.NET 10), scan, transcodage ffmpeg, auth JWT, héberge le client web |
-| `src/SonNuage.UI` | Pages Razor partagées web / Android (lecteur + admin) |
+| `src/SonNuage.UI` | Pages Razor partagées web / Android / bureau (lecteur + admin) |
 | `src/SonNuage.Web` | Client Blazor WebAssembly |
 | `tests/SonNuage.Server.Tests` | Tests unitaires et d'intégration (xUnit v3) |
 | `legacy/` | Anciens POC Node.js / Capacitor, gardés pour référence |
@@ -19,10 +19,11 @@ Les autres parties du projet ont leur propre dépôt :
 |---|---|
 | [sonnuage](https://git.pmjb.org/pmj.bailly/sonnuage) (celui-ci) | Serveur, client web, bibliothèques partagées `SonNuage.Contracts` et `SonNuage.UI` |
 | [sonnuage-android](https://git.pmjb.org/pmj.bailly/sonnuage-android) | Application Android (.NET MAUI Blazor Hybrid, Media3, Android Auto) |
+| [sonnuage-desktop](https://git.pmjb.org/pmj.bailly/sonnuage-desktop) | Appli de bureau Windows, macOS, Linux (Photino : webview du système, icône de la barre système) |
 | [sonnuage-extension](https://git.pmjb.org/pmj.bailly/sonnuage-extension) | Extension de navigateur (import YouTube, envoi des cookies) |
 
 `SonNuage.Contracts` et `SonNuage.UI` sont publiés en paquets NuGet dans le registre de ce dépôt à chaque build de
-`main` (version `0.1.0-ci.N`) et à chaque tag `vX.Y.Z`. L'application Android les utilise.
+`main` (version `0.1.0-ci.N`) et à chaque tag `vX.Y.Z`. L'application Android et l'appli de bureau les utilisent.
 
 Le plan de refonte et les choix d'architecture sont dans [docs/PLAN.md](docs/PLAN.md).
 
@@ -74,7 +75,8 @@ Réservé aux administrateurs (`/admin/youtube`), avec [yt-dlp](https://github.c
 - **Métadonnées** recomposées automatiquement : champs YouTube Music, recherche MusicBrainz notée sur titre,
   artiste et durée (l'album studio officiel est préféré aux compilations), empreinte sonore AcoustID en option
   (clé gratuite + `fpcalc`). Pochette de Cover Art Archive, sinon miniature recadrée au carré. Tags complets
-  (identifiants MusicBrainz, lien de la vidéo) et rangement dans `uploads/YouTube/Artiste/Album/`.
+  (identifiants MusicBrainz, lien de la vidéo) et rangement dans `uploads/YouTube/<id de la vidéo>/` :
+  le titre, texte libre, ne vit que dans les tags et ne sert jamais de nom de fichier.
   Sous le seuil de confiance réglable, l'import est signalé « à vérifier » : l'admin choisit parmi les
   propositions, cherche sur MusicBrainz ou saisit à la main. Le fichier est retagué et déplacé, le morceau
   garde sa place dans les playlists.

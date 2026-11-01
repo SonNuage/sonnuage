@@ -1,19 +1,27 @@
 using System.Text.Json;
 using SonNuage.Contracts;
-using SonNuage.UI.Services;
 using Microsoft.JSInterop;
 
-namespace SonNuage.Web.Services;
+namespace SonNuage.UI.Services;
 
-/// <summary>Lecteur navigateur : file en C#, audio et MediaSession en JS (wwwroot/js/player.js).</summary>
-public sealed class WebPlayer(IJSRuntime js, ApiClient api, PlaybackSettings settings, IKeyValueStore store) : IPlayer, IRestorablePlayer, IAdoptablePlayer, IAsyncDisposable
+/// <summary>
+/// Lecteur de la webview : file en C#, audio et MediaSession en JS (wwwroot/js/player.js). Client web et appli de bureau.
+/// </summary>
+public sealed class WebPlayer : IPlayer, IRestorablePlayer, IAdoptablePlayer, IAsyncDisposable
 {
     private const string QueueStorageKey = "sonnuage.queue";
     private const string ResumeStorageKey = "sonnuage.resume";
     /// <summary>Une écoute compte dans l'historique au-delà de 30 s (ou à la fin d'une piste plus courte).</summary>
     private const double PlayThresholdSeconds = 30;
 
+    private readonly IJSRuntime js;
+    private readonly ApiClient api;
+    private readonly PlaybackSettings settings;
+    private readonly IKeyValueStore store;
+    private readonly AccountStore accounts;
     private readonly PlayQueue _queue = new();
+    // Clé de la file du compte qui joue, gardée pour la sauver sous ce compte quand on en change (appli de bureau).
+    private string? _queueKey;
     private IJSObjectReference? _module;
     private DotNetObjectReference<WebPlayer>? _self;
     private bool _playing;
@@ -25,6 +33,18 @@ public sealed class WebPlayer(IJSRuntime js, ApiClient api, PlaybackSettings set
 
     public event Action? StateChanged;
 
+    public WebPlayer(IJSRuntime js, ApiClient api, PlaybackSettings settings, IKeyValueStore store, AccountStore accounts)
+    {
+        this.js = js;
+        this.api = api;
+        this.settings = settings;
+        this.store = store;
+        this.accounts = accounts;
+        accounts.ActiveChanged += () => _ = SwitchAccountAsync();
+    }
+
+    private string QueueKey => _queueKey ??= accounts.ScopedKey(QueueStorageKey);
+
     public PlayerState State => new(
         _queue.Items, _queue.Index, _playing, _buffering, _position,
         _queue.Current?.DurationSeconds ?? 0, _queue.Shuffle, _queue.Repeat, _volume, _error);
@@ -32,7 +52,7 @@ public sealed class WebPlayer(IJSRuntime js, ApiClient api, PlaybackSettings set
     private async Task<IJSObjectReference> ModuleAsync()
     {
         if (_module is not null) return _module;
-        _module = await js.InvokeAsync<IJSObjectReference>("import", "./js/player.js");
+        _module = await js.InvokeAsync<IJSObjectReference>("import", "./_content/SonNuage.UI/js/player.js");
         _self = DotNetObjectReference.Create(this);
         await _module.InvokeVoidAsync("init", _self);
         return _module;
@@ -43,7 +63,7 @@ public sealed class WebPlayer(IJSRuntime js, ApiClient api, PlaybackSettings set
     {
         var resume = await store.GetAsync(ResumeStorageKey) == "1";
         if (resume) await store.SetAsync(ResumeStorageKey, null);
-        var raw = await store.GetAsync(QueueStorageKey);
+        var raw = await store.GetAsync(QueueKey);
         if (raw is null) return;
         try
         {
@@ -273,7 +293,25 @@ public sealed class WebPlayer(IJSRuntime js, ApiClient api, PlaybackSettings set
     private async Task SaveAsync()
     {
         var saved = new SavedQueue(_queue.Items.Take(500).Select(t => t.Id).ToList(), _queue.Current?.Id, _position, _queue.Repeat);
-        await store.SetAsync(QueueStorageKey, JsonSerializer.Serialize(saved, JsonDefaults.Options));
+        await store.SetAsync(QueueKey, JsonSerializer.Serialize(saved, JsonDefaults.Options));
+    }
+
+    /// <summary>
+    /// Plusieurs comptes (appli de bureau) : la file du compte quitté est sauvée sous sa clé, la lecture s'arrête, puis
+    /// la file du nouveau compte est chargée en pause.
+    /// </summary>
+    private async Task SwitchAccountAsync()
+    {
+        // Pas de file chargée avant (premier compte, juste connecté) : la mise en page la restaure elle-même.
+        var previous = _queueKey;
+        if (_queue.Current is not null) await SaveAsync();
+        _queueKey = null;
+        _queue.Load([], 0, false);
+        _playing = false;
+        _position = 0;
+        if (_module is not null) await _module.InvokeVoidAsync("stop");
+        Changed();
+        if (previous is not null && accounts.Active is not null) await RestoreAsync();
     }
 
     private void Changed() => StateChanged?.Invoke();

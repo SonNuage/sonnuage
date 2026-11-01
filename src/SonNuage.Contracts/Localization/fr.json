@@ -229,6 +229,10 @@
       "playHere": "Lire ici"
     }
   },
+  "desktop": {
+    "show": "Afficher SonNuage",
+    "quit": "Quitter"
+  },
   "nav": {
     "home": "Accueil",
     "search": "Rechercher",

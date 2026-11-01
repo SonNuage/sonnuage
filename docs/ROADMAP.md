@@ -11,7 +11,7 @@ Légende : ✅ fait · 🔜 prochain · 💡 idée à creuser · ⚠️ limite c
 
 | Domaine | État |
 |---|---|
-| Lecture (web, Android, Android Auto) | ✅ bibliothèque, recherche, playlists, favoris, transcodage à la volée, lecture sur un autre appareil |
+| Lecture (web, Android, Android Auto, bureau) | ✅ bibliothèque, recherche, playlists, favoris, transcodage à la volée, lecture sur un autre appareil |
 | Comptes | ✅ admin et utilisateurs, plusieurs serveurs et comptes dans l'appli Android, langue de l'interface par compte (fr, en) |
 | Recherche | ✅ Elasticsearch (fautes de frappe, suggestions), avec repli automatique sur la base s'il tombe |
 | Import YouTube | ✅ recherche, playlists, albums, chaînes, abonnements synchronisés, extension de navigateur avec clés API |
@@ -19,6 +19,23 @@ Légende : ✅ fait · 🔜 prochain · 💡 idée à creuser · ⚠️ limite c
 | Déploiement | ✅ Docker Compose sur le homelab (SonNuage + Elasticsearch), CI GitLab avec runner dédié, APK Android signé |
 
 ## Livré récemment
+
+### Imports YouTube rangés par identifiant (novembre 2026)
+
+- Un import va dans `uploads/YouTube/<id>/<id>.opus`, avec sa pochette. Le titre d'une vidéo faisait le nom du
+  dossier : des caractères invisibles de 3 octets dépassaient la limite de 255 octets de Linux et l'import échouait.
+- Les imports déjà faits gardent leur place. Ils migrent à la prochaine correction de leurs métadonnées.
+- Les noms tirés des tags (envoi de fichiers) sont désormais bornés en octets.
+
+### Appli de bureau (novembre 2026)
+
+- **SonNuage pour Windows, macOS et Linux** (dépôt `sonnuage-desktop`), en .NET avec Photino : les pages de
+  l'appli web dans la webview du système, sans Chromium embarqué (environ 40 Mo, runtime compris). Plusieurs serveurs et comptes, comme sur Android.
+- **Icône de la barre système** : fermer la fenêtre la cache sans couper la musique. Menu lecture/pause, suivant,
+  précédent, Quitter. Touches média par MediaSession.
+- **Paquets** produits par la CI du dépôt à chaque build de `main` : `.exe` autonome, `SonNuage.app`, archive Linux.
+- Le lecteur web (`WebPlayer`) rejoint `SonNuage.UI`, partagé par le navigateur et l'appli de bureau. Sa file est
+  rangée par compte.
 
 ### Recherche, extension, chaînes YouTube (fin octobre 2026)
 
@@ -96,8 +113,16 @@ Constat sur le homelab : certains imports prenaient plus de 3 minutes, là où T
 
 1. 🔜 **Valider le nouveau pipeline en conditions réelles** sur le homelab : un gros import (une discographie),
    puis un rescan AcoustID d'un artiste. Regarder les durées par étape dans le volet Tâches.
-2. 🔜 **Application Android sur un vrai téléphone** : Android Auto, bascule entre comptes, migration depuis
-   l'ancienne version. Ces points sont testés en émulateur seulement.
+2. 🔜 **Android Auto, retours du premier essai en voiture** (novembre 2026). La lecture et le lecteur partagé
+   avec le GPS fonctionnent. À reprendre :
+   - **Démarrage à la connexion** : Android Auto a relancé Apple Music, inutilisé depuis des mois, au lieu de
+     SonNuage. Il a fallu lancer la lecture depuis le téléphone. La reprise à froid (0.1.0-ci.14 :
+     `MediaButtonReceiver`, racine « récents ») n'a pas pu être validée. Regarder comment Android Auto choisit
+     l'appli à relancer, au-delà du dernier récepteur du bouton média.
+   - **Logo absent** dans Android Auto (liste des applis et lecteur) : icône de la session et du service à vérifier.
+   - **Délai du changement de titre** entre deux morceaux : correctif livré en 0.1.0-ci.14, à confirmer.
+   - **Recherche et navigation** dans Android Auto : pas encore testées.
+   - Bascule entre comptes et migration depuis l'ancienne version : testées en émulateur seulement.
 3. 🔜 **Stocker les identifiants MusicBrainz sur les morceaux** (enregistrement, édition). Un rescan suivant
    pourrait alors sauter les morceaux déjà identifiés, et l'admin pourrait lier un album à sa fiche.
 4. 🔜 **Réécrire les tags des fichiers d'`uploads/`** quand un rescan les corrige. Les fichiers de `music/`
@@ -105,7 +130,14 @@ Constat sur le homelab : certains imports prenaient plus de 3 minutes, là où T
 5. 🔜 **Rattacher les featurings à l'artiste principal** : un titre crédité « OrelSan feat. Damso » crée
    aujourd'hui un artiste à part (masqué des listes car sans album). Le rattacher à « OrelSan » le ferait
    apparaître dans sa page, et chaque invité pourrait avoir sa liste « Apparaît sur ».
-6. 🔜 **Autres traitements en tâches** : scan complet de la bibliothèque, réindexation Elasticsearch,
+6. 🔜 **Appli de bureau, suites** :
+   - essai réel sous macOS et Linux (seul Windows a été lancé) : icône, fenêtre cachée, touches média
+   - pré-chargement des pistes suivantes : il passe par `fetch` depuis la page, bloqué faute d'en-têtes CORS sur
+     le flux. Autoriser l'origine de l'appli sur `/api/stream` ou télécharger côté .NET.
+   - une seule instance (relancer l'appli rouvre la fenêtre), démarrage avec la session, option « démarrer caché »
+   - signature et notarisation macOS, signature Windows, installeurs (MSI, DMG, AppImage ou Flatpak)
+   - mises à jour automatiques.
+7. 🔜 **Autres traitements en tâches** : scan complet de la bibliothèque, réindexation Elasticsearch,
    synchronisation des abonnements, purge du cache de transcodage. Ils gagneraient le journal, l'annulation
    et l'historique.
 

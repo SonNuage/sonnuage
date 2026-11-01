@@ -229,6 +229,10 @@
       "playHere": "Play here"
     }
   },
+  "desktop": {
+    "show": "Show SonNuage",
+    "quit": "Quit"
+  },
   "nav": {
     "home": "Home",
     "search": "Search",
