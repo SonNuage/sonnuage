@@ -6,7 +6,7 @@ Sans runner rattaché au projet, les jobs restent « stuck ».
 
 ## 1. Créer le runner dans GitLab
 
-Projet `pmj.bailly/sonnuage` → **Settings → CI/CD → Runners → New project runner** :
+Projet `sonnuage/sonnuage` → **Settings → CI/CD → Runners → New project runner** :
 
 - *Tags* : aucun, et cocher **Run untagged jobs** (les jobs du pipeline n'ont pas de tags)
 - *Description* : `homelab-docker`

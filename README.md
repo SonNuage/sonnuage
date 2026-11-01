@@ -17,10 +17,10 @@ Les autres parties du projet ont leur propre dépôt :
 
 | Dépôt | Contenu |
 |---|---|
-| [sonnuage](https://git.pmjb.org/pmj.bailly/sonnuage) (celui-ci) | Serveur, client web, bibliothèques partagées `SonNuage.Contracts` et `SonNuage.UI` |
-| [sonnuage-android](https://git.pmjb.org/pmj.bailly/sonnuage-android) | Application Android (.NET MAUI Blazor Hybrid, Media3, Android Auto) |
-| [sonnuage-desktop](https://git.pmjb.org/pmj.bailly/sonnuage-desktop) | Appli de bureau Windows, macOS, Linux (Photino : webview du système, icône de la barre système) |
-| [sonnuage-extension](https://git.pmjb.org/pmj.bailly/sonnuage-extension) | Extension de navigateur (import YouTube, envoi des cookies) |
+| [sonnuage](https://git.pmjb.org/sonnuage/sonnuage) (celui-ci) | Serveur, client web, bibliothèques partagées `SonNuage.Contracts` et `SonNuage.UI` |
+| [sonnuage-android](https://git.pmjb.org/sonnuage/sonnuage-android) | Application Android (.NET MAUI Blazor Hybrid, Media3, Android Auto) |
+| [sonnuage-desktop](https://git.pmjb.org/sonnuage/sonnuage-desktop) | Appli de bureau Windows, macOS, Linux (Photino : webview du système, icône de la barre système) |
+| [sonnuage-extension](https://git.pmjb.org/sonnuage/sonnuage-extension) | Extension de navigateur (import YouTube, envoi des cookies) |
 
 `SonNuage.Contracts` et `SonNuage.UI` sont publiés en paquets NuGet dans le registre de ce dépôt à chaque build de
 `main` (version `0.1.0-ci.N`) et à chaque tag `vX.Y.Z`. L'application Android et l'appli de bureau les utilisent.
@@ -89,7 +89,7 @@ L'image Docker embarque yt-dlp, Deno et fpcalc. Ne téléchargez que ce que vous
 
 ### Extension de navigateur
 
-L'extension (Chrome, Edge, Firefox) a son propre dépôt : [sonnuage-extension](https://git.pmjb.org/pmj.bailly/sonnuage-extension).
+L'extension (Chrome, Edge, Firefox) a son propre dépôt : [sonnuage-extension](https://git.pmjb.org/sonnuage/sonnuage-extension).
 Elle s'authentifie avec une clé créée dans *Administration → Clés d'API*. Cette clé ne permet que d'ajouter des
 vidéos à la file, de lire une adresse YouTube, de s'abonner, d'envoyer des cookies YouTube et de lire l'état d'une
 vidéo.
@@ -166,7 +166,7 @@ dotnet test --project tests/SonNuage.Server.Tests
 
 ### Application Android
 
-Elle a son propre dépôt : [sonnuage-android](https://git.pmjb.org/pmj.bailly/sonnuage-android). Elle compile contre les paquets
+Elle a son propre dépôt : [sonnuage-android](https://git.pmjb.org/sonnuage/sonnuage-android). Elle compile contre les paquets
 `SonNuage.Contracts` et `SonNuage.UI` publiés par ce dépôt, ou directement contre ses sources si les deux dépôts
 sont clonés côte à côte (voir son README).
 
@@ -210,14 +210,32 @@ directement sur Internet dans ce mode.
 
 [.gitlab-ci.yml](.gitlab-ci.yml), environ 1 min 30 : tests serveur et, en parallèle, image Docker poussée sur le
 registre du projet (`:sha`), vérifiée au démarrage. Une fois les tests passés : `:latest` sur la branche par
-défaut, `:X.Y.Z` sur tag, et paquets NuGet `SonNuage.Contracts` / `SonNuage.UI` → release GitLab sur les tags
-`vX.Y.Z`. L'image est assemblée par `crane` : base d'exécution en cache (`runtime-base`, reconstruite quand le
+défaut, `:X.Y.Z` sur tag, et paquets NuGet `SonNuage.Contracts` / `SonNuage.UI`. Sur `main`, semantic-release crée
+ensuite le tag `vX.Y.Z` et sa release (voir Versions). L'image est assemblée par `crane` : base d'exécution en cache (`runtime-base`, reconstruite quand le
 Dockerfile change) + une couche avec l'application publiée par le job.
 
 Le runner doit accepter docker-in-docker (`privileged = true`) : procédure complète dans [docs/CI-RUNNER.md](docs/CI-RUNNER.md).
+
+### Versions
+
+Les versions sont publiées par [semantic-release](https://semantic-release.gitbook.io/) ([.releaserc.json](.releaserc.json)),
+d'après les messages de commit au format [Conventional Commits](https://www.conventionalcommits.org/fr/) :
+`fix: …` donne un correctif (1.0.1), `feat: …` une version mineure (1.1.0), `feat!: …` ou un pied de page
+`BREAKING CHANGE:` une version majeure (2.0.0). `docs`, `chore`, `ci`, `refactor`, `test` ne publient rien.
+Sur `main`, le job `semantic-release` crée le tag `vX.Y.Z` et la release GitLab avec ses notes. Le pipeline du
+tag publie ensuite la version. Il utilise `GITLAB_TOKEN`, jeton du groupe `sonnuage` (variable masquée et protégée,
+tags `v*` protégés).
 
 ### GitHub Actions
 
 [.github/workflows/ci.yml](.github/workflows/ci.yml) fait la même chose sur GitHub : tests (avec ffmpeg et
 Elasticsearch), image Docker sur `ghcr.io/<propriétaire>/sonnuage`, paquets NuGet dans le registre GitHub du
 propriétaire, release sur les tags `vX.Y.Z`. Aucun secret à configurer : le jeton fourni par GitHub suffit.
+
+## Licence
+
+SonNuage est un logiciel libre sous licence [GNU AGPL v3.0 ou ultérieure](LICENSE) : chacun peut l'utiliser,
+l'étudier, le modifier et le redistribuer. Une version modifiée, y compris proposée comme service en ligne, doit
+publier son code source sous la même licence.
+
+Copyright © 2026 pmj.bailly et les contributeurs de SonNuage.

@@ -1,0 +1,26 @@
+{
+  "branches": ["main"],
+  "tagFormat": "v${version}",
+  "plugins": [
+    ["@semantic-release/commit-analyzer", { "preset": "conventionalcommits" }],
+    ["@semantic-release/release-notes-generator", {
+      "preset": "conventionalcommits",
+      "presetConfig": {
+        "types": [
+          { "type": "feat", "section": "Nouveautés" },
+          { "type": "fix", "section": "Corrections" },
+          { "type": "perf", "section": "Performances" },
+          { "type": "revert", "section": "Retours en arrière" },
+          { "type": "docs", "hidden": true },
+          { "type": "chore", "hidden": true },
+          { "type": "ci", "hidden": true },
+          { "type": "refactor", "hidden": true },
+          { "type": "test", "hidden": true },
+          { "type": "build", "hidden": true },
+          { "type": "style", "hidden": true }
+        ]
+      }
+    }],
+    "@semantic-release/gitlab"
+  ]
+}

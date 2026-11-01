@@ -5,7 +5,8 @@
 #              (publiée sous le sha du commit), avec les paquets NuGet SonNuage.Contracts et SonNuage.UI
 #  - publish : une fois les tests passés, l'image reçoit ses tags (latest, version) et les paquets NuGet partent
 #              dans le registre du projet, pour l'application Android (dépôt sonnuage-android)
-#  - release : sur tag vX.Y.Z, release GitLab
+#  - release : sur main, semantic-release choisit la version et crée le tag vX.Y.Z et sa release. Le pipeline du
+#              tag publie alors l'image :X.Y.Z et les paquets NuGet X.Y.Z
 #
 # Rapidité, sur le runner du homelab :
 #  - paquets NuGet dans /nuget, un dossier de la machine monté par le runner (ni zip ni téléversement)
@@ -184,14 +185,18 @@ shared-packages:
         --name gitlab --username gitlab-ci-token --password "$CI_JOB_TOKEN" --store-password-in-clear-text
     - dotnet nuget push "packages/*.nupkg" --source gitlab
 
-release:
+# Version suivante d'après les messages de commit (Conventional Commits : feat → mineure, fix → correctif,
+# « ! » ou BREAKING CHANGE → majeure), tag vX.Y.Z et release GitLab avec ses notes. Le tag relance un pipeline
+# qui publie la version. GITLAB_TOKEN : jeton du groupe sonnuage (variable masquée et protégée).
+semantic-release:
   stage: release
-  image: registry.gitlab.com/gitlab-org/release-cli:latest
-  needs: [server-image-tags, shared-packages]
+  image: node:22-alpine
+  needs: [server-test, server-image-tags, shared-packages]
   rules:
-    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+/
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "push"
+  variables:
+    # Tout l'historique et les tags : la version se déduit des commits depuis le dernier tag.
+    GIT_DEPTH: "0"
   script:
-    - *version
-    - >
-      release-cli create --name "SonNuage $VERSION" --tag-name "$CI_COMMIT_TAG"
-      --description "Image serveur : \`$SERVER_IMAGE:$VERSION\` · paquets NuGet SonNuage.Contracts et SonNuage.UI $VERSION"
+    - apk add --no-cache git > /dev/null
+    - npx --yes -p semantic-release@25.0.9 -p @semantic-release/gitlab@13.3.3 -p conventional-changelog-conventionalcommits@10.4.1 semantic-release

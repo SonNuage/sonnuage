@@ -42,7 +42,7 @@ public sealed class SonNuageOptions
     /// <summary>fpcalc (Chromaprint) pour l'empreinte acoustique AcoustID. Facultatif.</summary>
     public string FpcalcPath { get; set; } = "fpcalc";
     /// <summary>Contact transmis à MusicBrainz dans le User-Agent, comme l'exigent ses règles d'usage.</summary>
-    public string MusicBrainzContact { get; set; } = "https://git.pmjb.org/pmj.bailly/sonnuage";
+    public string MusicBrainzContact { get; set; } = "https://git.pmjb.org/sonnuage/sonnuage";
 
     /// <summary>Compte admin créé au premier démarrage si la base ne contient aucun utilisateur.</summary>
     public string? InitialAdminUser { get; set; } = "admin";

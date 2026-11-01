@@ -6,5 +6,7 @@
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <Version>0.1.0</Version>
     <Authors>pmj.bailly</Authors>
+    <Copyright>Copyright © 2026 pmj.bailly et les contributeurs de SonNuage</Copyright>
+    <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
   </PropertyGroup>
 </Project>
