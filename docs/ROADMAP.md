@@ -140,6 +140,27 @@ Constat sur le homelab : certains imports prenaient plus de 3 minutes, là où T
 7. 🔜 **Autres traitements en tâches** : scan complet de la bibliothèque, réindexation Elasticsearch,
    synchronisation des abonnements, purge du cache de transcodage. Ils gagneraient le journal, l'annulation
    et l'historique.
+8. 🔜 **API Subsonic / OpenSubsonic**, en plus de l'API actuelle (`/api/*` reste inchangée, les clients SonNuage
+   continuent de l'utiliser). Ouvre l'appli à tout l'écosystème : Symfonium, Feishin, Substreamer, DSub, Tempo…
+   y compris leur Android Auto. Estimation : 2 à 3 sessions, dont une bonne part d'essais avec de vrais clients.
+   - **Couche de traduction** sous `/rest/*` (avec et sans suffixe `.view`), réponses XML et JSON (`f=json`),
+     branchée sur les services existants : bibliothèque, transcodage, playlists, favoris, historique, pochettes.
+   - **Authentification.** Subsonic envoie `u` + `t = md5(mot de passe + s)` (ou `p` en clair) : le serveur doit
+     connaître un secret réversible, or le mot de passe du compte n'est stocké que haché. D'où un **mot de passe
+     d'application Subsonic** par compte, généré et révocable dans les Réglages, stocké chiffré (Data Protection).
+     Accepter aussi la clé `apiKey` de l'extension OpenSubsonic. Mêmes limitations de tentatives que la connexion.
+   - **Endpoints visés** (environ 25) : `ping`, `getLicense`, `getOpenSubsonicExtensions`, `getMusicFolders`,
+     `getIndexes`, `getArtists`, `getArtist`, `getAlbum`, `getSong`, `getAlbumList2`, `getRandomSongs`,
+     `getGenres`, `getSongsByGenre`, `search3`, `getPlaylists`, `getPlaylist`, `createPlaylist`, `updatePlaylist`,
+     `deletePlaylist`, `star`, `unstar`, `getStarred2`, `stream` (`maxBitRate`, `format`), `download`,
+     `getCoverArt` (`size`), `scrobble`, `getUser`. Le reste (podcasts, radios, partages, `getSimilarSongs`…)
+     répond vide mais valide.
+   - **Identifiants** stables préfixés par type (`ar-`, `al-`, `tr-`, `pl-`) ; flux protégés comme aujourd'hui,
+     jamais mis en cache par Cloudflare.
+   - **Tests** : contrat XML et JSON vérifié par des tests d'intégration, puis essais avec Symfonium et Feishin.
+   - Derrière Cloudflare Access : autoriser `/rest/*` comme `/api/extension/*` (les clients tiers ne savent pas
+     passer Access).
+   - Une fois livré : passer la ligne « Compatible API Subsonic » du comparatif de `sonnuage-site` à ✓.
 
 ## Découverte et recommandations (à cadrer)
 
