@@ -199,4 +199,4 @@ semantic-release:
     GIT_DEPTH: "0"
   script:
     - apk add --no-cache git > /dev/null
-    - npx --yes -p semantic-release@25.0.9 -p @semantic-release/gitlab@13.3.3 -p conventional-changelog-conventionalcommits@10.4.1 semantic-release
+    - npx --yes -p semantic-release@25.0.9 -p @semantic-release/gitlab@13.3.3 -p conventional-changelog-conventionalcommits@9.3.1 semantic-release
