@@ -78,22 +78,38 @@ public static class DashboardEndpoints
         }
     }
 
+    /// <summary>Point de montage vu par le serveur : racine, système de fichiers, taille et espace libre.</summary>
+    public sealed record Disk(string Root, string Format, long TotalBytes, long FreeBytes);
+
+    // Écart d'espace libre toléré entre deux lectures du même disque (une copie peut tourner entre les deux).
+    private const long FreeSpaceDrift = 1L << 30;
+
+    /// <summary>
+    /// Même disque physique ? Dans un conteneur, /music et /uploads sont deux points de montage distincts d'un même
+    /// système de fichiers : ils ont alors la même taille, le même format et (presque) le même espace libre.
+    /// </summary>
+    public static bool SameDisk(Disk a, Disk b) =>
+        a.Root == b.Root
+        || (a.Format == b.Format && a.TotalBytes == b.TotalBytes && Math.Abs(a.FreeBytes - b.FreeBytes) < FreeSpaceDrift);
+
     /// <summary>Disque qui accueille les envois et imports, découpé en musique (par provenance), caches, autres fichiers et libre.</summary>
     private static StorageDto? Storage(SonNuageOptions o, IReadOnlyList<SourceTotalDto> sources)
     {
         var drives = DriveInfo.GetDrives().Where(d => d.IsReady).ToList();
-        DriveInfo? DriveOf(string path)
+        Disk? DiskOf(string path)
         {
             var full = Path.GetFullPath(path);
             return drives
                 .Where(d => full.StartsWith(d.RootDirectory.FullName, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
-                .MaxBy(d => d.RootDirectory.FullName.Length);
+                .MaxBy(d => d.RootDirectory.FullName.Length) is { } d
+                ? new Disk(d.RootDirectory.FullName, d.DriveFormat, d.TotalSize, d.AvailableFreeSpace)
+                : null;
         }
 
         try
         {
-            if (DriveOf(o.UploadPath) is not { } disk) return null;
-            bool OnDisk(string path) => DriveOf(path)?.RootDirectory.FullName == disk.RootDirectory.FullName;
+            if (DiskOf(o.UploadPath) is not { } disk) return null;
+            bool OnDisk(string path) => DiskOf(path) is { } other && SameDisk(disk, other);
 
             var slices = new List<StorageSliceDto>();
             var bytes = sources.ToDictionary(s => s.Source, s => s.Bytes);
@@ -105,10 +121,10 @@ public static class DashboardEndpoints
                 var cache = new DirectoryInfo(Path.Combine(o.DataPath, "cache"));
                 slices.Add(new("cache", cache.Exists ? cache.EnumerateFiles("*", SearchOption.AllDirectories).Sum(f => f.Length) : 0));
             }
-            var used = disk.TotalSize - disk.AvailableFreeSpace;
+            var used = disk.TotalBytes - disk.FreeBytes;
             slices.Add(new("other", Math.Max(0, used - slices.Sum(s => s.Bytes))));
-            slices.Add(new("free", disk.AvailableFreeSpace));
-            return new StorageDto(disk.Name, disk.TotalSize, disk.AvailableFreeSpace, slices);
+            slices.Add(new("free", disk.FreeBytes));
+            return new StorageDto(disk.Root, disk.TotalBytes, disk.FreeBytes, slices);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
