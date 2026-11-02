@@ -746,7 +746,12 @@
     "continue": "Continue",
     "startFailed": "SonNuage couldn’t start",
     "stoppedLastTime": "SonNuage stopped last time",
-    "intro": "Here is the error report. Copy it to pass it on."
+    "intro": "Here is the error report. Copy it to pass it on.",
+    "send": "Send the report",
+    "sending": "Sending…",
+    "sent": "Sent ✓",
+    "sendFailed": "Could not send:",
+    "introSend": "Send this report to the server so the problem can be fixed."
   },
   "jobs": {
     "search": "Search suites…",

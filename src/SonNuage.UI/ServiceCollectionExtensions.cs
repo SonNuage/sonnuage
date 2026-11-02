@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using SonNuage.UI.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -20,6 +21,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<UiState>();
         services.AddSingleton<Localizer>();
         services.AddSingleton<ThemeSettings>();
+        // L'appli hôte peut fournir la sienne (partagée avec son journal de plantage).
+        services.TryAddSingleton<Breadcrumbs>(_ => new Breadcrumbs());
         return services;
     }
 }

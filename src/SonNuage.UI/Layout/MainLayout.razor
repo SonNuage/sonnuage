@@ -8,6 +8,7 @@
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @inject ThemeSettings Theme
+@inject Breadcrumbs Crumbs
 
 @if (!_ready)
 {
@@ -91,6 +92,8 @@ else
         Accounts.ActiveChanged += OnAccountSwitched;
         Endpoint.Changed += Refresh;
         Ui.Changed += Refresh;
+        Nav.LocationChanged += OnLocationChanged;
+        Crumbs.Add("→ /" + Nav.ToBaseRelativePath(Nav.Uri));
         await Auth.EnsureLoadedAsync();
         await L.InitAsync(Auth.User?.Language, JS);
         await Theme.LoadAsync(JS);
@@ -117,6 +120,10 @@ else
 
     private void Refresh() => InvokeAsync(StateHasChanged);
 
+    // Pages visitées, jointes au rapport en cas de plantage.
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e) =>
+        Crumbs.Add("→ /" + Nav.ToBaseRelativePath(e.Location));
+
     /// <summary>Autre compte, autre bibliothèque : on repart de l'accueil (les playlists suivent via Auth.Changed).</summary>
     private void OnAccountSwitched() => InvokeAsync(() => Nav.NavigateTo(""));
 
@@ -132,5 +139,6 @@ else
         Accounts.ActiveChanged -= OnAccountSwitched;
         Endpoint.Changed -= Refresh;
         Ui.Changed -= Refresh;
+        Nav.LocationChanged -= OnLocationChanged;
     }
 }

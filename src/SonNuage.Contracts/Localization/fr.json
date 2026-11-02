@@ -746,7 +746,12 @@
     "continue": "Continuer",
     "startFailed": "SonNuage n'a pas pu démarrer",
     "stoppedLastTime": "SonNuage s'est arrêté la dernière fois",
-    "intro": "Voici le rapport d'erreur. Copiez-le pour le transmettre."
+    "intro": "Voici le rapport d'erreur. Copiez-le pour le transmettre.",
+    "send": "Envoyer le rapport",
+    "sending": "Envoi…",
+    "sent": "Envoyé ✓",
+    "sendFailed": "Envoi impossible :",
+    "introSend": "Envoyez ce rapport au serveur pour que le problème puisse être corrigé."
   },
   "jobs": {
     "search": "Rechercher une suite…",
