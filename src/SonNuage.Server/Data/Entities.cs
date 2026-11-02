@@ -280,3 +280,24 @@ public sealed class JobLog
     public required string Level { get; set; }
     public required string Message { get; set; }
 }
+
+/// <summary>Rapport de plantage reçu d'une appli (l'identifiant vient de l'appli : un renvoi ne fait pas de doublon).</summary>
+public sealed class CrashReport
+{
+    public const int MaxFieldLength = 200;
+    public const int MaxHeadlineLength = 300;
+
+    public Guid Id { get; set; }
+    public Guid UserId { get; set; }
+    public User User { get; set; } = null!;
+    public DateTimeOffset OccurredAt { get; set; }
+    public DateTimeOffset ReceivedAt { get; set; }
+    public required string App { get; set; }
+    public required string AppVersion { get; set; }
+    public required string Device { get; set; }
+    public required string Os { get; set; }
+    public required string Source { get; set; }
+    /// <summary>Première ligne du rapport (type et message de l'exception), pour la liste.</summary>
+    public required string Headline { get; set; }
+    public required string Report { get; set; }
+}

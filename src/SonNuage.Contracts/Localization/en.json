@@ -407,7 +407,8 @@
       "users": "Users",
       "keys": "API keys",
       "settings": "Settings",
-      "about": "About"
+      "about": "About",
+      "crashes": "Crash reports"
     }
   },
   "users": {
@@ -908,5 +909,21 @@
       "audio": "tag reading and transcoding",
       "icons": "icons (Apache 2.0)"
     }
+  },
+  "crashes": {
+    "title": "Crash reports",
+    "intro": "Sent by the apps after a crash: stack trace, device, version and last actions.",
+    "none": "No reports.",
+    "colWhen": "Date",
+    "colUser": "User",
+    "colApp": "App",
+    "colDevice": "Device",
+    "colError": "Error",
+    "copy": "Copy",
+    "copied": "Report copied.",
+    "delete": "Delete",
+    "deleted": "Report deleted.",
+    "os": "System",
+    "source": "Source"
   }
 }

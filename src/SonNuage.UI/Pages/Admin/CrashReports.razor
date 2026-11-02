@@ -1,0 +1,95 @@
+@page "/admin/crashes"
+@* Rapports de plantage envoyés par les applis : liste, détail (trace de pile, contexte, dernières actions), copie et suppression. *@
+@inject ApiClient Api
+@inject UiState Ui
+@inject IJSRuntime Js
+
+<PageTitle>@L["crashes.title"] · SonNuage</PageTitle>
+
+<div class="page">
+    <AdminNav Title="@L["crashes.title"]">
+        <p class="muted small">@L["crashes.intro"]</p>
+        @if (_reports is { Count: > 0 })
+        {
+            <div class="table-wrap">
+                <table class="table">
+                    <thead><tr><th>@L["crashes.colWhen"]</th><th>@L["crashes.colUser"]</th><th>@L["crashes.colApp"]</th><th>@L["crashes.colDevice"]</th><th>@L["crashes.colError"]</th><th></th></tr></thead>
+                    <tbody>
+                        @foreach (var r in _reports)
+                        {
+                            <tr @key="r.Id" style="cursor: pointer" @onclick="() => OpenAsync(r.Id)">
+                                <td>@L.DateTime(r.OccurredAt)</td>
+                                <td>@r.User</td>
+                                <td>@r.App @r.AppVersion</td>
+                                <td>@r.Device</td>
+                                <td class="mono small">@r.Headline</td>
+                                <td class="row-actions">
+                                    <button class="icon-btn danger" title="@L["crashes.delete"]" @onclick="() => DeleteAsync(r.Id)" @onclick:stopPropagation="true"><Icon Name="delete" Size="18" /></button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else if (_reports is not null)
+        {
+            <p class="muted small">@L["crashes.none"]</p>
+        }
+    </AdminNav>
+</div>
+
+<Modal Open="_open is not null" OpenChanged="v => { if (!v) _open = null; }" Title="@L["crashes.title"]">
+    <ChildContent>
+        @if (_open is { } r)
+        {
+            <p class="muted small">
+                @L.DateTime(r.OccurredAt) · @r.User · @r.App @r.AppVersion · @r.Device · @L["crashes.os"] : @r.Os · @L["crashes.source"] : @r.Source
+            </p>
+            <pre class="mono">@r.Report</pre>
+        }
+    </ChildContent>
+    <Footer>
+        <button class="btn" @onclick="CopyAsync">@L["crashes.copy"]</button>
+        <button class="btn" @onclick="() => _open = null">@L["common.close"]</button>
+    </Footer>
+</Modal>
+
+@code {
+    private List<CrashReportSummaryDto>? _reports;
+    private CrashReportDto? _open;
+
+    protected override Task OnInitializedAsync() => Run(async () => _reports = await Api.CrashReportsAsync() ?? []);
+
+    private Task OpenAsync(Guid id) => Run(async () =>
+    {
+        _open = await Api.CrashReportAsync(id);
+    });
+
+    private Task DeleteAsync(Guid id) => Run(async () =>
+    {
+        await Api.DeleteCrashReportAsync(id);
+        _reports?.RemoveAll(r => r.Id == id);
+        Ui.Notify(L["crashes.deleted"]);
+    });
+
+    private Task CopyAsync() => Run(async () =>
+    {
+        if (_open is not { } r) return;
+        await Js.InvokeVoidAsync("navigator.clipboard.writeText",
+            $"{r.App} {r.AppVersion} · {r.Device} · {r.Os} · {r.Source} · {r.OccurredAt:O}\n\n{r.Report}");
+        Ui.Notify(L["crashes.copied"]);
+    });
+
+    private async Task Run(Func<Task> action)
+    {
+        try
+        {
+            await action();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or JSException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+    }
+}

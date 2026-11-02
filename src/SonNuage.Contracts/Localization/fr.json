@@ -407,7 +407,8 @@
       "users": "Utilisateurs",
       "keys": "Clés d'API",
       "settings": "Réglages",
-      "about": "À propos"
+      "about": "À propos",
+      "crashes": "Rapports de plantage"
     }
   },
   "users": {
@@ -908,5 +909,21 @@
       "audio": "lecture des tags et transcodage",
       "icons": "icônes (Apache 2.0)"
     }
+  },
+  "crashes": {
+    "title": "Rapports de plantage",
+    "intro": "Envoyés depuis les applis après un plantage : trace de pile, appareil, version et dernières actions.",
+    "none": "Aucun rapport.",
+    "colWhen": "Date",
+    "colUser": "Utilisateur",
+    "colApp": "Appli",
+    "colDevice": "Appareil",
+    "colError": "Erreur",
+    "copy": "Copier",
+    "copied": "Rapport copié.",
+    "delete": "Supprimer",
+    "deleted": "Rapport supprimé.",
+    "os": "Système",
+    "source": "Origine"
   }
 }

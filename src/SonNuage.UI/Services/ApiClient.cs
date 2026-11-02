@@ -78,6 +78,10 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
         GetAsync<DashboardDto>($"api/admin/dashboard?range={range}&offsetMinutes={(int)DateTimeOffset.Now.Offset.TotalMinutes}");
 
     // ---- Clés d'extension de navigateur (admin) ----
+    public Task<List<CrashReportSummaryDto>?> CrashReportsAsync() => GetAsync<List<CrashReportSummaryDto>>("api/admin/crash-reports");
+    public Task<CrashReportDto?> CrashReportAsync(Guid id) => GetAsync<CrashReportDto>($"api/admin/crash-reports/{id}");
+    public Task DeleteCrashReportAsync(Guid id) => SendAsync(HttpMethod.Delete, $"api/admin/crash-reports/{id}");
+    public Task SendCrashReportAsync(CrashReportRequest report) => SendAsync(HttpMethod.Post, "api/crash-reports", report);
     public Task<List<ExtensionKeyDto>?> ExtensionKeysAsync() => GetAsync<List<ExtensionKeyDto>>("api/admin/extension-keys");
     public Task<CreatedExtensionKeyDto?> CreateExtensionKeyAsync(string name) =>
         SendAsync<CreatedExtensionKeyDto>(HttpMethod.Post, "api/admin/extension-keys", new CreateExtensionKeyRequest(name));

@@ -19,6 +19,7 @@ public sealed class SonNuageDbContext(DbContextOptions<SonNuageDbContext> option
     public DbSet<JobSuite> JobSuites => Set<JobSuite>();
     public DbSet<Job> Jobs => Set<Job>();
     public DbSet<JobLog> JobLogs => Set<JobLog>();
+    public DbSet<CrashReport> CrashReports => Set<CrashReport>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -43,6 +44,16 @@ public sealed class SonNuageDbContext(DbContextOptions<SonNuageDbContext> option
             e.HasIndex(x => x.Title);
             e.HasOne(x => x.Album).WithMany(x => x.Tracks).HasForeignKey(x => x.AlbumId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(x => x.Artist).WithMany().HasForeignKey(x => x.ArtistId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<CrashReport>(e =>
+        {
+            e.HasIndex(x => new { x.UserId, x.ReceivedAt });
+            e.HasIndex(x => x.ReceivedAt);
+            foreach (var p in new[] { nameof(CrashReport.App), nameof(CrashReport.AppVersion), nameof(CrashReport.Device), nameof(CrashReport.Os), nameof(CrashReport.Source) })
+                e.Property(p).HasMaxLength(CrashReport.MaxFieldLength);
+            e.Property(x => x.Headline).HasMaxLength(CrashReport.MaxHeadlineLength);
+            e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<User>(e =>

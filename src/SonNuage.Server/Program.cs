@@ -150,6 +150,7 @@ app.MapYoutubeEndpoints();
 app.MapJobEndpoints();
 app.MapExtensionEndpoints();
 app.MapDashboardEndpoints();
+app.MapCrashReportEndpoints();
 
 app.MapFallback("/api/{**path}", () => Results.NotFound());
 app.MapFallback(WebApp.Index);
