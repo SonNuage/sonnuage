@@ -64,8 +64,8 @@
 </div>
 
 @code {
-    /// <summary>Dépôt public du projet. À renseigner quand il sera en ligne (la section « Code source » apparaît alors).</summary>
-    private const string? RepositoryUrl = null;
+    /// <summary>Dépôt public du projet (miroir GitHub de git.pmjb.org). À null, la section « Code source » est masquée.</summary>
+    private static readonly string? RepositoryUrl = "https://github.com/SonNuage/sonnuage";
 
     private ServerInfoDto? _info;
     private ToolsStatusDto? _tools;

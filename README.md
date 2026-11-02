@@ -17,10 +17,10 @@ Les autres parties du projet ont leur propre dépôt :
 
 | Dépôt | Contenu |
 |---|---|
-| [sonnuage](https://git.pmjb.org/sonnuage/sonnuage) (celui-ci) | Serveur, client web, bibliothèques partagées `SonNuage.Contracts` et `SonNuage.UI` |
-| [sonnuage-android](https://git.pmjb.org/sonnuage/sonnuage-android) | Application Android (.NET MAUI Blazor Hybrid, Media3, Android Auto) |
-| [sonnuage-desktop](https://git.pmjb.org/sonnuage/sonnuage-desktop) | Appli de bureau Windows, macOS, Linux (Photino : webview du système, icône de la barre système) |
-| [sonnuage-extension](https://git.pmjb.org/sonnuage/sonnuage-extension) | Extension de navigateur (import YouTube, envoi des cookies) |
+| [sonnuage](https://github.com/SonNuage/sonnuage) (celui-ci) | Serveur, client web, bibliothèques partagées `SonNuage.Contracts` et `SonNuage.UI` |
+| [sonnuage-android](https://github.com/SonNuage/sonnuage-android) | Application Android (.NET MAUI Blazor Hybrid, Media3, Android Auto) |
+| [sonnuage-desktop](https://github.com/SonNuage/sonnuage-desktop) | Appli de bureau Windows, macOS, Linux (Photino : webview du système, icône de la barre système) |
+| [sonnuage-extension](https://github.com/SonNuage/sonnuage-extension) | Extension de navigateur (import YouTube, envoi des cookies) |
 
 `SonNuage.Contracts` et `SonNuage.UI` sont publiés en paquets NuGet dans le registre de ce dépôt à chaque build de
 `main` (version `0.1.0-ci.N`) et à chaque tag `vX.Y.Z`. L'application Android et l'appli de bureau les utilisent.
@@ -89,7 +89,7 @@ L'image Docker embarque yt-dlp, Deno et fpcalc. Ne téléchargez que ce que vous
 
 ### Extension de navigateur
 
-L'extension (Chrome, Edge, Firefox) a son propre dépôt : [sonnuage-extension](https://git.pmjb.org/sonnuage/sonnuage-extension).
+L'extension (Chrome, Edge, Firefox) a son propre dépôt : [sonnuage-extension](https://github.com/SonNuage/sonnuage-extension).
 Elle s'authentifie avec une clé créée dans *Administration → Clés d'API*. Cette clé ne permet que d'ajouter des
 vidéos à la file, de lire une adresse YouTube, de s'abonner, d'envoyer des cookies YouTube et de lire l'état d'une
 vidéo.
@@ -166,7 +166,7 @@ dotnet test --project tests/SonNuage.Server.Tests
 
 ### Application Android
 
-Elle a son propre dépôt : [sonnuage-android](https://git.pmjb.org/sonnuage/sonnuage-android). Elle compile contre les paquets
+Elle a son propre dépôt : [sonnuage-android](https://github.com/SonNuage/sonnuage-android). Elle compile contre les paquets
 `SonNuage.Contracts` et `SonNuage.UI` publiés par ce dépôt, ou directement contre ses sources si les deux dépôts
 sont clonés côte à côte (voir son README).
 
