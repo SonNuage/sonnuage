@@ -191,6 +191,8 @@ public sealed class YoutubeSubscription
     public bool Enabled { get; set; } = true;
     /// <summary>La playlist est un album (ex. album YouTube Music) : son titre sert d'indice d'album.</summary>
     public bool IsAlbum { get; set; }
+    /// <summary>À la première lecture, importer aussi les vidéos déjà publiées (sinon elles sont seulement notées, ignorées).</summary>
+    public bool ImportExisting { get; set; } = true;
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? LastSyncedAt { get; set; }
     public string? LastError { get; set; }

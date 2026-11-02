@@ -36,6 +36,19 @@ public sealed record YtEntry(string Id, string Title, string? Channel, double? D
 
 public sealed record YtListing(string Kind, string Title, string? Channel, IReadOnlyList<YtEntry> Entries);
 
+/// <summary>Avancement d'une lecture de chaîne : sous-listes (albums) trouvées et déjà lues.</summary>
+public sealed class ListProgress
+{
+    private int _total;
+    private int _read;
+
+    public int Total => Volatile.Read(ref _total);
+    public int ReadCount => Volatile.Read(ref _read);
+
+    internal void Discovered() => Interlocked.Increment(ref _total);
+    internal void Read() => Interlocked.Increment(ref _read);
+}
+
 /// <summary>Résultat d'un téléchargement : le fichier audio et les métadonnées de la vidéo (info.json de yt-dlp).</summary>
 public sealed record YtDownload(string AudioPath, JsonObject Info);
 
@@ -43,6 +56,9 @@ public sealed record YtDownload(string AudioPath, JsonObject Info);
 public sealed partial class YtDlp(YoutubeTools tools, FfmpegLocator ffmpeg, YoutubeSettingsStore settings, ILogger<YtDlp> logger)
 {
     private static readonly TimeSpan ListTimeout = TimeSpan.FromMinutes(3);
+    /// <summary>Sous-listes lues en même temps, toutes lectures confondues (au-delà, YouTube finit par brider).</summary>
+    public const int ParallelReads = 4;
+    private readonly SemaphoreSlim _reads = new(ParallelReads, ParallelReads);
     private static readonly TimeSpan DownloadTimeout = TimeSpan.FromMinutes(30);
     private const string ThrottledRate = "100K";
 
@@ -75,20 +91,26 @@ public sealed partial class YtDlp(YoutubeTools tools, FfmpegLocator ffmpeg, Yout
     /// rangés albums, EP et singles (titres « auto-générés » aux métadonnées propres). Si la chaîne a des sorties,
     /// ce sont elles qu'on lit, album par album. Sinon (chaîne sans discographie), ses vidéos.
     /// </remarks>
-    public async Task<YtListing> ListAsync(string url, int? limit, CancellationToken ct)
+    public async Task<YtListing> ListAsync(string url, int? limit, CancellationToken ct, ListProgress? progress = null)
     {
-        if (YoutubeSyncService.IsChannelRoot(url) && await ReleasesAsync(url, limit, ct) is { } releases) return releases;
+        progress ??= new ListProgress();
+        if (YoutubeSyncService.IsChannelRoot(url) && await ReleasesAsync(url, limit, progress, ct) is { } releases) return releases;
         var json = await DumpAsync(url, limit, ct);
         if (Str(json, "_type") is not "playlist")
             return new YtListing("video", Str(json, "title") ?? url, Str(json, "channel"), [ToEntry(json)]);
 
-        var entries = new List<YtEntry>();
-        await CollectAsync(json, null, depth: 0, limit, entries, ct);
+        var entries = await CollectAsync(json, null, depth: 0, progress, ct);
         return new YtListing("playlist", Str(json, "title") ?? url, Str(json, "channel") ?? Str(json, "uploader"),
-            entries.DistinctBy(e => e.Id).ToList());
+            Truncate(entries, limit));
     }
 
-    private async Task<YtListing?> ReleasesAsync(string channelUrl, int? limit, CancellationToken ct)
+    private static List<YtEntry> Truncate(IEnumerable<YtEntry> entries, int? limit)
+    {
+        var distinct = entries.DistinctBy(e => e.Id);
+        return (limit is { } max ? distinct.Take(max) : distinct).ToList();
+    }
+
+    private async Task<YtListing?> ReleasesAsync(string channelUrl, int? limit, ListProgress progress, CancellationToken ct)
     {
         // music.youtube.com/@x : même identifiant. L'onglet Sorties est sur www.youtube.com.
         var path = new Uri(channelUrl).AbsolutePath.TrimEnd('/');
@@ -104,11 +126,10 @@ public sealed partial class YtDlp(YoutubeTools tools, FfmpegLocator ffmpeg, Yout
             return null;
         }
         if (json["entries"] is not JsonArray { Count: > 0 }) return null;
-        var entries = new List<YtEntry>();
-        await CollectAsync(json, null, depth: 0, limit, entries, ct);
+        var entries = await CollectAsync(json, null, depth: 0, progress, ct);
         if (entries.Count == 0) return null;
         var title = Str(json, "channel") ?? Str(json, "uploader") ?? Regex.Replace(Str(json, "title") ?? channelUrl, @"\s-\s\w+$", "");
-        return new YtListing("playlist", title, Str(json, "channel") ?? Str(json, "uploader"), entries.DistinctBy(e => e.Id).ToList());
+        return new YtListing("playlist", title, Str(json, "channel") ?? Str(json, "uploader"), Truncate(entries, limit));
     }
 
     private async Task<JsonObject> DumpAsync(string url, int? limit, CancellationToken ct)
@@ -119,30 +140,57 @@ public sealed partial class YtDlp(YoutubeTools tools, FfmpegLocator ffmpeg, Yout
         return JsonNode.Parse(await RunAsync(args, null, ListTimeout, ct))!.AsObject();
     }
 
-    private async Task CollectAsync(JsonObject playlist, string? album, int depth, int? limit, List<YtEntry> into, CancellationToken ct)
+    /// <summary>
+    /// Vidéos d'une liste, dans l'ordre. Les sous-listes à lire (albums d'une chaîne : souvent des dizaines) le sont
+    /// <see cref="ParallelReads"/> à la fois : une par une, une grosse discographie prenait plusieurs minutes.
+    /// </summary>
+    private async Task<List<YtEntry>> CollectAsync(JsonObject playlist, string? album, int depth, ListProgress progress, CancellationToken ct)
     {
+        var parts = new List<Task<List<YtEntry>>>();
         foreach (var e in (playlist["entries"]?.AsArray() ?? []).OfType<JsonObject>())
         {
-            if (limit is { } max && into.Count >= max) return;
             if (IsVideo(e))
             {
-                into.Add(ToEntry(e) with { Album = album });
+                parts.Add(Task.FromResult<List<YtEntry>>([ToEntry(e) with { Album = album }]));
                 continue;
             }
             // Sous-liste : onglet de chaîne ou playlist (album), déjà détaillée ou à lire.
             var url = Str(e, "url") ?? Str(e, "webpage_url");
             if (depth >= 2 || SkippedTab().IsMatch(url ?? Str(e, "title") ?? "")) continue;
             if (e["entries"] is not JsonArray && (url is null || YoutubeSyncService.NormalizeUrl(url) is null)) continue;
-            try
+            parts.Add(NestedAsync(e, url, album, depth, progress, ct));
+        }
+        var lists = await Task.WhenAll(parts);
+        return lists.SelectMany(l => l).ToList();
+    }
+
+    private async Task<List<YtEntry>> NestedAsync(JsonObject e, string? url, string? album, int depth, ListProgress progress, CancellationToken ct)
+    {
+        try
+        {
+            JsonObject nested;
+            if (e["entries"] is JsonArray) nested = e;
+            else
             {
-                var nested = e["entries"] is JsonArray ? e : await DumpAsync(url!, limit is { } m ? m - into.Count : null, ct);
-                var isAlbum = url?.Contains("list=", StringComparison.Ordinal) == true;
-                await CollectAsync(nested, isAlbum ? Str(nested, "title") ?? Str(e, "title") : album, depth + 1, limit, into, ct);
+                progress.Discovered();
+                await _reads.WaitAsync(ct);
+                try
+                {
+                    nested = await DumpAsync(url!, null, ct);
+                }
+                finally
+                {
+                    _reads.Release();
+                    progress.Read();
+                }
             }
-            catch (YtDlpException ex) when (ex.Kind is not YtDlpFailure.Throttled)
-            {
-                logger.LogInformation("Sous-liste {Url} ignorée : {Message}", url, ex.Message);
-            }
+            var isAlbum = url?.Contains("list=", StringComparison.Ordinal) == true;
+            return await CollectAsync(nested, isAlbum ? Str(nested, "title") ?? Str(e, "title") : album, depth + 1, progress, ct);
+        }
+        catch (YtDlpException ex) when (ex.Kind is not YtDlpFailure.Throttled)
+        {
+            logger.LogInformation("Sous-liste {Url} ignorée : {Message}", url, ex.Message);
+            return [];
         }
     }
 

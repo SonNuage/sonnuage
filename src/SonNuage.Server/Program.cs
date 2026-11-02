@@ -66,6 +66,7 @@ MusicBrainzClient.ConfigureHttp(builder.Services.AddHttpClient(MusicBrainzClient
 builder.Services.AddSingleton<YoutubeTools>();
 builder.Services.AddSingleton<YoutubeSettingsStore>();
 builder.Services.AddSingleton<YtDlp>();
+builder.Services.AddSingleton<YoutubeListingTasks>();
 builder.Services.AddSingleton<MusicBrainzClient>();
 builder.Services.AddSingleton<MetadataResolver>();
 builder.Services.AddSingleton<YoutubeLibraryWriter>();

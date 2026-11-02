@@ -1,5 +1,6 @@
 using SonNuage.Contracts.Localization;
 using System.Text.RegularExpressions;
+using System.Threading.Channels;
 using SonNuage.Contracts;
 using SonNuage.Server.Data;
 using Microsoft.EntityFrameworkCore;
@@ -19,6 +20,12 @@ public sealed partial class YoutubeSyncService(
     ILogger<YoutubeSyncService> logger) : BackgroundService
 {
     private readonly SemaphoreSlim _lock = new(1, 1);
+    // Synchronisations demandées (nouvel abonnement, bouton « Synchroniser ») : traitées en arrière-plan, une chaîne
+    // pouvant prendre plusieurs minutes à lire.
+    private readonly Channel<Guid> _requests = Channel.CreateUnbounded<Guid>();
+
+    /// <summary>Planifie la synchronisation d'un abonnement, sans l'attendre.</summary>
+    public void RequestSync(Guid subscriptionId) => _requests.Writer.TryWrite(subscriptionId);
 
     /// <summary>
     /// N'accepte que des adresses YouTube (yt-dlp sait lire des milliers de sites : pas question de lui faire
@@ -49,11 +56,28 @@ public sealed partial class YoutubeSyncService(
             try
             {
                 var listing = await ytDlp.ListAsync(sub.Url, null, ct);
-                sub.Title = listing.Title.Length > 300 ? listing.Title[..300] : listing.Title;
-                var videos = listing.Entries.Select(e => new YoutubeVideoDto(e.Id, e.Title, e.Channel ?? listing.Channel, e.DurationSeconds, e.Thumbnail, null, e.Album));
-                var result = await importer.EnqueueAsync(db, videos, sub.IsAlbum ? listing.Title : null, sub.Id, ct);
-                sub.LastError = null;
-                logger.LogInformation("Abonnement « {Title} » : {Queued} nouvelle(s) vidéo(s)", sub.Title, result.Queued);
+                if (listing.Kind != "playlist")
+                {
+                    sub.LastError = Tx.Key("errors.yt.isVideo");
+                }
+                else
+                {
+                    sub.Title = listing.Title.Length > 300 ? listing.Title[..300] : listing.Title;
+                    var videos = listing.Entries.Select(e => new YoutubeVideoDto(e.Id, e.Title, e.Channel ?? listing.Channel, e.DurationSeconds, e.Thumbnail, null, e.Album)).ToList();
+                    var albumHint = sub.IsAlbum ? listing.Title : null;
+                    // Première lecture sans « importer l'existant » : ce qui est déjà publié est seulement noté, ignoré.
+                    if (sub.LastSyncedAt is null && !sub.ImportExisting)
+                    {
+                        await SkipAsync(db, sub, videos, albumHint, ct);
+                        logger.LogInformation("Abonnement « {Title} » : {Count} vidéo(s) existante(s) ignorée(s)", sub.Title, videos.Count);
+                    }
+                    else
+                    {
+                        var result = await importer.EnqueueAsync(db, videos, albumHint, sub.Id, ct);
+                        logger.LogInformation("Abonnement « {Title} » : {Queued} nouvelle(s) vidéo(s)", sub.Title, result.Queued);
+                    }
+                    sub.LastError = null;
+                }
             }
             catch (YtDlpException ex)
             {
@@ -69,52 +93,48 @@ public sealed partial class YoutubeSyncService(
         }
     }
 
-    /// <summary>Nouvel abonnement. Sans <paramref name="importExisting"/>, les vidéos déjà publiées sont marquées « ignorées ».</summary>
+    /// <summary>
+    /// Nouvel abonnement, enregistré aussitôt : la lecture de la playlist ou de la chaîne (parfois des minutes) et
+    /// les imports suivent en arrière-plan. Sans ImportExisting, les vidéos déjà publiées seront marquées
+    /// « ignorées » à cette première lecture.
+    /// </summary>
     public async Task<(YoutubeSubscription? Subscription, string? Error)> CreateAsync(SonNuageDbContext db, CreateSubscriptionRequest req, CancellationToken ct)
     {
         if (NormalizeUrl(req.Url) is not { } url) return (null, "Adresse YouTube invalide.");
         if (await db.YoutubeSubscriptions.AnyAsync(s => s.Url == url, ct)) return (null, Tx.Key("errors.yt.alreadySubscribed"));
-        YtListing listing;
-        try
-        {
-            listing = await ytDlp.ListAsync(url, null, ct);
-        }
-        catch (YtDlpException ex)
-        {
-            return (null, ex.Message);
-        }
-        if (listing.Kind != "playlist") return (null, Tx.Key("errors.yt.isVideo"));
 
-        var sub = new YoutubeSubscription { Url = url, Title = listing.Title.Length > 300 ? listing.Title[..300] : listing.Title, IsAlbum = req.IsAlbum, CreatedAt = time.GetUtcNow() };
+        var sub = new YoutubeSubscription { Url = url, Title = url, IsAlbum = req.IsAlbum, ImportExisting = req.ImportExisting, CreatedAt = time.GetUtcNow() };
         db.YoutubeSubscriptions.Add(sub);
         await db.SaveChangesAsync(ct);
-        var videos = listing.Entries.Select(e => new YoutubeVideoDto(e.Id, e.Title, e.Channel ?? listing.Channel, e.DurationSeconds, e.Thumbnail, null, e.Album)).ToList();
-        if (req.ImportExisting)
-        {
-            await importer.EnqueueAsync(db, videos, req.IsAlbum ? listing.Title : null, sub.Id, ct);
-        }
-        else
-        {
-            var ids = videos.Select(v => v.VideoId).ToList();
-            var known = await db.YoutubeItems.Where(i => ids.Contains(i.VideoId)).Select(i => i.VideoId).ToListAsync(ct);
-            foreach (var v in videos.Where(v => !known.Contains(v.VideoId) && YoutubeImporter.IsVideoId(v.VideoId)).DistinctBy(v => v.VideoId))
-            {
-                db.YoutubeItems.Add(new YoutubeItem
-                {
-                    VideoId = v.VideoId, Title = v.Title.Length > 500 ? v.Title[..500] : v.Title, Channel = v.Channel, DurationSeconds = v.DurationSeconds,
-                    ThumbnailUrl = v.ThumbnailUrl, SubscriptionId = sub.Id, Status = YoutubeItemStatus.Skipped,
-                    AlbumHint = req.IsAlbum ? listing.Title : null, CreatedAt = time.GetUtcNow(), UpdatedAt = time.GetUtcNow(),
-                });
-            }
-        }
-        sub.LastSyncedAt = time.GetUtcNow();
-        await db.SaveChangesAsync(ct);
+        RequestSync(sub.Id);
         return (sub, null);
+    }
+
+    private async Task SkipAsync(SonNuageDbContext db, YoutubeSubscription sub, List<YoutubeVideoDto> videos, string? albumHint, CancellationToken ct)
+    {
+        var ids = videos.Select(v => v.VideoId).ToList();
+        var known = await db.YoutubeItems.Where(i => ids.Contains(i.VideoId)).Select(i => i.VideoId).ToListAsync(ct);
+        foreach (var v in videos.Where(v => !known.Contains(v.VideoId) && YoutubeImporter.IsVideoId(v.VideoId)).DistinctBy(v => v.VideoId))
+        {
+            db.YoutubeItems.Add(new YoutubeItem
+            {
+                VideoId = v.VideoId, Title = v.Title.Length > 500 ? v.Title[..500] : v.Title, Channel = v.Channel, DurationSeconds = v.DurationSeconds,
+                ThumbnailUrl = v.ThumbnailUrl, SubscriptionId = sub.Id, Status = YoutubeItemStatus.Skipped,
+                AlbumHint = albumHint, CreatedAt = time.GetUtcNow(), UpdatedAt = time.GetUtcNow(),
+            });
+        }
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+        // Abonnements jamais lus (créés juste avant un redémarrage) : à reprendre tout de suite.
+        using (var scope = scopes.CreateScope())
+        {
+            foreach (var id in await scope.ServiceProvider.GetRequiredService<SonNuageDbContext>().YoutubeSubscriptions
+                         .Where(s => s.Enabled && s.LastSyncedAt == null).Select(s => s.Id).ToListAsync(stoppingToken))
+                RequestSync(id);
+        }
         while (!stoppingToken.IsCancellationRequested)
         {
             var interval = settings.Settings.SyncIntervalHours;
@@ -135,7 +155,32 @@ public sealed partial class YoutubeSyncService(
                     await SyncAsync(id, stoppingToken);
                 }
             }
-            await Task.Delay(TimeSpan.FromMinutes(10), stoppingToken);
+            await ServeRequestsAsync(TimeSpan.FromMinutes(10), stoppingToken);
+        }
+    }
+
+    /// <summary>Traite les synchronisations demandées pendant <paramref name="duration"/>, puis rend la main.</summary>
+    private async Task ServeRequestsAsync(TimeSpan duration, CancellationToken stoppingToken)
+    {
+        using var window = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+        window.CancelAfter(duration);
+        try
+        {
+            while (true)
+            {
+                var id = await _requests.Reader.ReadAsync(window.Token);
+                try
+                {
+                    await SyncAsync(id, stoppingToken);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    logger.LogWarning(ex, "Synchronisation de l'abonnement {Id} impossible", id);
+                }
+            }
+        }
+        catch (OperationCanceledException) when (!stoppingToken.IsCancellationRequested)
+        {
         }
     }
 

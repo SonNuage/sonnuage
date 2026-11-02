@@ -47,6 +47,11 @@ public sealed record YoutubeVideoDto(
 
 public sealed record YoutubeListingDto(string Kind, string Title, string? Channel, string Url, IReadOnlyList<YoutubeVideoDto> Entries);
 
+public sealed record YoutubeListingStartRequest(string Url);
+
+/// <summary>Lecture d'une playlist ou d'une chaîne en arrière-plan : albums lus sur albums trouvés, puis le résultat.</summary>
+public sealed record YoutubeListingTaskDto(Guid Id, bool Done, int Read, int Total, YoutubeListingDto? Listing, string? Error);
+
 public sealed record YoutubeImportRequest(IReadOnlyList<YoutubeVideoDto> Videos, string? AlbumHint);
 
 public sealed record YoutubeImportResultDto(int Queued, int AlreadyKnown);

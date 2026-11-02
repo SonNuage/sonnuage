@@ -79,7 +79,15 @@ public static class YoutubeEndpoints
             return await Run(async () => await WithStatusAsync(db, await ytDlp.SearchAsync(q.Trim(), music == true, Math.Clamp(limit ?? 20, 1, 50), ct), q, ct));
         });
 
-        ext.MapGet("/resolve", async (string url, YtDlp ytDlp, SonNuageDbContext db, CancellationToken ct) =>
+        // Playlists et chaînes : lecture en arrière-plan, puis l'admin interroge l'avancement (voir YoutubeListingTasks).
+        g.MapPost("/listings", async (YoutubeListingStartRequest req, YoutubeListingTasks tasks, SonNuageDbContext db, CancellationToken ct) =>
+            YoutubeSyncService.NormalizeUrl(req.Url) is { } u
+                ? Results.Ok(await ListingTaskAsync(tasks.Start(u, 1000), db, ct))
+                : Results.Problem("Adresse YouTube invalide.", statusCode: 400));
+        g.MapGet("/listings/{id:guid}", async (Guid id, YoutubeListingTasks tasks, SonNuageDbContext db, CancellationToken ct) =>
+            tasks.Get(id) is { } entry ? Results.Ok(await ListingTaskAsync(entry, db, ct)) : Results.NotFound());
+
+        ext.MapGet("/resolve",async (string url, YtDlp ytDlp, SonNuageDbContext db, CancellationToken ct) =>
             YoutubeSyncService.NormalizeUrl(url) is { } u ? await ListingAsync(ytDlp, db, u, 1000, ct) : Results.Problem("Adresse YouTube invalide.", statusCode: 400));
 
         ext.MapPost("/imports", async (YoutubeImportRequest req, YoutubeImporter importer, SonNuageDbContext db, CancellationToken ct) =>
@@ -255,12 +263,30 @@ public static class YoutubeEndpoints
             return await db.YoutubeSubscriptions.Where(s => s.Id == id).ExecuteDeleteAsync(ct) == 0 ? Results.NotFound() : Results.NoContent();
         });
 
-        g.MapPost("/subscriptions/{id:guid}/sync", async (Guid id, YoutubeSyncService sync, CancellationToken ct) =>
-            await sync.SyncAsync(id, ct) is { } error ? Results.Problem(error, statusCode: 502) : Results.NoContent());
+        // Une chaîne peut prendre des minutes à lire : la synchronisation part en arrière-plan.
+        g.MapPost("/subscriptions/{id:guid}/sync", async (Guid id, YoutubeSyncService sync, SonNuageDbContext db, CancellationToken ct) =>
+        {
+            if (!await db.YoutubeSubscriptions.AnyAsync(s => s.Id == id, ct)) return Results.NotFound();
+            sync.RequestSync(id);
+            return Results.Accepted();
+        });
     }
 
     private static Task<IResult> ListingAsync(YtDlp ytDlp, SonNuageDbContext db, string url, int limit, CancellationToken ct) =>
         Run(async () => await WithStatusAsync(db, await ytDlp.ListAsync(url, limit, ct), url, ct));
+
+    private static async Task<YoutubeListingTaskDto> ListingTaskAsync(YoutubeListingTasks.Entry entry, SonNuageDbContext db, CancellationToken ct)
+    {
+        var task = entry.Listing;
+        if (!task.IsCompleted) return new YoutubeListingTaskDto(entry.Id, false, entry.Progress.ReadCount, entry.Progress.Total, null, null);
+        if (!task.IsCompletedSuccessfully)
+        {
+            var error = task.Exception?.InnerException is YtDlpException ex ? ex.Message : Tx.Key("errors.yt.listingCanceled");
+            return new YoutubeListingTaskDto(entry.Id, true, entry.Progress.ReadCount, entry.Progress.Total, null, error);
+        }
+        var listing = await WithStatusAsync(db, task.Result, entry.Url, ct);
+        return new YoutubeListingTaskDto(entry.Id, true, entry.Progress.ReadCount, entry.Progress.Total, listing, null);
+    }
 
     private static async Task<YoutubeListingDto> WithStatusAsync(SonNuageDbContext db, YtListing listing, string url, CancellationToken ct)
     {

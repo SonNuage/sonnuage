@@ -176,6 +176,7 @@
 
     public void Dispose()
     {
+        _disposed = true;
         _timer?.Dispose();
         Nav.LocationChanged -= OnLocationChanged;
     }
@@ -238,6 +239,9 @@
     private string _query = "";
     private bool _music = true;
     private bool _searching;
+    private bool _disposed;
+    // Albums lus sur albums trouvés, pendant la lecture d'une chaîne.
+    private (int Read, int Total)? _progress;
     private YoutubeListingDto? _listing;
     private HashSet<string> _selected = [];
     private string? _albumHint;
@@ -259,7 +263,9 @@
 
         @if (_searching)
         {
-            <div class="empty"><Logo Size="16" Animated="true" /> @L["yt.explore.searching"]</div>
+            <div class="empty"><Logo Size="16" Animated="true" /> @(_progress is { Total: > 0 } p
+                ? L["yt.explore.readingAlbums", ("read", p.Read), ("total", p.Total)]
+                : L["yt.explore.searching"])</div>
         }
         else if (_listing is { } l)
         {
@@ -313,11 +319,32 @@
         _searching = true;
         _listing = null;
         _selected = [];
+        _progress = null;
         StateHasChanged();
-        _listing = await Run(() => Api.YoutubeSearchAsync(_query.Trim(), _music));
+        var q = _query.Trim();
+        _listing = Uri.TryCreate(q, UriKind.Absolute, out _) ? await ReadListingAsync(q) : await Run(() => Api.YoutubeSearchAsync(q, _music));
         _albumHint = _listing?.Kind == "playlist" ? _listing.Title.Replace("Album - ", "") : null;
         _isAlbum = _listing?.Url.Contains("OLAK5uy_") == true; // albums YouTube Music
         _searching = false;
+    }
+
+    /// <summary>
+    /// Playlist ou chaîne : le serveur la lit en arrière-plan (une grosse discographie prend plusieurs minutes,
+    /// plus que ce qu'une requête tient derrière un proxy) et on suit l'avancement.
+    /// </summary>
+    private async Task<YoutubeListingDto?> ReadListingAsync(string url)
+    {
+        var task = await Run(() => Api.YoutubeStartListingAsync(url));
+        while (task is { Done: false } && !_disposed)
+        {
+            _progress = (task.Read, task.Total);
+            StateHasChanged();
+            await Task.Delay(TimeSpan.FromSeconds(1));
+            var id = task.Id;
+            task = await Run(() => Api.YoutubeListingAsync(id));
+        }
+        if (task?.Error is { } error) Ui.Notify(L.Server(error), true);
+        return task?.Listing;
     }
 
     private void Toggle(string id)

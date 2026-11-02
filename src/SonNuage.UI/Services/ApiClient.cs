@@ -93,6 +93,9 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     public Task YoutubeDeleteCookiesAsync() => SendAsync(HttpMethod.Delete, $"{Yt}/cookies");
     public Task<ToolsStatusDto?> YoutubeUpdateToolsAsync(bool deno) => SendAsync<ToolsStatusDto>(HttpMethod.Post, $"{Yt}/tools/update?deno={deno}");
     public Task<YoutubeListingDto?> YoutubeSearchAsync(string q, bool music) => GetAsync<YoutubeListingDto>($"{Yt}/search?music={music}&q={Uri.EscapeDataString(q)}");
+    public Task<YoutubeListingTaskDto?> YoutubeStartListingAsync(string url) =>
+        SendAsync<YoutubeListingTaskDto>(HttpMethod.Post, $"{Yt}/listings", new YoutubeListingStartRequest(url));
+    public Task<YoutubeListingTaskDto?> YoutubeListingAsync(Guid id) => GetAsync<YoutubeListingTaskDto>($"{Yt}/listings/{id}");
     public Task<YoutubeImportResultDto?> YoutubeImportAsync(YoutubeImportRequest req) => SendAsync<YoutubeImportResultDto>(HttpMethod.Post, $"{Yt}/imports", req);
     public Task<PagedResult<YoutubeItemDto>?> YoutubeItemsAsync(string? status, bool review, string? q, int offset, int limit) =>
         GetAsync<PagedResult<YoutubeItemDto>>($"{Yt}/items?offset={offset}&limit={limit}&review={review}{(status is null ? "" : $"&status={status}")}{Q(q)}");

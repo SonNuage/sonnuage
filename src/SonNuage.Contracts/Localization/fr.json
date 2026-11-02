@@ -160,6 +160,7 @@
       "audioFormat": "Format audio : « original » ou « mp3 ».",
       "threshold": "Seuil d'acceptation : entre 0 et 1.",
       "noCookies": "Aucun cookie youtube.com trouvé : exportez les cookies au format Netscape (cookies.txt) depuis un navigateur connecté à YouTube.",
+      "listingCanceled": "Lecture interrompue (serveur redémarré ?). Relancez la recherche.",
       "subNotFound": "Abonnement introuvable.",
       "alreadySubscribed": "Déjà abonné à cette adresse.",
       "isVideo": "Cette adresse est une vidéo : importez-la directement, ou abonnez-vous à sa playlist ou à sa chaîne.",
@@ -615,6 +616,7 @@
       "search": "Chercher",
       "hint": "YouTube Music donne les meilleures métadonnées (titre, artistes, album). Les titres importés sont reconnus via MusicBrainz, puis rangés avec leur pochette dans la bibliothèque. Importez uniquement ce que vous avez le droit de conserver.",
       "searching": "Recherche sur YouTube…",
+      "readingAlbums": "Lecture des albums : {read} / {total}…",
       "selectAll": "Tout sélectionner",
       "deselectAll": "Tout désélectionner",
       "import": "Importer ({count})",
@@ -680,8 +682,8 @@
       "syncNow": "Synchroniser maintenant",
       "unsubscribe": "Se désabonner (les morceaux importés restent)",
       "none": "Aucun abonnement.",
-      "created": "Abonnement créé",
-      "synced": "Synchronisé",
+      "created": "Abonnement créé : la lecture de la chaîne et les imports se font en arrière-plan",
+      "synced": "Synchronisation lancée en arrière-plan",
       "deleted": "Abonnement supprimé"
     },
     "tools": {

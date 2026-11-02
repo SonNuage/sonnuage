@@ -160,6 +160,7 @@
       "audioFormat": "Audio format: “original” or “mp3”.",
       "threshold": "Acceptance threshold: between 0 and 1.",
       "noCookies": "No youtube.com cookies found: export cookies in Netscape format (cookies.txt) from a browser signed in to YouTube.",
+      "listingCanceled": "Reading was interrupted (server restarted?). Run the search again.",
       "subNotFound": "Subscription not found.",
       "alreadySubscribed": "Already subscribed to this address.",
       "isVideo": "This address is a video: import it directly, or subscribe to its playlist or channel.",
@@ -615,6 +616,7 @@
       "search": "Search",
       "hint": "YouTube Music gives the best metadata (title, artists, album). Imported tracks are identified through MusicBrainz, then filed with their cover in the library. Only import what you have the right to keep.",
       "searching": "Searching YouTube…",
+      "readingAlbums": "Reading albums: {read} / {total}…",
       "selectAll": "Select all",
       "deselectAll": "Deselect all",
       "import": "Import ({count})",
@@ -680,8 +682,8 @@
       "syncNow": "Sync now",
       "unsubscribe": "Unsubscribe (imported tracks stay)",
       "none": "No subscriptions.",
-      "created": "Subscription created",
-      "synced": "Synced",
+      "created": "Subscription created: the channel is read and imported in the background",
+      "synced": "Sync started in the background",
       "deleted": "Subscription deleted"
     },
     "tools": {
