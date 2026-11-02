@@ -19,6 +19,11 @@ public sealed class ScanCoordinator(
     private readonly SemaphoreSlim _lock = new(1, 1);
     private readonly List<FileSystemWatcher> _watchers = [];
     private volatile ScanStatusDto _status = new(false, null, null, 0, 0, 0, 0, null);
+    // Surveillance débordée (copie massive) : le scan complet attend que l'activité retombe, sinon il se relance
+    // à chaque débordement pendant toute la copie.
+    private static readonly TimeSpan QuietBeforeFullScan = TimeSpan.FromSeconds(60);
+    private volatile bool _overflowed;
+    private long _lastEventTicks;
 
     public ScanStatusDto Status => _status;
 
@@ -93,6 +98,12 @@ public sealed class ScanCoordinator(
             {
             }
 
+            if (_overflowed && DateTime.UtcNow - new DateTime(Interlocked.Read(ref _lastEventTicks), DateTimeKind.Utc) >= QuietBeforeFullScan)
+            {
+                _overflowed = false;
+                full = true;
+            }
+
             if (interval != Timeout.InfiniteTimeSpan && DateTime.UtcNow >= nextPeriodic)
             {
                 full = true;
@@ -160,10 +171,22 @@ public sealed class ScanCoordinator(
         var files = new List<string>();
         foreach (var path in ready)
         {
-            if (Directory.Exists(path))
-                files.AddRange(Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories).Where(LibraryFiles.IsAudio));
-            else
+            if (!Directory.Exists(path))
+            {
                 files.Add(path);
+                continue;
+            }
+            try
+            {
+                files.AddRange(Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories).Where(LibraryFiles.IsAudio));
+            }
+            catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
+            {
+                // Dossier encore en cours de copie (droits posés à la fin par tar, rsync…) : on y reviendra.
+                // Sans toucher à l'horodatage d'activité : un dossier durablement illisible ne doit pas bloquer le scan complet.
+                logger.LogDebug("Dossier {Path} illisible pour l'instant : {Message}", path, ex.Message);
+                _changedFiles[path] = DateTime.UtcNow;
+            }
         }
         if (files.Count == 0) return;
 
@@ -199,8 +222,10 @@ public sealed class ScanCoordinator(
                 w.Renamed += (_, e) => { Touch(e.OldFullPath); Touch(e.FullPath); };
                 w.Error += (_, e) =>
                 {
-                    logger.LogWarning(e.GetException(), "FileSystemWatcher saturé, scan complet planifié");
-                    RequestFullScan();
+                    Interlocked.Exchange(ref _lastEventTicks, DateTime.UtcNow.Ticks);
+                    if (_overflowed) return;
+                    _overflowed = true;
+                    logger.LogWarning(e.GetException(), "FileSystemWatcher saturé : scan complet dès {Quiet} s sans activité", QuietBeforeFullScan.TotalSeconds);
                 };
                 w.EnableRaisingEvents = true;
                 _watchers.Add(w);
@@ -215,6 +240,7 @@ public sealed class ScanCoordinator(
 
     private void Touch(string path)
     {
+        Interlocked.Exchange(ref _lastEventTicks, DateTime.UtcNow.Ticks);
         if (LibraryFiles.IsAudio(path) || !Path.HasExtension(path))
             _changedFiles[path] = DateTime.UtcNow;
     }
