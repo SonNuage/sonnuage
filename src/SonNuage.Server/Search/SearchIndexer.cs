@@ -10,6 +10,10 @@ namespace SonNuage.Server.Search;
 /// milliers de titres) après chaque scan, chaque modification depuis l'admin, au retour d'Elasticsearch
 /// après une panne, et toutes les 30 minutes pour rafraîchir la popularité.
 /// </summary>
+/// <remarks>
+/// Pendant un flot de changements (copie massive dans /music, file d'imports YouTube), une reconstruction toutes
+/// les quelques secondes coûterait plus qu'elle ne sert : au plus une par <see cref="MinInterval"/>.
+/// </remarks>
 public sealed class SearchIndexer(
     ElasticsearchClient es,
     SearchGateway gateway,
@@ -18,10 +22,13 @@ public sealed class SearchIndexer(
     ILogger<SearchIndexer> logger) : BackgroundService
 {
     private static readonly TimeSpan Debounce = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan MinInterval = TimeSpan.FromMinutes(1);
     private static readonly TimeSpan Periodic = TimeSpan.FromMinutes(30);
     private static readonly TimeSpan RetryAfterFailure = TimeSpan.FromSeconds(30);
 
     private readonly Channel<bool> _requests = Channel.CreateBounded<bool>(new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropWrite });
+
+    private DateTime _lastRebuild = DateTime.MinValue;
 
     public void RequestReindex()
     {
@@ -64,7 +71,10 @@ public sealed class SearchIndexer(
             }
 
             await Task.Delay(Debounce, stoppingToken);
+            var wait = _lastRebuild + MinInterval - DateTime.UtcNow;
+            if (wait > TimeSpan.Zero) await Task.Delay(wait, stoppingToken);
             _requests.Reader.TryRead(out _);
+            _lastRebuild = DateTime.UtcNow;
             try
             {
                 await ReindexAsync(stoppingToken);
