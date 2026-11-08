@@ -51,6 +51,24 @@ public static class MeEndpoints
             return Results.NoContent();
         });
 
+        g.MapGet("/playback", async (HttpContext http, SonNuageDbContext db, CancellationToken ct) =>
+        {
+            var userId = http.User.UserId();
+            return await db.Users.Where(u => u.Id == userId)
+                .Select(u => new PlaybackPreferences(u.CrossfadeSeconds, u.InfinitePlay, u.InfiniteAhead)).SingleAsync(ct);
+        });
+
+        g.MapPut("/playback", async (PlaybackPreferences req, HttpContext http, SonNuageDbContext db, CancellationToken ct) =>
+        {
+            var prefs = req.Clamped();
+            var userId = http.User.UserId();
+            await db.Users.Where(u => u.Id == userId).ExecuteUpdateAsync(s => s
+                .SetProperty(u => u.CrossfadeSeconds, prefs.CrossfadeSeconds)
+                .SetProperty(u => u.InfinitePlay, prefs.InfinitePlay)
+                .SetProperty(u => u.InfiniteAhead, prefs.InfiniteAhead), ct);
+            return prefs;
+        });
+
         g.MapGet("/recent", async (int? count, HttpContext http, SonNuageDbContext db, CancellationToken ct) =>
         {
             var userId = http.User.UserId();

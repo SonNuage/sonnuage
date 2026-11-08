@@ -78,6 +78,10 @@ public sealed class User
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     /// <summary>Langue préférée de l'interface (« fr », « en »…), suivie sur tous ses appareils. Null = celle de l'appareil.</summary>
     public string? Language { get; set; }
+    /// <summary>Réglages de lecture suivis sur tous ses appareils (voir <see cref="Contracts.PlaybackPreferences"/>).</summary>
+    public double CrossfadeSeconds { get; set; }
+    public bool InfinitePlay { get; set; }
+    public int InfiniteAhead { get; set; } = Contracts.PlaybackPreferences.DefaultAhead;
 }
 
 public sealed class RefreshToken

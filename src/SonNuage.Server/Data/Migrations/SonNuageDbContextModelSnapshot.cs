@@ -586,6 +586,15 @@ namespace SonNuage.Server.Data.Migrations
                     b.Property<long>("CreatedAt")
                         .HasColumnType("INTEGER");
 
+                    b.Property<double>("CrossfadeSeconds")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("InfiniteAhead")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("InfinitePlay")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Language")
                         .HasMaxLength(16)
                         .HasColumnType("TEXT");

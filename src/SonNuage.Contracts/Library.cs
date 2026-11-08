@@ -84,3 +84,20 @@ public sealed record RadioRequest(IReadOnlyList<Guid> SeedTrackIds, IReadOnlyLis
     public const int MaxCount = 20;
     public const int MaxIds = 500;
 }
+
+/// <summary>
+/// Réglages de lecture qui suivent le compte sur tous ses appareils : fondu enchaîné (0 à 5 s, au dixième),
+/// lecture infinie et nombre de morceaux choisis d'avance. La qualité et le pré-chargement restent propres à l'appareil.
+/// </summary>
+public sealed record PlaybackPreferences(double CrossfadeSeconds, bool InfinitePlay, int InfiniteAhead)
+{
+    public const double MaxCrossfadeSeconds = 5;
+    public const int DefaultAhead = 3;
+    public const int MaxAhead = 10;
+    public static readonly PlaybackPreferences Default = new(0, false, DefaultAhead);
+
+    /// <summary>Les mêmes bornes partout : serveur à l'enregistrement, appareils à la lecture.</summary>
+    public PlaybackPreferences Clamped() =>
+        new(Math.Round(Math.Clamp(double.IsFinite(CrossfadeSeconds) ? CrossfadeSeconds : 0, 0, MaxCrossfadeSeconds), 1),
+            InfinitePlay, Math.Clamp(InfiniteAhead, 1, MaxAhead));
+}
