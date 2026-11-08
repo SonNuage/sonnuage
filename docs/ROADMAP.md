@@ -111,15 +111,21 @@ Constat sur le homelab : certains imports prenaient plus de 3 minutes, là où T
 
 ## Prochaines étapes
 
-**Demandes du 8 novembre 2026** (en cours) :
+**Demandes du 8 novembre 2026** :
 
-- 🔜 **Android Auto : SonNuage absent de la liste des applis de la voiture.** Le son ne sort que si la lecture est
-  lancée depuis le téléphone, d'où l'absence de reprise automatique. Rejoint le point « Démarrage à la connexion »
-  ci-dessous : l'appli doit être déclarée et découverte comme appli multimédia d'Android Auto.
-- 🔜 **Fondu enchaîné** entre deux morceaux : durée réglable de 0 à 5 s par pas de 0,1 s (0 = désactivé).
-- 🔜 **Page artiste** : une dizaine de ses titres, un lien « Voir tout », puis les pochettes de tous ses albums.
-- 🔜 **Lecture infinie** : arrivé près de la fin de la file, ajouter des morceaux d'un genre proche. Avance réglable
-  (3 par défaut) : avec 5 morceaux et une avance de 3, le 6e est choisi en arrivant au 3e, et ainsi de suite.
+- 🟡 **Android Auto : SonNuage absent de la liste des applis de la voiture.** Le manifeste est correct (service
+  MediaLibraryService exporté, `automotive_app_desc`) : Android Auto masque les applis multimédias qui ne viennent pas
+  du Play Store. Côté téléphone : Android Auto → toucher 10 fois « Version » → menu ⋮ → Paramètres pour les
+  développeurs → cocher « Sources inconnues », puis cocher SonNuage dans « Personnaliser le lanceur ». La reprise
+  automatique à la connexion en dépend. Solution durable : publication sur le Play Store (piste de test interne).
+- ✅ **Fondu enchaîné** (web et bureau) : 0 à 5 s par pas de 0,1 s dans Réglages, courbe à puissance constante sur
+  deux éléments audio. Le réglage est masqué sur Android. 🔜 Android : demande deux lecteurs ExoPlayer en relais
+  (Media3 n'a pas de fondu natif).
+- ✅ **Page artiste** : ses 10 titres les plus écoutés, « Voir tout (n) » / « Voir moins », puis la discographie.
+- ✅ **Lecture infinie** (web, bureau, Android) : option dans Réglages, avance réglable de 1 à 10 (3 par défaut).
+  Le serveur (`POST /api/radio`) choisit au hasard, par cercles : même genre que les derniers morceaux joués, puis
+  même artiste, puis le reste de la bibliothèque, sans jamais reprendre un morceau déjà dans la file. Désactivée
+  quand la répétition est active.
 - ✅ **Dépôt iOS** `sonnuage-ios` ajouté aux listes de dépôts (README, site).
 
 1. 🔜 **Valider le nouveau pipeline en conditions réelles** sur le homelab : un gros import (une discographie),
