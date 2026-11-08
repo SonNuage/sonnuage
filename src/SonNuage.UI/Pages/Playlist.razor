@@ -154,6 +154,7 @@
     {
         await RunAsync(() => Api.DeletePlaylistAsync(Id));
         await Ui.RefreshPlaylistsAsync();
+        _confirmDelete = false;
         Nav.NavigateTo("library/playlists");
     }
 

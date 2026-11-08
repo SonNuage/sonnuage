@@ -132,7 +132,7 @@ select.input { cursor: pointer; }
 .field { display: flex; flex-direction: column; gap: .35rem; margin-bottom: .9rem; }
 .field > span { font-size: .85rem; color: var(--text-muted); font-weight: 600; }
 /* Case à cocher : la case puis son libellé, sur une ligne. */
-.field.check { flex-direction: row; align-items: center; gap: .6rem; cursor: pointer; }
+.field.check { flex-direction: row; align-items: center; gap: .6rem; cursor: pointer; margin-bottom: 0; }
 .field.check > input { width: 1.15rem; height: 1.15rem; margin: 0; accent-color: var(--accent); flex: none; }
 .field.check > span { font-size: .95rem; color: var(--text); font-weight: 500; }
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0 1rem; }
@@ -527,6 +527,14 @@ select.input { cursor: pointer; }
     border-radius: 8px; background: var(--mobile-player); border: 0; gap: .5rem;
   }
   .pb-center { flex-direction: row; }
+  /* Menus d'une piste : en feuille au bas de l'écran, au-dessus du lecteur et de la navigation, plutôt que sous le
+     bouton où ils sortaient de l'écran (ou passaient sous le lecteur) en bas de liste. */
+  .tracklist .menu-backdrop { z-index: 80; background: rgba(0,0,0,.55); }
+  .tracklist .menu {
+    position: fixed; top: auto; left: .5rem; right: .5rem; bottom: calc(.5rem + var(--safe-bottom)); z-index: 81;
+    padding: .5rem; border-radius: 12px; max-height: 70dvh; overflow-y: auto;
+  }
+  .tracklist .menu button { padding: .85rem .9rem; font-size: 1rem; }
   .pb-controls { gap: .1rem; }
   .pb-track .fav { display: none; }
   .cover-sm { width: 44px; height: 44px; }

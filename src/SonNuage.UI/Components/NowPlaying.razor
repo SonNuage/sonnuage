@@ -73,15 +73,7 @@
         Player.StateChanged += Refresh;
         // Retour (bouton du téléphone, geste, navigateur) : il referme le plein écran au lieu de quitter la page.
         // Les liens du plein écran le referment avant de naviguer, ils passent donc sans être retenus.
-        _backHandler = Nav.RegisterLocationChangingHandler(context =>
-        {
-            if (Ui.NowPlayingOpen && !context.IsNavigationIntercepted)
-            {
-                context.PreventNavigation();
-                Ui.SetNowPlayingOpen(false);
-            }
-            return ValueTask.CompletedTask;
-        });
+        _backHandler = Nav.CloseOnBack(() => Ui.NowPlayingOpen, () => Ui.SetNowPlayingOpen(false));
     }
 
     private void Refresh() => InvokeAsync(StateHasChanged);

@@ -82,7 +82,17 @@
     private Guid? _lastCurrent;
     private bool _lastPlaying;
 
-    protected override void OnInitialized() => Player.StateChanged += OnPlayerChanged;
+    private IDisposable? _backHandler;
+
+    protected override void OnInitialized()
+    {
+        Player.StateChanged += OnPlayerChanged;
+        _backHandler = Nav.CloseOnBack(() => _menuIndex >= 0, () =>
+        {
+            _menuIndex = -1;
+            InvokeAsync(StateHasChanged);
+        });
+    }
 
     private object KeyOf(int index) => KeySelector?.Invoke(index) ?? (object)$"{index}-{Tracks[index].Id}";
 
@@ -143,5 +153,9 @@
         if (Tracks is IList<TrackDto> { IsReadOnly: false } list) list[index] = updated;
     }
 
-    public void Dispose() => Player.StateChanged -= OnPlayerChanged;
+    public void Dispose()
+    {
+        Player.StateChanged -= OnPlayerChanged;
+        _backHandler?.Dispose();
+    }
 }

@@ -67,11 +67,13 @@
                 <small class="muted">@L["settings.crossfadeHint"]</small>
             </label>
         }
-        <label class="field check">
-            <input type="checkbox" @bind="_infinite" />
-            <span>@L["settings.infinitePlay"]</span>
-        </label>
-        <small class="muted">@L["settings.infinitePlayHint"]</small>
+        <div class="field">
+            <label class="field check">
+                <input type="checkbox" @bind="_infinite" />
+                <span>@L["settings.infinitePlay"]</span>
+            </label>
+            <small class="muted">@L["settings.infinitePlayHint"]</small>
+        </div>
         @if (_infinite)
         {
             <label class="field">

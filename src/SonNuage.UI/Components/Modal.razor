@@ -1,3 +1,6 @@
+@implements IDisposable
+@inject NavigationManager Nav
+
 @if (Open)
 {
     <div class="modal-backdrop" @onclick="Close">
@@ -22,5 +25,11 @@
     [Parameter] public RenderFragment? ChildContent { get; set; }
     [Parameter] public RenderFragment? Footer { get; set; }
 
+    private IDisposable? _backHandler;
+
+    protected override void OnInitialized() => _backHandler = Nav.CloseOnBack(() => Open, () => _ = InvokeAsync(Close));
+
     private Task Close() => OpenChanged.InvokeAsync(false);
+
+    public void Dispose() => _backHandler?.Dispose();
 }
