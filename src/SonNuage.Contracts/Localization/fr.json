@@ -476,7 +476,7 @@
     "fileIs": "Fichier : {path}",
     "saveAlbum": "Enregistrer l'album",
     "changeCover": "Changer la pochette",
-    "dbOnly": "Les modifications sont enregistrées dans la base de SonNuage. Les fichiers ne sont pas modifiés, et ces valeurs ne seront plus écrasées par les analyses.",
+    "dbOnly": "Les modifications sont enregistrées dans la base de SonNuage et ne seront plus écrasées par les analyses. Les fichiers envoyés (uploads) reçoivent aussi les nouveaux tags ; ceux de la bibliothèque principale ne sont jamais modifiés.",
     "searchPlaceholder": "Rechercher un titre, un artiste, un album…",
     "wholeLibrary": "Toute la bibliothèque",
     "edited": "édité",

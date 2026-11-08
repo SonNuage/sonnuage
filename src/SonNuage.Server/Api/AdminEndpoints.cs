@@ -77,7 +77,7 @@ public static class AdminEndpoints
             return new PagedResult<TrackMetadataDto>(rows.Select(t => ToMetadataDto(t, roots, options.Value)).ToList(), total, o, l);
         });
 
-        g.MapPut("/tracks/{id:guid}/metadata", async (Guid id, UpdateTrackMetadataRequest req, SonNuageDbContext db, CoverLocator covers, IOptions<SonNuageOptions> options, CancellationToken ct) =>
+        g.MapPut("/tracks/{id:guid}/metadata", async (Guid id, UpdateTrackMetadataRequest req, SonNuageDbContext db, CoverLocator covers, TagWriter tags, IOptions<SonNuageOptions> options, CancellationToken ct) =>
         {
             var track = await db.Tracks.FirstOrDefaultAsync(t => t.Id == id, ct);
             if (track is null) return Results.NotFound();
@@ -93,7 +93,7 @@ public static class AdminEndpoints
             track.Genre = Clean(req.Genre);
             track.MetadataLocked = true;
 
-            await ReassignAsync(db, covers, [track], ct);
+            await ReassignAsync(db, covers, tags, [track], ct);
             return Results.Ok(ToMetadataDto(track, RootsOf(options.Value), options.Value));
         });
 
@@ -116,7 +116,7 @@ public static class AdminEndpoints
 
     private static void MapAlbums(RouteGroupBuilder g)
     {
-        g.MapPut("/albums/{id:guid}", async (Guid id, UpdateAlbumRequest req, SonNuageDbContext db, CoverLocator covers, CancellationToken ct) =>
+        g.MapPut("/albums/{id:guid}", async (Guid id, UpdateAlbumRequest req, SonNuageDbContext db, CoverLocator covers, TagWriter tags, CancellationToken ct) =>
         {
             var tracks = await db.Tracks.Where(t => t.AlbumId == id).ToListAsync(ct);
             if (tracks.Count == 0) return Results.NotFound();
@@ -129,14 +129,14 @@ public static class AdminEndpoints
                 if (req.Year is not null) t.Year = req.Year;
                 t.MetadataLocked = true;
             }
-            await ReassignAsync(db, covers, tracks, ct);
+            await ReassignAsync(db, covers, tags, tracks, ct);
             var newAlbumId = tracks[0].AlbumId;
             if (req.Year is not null) await db.Albums.Where(a => a.Id == newAlbumId).ExecuteUpdateAsync(s => s.SetProperty(a => a.Year, req.Year), ct);
             return Results.Ok(await db.Albums.Where(a => a.Id == newAlbumId).Select(Projections.Album).FirstAsync(ct));
         });
 
         // Lien fait à la main : l'album et tous ses morceaux prennent l'édition (le scan ne remplace pas celle de l'album).
-        g.MapPut("/albums/{id:guid}/musicbrainz", async (Guid id, LinkAlbumReleaseRequest req, SonNuageDbContext db, CancellationToken ct) =>
+        g.MapPut("/albums/{id:guid}/musicbrainz", async (Guid id, LinkAlbumReleaseRequest req, SonNuageDbContext db, TagWriter tags, CancellationToken ct) =>
         {
             var release = MusicBrainzId.Parse(req.Release);
             if (release is null && !string.IsNullOrWhiteSpace(req.Release)) return Results.Problem(Tx.Key("errors.admin.badRelease"), statusCode: 400);
@@ -144,6 +144,7 @@ public static class AdminEndpoints
             if (album is null) return Results.NotFound();
             album.MusicBrainzReleaseId = release;
             foreach (var t in album.Tracks) t.MusicBrainzReleaseId = release;
+            tags.Write(album.Tracks);
             await db.SaveChangesAsync(ct);
             return Results.Ok(await db.Albums.Where(a => a.Id == id).Select(Projections.Album).FirstAsync(ct));
         });
@@ -258,9 +259,13 @@ public static class AdminEndpoints
         });
     }
 
-    /// <summary>Range les morceaux modifiés dans le bon album / artiste, supprime les vides, met à jour les pochettes.</summary>
-    internal static async Task ReassignAsync(SonNuageDbContext db, CoverLocator covers, IReadOnlyList<Track> tracks, CancellationToken ct)
+    /// <summary>
+    /// Après une correction des métadonnées : réécrit les tags des fichiers d'uploads/, range les morceaux dans le bon
+    /// album / artiste, supprime les vides, met à jour les pochettes.
+    /// </summary>
+    internal static async Task ReassignAsync(SonNuageDbContext db, CoverLocator covers, TagWriter tags, IReadOnlyList<Track> tracks, CancellationToken ct)
     {
+        tags.Write(tracks);
         var indexer = new LibraryIndexer(db);
         await indexer.LoadAsync(ct);
         foreach (var t in tracks)

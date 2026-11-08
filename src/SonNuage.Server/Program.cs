@@ -42,6 +42,7 @@ builder.Services.AddScoped<InitialAdminSeeder>();
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 
 builder.Services.AddSingleton<MetadataReader>();
+builder.Services.AddSingleton<TagWriter>();
 builder.Services.AddSingleton<CoverLocator>();
 builder.Services.AddScoped<LibraryScanner>();
 builder.Services.AddSingleton<ScanCoordinator>();

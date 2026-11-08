@@ -19,6 +19,7 @@ public class SonNuageFactory : WebApplicationFactory<Program>
     private readonly string _root = Path.Combine(Path.GetTempPath(), "sonnuage-tests-" + Guid.NewGuid().ToString("N"));
 
     public string MusicPath => Path.Combine(_root, "music");
+    public string UploadPath => Path.Combine(_root, "uploads");
 
     public SonNuageFactory()
     {
@@ -34,7 +35,7 @@ public class SonNuageFactory : WebApplicationFactory<Program>
     {
         builder.UseEnvironment("Testing");
         builder.UseSetting("SonNuage:MusicPaths:0", MusicPath);
-        builder.UseSetting("SonNuage:UploadPath", Path.Combine(_root, "uploads"));
+        builder.UseSetting("SonNuage:UploadPath", UploadPath);
         builder.UseSetting("SonNuage:DataPath", Path.Combine(_root, "data"));
         builder.UseSetting("SonNuage:InitialAdminUser", "admin");
         builder.UseSetting("SonNuage:InitialAdminPassword", AdminPassword);

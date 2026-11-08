@@ -476,7 +476,7 @@
     "fileIs": "File: {path}",
     "saveAlbum": "Save album",
     "changeCover": "Change cover",
-    "dbOnly": "Changes are saved in SonNuage’s database. Files aren’t modified, and these values won’t be overwritten by later scans.",
+    "dbOnly": "Changes are saved in SonNuage’s database and won’t be overwritten by later scans. Uploaded files also get the new tags; files of the main library are never modified.",
     "searchPlaceholder": "Search a track, artist or album…",
     "wholeLibrary": "Whole library",
     "edited": "edited",

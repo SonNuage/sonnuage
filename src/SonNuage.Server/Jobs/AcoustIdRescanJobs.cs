@@ -72,7 +72,7 @@ public sealed class AcoustIdRescanJob(YoutubeSettingsStore settings) : IJobHandl
 /// Album, édition MusicBrainz, numéros et année seulement si l'édition trouvée est le même album. Le genre seulement s'il manque.
 /// Les morceaux modifiés à la main (verrouillés) ne sont jamais touchés. Sans « appliquer », tout est seulement journalisé.
 /// </summary>
-public sealed class LibraryMatchJob(MetadataResolver resolver, YoutubeSettingsStore settings, CoverLocator covers, SearchIndexer search) : IJobHandler
+public sealed class LibraryMatchJob(MetadataResolver resolver, YoutubeSettingsStore settings, CoverLocator covers, TagWriter tags, SearchIndexer search) : IJobHandler
 {
     private const double SameAlbum = 0.8;
 
@@ -119,7 +119,7 @@ public sealed class LibraryMatchJob(MetadataResolver resolver, YoutubeSettingsSt
         if (outcome.Result == "applied")
         {
             outcome.Apply(track);
-            await AdminEndpoints.ReassignAsync(db, covers, [track], ct);
+            await AdminEndpoints.ReassignAsync(db, covers, tags, [track], ct);
             search.RequestReindex();
         }
         ctx.Set("result", outcome.Result);
