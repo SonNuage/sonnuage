@@ -7,6 +7,8 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 ARG YTDLP_VERSION=2026.10.26
 ARG DENO_VERSION=2.9.8
 ARG TARGETARCH
+# GitHub renvoie parfois des 504 en rafale : chaque téléchargement réessaie (v1.2.0 et v1.3.0 ont échoué là).
+ARG CURL="curl -fsSL --retry 8 --retry-all-errors --retry-delay 15"
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ffmpeg curl unzip libchromaprint-tools \
     && rm -rf /var/lib/apt/lists/* \
@@ -16,11 +18,11 @@ RUN apt-get update \
          *) YTDLP_ASSET=yt-dlp_linux; DENO_TARGET=x86_64-unknown-linux-gnu ;; \
        esac \
     && cd /tmp \
-    && curl -fsSLO "https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_VERSION}/${YTDLP_ASSET}" \
-    && curl -fsSL "https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_VERSION}/SHA2-256SUMS" | grep " ${YTDLP_ASSET}\$" | sha256sum -c - \
+    && ${CURL} -O "https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_VERSION}/${YTDLP_ASSET}" \
+    && ${CURL} "https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_VERSION}/SHA2-256SUMS" | grep " ${YTDLP_ASSET}\$" | sha256sum -c - \
     && install -m 755 "${YTDLP_ASSET}" /opt/tools/yt-dlp \
-    && curl -fsSLO "https://github.com/denoland/deno/releases/download/v${DENO_VERSION}/deno-${DENO_TARGET}.zip" \
-    && echo "$(curl -fsSL "https://github.com/denoland/deno/releases/download/v${DENO_VERSION}/deno-${DENO_TARGET}.zip.sha256sum" | grep -oE '[0-9a-fA-F]{64}' | head -1)  deno-${DENO_TARGET}.zip" | sha256sum -c - \
+    && ${CURL} -O "https://github.com/denoland/deno/releases/download/v${DENO_VERSION}/deno-${DENO_TARGET}.zip" \
+    && echo "$(${CURL} "https://github.com/denoland/deno/releases/download/v${DENO_VERSION}/deno-${DENO_TARGET}.zip.sha256sum" | grep -oE '[0-9a-fA-F]{64}' | head -1)  deno-${DENO_TARGET}.zip" | sha256sum -c - \
     && unzip -q "deno-${DENO_TARGET}.zip" -d /opt/tools \
     && chmod 755 /opt/tools/deno \
     && rm -f /tmp/* \
