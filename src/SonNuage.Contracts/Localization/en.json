@@ -310,7 +310,11 @@
   "artist": {
     "playAll": "Play all",
     "discography": "Discography",
-    "notFound": "Artist not found."
+    "notFound": "Artist not found.",
+    "topTracks": "Popular tracks",
+    "allTracks": "All tracks",
+    "showAll": "Show all ({count})",
+    "showLess": "Show less"
   },
   "search": {
     "placeholder": "Artists, albums, tracks…",

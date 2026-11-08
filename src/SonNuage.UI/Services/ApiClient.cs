@@ -24,6 +24,8 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     public Task<AlbumDetailDto?> AlbumAsync(Guid id) => GetAsync<AlbumDetailDto>($"api/albums/{id}");
     public Task<ArtistDetailDto?> ArtistAsync(Guid id) => GetAsync<ArtistDetailDto>($"api/artists/{id}");
     public Task<List<TrackDto>?> ArtistTracksAsync(Guid id) => GetAsync<List<TrackDto>>($"api/artists/{id}/tracks");
+    public Task<List<TrackDto>?> ArtistTopTracksAsync(Guid id, int limit) => GetAsync<List<TrackDto>>($"api/artists/{id}/top?limit={limit}");
+    public Task<List<TrackDto>?> RadioAsync(RadioRequest request) => SendAsync<List<TrackDto>>(HttpMethod.Post, "api/radio", request);
     public Task<List<TrackDto>?> RandomTracksAsync(int count) => GetAsync<List<TrackDto>>($"api/tracks/random?count={count}");
     public Task<List<TrackDto>?> LookupTracksAsync(IReadOnlyList<Guid> ids) => SendAsync<List<TrackDto>>(HttpMethod.Post, "api/tracks/lookup", ids);
     public Task<SearchResultDto?> SearchAsync(string q, int limit = 20) => GetAsync<SearchResultDto>($"api/search?limit={limit}&q={Uri.EscapeDataString(q)}");

@@ -310,7 +310,11 @@
   "artist": {
     "playAll": "Tout lire",
     "discography": "Discographie",
-    "notFound": "Artiste introuvable."
+    "notFound": "Artiste introuvable.",
+    "topTracks": "Titres populaires",
+    "allTracks": "Tous les titres",
+    "showAll": "Voir tout ({count})",
+    "showLess": "Voir moins"
   },
   "search": {
     "placeholder": "Artistes, albums, titres…",

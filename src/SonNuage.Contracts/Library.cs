@@ -74,3 +74,13 @@ public sealed record ServerInfoDto(string Name, string Version, IReadOnlyList<Qu
     string? Runtime = null);
 
 public sealed record QualityDto(string Id, string Label, string Format, int? BitrateKbps);
+
+/// <summary>
+/// Lecture infinie : <see cref="Count"/> morceaux proches des <see cref="SeedTrackIds"/> (les derniers de la file),
+/// hors <see cref="ExcludeTrackIds"/> (ce que la file contient déjà).
+/// </summary>
+public sealed record RadioRequest(IReadOnlyList<Guid> SeedTrackIds, IReadOnlyList<Guid> ExcludeTrackIds, int Count)
+{
+    public const int MaxCount = 20;
+    public const int MaxIds = 500;
+}

@@ -151,6 +151,7 @@ app.MapJobEndpoints();
 app.MapExtensionEndpoints();
 app.MapDashboardEndpoints();
 app.MapCrashReportEndpoints();
+app.MapDiscoveryEndpoints();
 
 app.MapFallback("/api/{**path}", () => Results.NotFound());
 app.MapFallback(WebApp.Index);

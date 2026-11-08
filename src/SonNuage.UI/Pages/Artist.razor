@@ -23,6 +23,18 @@
                 <button class="icon-btn" title="@L["player.shuffle"]" @onclick="() => PlayAllAsync(true)"><Icon Name="shuffle" Size="28" /></button>
             </div>
 
+            @if (_tracks is { Count: > 0 } tracks)
+            {
+                <section>
+                    <h2>@(_all ? L["artist.allTracks"] : L["artist.topTracks"])</h2>
+                    <TrackList Tracks="tracks" ShowCover="true" />
+                    @if (_all || a.Artist.TrackCount > TopCount)
+                    {
+                        <button class="btn" style="margin-top: .6rem" @onclick="ToggleAllAsync">@(_all ? L["artist.showLess"] : L["artist.showAll", ("count", a.Artist.TrackCount)])</button>
+                    }
+                </section>
+            }
+
             <section>
                 <h2>@L["artist.discography"]</h2>
                 <AlbumGrid Albums="a.Albums" ShowArtist="false" />
@@ -34,7 +46,12 @@
 @code {
     [Parameter] public Guid Id { get; set; }
 
+    // Titres phares montrés d'abord ; « Voir tout » déplie la liste complète.
+    private const int TopCount = 10;
+
     private ArtistDetailDto? _artist;
+    private List<TrackDto>? _tracks;
+    private bool _all;
     private string? _error;
     private Guid _loaded;
 
@@ -43,6 +60,8 @@
         if (_loaded == Id) return;
         _loaded = Id;
         _artist = null;
+        _tracks = null;
+        _all = false;
         await LoadAsync();
     }
 
@@ -51,12 +70,28 @@
         _error = null;
         try
         {
-            _artist = await Api.ArtistAsync(Id);
+            var artist = Api.ArtistAsync(Id);
+            var top = Api.ArtistTopTracksAsync(Id, TopCount);
+            _artist = await artist;
+            _tracks = await top;
             if (_artist is null) _error = L["artist.notFound"];
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
             _error = L.Server(ex.Message);
+        }
+    }
+
+    private async Task ToggleAllAsync()
+    {
+        try
+        {
+            _tracks = _all ? await Api.ArtistTopTracksAsync(Id, TopCount) : await Api.ArtistTracksAsync(Id);
+            _all = !_all;
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
         }
     }
 
