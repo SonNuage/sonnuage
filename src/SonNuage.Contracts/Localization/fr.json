@@ -296,7 +296,11 @@
       "night": "Bonne nuit",
       "day": "Bonjour",
       "evening": "Bonsoir"
-    }
+    },
+    "rediscover": "À réécouter",
+    "rediscoverHint": "Vos titres favoris et habituels, pas joués depuis un mois.",
+    "notYetPlayed": "Pas encore écouté",
+    "notYetPlayedHint": "Des albums de la bibliothèque que vous n'avez jamais lancés."
   },
   "favorites": {
     "empty": "Touchez le cœur d'un titre pour le retrouver ici."

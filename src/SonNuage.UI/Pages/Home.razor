@@ -40,6 +40,15 @@
                 </section>
             }
 
+            @if (home.Rediscover is { Count: > 0 } rediscover)
+            {
+                <section>
+                    <h2>@L["home.rediscover"]</h2>
+                    <p class="muted section-hint">@L["home.rediscoverHint"]</p>
+                    <TrackList Tracks="rediscover.Take(10).ToList()" ShowCover="true" />
+                </section>
+            }
+
             <section>
                 <div class="section-head">
                     <h2>@L["home.recentlyAdded"]</h2>
@@ -51,6 +60,15 @@
                 }
                 <AlbumGrid Albums="home.RecentlyAdded" />
             </section>
+
+            @if (home.NotYetPlayed is { Count: > 0 } notYetPlayed)
+            {
+                <section>
+                    <h2>@L["home.notYetPlayed"]</h2>
+                    <p class="muted section-hint">@L["home.notYetPlayedHint"]</p>
+                    <AlbumGrid Albums="notYetPlayed" />
+                </section>
+            }
         }
     </Loader>
 </div>

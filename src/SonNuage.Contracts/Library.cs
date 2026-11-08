@@ -39,10 +39,13 @@ public sealed record SearchResultDto(
     IReadOnlyList<TrackDto> Tracks,
     string? Correction = null);
 
+/// <summary>Accueil. <see cref="Rediscover"/> et <see cref="NotYetPlayed"/> : absents d'un serveur antérieur à 1.7.</summary>
 public sealed record HomeDto(
     IReadOnlyList<AlbumDto> RecentlyAdded,
     IReadOnlyList<TrackDto> RecentlyPlayed,
-    IReadOnlyList<PlaylistDto> Playlists);
+    IReadOnlyList<PlaylistDto> Playlists,
+    IReadOnlyList<TrackDto>? Rediscover = null,
+    IReadOnlyList<AlbumDto>? NotYetPlayed = null);
 
 public sealed record PagedResult<T>(IReadOnlyList<T> Items, int Total, int Offset, int Limit);
 

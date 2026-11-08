@@ -206,6 +206,7 @@ select.input { cursor: pointer; }
 .about-hero { display: flex; align-items: center; gap: 1rem; }
 .about-hero h2 { margin: 0; font-size: 1.5rem; }
 .about-hero p { margin: .2rem 0 0; }
+.section-hint { margin: -.5rem 0 .75rem; font-size: .9rem; }
 .help details { border-top: 1px solid var(--line); padding: .75rem 0; }
 .help details:first-of-type { border-top: 0; }
 .help summary { cursor: pointer; font-weight: 600; }

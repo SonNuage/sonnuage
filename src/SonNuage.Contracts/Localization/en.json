@@ -296,7 +296,11 @@
       "night": "Good night",
       "day": "Good morning",
       "evening": "Good evening"
-    }
+    },
+    "rediscover": "Listen again",
+    "rediscoverHint": "Your liked and go-to tracks, not played for a month.",
+    "notYetPlayed": "Not played yet",
+    "notYetPlayedHint": "Albums in the library you have never started."
   },
   "favorites": {
     "empty": "Tap the heart on a track to find it here."

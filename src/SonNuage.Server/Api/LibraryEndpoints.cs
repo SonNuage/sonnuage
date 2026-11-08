@@ -30,7 +30,7 @@ public static class LibraryEndpoints
 
         var g = app.MapGroup("/api").RequireAuthorization().WithTags("Library");
 
-        g.MapGet("/home", async (HttpContext http, SonNuageDbContext db, CancellationToken ct) =>
+        g.MapGet("/home", async (HttpContext http, SonNuageDbContext db, TimeProvider time, CancellationToken ct) =>
         {
             var userId = http.User.UserId();
             var recentAlbums = await db.Albums.OrderByDescending(a => a.CreatedAt).Take(20).Select(Projections.Album).ToListAsync(ct);
@@ -38,7 +38,12 @@ public static class LibraryEndpoints
             var recentTracks = await TracksInOrderAsync(db, userId, recentTrackIds, ct);
             var playlists = await db.Playlists.Where(p => p.OwnerId == userId).OrderByDescending(p => p.UpdatedAt).Take(20)
                 .Select(Projections.Playlist).ToListAsync(ct);
-            return new HomeDto(recentAlbums, recentTracks, playlists);
+            var rediscover = await TracksInOrderAsync(db, userId,
+                await HomeDiscovery.RediscoverTrackIdsAsync(db, userId, time.GetUtcNow(), 20, ct), ct);
+            var notYetPlayedIds = await HomeDiscovery.NotYetPlayedAlbumIdsAsync(db, userId, 20, ct);
+            var notYetPlayed = await db.Albums.Where(a => notYetPlayedIds.Contains(a.Id)).Select(Projections.Album).ToListAsync(ct);
+            notYetPlayed = notYetPlayedIds.Select(id => notYetPlayed.FirstOrDefault(a => a.Id == id)).OfType<AlbumDto>().ToList();
+            return new HomeDto(recentAlbums, recentTracks, playlists, rediscover, notYetPlayed);
         });
 
         g.MapGet("/artists", async (string? q, int? offset, int? limit, SonNuageDbContext db, CancellationToken ct) =>
