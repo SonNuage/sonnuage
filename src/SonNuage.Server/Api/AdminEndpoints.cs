@@ -135,6 +135,19 @@ public static class AdminEndpoints
             return Results.Ok(await db.Albums.Where(a => a.Id == newAlbumId).Select(Projections.Album).FirstAsync(ct));
         });
 
+        // Lien fait à la main : l'album et tous ses morceaux prennent l'édition (le scan ne remplace pas celle de l'album).
+        g.MapPut("/albums/{id:guid}/musicbrainz", async (Guid id, LinkAlbumReleaseRequest req, SonNuageDbContext db, CancellationToken ct) =>
+        {
+            var release = MusicBrainzId.Parse(req.Release);
+            if (release is null && !string.IsNullOrWhiteSpace(req.Release)) return Results.Problem(Tx.Key("errors.admin.badRelease"), statusCode: 400);
+            var album = await db.Albums.Include(a => a.Tracks).FirstOrDefaultAsync(a => a.Id == id, ct);
+            if (album is null) return Results.NotFound();
+            album.MusicBrainzReleaseId = release;
+            foreach (var t in album.Tracks) t.MusicBrainzReleaseId = release;
+            await db.SaveChangesAsync(ct);
+            return Results.Ok(await db.Albums.Where(a => a.Id == id).Select(Projections.Album).FirstAsync(ct));
+        });
+
         g.MapPut("/albums/{id:guid}/cover", async (Guid id, HttpRequest request, SonNuageDbContext db, IOptions<SonNuageOptions> options, CancellationToken ct) =>
         {
             var album = await db.Albums.FirstOrDefaultAsync(a => a.Id == id, ct);

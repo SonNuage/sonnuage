@@ -66,6 +66,7 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
         SendAsync<TrackMetadataDto>(HttpMethod.Put, $"api/admin/tracks/{id}/metadata", req);
     public Task AdminDeleteTrackAsync(Guid id) => SendAsync(HttpMethod.Delete, $"api/admin/tracks/{id}");
     public Task<AlbumDto?> AdminUpdateAlbumAsync(Guid id, UpdateAlbumRequest req) => SendAsync<AlbumDto>(HttpMethod.Put, $"api/admin/albums/{id}", req);
+    public Task<AlbumDto?> AdminLinkAlbumReleaseAsync(Guid id, LinkAlbumReleaseRequest req) => SendAsync<AlbumDto>(HttpMethod.Put, $"api/admin/albums/{id}/musicbrainz", req);
     public Task AdminSetAlbumCoverAsync(Guid id, Stream image, string contentType) =>
         SendRawAsync(HttpMethod.Put, $"api/admin/albums/{id}/cover", image, contentType);
     public Task<UploadSessionDto?> AdminStartUploadAsync(StartUploadRequest req) => SendAsync<UploadSessionDto>(HttpMethod.Post, "api/admin/uploads", req);

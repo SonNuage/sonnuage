@@ -131,7 +131,8 @@
       "unreadable": "File received but unreadable.",
       "lastAdmin": "At least one administrator must remain.",
       "deleteSelf": "You can’t delete your own account.",
-      "emptyTitle": "The title can’t be empty."
+      "emptyTitle": "The title can’t be empty.",
+      "badRelease": "A MusicBrainz release ID or link is expected (musicbrainz.org/release/…)."
     },
     "unknownRole": "Unknown role.",
     "passwordMin": "Password: {min} characters minimum.",
@@ -487,7 +488,14 @@
     "trackUpdated": "Track updated",
     "albumUpdated": "Album updated",
     "coverUpdated": "Cover updated",
-    "fileDeleted": "File deleted"
+    "fileDeleted": "File deleted",
+    "release": "MusicBrainz release",
+    "releasePlaceholder": "ID or musicbrainz.org/release/… link",
+    "linkRelease": "Link",
+    "openRelease": "Open on MusicBrainz",
+    "releaseHint": "Leave empty to unlink. The link applies to every track of the album.",
+    "releaseLinked": "Album linked to its MusicBrainz release",
+    "releaseUnlinked": "MusicBrainz link removed"
   },
   "dash": {
     "stat": {

@@ -28,6 +28,20 @@
                     </div>
                     <p class="muted small">@L["editor.dbOnly"]</p>
                 </form>
+                <form class="stack" @onsubmit="LinkReleaseAsync" @onsubmit:preventDefault="true">
+                    <label class="field">
+                        <span>@L["editor.release"]</span>
+                        <input class="input" @bind="_release" placeholder="@L["editor.releasePlaceholder"]" />
+                    </label>
+                    <div class="row">
+                        <button class="btn" type="submit">@L["editor.linkRelease"]</button>
+                        @if (album.Album.MusicBrainzReleaseId is { } release)
+                        {
+                            <a class="btn" href="https://musicbrainz.org/release/@release" target="_blank" rel="noopener">@L["editor.openRelease"]</a>
+                        }
+                    </div>
+                    <p class="muted small">@L["editor.releaseHint"]</p>
+                </form>
             </section>
         }
 
@@ -119,6 +133,7 @@
     private string _albumTitle = "";
     private string _albumArtist = "";
     private int? _albumYear;
+    private string _release = "";
     private TrackMetadataDto? _editing;
     private TrackMetadataDto? _deleting;
     private TrackForm _form = new();
@@ -152,6 +167,7 @@
             _albumTitle = _album.Album.Title;
             _albumArtist = _album.Album.ArtistName;
             _albumYear = _album.Album.Year;
+            _release = _album.Album.MusicBrainzReleaseId?.ToString() ?? "";
         }
     }
 
@@ -206,6 +222,21 @@
             if (updated is not null && i >= 0) _tracks[i] = updated;
             _editing = null;
             Ui.Notify(L["editor.trackUpdated"]);
+        }
+        catch (ApiException ex)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+    }
+
+    private async Task LinkReleaseAsync()
+    {
+        if (_album is null) return;
+        try
+        {
+            await Api.AdminLinkAlbumReleaseAsync(_album.Album.Id, new LinkAlbumReleaseRequest(_release));
+            Ui.Notify(L[string.IsNullOrWhiteSpace(_release) ? "editor.releaseUnlinked" : "editor.releaseLinked"]);
+            await LoadAlbumAsync();
         }
         catch (ApiException ex)
         {

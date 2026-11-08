@@ -31,7 +31,8 @@ public static class Projections
         a.Year,
         a.Tracks.Count,
         a.Tracks.Sum(t => t.DurationSeconds),
-        a.CoverPath != null || a.HasEmbeddedCover);
+        a.CoverPath != null || a.HasEmbeddedCover,
+        a.MusicBrainzReleaseId);
 
     public static readonly Expression<Func<Artist, ArtistDto>> Artist = ar => new ArtistDto(
         ar.Id,

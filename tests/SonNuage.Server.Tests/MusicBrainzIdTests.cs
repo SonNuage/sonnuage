@@ -79,6 +79,31 @@ public sealed class MusicBrainzIdTests(TaggedLibraryFactory factory) : IClassFix
         Assert.Equal(skipping.Count + 1, all.Count);
     }
 
+    [Fact]
+    public async Task The_admin_links_an_album_to_its_musicbrainz_release_and_can_unlink_it()
+    {
+        var admin = await factory.AdminClientAsync();
+        await factory.WaitForScanAsync(admin);
+        var albumId = await WithDbAsync(db => db.Albums.Where(a => a.Title == "First Album").Select(a => a.Id).SingleAsync(Ct));
+        const string release = "c0ffee00-1234-4abc-8def-0123456789ab";
+
+        var linked = await admin.PutAsJsonAsync($"/api/admin/albums/{albumId}/musicbrainz",
+            new LinkAlbumReleaseRequest($"https://musicbrainz.org/release/{release}"), Ct);
+        linked.EnsureSuccessStatusCode();
+        Assert.Equal(Guid.Parse(release), (await linked.Content.ReadFromJsonAsync<AlbumDto>(Ct))!.MusicBrainzReleaseId);
+        var detail = await admin.GetFromJsonAsync<AlbumDetailDto>($"/api/albums/{albumId}", Ct);
+        Assert.Equal(Guid.Parse(release), detail!.Album.MusicBrainzReleaseId);
+        Assert.True(await WithDbAsync(db => db.Tracks.Where(t => t.AlbumId == albumId).AllAsync(t => t.MusicBrainzReleaseId == Guid.Parse(release), Ct)));
+
+        var bad = await admin.PutAsJsonAsync($"/api/admin/albums/{albumId}/musicbrainz", new LinkAlbumReleaseRequest("pas un identifiant"), Ct);
+        Assert.Equal(HttpStatusCode.BadRequest, bad.StatusCode);
+
+        var unlinked = await admin.PutAsJsonAsync($"/api/admin/albums/{albumId}/musicbrainz", new LinkAlbumReleaseRequest(null), Ct);
+        Assert.Null((await unlinked.Content.ReadFromJsonAsync<AlbumDto>(Ct))!.MusicBrainzReleaseId);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await admin.PutAsJsonAsync($"/api/admin/albums/{Guid.NewGuid()}/musicbrainz", new LinkAlbumReleaseRequest(release), Ct)).StatusCode);
+    }
+
     [Theory]
     [InlineData("8f3471b5-7e6a-48da-86a9-c1c07a0f47ae", "8f3471b5-7e6a-48da-86a9-c1c07a0f47ae")]
     [InlineData(" 8F3471B5-7E6A-48DA-86A9-C1C07A0F47AE ", "8f3471b5-7e6a-48da-86a9-c1c07a0f47ae")]

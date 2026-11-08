@@ -47,6 +47,9 @@ public sealed record UpdateTrackMetadataRequest(
 
 public sealed record UpdateAlbumRequest(string? Title, string? ArtistName, int? Year);
 
+/// <summary>Lie un album à son édition MusicBrainz : identifiant ou lien musicbrainz.org/release/…, vide pour délier.</summary>
+public sealed record LinkAlbumReleaseRequest(string? Release);
+
 public sealed record StartUploadRequest(string FileName, long Size, string? ArtistHint, string? AlbumHint);
 
 public sealed record UploadSessionDto(Guid Id, string FileName, long Size, long Received, int ChunkSize);

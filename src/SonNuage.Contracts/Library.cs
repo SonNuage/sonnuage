@@ -10,7 +10,8 @@ public sealed record AlbumDto(
     int? Year,
     int TrackCount,
     double DurationSeconds,
-    bool HasCover);
+    bool HasCover,
+    Guid? MusicBrainzReleaseId = null);
 
 public sealed record TrackDto(
     Guid Id,

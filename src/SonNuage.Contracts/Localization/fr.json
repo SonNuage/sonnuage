@@ -131,7 +131,8 @@
       "unreadable": "Fichier reçu mais illisible.",
       "lastAdmin": "Il faut garder au moins un administrateur.",
       "deleteSelf": "Impossible de supprimer son propre compte.",
-      "emptyTitle": "Le titre ne peut pas être vide."
+      "emptyTitle": "Le titre ne peut pas être vide.",
+      "badRelease": "Identifiant ou lien d'édition MusicBrainz attendu (musicbrainz.org/release/…)."
     },
     "unknownRole": "Rôle inconnu.",
     "passwordMin": "Mot de passe : {min} caractères minimum.",
@@ -487,7 +488,14 @@
     "trackUpdated": "Titre mis à jour",
     "albumUpdated": "Album mis à jour",
     "coverUpdated": "Pochette mise à jour",
-    "fileDeleted": "Fichier supprimé"
+    "fileDeleted": "Fichier supprimé",
+    "release": "Fiche MusicBrainz (édition)",
+    "releasePlaceholder": "Identifiant ou lien musicbrainz.org/release/…",
+    "linkRelease": "Lier",
+    "openRelease": "Voir sur MusicBrainz",
+    "releaseHint": "Laisser vide pour délier. Le lien s'applique à tous les morceaux de l'album.",
+    "releaseLinked": "Album lié à sa fiche MusicBrainz",
+    "releaseUnlinked": "Lien MusicBrainz retiré"
   },
   "dash": {
     "stat": {
