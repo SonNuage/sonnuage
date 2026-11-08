@@ -239,6 +239,10 @@ plus simple (données locales) à la plus ouverte (bases publiques), sur un mêm
 **Ordre proposé** : historique d'écoute → « À réécouter » et « Pas encore écouté » → nouveautés des artistes
 (MusicBrainz) → artistes proches (ListenBrainz, Last.fm en complément) → envoi des écoutes à ListenBrainz.
 
+**Qui voit quoi** (décidé le 9 novembre 2026) : un utilisateur simple ne voit que ce qui est déjà sur le serveur
+(couche 1, et les couches 2 et 3 limitées aux titres présents dans la bibliothèque). Les propositions hors de la
+bibliothèque, avec leur bouton de demande, sont réservées aux contributeurs et aux administrateurs.
+
 **Place dans l'appli** : rubriques de l'accueil (« Nouveautés de vos artistes », « À découvrir », « À réécouter »),
 une page Découvrir, et un onglet dans Android Auto.
 
@@ -253,13 +257,19 @@ contrôle, et écouter un extrait avant de télécharger le morceau entier.
 **Rôle et approbation**
 
 - 💡 Nouveau rôle **Contributeur**, entre Utilisateur et Administrateur : il peut créer des demandes de
-  téléchargement. Un utilisateur simple ne le peut pas (à confirmer : bouton « Suggérer à l'admin » sans plus).
+  téléchargement. Un utilisateur simple ne peut rien demander (décidé le 9 novembre 2026).
 - 💡 Par compte, réglage réservé à l'administrateur : **« Demandes approuvées automatiquement »**. Désactivé :
   chaque demande attend l'accord d'un admin. Activé : elle part directement au téléchargement.
-- 💡 Page d'administration **Demandes** : approuver, refuser (avec motif), corriger la correspondance choisie ;
-  l'auteur voit l'état de ses demandes (en attente, approuvée, téléchargée, refusée).
-- Garde-fous : quota par compte et par jour, refus des doublons (déjà dans la bibliothèque ou déjà demandé),
-  journal de qui a demandé et approuvé quoi.
+- 💡 **Quota par contributeur**, réglable par l'administrateur pour chaque compte : **100 par défaut**. Au-delà,
+  la demande est refusée avec un message clair.
+- 💡 Statuts d'une demande : **demandée → acceptée ou refusée → en cours → terminée** (refus avec motif ; échec
+  du téléchargement signalé). L'auteur suit l'état de ses demandes.
+- 💡 Tableau de bord d'administration : encart **« Dernières demandes »** avec les 50 plus récentes et un lien
+  **« Voir plus »** vers la liste complète.
+- 💡 Page **Demandes** (liste complète) : recherche (titre, artiste, auteur), filtres par statut, auteur et date ;
+  actions approuver, refuser, corriger la correspondance choisie.
+- Garde-fous : refus des doublons (déjà dans la bibliothèque ou déjà demandé), journal de qui a demandé et approuvé
+  quoi (les demandes approuvées automatiquement y figurent aussi).
 
 **Recherche YouTube par correspondance**
 
@@ -286,11 +296,11 @@ contrôle, et écouter un extrait avant de télécharger le morceau entier.
 - Le téléchargement lui-même reste une tâche du serveur (gestionnaire de tâches existant), lancée par
   l'approbation, automatique ou non.
 
-**Ordre proposé** : rôle Contributeur et approbation automatique par compte → page Demandes → recherche YouTube
-par correspondance → extrait avant téléchargement → demandes depuis la découverte (couches 2 et 3).
+**Ordre proposé** : rôle Contributeur, quota et approbation automatique par compte → statuts, encart « Dernières
+demandes » et page Demandes → recherche YouTube par correspondance → extrait avant téléchargement → demandes
+depuis la découverte (couches 2 et 3).
 
-**Questions ouvertes** : un utilisateur simple peut-il suggérer sans demander ? Quotas par défaut ? Une demande
-approuvée automatiquement reste-t-elle visible par les admins (journal) ou faut-il les prévenir ?
+**Question ouverte** : période du quota (par jour, par mois, ou au total).
 
 ## Idées
 
