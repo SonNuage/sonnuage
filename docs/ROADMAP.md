@@ -143,13 +143,16 @@ Constat sur le homelab : certains imports prenaient plus de 3 minutes, là où T
    - **Délai du changement de titre** entre deux morceaux : correctif livré en 0.1.0-ci.14, à confirmer.
    - **Recherche et navigation** dans Android Auto : pas encore testées.
    - Bascule entre comptes et migration depuis l'ancienne version : testées en émulateur seulement.
-3. 🔜 **Stocker les identifiants MusicBrainz sur les morceaux** (enregistrement, édition). Un rescan suivant
-   pourrait alors sauter les morceaux déjà identifiés, et l'admin pourrait lier un album à sa fiche.
-4. 🔜 **Réécrire les tags des fichiers d'`uploads/`** quand un rescan les corrige. Les fichiers de `music/`
-   restent en lecture seule. Seule la base change pour eux.
-5. 🔜 **Rattacher les featurings à l'artiste principal** : un titre crédité « OrelSan feat. Damso » crée
-   aujourd'hui un artiste à part (masqué des listes car sans album). Le rattacher à « OrelSan » le ferait
-   apparaître dans sa page, et chaque invité pourrait avoir sa liste « Apparaît sur ».
+3. ✅ **Identifiants MusicBrainz sur les morceaux et les albums** : lus dans les tags au scan, posés par une
+   correspondance AcoustID acceptée. Le rescan AcoustID saute les morceaux identifiés (case « Inclure les morceaux
+   identifiés » pour forcer). L'éditeur de bibliothèque lie un album à sa fiche (`PUT /api/admin/albums/{id}/musicbrainz`).
+4. ✅ **Tags réécrits dans `uploads/`** après une correction (édition, rescan, lien MusicBrainz), avec TagLib, par un
+   fichier temporaire renommé ensuite : le flux audio n'est pas touché. `music/` reste en lecture seule, seule la
+   base change pour ses fichiers.
+5. ✅ **Featurings rattachés à l'artiste principal** : « OrelSan feat. Damso » (feat., ft., featuring ; « & », « x »,
+   « avec », « , » seulement quand la première partie est l'artiste de l'album) appartient à OrelSan, Damso est
+   un invité. La page artiste a une section « Apparaît sur » (`GET /api/artists/{id}/appearances`). Chaque scan
+   complet recalcule les crédits : les données existantes se rangent au premier scan.
 6. 🔜 **Appli de bureau, suites** :
    - essai réel sous macOS et Linux (seul Windows a été lancé) : icône, fenêtre cachée, touches média
    - pré-chargement des pistes suivantes : il passe par `fetch` depuis la page, bloqué faute d'en-têtes CORS sur
@@ -157,9 +160,9 @@ Constat sur le homelab : certains imports prenaient plus de 3 minutes, là où T
    - une seule instance (relancer l'appli rouvre la fenêtre), démarrage avec la session, option « démarrer caché »
    - signature et notarisation macOS, signature Windows, installeurs (MSI, DMG, AppImage ou Flatpak)
    - mises à jour automatiques.
-7. 🔜 **Autres traitements en tâches** : scan complet de la bibliothèque, réindexation Elasticsearch,
-   synchronisation des abonnements, purge du cache de transcodage. Ils gagneraient le journal, l'annulation
-   et l'historique.
+7. ✅ **Autres traitements en tâches** : scan complet, réindexation Elasticsearch (bouton « Réindexer la recherche »),
+   synchronisation de chaque abonnement (voie `sync`) et purge du cache de transcodage passent par le moteur de
+   tâches, avec journal, annulation, nouvelles tentatives et historique dans le volet Tâches.
 8. 🔜 **API Subsonic / OpenSubsonic**, en plus de l'API actuelle (`/api/*` reste inchangée, les clients SonNuage
    continuent de l'utiliser). Ouvre l'appli à tout l'écosystème : Symfonium, Feishin, Substreamer, DSub, Tempo…
    y compris leur Android Auto. Estimation : 2 à 3 sessions, dont une bonne part d'essais avec de vrais clients.
