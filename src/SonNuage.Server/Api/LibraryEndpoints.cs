@@ -67,6 +67,12 @@ public static class LibraryEndpoints
                 .OrderBy(t => t.Album.Year).ThenBy(t => t.Album.Title).ThenBy(t => t.DiscNumber).ThenBy(t => t.TrackNumber)
                 .Select(Projections.Track(db, http.User.UserId())).ToListAsync(ct));
 
+        // « Apparaît sur » : les morceaux où l'artiste est invité.
+        g.MapGet("/artists/{id:guid}/appearances", async (Guid id, HttpContext http, SonNuageDbContext db, CancellationToken ct) =>
+            await db.Tracks.Where(t => db.TrackGuests.Any(g => g.TrackId == t.Id && g.ArtistId == id))
+                .OrderBy(t => t.Album.Year).ThenBy(t => t.Album.Title).ThenBy(t => t.DiscNumber).ThenBy(t => t.TrackNumber)
+                .Select(Projections.Track(db, http.User.UserId())).ToListAsync(ct));
+
         g.MapGet("/albums", async (string? sort, string? q, int? offset, int? limit, SonNuageDbContext db, CancellationToken ct) =>
         {
             var query = db.Albums.AsQueryable();

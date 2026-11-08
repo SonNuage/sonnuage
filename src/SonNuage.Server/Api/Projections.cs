@@ -38,7 +38,8 @@ public static class Projections
         ar.Id,
         ar.Name,
         ar.Albums.Count,
-        ar.Albums.Sum(al => al.Tracks.Count),
+        // Ses albums, plus ses titres sur les albums des autres (featurings rattachés, compilations).
+        ar.Albums.Sum(al => al.Tracks.Count) + ar.Tracks.Count(t => t.Album.ArtistId != ar.Id),
         ar.Albums.Where(al => al.CoverPath != null || al.HasEmbeddedCover)
             .OrderByDescending(al => al.Year)
             .Select(al => (Guid?)al.Id)

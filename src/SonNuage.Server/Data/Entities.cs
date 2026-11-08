@@ -8,6 +8,17 @@ public sealed class Artist
     public required string NormalizedName { get; set; }
     public string SortName { get; set; } = "";
     public List<Album> Albums { get; set; } = [];
+    /// <summary>Morceaux dont il est l'artiste principal (y compris sur les albums d'autres artistes).</summary>
+    public List<Track> Tracks { get; set; } = [];
+}
+
+/// <summary>Artiste invité sur un morceau (« OrelSan feat. Damso » : Damso). Voir <see cref="Library.ArtistCredit"/>.</summary>
+public sealed class TrackGuest
+{
+    public Guid TrackId { get; set; }
+    public Track Track { get; set; } = null!;
+    public Guid ArtistId { get; set; }
+    public Artist Artist { get; set; } = null!;
 }
 
 public sealed class Album
@@ -66,6 +77,7 @@ public sealed class Track
 
     public Guid AlbumId { get; set; }
     public Album Album { get; set; } = null!;
+    /// <summary>Artiste principal du crédit (<see cref="ArtistName"/> sans ses invités).</summary>
     public Guid ArtistId { get; set; }
     public Artist Artist { get; set; } = null!;
 

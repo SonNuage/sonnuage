@@ -7,6 +7,7 @@ public sealed class SonNuageDbContext(DbContextOptions<SonNuageDbContext> option
     public DbSet<Artist> Artists => Set<Artist>();
     public DbSet<Album> Albums => Set<Album>();
     public DbSet<Track> Tracks => Set<Track>();
+    public DbSet<TrackGuest> TrackGuests => Set<TrackGuest>();
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<Playlist> Playlists => Set<Playlist>();
@@ -43,7 +44,15 @@ public sealed class SonNuageDbContext(DbContextOptions<SonNuageDbContext> option
             e.HasIndex(x => x.FilePath).IsUnique();
             e.HasIndex(x => x.Title);
             e.HasOne(x => x.Album).WithMany(x => x.Tracks).HasForeignKey(x => x.AlbumId).OnDelete(DeleteBehavior.Cascade);
-            e.HasOne(x => x.Artist).WithMany().HasForeignKey(x => x.ArtistId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Artist).WithMany(x => x.Tracks).HasForeignKey(x => x.ArtistId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<TrackGuest>(e =>
+        {
+            e.HasKey(x => new { x.TrackId, x.ArtistId });
+            e.HasIndex(x => x.ArtistId);
+            e.HasOne(x => x.Track).WithMany().HasForeignKey(x => x.TrackId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Artist).WithMany().HasForeignKey(x => x.ArtistId).OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<CrashReport>(e =>

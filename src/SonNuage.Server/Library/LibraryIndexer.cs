@@ -11,6 +11,7 @@ public sealed class LibraryIndexer(SonNuageDbContext db)
 {
     private readonly Dictionary<string, Artist> _artists = new();
     private readonly Dictionary<(Guid, string), Album> _albums = new();
+    private readonly Dictionary<Guid, HashSet<Guid>> _guests = new();
     private bool _loaded;
 
     public HashSet<Guid> TouchedAlbums { get; } = [];
@@ -20,6 +21,7 @@ public sealed class LibraryIndexer(SonNuageDbContext db)
         if (_loaded) return;
         foreach (var a in await db.Artists.ToListAsync(ct)) _artists[a.NormalizedName] = a;
         foreach (var al in await db.Albums.ToListAsync(ct)) _albums[(al.ArtistId, al.NormalizedTitle)] = al;
+        foreach (var g in await db.TrackGuests.AsNoTracking().ToListAsync(ct)) GuestsOf(g.TrackId).Add(g.ArtistId);
         _loaded = true;
     }
 
@@ -47,19 +49,57 @@ public sealed class LibraryIndexer(SonNuageDbContext db)
     public void Assign(Track track)
     {
         var albumArtist = GetOrCreateArtist(track.AlbumArtistName);
-        var trackArtist = GetOrCreateArtist(track.ArtistName);
         var album = GetOrCreateAlbum(albumArtist, track.AlbumTitle);
 
         if (track.AlbumId != album.Id && track.AlbumId != Guid.Empty) TouchedAlbums.Add(track.AlbumId);
         track.Album = album;
         track.AlbumId = album.Id;
-        track.Artist = trackArtist;
-        track.ArtistId = trackArtist.Id;
+        LinkCredits(track);
         track.SearchKey = $"{NameNormalizer.Key(track.Title)} {NameNormalizer.Key(track.ArtistName)} {album.NormalizedTitle} {albumArtist.NormalizedName}";
         if (album.Year is null && track.Year is not null) album.Year = track.Year;
         album.MusicBrainzReleaseId ??= track.MusicBrainzReleaseId;
         TouchedAlbums.Add(album.Id);
     }
+
+    /// <summary>
+    /// Rattache le morceau à l'artiste principal de son crédit et enregistre ses invités (voir <see cref="ArtistCredit"/>).
+    /// Ne change rien si c'est déjà fait : rejouable sur toute la bibliothèque.
+    /// </summary>
+    public void LinkCredits(Track track)
+    {
+        var credit = ArtistCredit.Parse(track.ArtistName, track.AlbumArtistName, track.Title);
+        var main = GetOrCreateArtist(credit.Main);
+        if (track.ArtistId != main.Id)
+        {
+            track.Artist = main;
+            track.ArtistId = main.Id;
+        }
+
+        var wanted = credit.Guests.Select(g => GetOrCreateArtist(g).Id).ToHashSet();
+        var current = GuestsOf(track.Id);
+        foreach (var gone in current.Except(wanted).ToList())
+        {
+            // Déjà suivie (ajoutée dans ce lot) ou seulement connue en base : on supprime la même instance.
+            var row = db.TrackGuests.Local.FirstOrDefault(g => g.TrackId == track.Id && g.ArtistId == gone)
+                      ?? new TrackGuest { TrackId = track.Id, ArtistId = gone };
+            db.TrackGuests.Remove(row);
+            current.Remove(gone);
+        }
+        foreach (var added in wanted.Except(current).ToList())
+        {
+            db.TrackGuests.Add(new TrackGuest { TrackId = track.Id, ArtistId = added });
+            current.Add(added);
+        }
+    }
+
+    /// <summary>Rattache aux bons artistes les morceaux indexés avant (scan incrémental : leur fichier n'est pas relu).</summary>
+    public async Task RelinkCreditsAsync(CancellationToken ct)
+    {
+        foreach (var track in await db.Tracks.ToListAsync(ct)) LinkCredits(track);
+    }
+
+    private HashSet<Guid> GuestsOf(Guid trackId) =>
+        _guests.TryGetValue(trackId, out var set) ? set : _guests[trackId] = [];
 
     public Artist GetOrCreateArtist(string name)
     {
@@ -81,13 +121,12 @@ public sealed class LibraryIndexer(SonNuageDbContext db)
         return album;
     }
 
-    /// <summary>Supprime albums et artistes devenus vides.</summary>
-    /// <summary>Supprime les albums sans titre, puis les artistes sans album ni titre. Renvoie le nombre supprimé.</summary>
+    /// <summary>Supprime les albums sans titre, puis les artistes sans album, sans titre et invités nulle part. Renvoie le nombre supprimé.</summary>
     public static async Task<int> PruneAsync(SonNuageDbContext db, CancellationToken ct)
     {
         var albums = await db.Albums.Where(a => !a.Tracks.Any()).ExecuteDeleteAsync(ct);
         var artists = await db.Artists
-            .Where(ar => !ar.Albums.Any() && !db.Tracks.Any(t => t.ArtistId == ar.Id))
+            .Where(ar => !ar.Albums.Any() && !ar.Tracks.Any() && !db.TrackGuests.Any(g => g.ArtistId == ar.Id))
             .ExecuteDeleteAsync(ct);
         return albums + artists;
     }

@@ -89,6 +89,7 @@ public sealed class LibraryScanner(
             }
         }
 
+        await indexer.RelinkCreditsAsync(ct);
         await db.SaveChangesAsync(ct);
 
         foreach (var chunk in unchanged.Chunk(500))

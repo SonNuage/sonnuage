@@ -586,6 +586,21 @@ namespace SonNuage.Server.Data.Migrations
                     b.ToTable("Tracks");
                 });
 
+            modelBuilder.Entity("SonNuage.Server.Data.TrackGuest", b =>
+                {
+                    b.Property<Guid>("TrackId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("ArtistId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("TrackId", "ArtistId");
+
+                    b.HasIndex("ArtistId");
+
+                    b.ToTable("TrackGuests");
+                });
+
             modelBuilder.Entity("SonNuage.Server.Data.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -893,7 +908,7 @@ namespace SonNuage.Server.Data.Migrations
                         .IsRequired();
 
                     b.HasOne("SonNuage.Server.Data.Artist", "Artist")
-                        .WithMany()
+                        .WithMany("Tracks")
                         .HasForeignKey("ArtistId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -901,6 +916,25 @@ namespace SonNuage.Server.Data.Migrations
                     b.Navigation("Album");
 
                     b.Navigation("Artist");
+                });
+
+            modelBuilder.Entity("SonNuage.Server.Data.TrackGuest", b =>
+                {
+                    b.HasOne("SonNuage.Server.Data.Artist", "Artist")
+                        .WithMany()
+                        .HasForeignKey("ArtistId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SonNuage.Server.Data.Track", "Track")
+                        .WithMany()
+                        .HasForeignKey("TrackId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Artist");
+
+                    b.Navigation("Track");
                 });
 
             modelBuilder.Entity("SonNuage.Server.Data.YoutubeItem", b =>
@@ -928,6 +962,8 @@ namespace SonNuage.Server.Data.Migrations
             modelBuilder.Entity("SonNuage.Server.Data.Artist", b =>
                 {
                     b.Navigation("Albums");
+
+                    b.Navigation("Tracks");
                 });
 
             modelBuilder.Entity("SonNuage.Server.Data.JobSuite", b =>
