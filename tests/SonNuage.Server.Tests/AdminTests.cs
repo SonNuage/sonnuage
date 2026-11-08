@@ -104,5 +104,8 @@ public sealed class AdminTests(SonNuageFactory factory) : IClassFixture<SonNuage
         Assert.Equal(HttpStatusCode.OK, (await again.GetAsync("/api/auth/me", Ct)).StatusCode);
         await admin.PatchAsJsonAsync($"/api/admin/users/{carol.Id}", new UpdateUserRequest(null, Roles.Admin), Ct);
         Assert.Equal(HttpStatusCode.Unauthorized, (await again.GetAsync("/api/auth/me", Ct)).StatusCode);
+
+        // Les tests de la classe partagent la base : un second admin fausserait celui du dernier admin.
+        Assert.Equal(HttpStatusCode.NoContent, (await admin.DeleteAsync($"/api/admin/users/{carol.Id}", Ct)).StatusCode);
     }
 }
