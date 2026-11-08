@@ -4,50 +4,45 @@ namespace SonNuage.Server.Library;
 
 public static partial class LibraryFiles
 {
-    private static readonly HashSet<string> AudioExtensions = new(StringComparer.OrdinalIgnoreCase)
+    /// <summary>Ce qu'on sait d'une extension. Une seule table : ajouter un format, c'est ajouter une ligne.</summary>
+    private sealed record Kind(string ContentType, bool Audio = false, bool Lossless = false, bool Playable = false, bool Image = false);
+
+    private static readonly Dictionary<string, Kind> Kinds = new(StringComparer.OrdinalIgnoreCase)
     {
-        ".mp3", ".flac", ".wav", ".ogg", ".oga", ".opus", ".m4a", ".aac", ".wma", ".aiff", ".aif", ".alac", ".ape", ".wv",
+        // Playable : lu par tous les navigateurs et ExoPlayer sans transcodage.
+        [".mp3"] = new("audio/mpeg", Audio: true, Playable: true),
+        [".flac"] = new("audio/flac", Audio: true, Lossless: true, Playable: true),
+        [".wav"] = new("audio/wav", Audio: true, Lossless: true, Playable: true),
+        [".ogg"] = new("audio/ogg", Audio: true, Playable: true),
+        [".oga"] = new("audio/ogg", Audio: true),
+        [".opus"] = new("audio/ogg", Audio: true, Playable: true),
+        [".m4a"] = new("audio/mp4", Audio: true, Playable: true),
+        [".alac"] = new("audio/mp4", Audio: true, Lossless: true),
+        [".aac"] = new("audio/aac", Audio: true, Playable: true),
+        [".wma"] = new("audio/x-ms-wma", Audio: true),
+        [".aiff"] = new("audio/aiff", Audio: true, Lossless: true),
+        [".aif"] = new("audio/aiff", Audio: true, Lossless: true),
+        [".ape"] = new(OctetStream, Audio: true, Lossless: true),
+        [".wv"] = new(OctetStream, Audio: true, Lossless: true),
+        [".jpg"] = new("image/jpeg", Image: true),
+        [".jpeg"] = new("image/jpeg", Image: true),
+        [".png"] = new("image/png", Image: true),
+        [".webp"] = new("image/webp", Image: true),
     };
 
-    private static readonly HashSet<string> LosslessExtensions = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ".flac", ".wav", ".aiff", ".aif", ".alac", ".ape", ".wv",
-    };
+    private const string OctetStream = "application/octet-stream";
+    private static readonly Kind Unknown = new(OctetStream);
 
-    private static readonly HashSet<string> ImageExtensions = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ".jpg", ".jpeg", ".png", ".webp",
-    };
+    private static Kind KindOf(string path) => Kinds.GetValueOrDefault(Path.GetExtension(path), Unknown);
 
-    /// <summary>Formats que tous les navigateurs et ExoPlayer lisent sans transcodage.</summary>
-    private static readonly HashSet<string> UniversallyPlayable = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ".mp3", ".m4a", ".aac", ".flac", ".wav", ".ogg", ".opus",
-    };
-
-    public static bool IsAudio(string path) => AudioExtensions.Contains(Path.GetExtension(path));
-    public static bool IsLossless(string path) => LosslessExtensions.Contains(Path.GetExtension(path));
-    public static bool IsImage(string path) => ImageExtensions.Contains(Path.GetExtension(path));
-    public static bool IsDirectlyPlayable(string format) => UniversallyPlayable.Contains("." + format);
+    public static bool IsAudio(string path) => KindOf(path).Audio;
+    public static bool IsLossless(string path) => KindOf(path).Lossless;
+    public static bool IsImage(string path) => KindOf(path).Image;
+    public static bool IsDirectlyPlayable(string format) => KindOf("." + format).Playable;
 
     public static string Format(string path) => Path.GetExtension(path).TrimStart('.').ToLowerInvariant();
 
-    public static string ContentType(string path) => Path.GetExtension(path).ToLowerInvariant() switch
-    {
-        ".mp3" => "audio/mpeg",
-        ".flac" => "audio/flac",
-        ".wav" => "audio/wav",
-        ".ogg" or ".oga" => "audio/ogg",
-        ".opus" => "audio/ogg",
-        ".m4a" or ".alac" => "audio/mp4",
-        ".aac" => "audio/aac",
-        ".wma" => "audio/x-ms-wma",
-        ".aiff" or ".aif" => "audio/aiff",
-        ".jpg" or ".jpeg" => "image/jpeg",
-        ".png" => "image/png",
-        ".webp" => "image/webp",
-        _ => "application/octet-stream",
-    };
+    public static string ContentType(string path) => KindOf(path).ContentType;
 
     /// <summary>
     /// « Titre (1).mp3 » à côté de « Titre.mp3 » de taille quasi identique (les tags peuvent différer de
