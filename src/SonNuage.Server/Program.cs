@@ -212,7 +212,7 @@ static void ConfigureAuthentication(IServiceCollection services)
     }
 }
 
-// Un changement de mot de passe ou de rôle invalide les jetons encore valides (cache d'une minute).
+// Un changement de mot de passe ou de rôle invalide les jetons encore valides (UserService.RotateSecurityStamp vide le cache).
 static async Task ValidateSecurityStampAsync(TokenValidatedContext ctx)
 {
     var sub = ctx.Principal?.FindFirst("sub")?.Value;
@@ -223,7 +223,7 @@ static async Task ValidateSecurityStampAsync(TokenValidatedContext ctx)
         return;
     }
     var cache = ctx.HttpContext.RequestServices.GetRequiredService<IMemoryCache>();
-    var key = $"sstamp:{userId}";
+    var key = UserService.StampCacheKey(userId);
     if (cache.TryGetValue(key, out string? cached) && cached == stamp) return;
 
     // Absent ou différent du cache : la base tranche. Un jeton émis après un changement de rôle ou de mot de passe

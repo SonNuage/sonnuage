@@ -246,7 +246,7 @@ public static class AdminEndpoints
                 if (user.Role != role)
                 {
                     user.Role = role;
-                    user.SecurityStamp = Guid.NewGuid().ToString("N");
+                    users.RotateSecurityStamp(user);
                 }
             }
             if (req.Password is { } password)

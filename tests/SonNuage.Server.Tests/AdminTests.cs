@@ -88,4 +88,21 @@ public sealed class AdminTests(SonNuageFactory factory) : IClassFixture<SonNuage
         var after = await admin.GetFromJsonAsync<AlbumDetailDto>($"/api/albums/{album.Id}", Ct);
         Assert.True(after!.Album.HasCover);
     }
+
+    [Fact]
+    public async Task Changing_a_password_or_a_role_revokes_the_tokens_already_in_use()
+    {
+        var admin = await factory.AdminClientAsync();
+        var carol = await CreateUserAsync(admin, "carol");
+        var session = await factory.ClientAsync("carol", "password-1234");
+        Assert.Equal(HttpStatusCode.OK, (await session.GetAsync("/api/auth/me", Ct)).StatusCode);
+
+        await admin.PatchAsJsonAsync($"/api/admin/users/{carol.Id}", new UpdateUserRequest("autre-mot-de-passe", null), Ct);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await session.GetAsync("/api/auth/me", Ct)).StatusCode);
+
+        var again = await factory.ClientAsync("carol", "autre-mot-de-passe");
+        Assert.Equal(HttpStatusCode.OK, (await again.GetAsync("/api/auth/me", Ct)).StatusCode);
+        await admin.PatchAsJsonAsync($"/api/admin/users/{carol.Id}", new UpdateUserRequest(null, Roles.Admin), Ct);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await again.GetAsync("/api/auth/me", Ct)).StatusCode);
+    }
 }

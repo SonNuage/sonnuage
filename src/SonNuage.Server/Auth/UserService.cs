@@ -3,13 +3,23 @@ using SonNuage.Contracts;
 using SonNuage.Server.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 
 namespace SonNuage.Server.Auth;
 
-public sealed class UserService(SonNuageDbContext db, IPasswordHasher<User> hasher)
+public sealed class UserService(SonNuageDbContext db, IPasswordHasher<User> hasher, IMemoryCache cache)
 {
     public const int MinPasswordLength = 8;
+
+    public static string StampCacheKey(Guid userId) => $"sstamp:{userId}";
+
+    /// <summary>Invalide tous les jetons d'accès du compte, sans attendre l'expiration du cache des tampons.</summary>
+    public void RotateSecurityStamp(User user)
+    {
+        user.SecurityStamp = Guid.NewGuid().ToString("N");
+        cache.Remove(StampCacheKey(user.Id));
+    }
 
     public static string Normalize(string username) => username.Trim().ToUpperInvariant();
 
@@ -53,7 +63,7 @@ public sealed class UserService(SonNuageDbContext db, IPasswordHasher<User> hash
     public async Task SetPasswordAsync(User user, string password, CancellationToken ct)
     {
         user.PasswordHash = hasher.HashPassword(user, password);
-        user.SecurityStamp = Guid.NewGuid().ToString("N");
+        RotateSecurityStamp(user);
         await db.RefreshTokens.Where(r => r.UserId == user.Id && r.RevokedAt == null)
             .ExecuteUpdateAsync(s => s.SetProperty(r => r.RevokedAt, DateTimeOffset.UtcNow), ct);
         await db.SaveChangesAsync(ct);
