@@ -223,12 +223,14 @@ static async Task ValidateSecurityStampAsync(TokenValidatedContext ctx)
         return;
     }
     var cache = ctx.HttpContext.RequestServices.GetRequiredService<IMemoryCache>();
-    var current = await cache.GetOrCreateAsync($"sstamp:{userId}", async entry =>
-    {
-        entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
-        var db = ctx.HttpContext.RequestServices.GetRequiredService<SonNuageDbContext>();
-        return await db.Users.Where(u => u.Id == userId).Select(u => u.SecurityStamp).FirstOrDefaultAsync();
-    });
+    var key = $"sstamp:{userId}";
+    if (cache.TryGetValue(key, out string? cached) && cached == stamp) return;
+
+    // Absent ou différent du cache : la base tranche. Un jeton émis après un changement de rôle ou de mot de passe
+    // porte le nouveau tampon et ne doit pas être refusé parce que le cache garde encore l'ancien.
+    var db = ctx.HttpContext.RequestServices.GetRequiredService<SonNuageDbContext>();
+    var current = await db.Users.Where(u => u.Id == userId).Select(u => u.SecurityStamp).FirstOrDefaultAsync();
+    cache.Set(key, current, TimeSpan.FromMinutes(1));
     if (current != stamp) ctx.Fail("Session révoquée");
 }
 
