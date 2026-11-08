@@ -19,6 +19,10 @@ public sealed class DiscoveryTests(SonNuageFactory factory) : IClassFixture<SonN
         return (admin, tracks);
     }
 
+    private static async Task SetGenreAsync(HttpClient admin, TrackDto track, string genre) =>
+        (await admin.PutAsJsonAsync($"/api/admin/tracks/{track.Id}/metadata",
+            new UpdateTrackMetadataRequest(null, null, null, null, track.TrackNumber, track.DiscNumber, null, genre), Ct)).EnsureSuccessStatusCode();
+
     [Fact]
     public async Task An_artist_s_top_tracks_are_the_most_played_first()
     {
@@ -39,6 +43,8 @@ public sealed class DiscoveryTests(SonNuageFactory factory) : IClassFixture<SonN
     {
         var (admin, tracks) = await LibraryAsync();
         var opening = tracks.Single(t => t.Title == "Opening");
+        // Genre propre à ce test : l'autre test de lecture infinie partage la même bibliothèque et y met un genre commun.
+        await SetGenreAsync(admin, opening, "Genre seul");
 
         var next = await (await admin.PostAsJsonAsync("/api/radio", new RadioRequest([opening.Id], [opening.Id], 1), Ct))
             .Content.ReadFromJsonAsync<List<TrackDto>>(Ct);
@@ -57,9 +63,7 @@ public sealed class DiscoveryTests(SonNuageFactory factory) : IClassFixture<SonN
         var (admin, tracks) = await LibraryAsync();
         var opening = tracks.Single(t => t.Title == "Opening");
         var encore = tracks.Single(t => t.Title == "Encore");
-        foreach (var t in new[] { opening, encore })
-            (await admin.PutAsJsonAsync($"/api/admin/tracks/{t.Id}/metadata",
-                new UpdateTrackMetadataRequest(null, null, null, null, t.TrackNumber, t.DiscNumber, null, "Rock progressif"), Ct)).EnsureSuccessStatusCode();
+        foreach (var t in new[] { opening, encore }) await SetGenreAsync(admin, t, "Rock progressif");
 
         var next = await (await admin.PostAsJsonAsync("/api/radio", new RadioRequest([opening.Id], [opening.Id], 1), Ct))
             .Content.ReadFromJsonAsync<List<TrackDto>>(Ct);
