@@ -56,7 +56,7 @@ public class PlaybackSettingsSyncTests
         var aliceLoad = settings.LoadAsync();        // La réponse pour Alice tarde…
         await accounts.SwitchAsync(bob.Id);          // … on passe sur Bob (rechargement automatique),
         api.Release("bob");
-        await Task.Delay(50);
+        await Task.Delay(50, TestContext.Current.CancellationToken);
         api.Release("alice");                        // … puis celle d'Alice arrive : elle ne doit pas s'appliquer.
         await aliceLoad;
 
@@ -101,7 +101,7 @@ public class PlaybackSettingsSyncTests
         {
             if (Fails) throw new HttpRequestException("offline");
             Remote = prefs.Clamped();
-            return Task.FromResult(Remote);
+            return Task.FromResult<PlaybackPreferences?>(Remote);
         }
     }
 

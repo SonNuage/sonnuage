@@ -1,6 +1,5 @@
 @page "/admin"
 @using System.Globalization
-@implements IDisposable
 @inject ApiClient Api
 @inject UiState Ui
 
@@ -123,7 +122,6 @@
     private bool _log;
     private int? _hover;
     private string? _error;
-    private Timer? _timer;
 
     protected override async Task OnInitializedAsync()
     {
@@ -168,8 +166,6 @@
         }
         if (_stats?.Scan.LastError is not null) yield return ("admin/settings", L["dash.todo.scan"]);
     }
-
-    public void Dispose() => _timer?.Dispose();
 
     // ---- Histogramme empilé (SVG) ----
 

@@ -52,7 +52,8 @@ public sealed class DiscoveryTests(SonNuageFactory factory) : IClassFixture<SonN
 
         var all = await (await admin.PostAsJsonAsync("/api/radio", new RadioRequest([opening.Id], [opening.Id], 10), Ct))
             .Content.ReadFromJsonAsync<List<TrackDto>>(Ct);
-        Assert.DoesNotContain(all!, t => t.Id == opening.Id);
+        Assert.NotNull(all);
+        Assert.DoesNotContain(all, t => t.Id == opening.Id);
         Assert.Equal(tracks.Count - 1, all.Count);
         Assert.Equal("Second Song", all[0].Title);
     }

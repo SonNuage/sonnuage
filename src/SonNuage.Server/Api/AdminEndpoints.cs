@@ -81,7 +81,7 @@ public static class AdminEndpoints
             var total = await query.CountAsync(ct);
             var rows = await query.OrderBy(t => t.AlbumArtistName).ThenBy(t => t.AlbumTitle).ThenBy(t => t.DiscNumber).ThenBy(t => t.TrackNumber)
                 .Skip(o).Take(l).ToListAsync(ct);
-            var roots = RootsOf(options.Value);
+            var roots = LibraryScanner.RootsOf(options.Value);
             return new PagedResult<TrackMetadataDto>(rows.Select(t => ToMetadataDto(t, roots, options.Value)).ToList(), total, o, l);
         });
 
@@ -102,7 +102,7 @@ public static class AdminEndpoints
             track.MetadataLocked = true;
 
             await ReassignAsync(db, covers, tags, [track], ct);
-            return Results.Ok(ToMetadataDto(track, RootsOf(options.Value), options.Value));
+            return Results.Ok(ToMetadataDto(track, LibraryScanner.RootsOf(options.Value), options.Value));
         });
 
         g.MapDelete("/tracks/{id:guid}", async (Guid id, SonNuageDbContext db, IOptions<SonNuageOptions> options, CancellationToken ct) =>
@@ -290,9 +290,6 @@ public static class AdminEndpoints
         title is not null && string.IsNullOrWhiteSpace(title) ? Results.Problem(Tx.Key("errors.admin.emptyTitle"), statusCode: 400) : null;
 
     private static string? Clean(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
-
-    private static List<string> RootsOf(SonNuageOptions o) =>
-        o.MusicPaths.Append(o.UploadPath).Where(p => !string.IsNullOrWhiteSpace(p)).Select(Path.GetFullPath).ToList();
 
     private static TrackMetadataDto ToMetadataDto(Track t, List<string> roots, SonNuageOptions options)
     {

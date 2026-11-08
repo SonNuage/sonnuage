@@ -19,18 +19,15 @@ public sealed class LibraryScanner(
 {
     private const int BatchSize = 250;
 
-    public IReadOnlyList<string> Roots
-    {
-        get
-        {
-            var o = options.Value;
-            return o.MusicPaths.Append(o.UploadPath)
-                .Where(p => !string.IsNullOrWhiteSpace(p))
-                .Select(Path.GetFullPath)
-                .Distinct(StringComparer.Ordinal)
-                .ToList();
-        }
-    }
+    public IReadOnlyList<string> Roots => RootsOf(options.Value);
+
+    /// <summary>Dossiers de la bibliothèque (musique en lecture seule puis envois), chemins absolus, sans doublon.</summary>
+    public static List<string> RootsOf(SonNuageOptions o) =>
+        o.MusicPaths.Append(o.UploadPath)
+            .Where(p => !string.IsNullOrWhiteSpace(p))
+            .Select(Path.GetFullPath)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
 
     public async Task<ScanResult> ScanAllAsync(IProgress<ScanResult>? progress, CancellationToken ct)
     {
