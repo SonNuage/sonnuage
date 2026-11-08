@@ -898,7 +898,9 @@
       "trackNumber": "N° de piste",
       "discNumber": "N° de disque",
       "year": "Année",
-      "genre": "Genre"
+      "genre": "Genre",
+      "recordingId": "Enregistrement MusicBrainz",
+      "releaseId": "Édition MusicBrainz"
     }
   },
   "about": {

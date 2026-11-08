@@ -62,7 +62,7 @@ public sealed class AcoustIdRescanJob(YoutubeSettingsStore settings) : IJobHandl
 /// Compare un morceau de la bibliothèque aux enregistrements MusicBrainz reconnus par son empreinte.
 /// Prudence : titre et artiste sont corrigés si la correspondance dépasse le seuil d'acceptation (celui de la tâche,
 /// sinon le réglage YouTube).
-/// Album, numéros et année seulement si l'édition trouvée est le même album. Le genre seulement s'il manque.
+/// Album, édition MusicBrainz, numéros et année seulement si l'édition trouvée est le même album. Le genre seulement s'il manque.
 /// Les morceaux modifiés à la main (verrouillés) ne sont jamais touchés. Sans « appliquer », tout est seulement journalisé.
 /// </summary>
 public sealed class LibraryMatchJob(MetadataResolver resolver, YoutubeSettingsStore settings, CoverLocator covers, SearchIndexer search) : IJobHandler
@@ -98,33 +98,49 @@ public sealed class LibraryMatchJob(MetadataResolver resolver, YoutubeSettingsSt
         ctx.Set("best", best);
         ctx.Info(Tx.Key("jobs.rescan.best", ("artist", best.Artist), ("title", best.Title), ("album", best.Album ?? "?"), ("score", Math.Round(best.Score * 100))));
 
-        var changes = Changes(track, best);
-        if (changes.Count == 0)
+        var threshold = ctx.Get<double?>("threshold") ?? settings.Settings.AutoAcceptThreshold;
+        var outcome = Evaluate(track, best, apply, threshold);
+        if (outcome.Changes.Count == 0)
         {
             ctx.Info(Tx.Key("jobs.rescan.unchanged"));
-            ctx.Set("result", "same");
+            ctx.Set("result", outcome.Result);
             return;
         }
-        foreach (var (field, from, to, _) in changes)
+        foreach (var (field, from, to, _) in outcome.Changes)
             ctx.Info(Tx.Key("jobs.rescan.change", ("field", Tx.Key("jobs.fields." + field)), ("from", Tx.Literal(from ?? "∅")), ("to", Tx.Literal(to))));
 
-        var threshold = ctx.Get<double?>("threshold") ?? settings.Settings.AutoAcceptThreshold;
-        string result;
-        if (!apply) result = "proposed";
-        else if (track.MetadataLocked) result = "locked";
-        else if (best.Score < threshold) result = "low";
-        else
+        if (outcome.Result == "applied")
         {
-            foreach (var change in changes) change.Apply(track);
+            outcome.Apply(track);
             await AdminEndpoints.ReassignAsync(db, covers, [track], ct);
             search.RequestReindex();
-            result = "applied";
         }
-        ctx.Set("result", result);
-        ctx.Info(Tx.Key("jobs.rescan.result." + result, ("score", Math.Round(best.Score * 100)), ("threshold", Math.Round(threshold * 100))));
+        ctx.Set("result", outcome.Result);
+        ctx.Info(Tx.Key("jobs.rescan.result." + outcome.Result, ("score", Math.Round(best.Score * 100)), ("threshold", Math.Round(threshold * 100))));
     }
 
-    private sealed record Change(string Field, string? From, string To, Action<Track> Apply);
+    internal sealed record Change(string Field, string? From, string To, Action<Track> Apply);
+
+    /// <summary>Ce que la correspondance changerait, et si elle est appliquée (« applied ») ou non (« same », « proposed », « locked », « low »).</summary>
+    internal sealed record MatchOutcome(string Result, IReadOnlyList<Change> Changes)
+    {
+        public void Apply(Track track)
+        {
+            if (Result != "applied") return;
+            foreach (var change in Changes) change.Apply(track);
+        }
+    }
+
+    internal static MatchOutcome Evaluate(Track track, MetadataCandidateDto best, bool apply, double threshold)
+    {
+        var changes = Changes(track, best);
+        var result = changes.Count == 0 ? "same"
+            : !apply ? "proposed"
+            : track.MetadataLocked ? "locked"
+            : best.Score < threshold ? "low"
+            : "applied";
+        return new MatchOutcome(result, changes);
+    }
 
     private static List<Change> Changes(Track t, MetadataCandidateDto c)
     {
@@ -139,11 +155,18 @@ public sealed class LibraryMatchJob(MetadataResolver resolver, YoutubeSettingsSt
             if (value is { } v && current != v) list.Add(new Change(field, current?.ToString(), v.ToString(), x => set(x, v)));
         }
 
+        void Id(string field, Guid? current, string? value, Action<Track, Guid> set)
+        {
+            if (Library.MusicBrainzId.Parse(value) is { } id && current != id) list.Add(new Change(field, current?.ToString(), id.ToString(), x => set(x, id)));
+        }
+
         Text("title", t.Title, c.Title, (x, v) => x.Title = v);
         Text("artist", t.ArtistName, c.Artist, (x, v) => x.ArtistName = v);
+        Id("recordingId", t.MusicBrainzRecordingId, c.RecordingId, (x, v) => x.MusicBrainzRecordingId = v);
         // L'édition retenue est le même album (orthographe, numéros) : sinon on ne déplace pas le morceau d'album.
         if (c.Album is not null && TitleParser.Similarity(c.Album, t.AlbumTitle) >= SameAlbum)
         {
+            Id("releaseId", t.MusicBrainzReleaseId, c.ReleaseId, (x, v) => x.MusicBrainzReleaseId = v);
             Text("album", t.AlbumTitle, c.Album, (x, v) => x.AlbumTitle = v);
             Text("albumArtist", t.AlbumArtistName, c.AlbumArtist, (x, v) => x.AlbumArtistName = v);
             Number("trackNumber", t.TrackNumber, c.TrackNumber, (x, v) => x.TrackNumber = v);

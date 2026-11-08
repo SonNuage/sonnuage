@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using SonNuage.Contracts;
 using SonNuage.Server.Data;
+using SonNuage.Server.Jobs;
 using SonNuage.Server.Library;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -74,4 +75,53 @@ public sealed class MusicBrainzIdTests(TaggedLibraryFactory factory) : IClassFix
     [InlineData(null, null)]
     public void Musicbrainz_ids_are_read_from_ids_lists_and_links(string? input, string? expected) =>
         Assert.Equal(expected is null ? null : Guid.Parse(expected), MusicBrainzId.Parse(input));
+
+    private static Track LibraryTrack(bool locked = false) => new()
+    {
+        FilePath = "/music/a.flac", Title = "Song", ArtistName = "Artist", AlbumArtistName = "Artist", AlbumTitle = "Album",
+        Format = "flac", MetadataLocked = locked,
+    };
+
+    private static MetadataCandidateDto Candidate(string album = "Album", double score = 0.95) =>
+        new("Song", "Artist", album, "Artist", null, null, null, null, score, "acoustid",
+            TaggedLibraryFactory.Recording.ToString(), TaggedLibraryFactory.Release.ToString());
+
+    [Fact]
+    public void An_accepted_match_identifies_the_track_even_when_its_tags_already_agree()
+    {
+        var track = LibraryTrack();
+        var outcome = LibraryMatchJob.Evaluate(track, Candidate(), apply: true, threshold: 0.85);
+
+        Assert.Equal("applied", outcome.Result);
+        outcome.Apply(track);
+        Assert.Equal(TaggedLibraryFactory.Recording, track.MusicBrainzRecordingId);
+        Assert.Equal(TaggedLibraryFactory.Release, track.MusicBrainzReleaseId);
+        Assert.Equal("Song", track.Title);
+
+        // Une fois identifié, le même résultat ne change plus rien.
+        Assert.Equal("same", LibraryMatchJob.Evaluate(track, Candidate(), apply: true, threshold: 0.85).Result);
+    }
+
+    [Fact]
+    public void A_match_on_another_album_keeps_the_recording_but_not_the_release()
+    {
+        var track = LibraryTrack();
+        var outcome = LibraryMatchJob.Evaluate(track, Candidate(album: "Greatest Hits 1990-2000"), apply: true, threshold: 0.85);
+        outcome.Apply(track);
+        Assert.Equal(TaggedLibraryFactory.Recording, track.MusicBrainzRecordingId);
+        Assert.Null(track.MusicBrainzReleaseId);
+    }
+
+    [Theory]
+    [InlineData(false, false, 0.95, "proposed")]
+    [InlineData(true, true, 0.95, "locked")]
+    [InlineData(true, false, 0.6, "low")]
+    public void Unsafe_matches_store_nothing(bool apply, bool locked, double score, string expected)
+    {
+        var track = LibraryTrack(locked);
+        var outcome = LibraryMatchJob.Evaluate(track, Candidate(score: score), apply, threshold: 0.85);
+        Assert.Equal(expected, outcome.Result);
+        outcome.Apply(track);
+        Assert.Null(track.MusicBrainzRecordingId);
+    }
 }
