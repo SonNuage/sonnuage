@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Threading.Channels;
 using SonNuage.Contracts;
+using SonNuage.Server.Jobs;
 using Microsoft.Extensions.Options;
 
 namespace SonNuage.Server.Library;
@@ -8,6 +9,7 @@ namespace SonNuage.Server.Library;
 /// <summary>
 /// Sérialise les scans (un seul à la fois), expose leur état à l'admin et regroupe
 /// les événements du FileSystemWatcher pour ne réindexer qu'une fois les copies terminées.
+/// Le scan complet est une tâche du moteur (<see cref="LibraryScanJob"/>) : ce service décide quand la demander.
 /// </summary>
 public sealed class ScanCoordinator(
     IServiceScopeFactory scopes,
@@ -112,7 +114,7 @@ public sealed class ScanCoordinator(
 
             try
             {
-                if (full) await RunFullScanAsync(stoppingToken);
+                if (full) await scopes.RequestAsync(MaintenanceJobs.Scan(), stoppingToken);
                 else await FlushChangedFilesAsync(stoppingToken);
                 if (DateTime.UtcNow >= nextPurge)
                 {
@@ -126,13 +128,13 @@ public sealed class ScanCoordinator(
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Échec du scan");
-                _status = _status with { Running = false, LastError = ex.Message, LastFinishedAt = DateTimeOffset.UtcNow };
+                logger.LogError(ex, "Échec de la réindexation des fichiers modifiés ou de la demande de scan");
             }
         }
     }
 
-    private async Task RunFullScanAsync(CancellationToken ct)
+    /// <summary>Scan complet, exécuté par <see cref="LibraryScanJob"/>. Une erreur ou une annulation reste visible dans l'état.</summary>
+    public async Task<ScanResult> RunFullScanAsync(Action<ScanResult>? onProgress, CancellationToken ct)
     {
         await _lock.WaitAsync(ct);
         try
@@ -141,7 +143,11 @@ public sealed class ScanCoordinator(
             _status = new ScanStatusDto(true, DateTimeOffset.UtcNow, _status.LastFinishedAt, 0, 0, 0, 0, null);
             using var scope = scopes.CreateScope();
             var scanner = scope.ServiceProvider.GetRequiredService<LibraryScanner>();
-            var progress = new Progress<ScanResult>(p => _status = _status with { FilesSeen = p.FilesSeen, Added = p.Added, Updated = p.Updated });
+            var progress = new SyncProgress(p =>
+            {
+                _status = _status with { FilesSeen = p.FilesSeen, Added = p.Added, Updated = p.Updated };
+                onProgress?.Invoke(p);
+            });
             var r = await scanner.ScanAllAsync(progress, ct);
             _status = _status with
             {
@@ -153,11 +159,23 @@ public sealed class ScanCoordinator(
                 Removed = r.Removed,
             };
             LibraryChanged?.Invoke();
+            return r;
+        }
+        catch (Exception ex)
+        {
+            _status = _status with { Running = false, LastError = ex.Message, LastFinishedAt = DateTimeOffset.UtcNow };
+            throw;
         }
         finally
         {
             _lock.Release();
         }
+    }
+
+    /// <summary>Progression rapportée sur le fil du scan (Progress&lt;T&gt; la posterait plus tard, dans le désordre).</summary>
+    private sealed class SyncProgress(Action<ScanResult> report) : IProgress<ScanResult>
+    {
+        public void Report(ScanResult value) => report(value);
     }
 
     private async Task FlushChangedFilesAsync(CancellationToken ct)

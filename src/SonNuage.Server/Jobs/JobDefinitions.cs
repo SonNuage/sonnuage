@@ -16,10 +16,12 @@ public static class JobLanes
     public const string AcoustId = "acoustid";
     /// <summary>MusicBrainz, tags, rangement : une à la fois (MusicBrainz limite à une requête par seconde).</summary>
     public const string Metadata = "metadata";
-    /// <summary>Préparation de gros traitements sur la bibliothèque (rescan…).</summary>
+    /// <summary>Gros traitements sur la bibliothèque, un à la fois : scan complet, réindexation, purge du cache, préparation d'un rescan.</summary>
     public const string Library = "library";
+    /// <summary>Synchronisation des abonnements YouTube (lecture des playlists et chaînes) : une à la fois.</summary>
+    public const string Sync = "sync";
 
-    public static readonly IReadOnlyList<string> All = [Download, AcoustId, Metadata, Library];
+    public static readonly IReadOnlyList<string> All = [Download, AcoustId, Metadata, Library, Sync];
 }
 
 /// <summary>Type de tâche déclaré : nom, file, priorité par défaut, nombre de tentatives.</summary>
@@ -32,6 +34,11 @@ public static class JobKinds
     public static readonly JobKind YoutubeMetadata = new("youtube.metadata", JobLanes.Metadata, Priority: 10);
     public static readonly JobKind LibraryAcoustIdScan = new("library.acoustid-scan", JobLanes.Library);
     public static readonly JobKind LibraryMatch = new("library.match", JobLanes.Metadata, MaxAttempts: 2);
+    /// <summary>Scan complet : passe devant la préparation d'un rescan, qui doit voir la bibliothèque à jour.</summary>
+    public static readonly JobKind LibraryScan = new("library.scan", JobLanes.Library, Priority: 5);
+    public static readonly JobKind SearchReindex = new("search.reindex", JobLanes.Library, MaxAttempts: 3);
+    public static readonly JobKind TranscodePurge = new("transcode.purge", JobLanes.Library);
+    public static readonly JobKind SubscriptionSync = new("youtube.sync", JobLanes.Sync);
 }
 
 /// <summary>Types de suites (création depuis l'admin, filtres).</summary>
@@ -39,6 +46,10 @@ public static class JobSuiteKinds
 {
     public const string YoutubeImport = "youtube.import";
     public const string AcoustIdRescan = "library.acoustid-rescan";
+    public const string LibraryScan = "library.scan";
+    public const string SearchReindex = "search.reindex";
+    public const string TranscodePurge = "transcode.purge";
+    public const string SubscriptionSync = "youtube.sync";
 }
 
 public interface IJobHandler

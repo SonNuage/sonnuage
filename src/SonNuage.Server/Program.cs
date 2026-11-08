@@ -84,6 +84,10 @@ builder.Services.AddSingleton<IJobHandler, AcoustIdIdentifyJob>();
 builder.Services.AddSingleton<IJobHandler, YoutubeMetadataJob>();
 builder.Services.AddSingleton<IJobHandler, AcoustIdRescanJob>();
 builder.Services.AddSingleton<IJobHandler, LibraryMatchJob>();
+builder.Services.AddSingleton<IJobHandler, LibraryScanJob>();
+builder.Services.AddSingleton<IJobHandler, SearchReindexJob>();
+builder.Services.AddSingleton<IJobHandler, TranscodePurgeJob>();
+builder.Services.AddSingleton<IJobHandler, SubscriptionSyncJob>();
 
 ConfigureAuthentication(builder.Services);
 

@@ -61,6 +61,7 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     public Task<LibraryStatsDto?> AdminStatsAsync() => GetAsync<LibraryStatsDto>("api/admin/stats");
     public Task AdminScanAsync() => SendAsync(HttpMethod.Post, "api/admin/scan");
     public Task AdminClearCacheAsync() => SendAsync(HttpMethod.Delete, "api/admin/cache/transcode");
+    public Task AdminReindexAsync() => SendAsync(HttpMethod.Post, "api/admin/search/reindex");
     public Task<PagedResult<TrackMetadataDto>?> AdminTracksAsync(string? q, Guid? albumId, int offset, int limit) =>
         GetAsync<PagedResult<TrackMetadataDto>>($"api/admin/tracks?offset={offset}&limit={limit}{Q(q)}{(albumId is { } a ? $"&albumId={a}" : "")}");
     public Task<TrackMetadataDto?> AdminUpdateTrackAsync(Guid id, UpdateTrackMetadataRequest req) =>

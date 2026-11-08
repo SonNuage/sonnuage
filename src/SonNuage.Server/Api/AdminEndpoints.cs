@@ -3,6 +3,7 @@ using SonNuage.Contracts;
 using SonNuage.Server.Admin;
 using SonNuage.Server.Auth;
 using SonNuage.Server.Data;
+using SonNuage.Server.Jobs;
 using SonNuage.Server.Library;
 using SonNuage.Server.Search;
 using SonNuage.Server.Streaming;
@@ -45,10 +46,17 @@ public static class AdminEndpoints
             return Results.Accepted();
         });
 
-        g.MapDelete("/cache/transcode", (TranscodeService transcoder) =>
+        // Purge et réindexation : des tâches (journal, annulation, historique dans le volet Tâches).
+        g.MapDelete("/cache/transcode", async (IServiceScopeFactory scopes, CancellationToken ct) =>
         {
-            transcoder.ClearCache();
-            return Results.NoContent();
+            await scopes.RequestAsync(MaintenanceJobs.PurgeTranscodeCache(), ct);
+            return Results.Accepted();
+        });
+
+        g.MapPost("/search/reindex", async (IServiceScopeFactory scopes, CancellationToken ct) =>
+        {
+            await scopes.RequestAsync(MaintenanceJobs.Reindex(), ct);
+            return Results.Accepted();
         });
 
         MapTracks(g);

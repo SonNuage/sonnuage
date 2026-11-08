@@ -30,6 +30,11 @@
         <div class="row">
             <button class="btn primary" disabled="@stats.Scan.Running" @onclick="ScanAsync"><Icon Name="refresh" Size="18" /> @L["dash.scan.now"]</button>
             <button class="btn" @onclick="ClearCacheAsync"><Icon Name="delete" Size="18" /> @L["dash.clearCache"]</button>
+            @if (stats.SearchEngine != "database")
+            {
+                <button class="btn" @onclick="ReindexAsync"><Icon Name="refresh" Size="18" /> @L["dash.reindex"]</button>
+            }
+            <a class="btn" href="admin/tasks">@L["dash.jobsLink"]</a>
         </div>
     }
     else
@@ -76,7 +81,12 @@
     {
         await Api.AdminClearCacheAsync();
         Ui.Notify(L["dash.cacheCleared"]);
-        await LoadAsync();
+    }
+
+    private async Task ReindexAsync()
+    {
+        await Api.AdminReindexAsync();
+        Ui.Notify(L["dash.reindexStarted"]);
     }
 
     private string SearchLabel(string engine) =>

@@ -266,8 +266,9 @@ public static class YoutubeEndpoints
         // Une chaîne peut prendre des minutes à lire : la synchronisation part en arrière-plan.
         g.MapPost("/subscriptions/{id:guid}/sync", async (Guid id, YoutubeSyncService sync, SonNuageDbContext db, CancellationToken ct) =>
         {
-            if (!await db.YoutubeSubscriptions.AnyAsync(s => s.Id == id, ct)) return Results.NotFound();
-            sync.RequestSync(id);
+            var sub = await db.YoutubeSubscriptions.AsNoTracking().FirstOrDefaultAsync(s => s.Id == id, ct);
+            if (sub is null) return Results.NotFound();
+            await sync.RequestSyncAsync(sub, ct);
             return Results.Accepted();
         });
     }

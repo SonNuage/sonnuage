@@ -86,6 +86,18 @@ public sealed class JobEngine(
         foreach (var lane in plans.SelectMany(p => p.Jobs).Where(j => j.Status == JobStatus.Queued).Select(j => j.Lane).Distinct()) Wake(lane);
     }
 
+    /// <summary>
+    /// Enregistre une suite d'une seule tâche, sauf si une tâche du même type et du même objet attend déjà son tour :
+    /// une demande répétée (scan, réindexation, synchronisation) n'empile pas des doublons. Renvoie la suite créée, ou null.
+    /// </summary>
+    public async Task<JobSuite?> EnqueueOnceAsync(SonNuageDbContext db, JobPlan plan, CancellationToken ct)
+    {
+        var job = plan.Jobs.Single();
+        var waiting = await db.Jobs.AnyAsync(j => j.Kind == job.Kind && j.SubjectId == job.SubjectId
+                                                  && (j.Status == JobStatus.Pending || j.Status == JobStatus.Queued), ct);
+        return waiting ? null : await EnqueueAsync(db, plan, ct);
+    }
+
     /// <summary>Ajoute à une suite existante les tâches d'un plan (une tâche qui en prépare d'autres).</summary>
     public async Task AppendAsync(SonNuageDbContext db, Guid suiteId, JobPlan plan, CancellationToken ct)
     {

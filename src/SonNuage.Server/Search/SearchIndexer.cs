@@ -1,12 +1,14 @@
 using System.Threading.Channels;
 using SonNuage.Server.Data;
 using SonNuage.Server.Library;
+using SonNuage.Server.Jobs;
 using Microsoft.EntityFrameworkCore;
 
 namespace SonNuage.Server.Search;
 
 /// <summary>
-/// Maintient l'index Elasticsearch à jour : reconstruction complète (quelques secondes pour des dizaines de
+/// Maintient l'index Elasticsearch à jour : demande une reconstruction complète, exécutée comme une tâche
+/// (<see cref="SearchReindexJob"/> : journal, annulation, nouvelles tentatives). Quelques secondes pour des dizaines de
 /// milliers de titres) après chaque scan, chaque modification depuis l'admin, au retour d'Elasticsearch
 /// après une panne, et toutes les 30 minutes pour rafraîchir la popularité.
 /// </summary>
@@ -24,11 +26,12 @@ public sealed class SearchIndexer(
     private static readonly TimeSpan Debounce = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan MinInterval = TimeSpan.FromMinutes(1);
     private static readonly TimeSpan Periodic = TimeSpan.FromMinutes(30);
-    private static readonly TimeSpan RetryAfterFailure = TimeSpan.FromSeconds(30);
 
     private readonly Channel<bool> _requests = Channel.CreateBounded<bool>(new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropWrite });
 
     private DateTime _lastRebuild = DateTime.MinValue;
+
+    public bool Configured => es.Configured;
 
     public void RequestReindex()
     {
@@ -77,36 +80,39 @@ public sealed class SearchIndexer(
             _lastRebuild = DateTime.UtcNow;
             try
             {
-                await ReindexAsync(stoppingToken);
+                await scopes.RequestAsync(Jobs.MaintenanceJobs.Reindex(), stoppingToken);
             }
-            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or InvalidOperationException && !stoppingToken.IsCancellationRequested)
+            catch (Exception ex) when (ex is System.Data.Common.DbException or InvalidOperationException && !stoppingToken.IsCancellationRequested)
             {
-                logger.LogWarning("Indexation Elasticsearch impossible, nouvel essai dans {Delay} s : {Message}", RetryAfterFailure.TotalSeconds, ex.Message);
-                gateway.ReportFailure(ex);
-                _ = RetryLaterAsync(stoppingToken);
+                logger.LogWarning("Réindexation non demandée : {Message}", ex.Message);
             }
         }
     }
 
-    private async Task RetryLaterAsync(CancellationToken ct)
-    {
-        await Task.Delay(RetryAfterFailure, ct);
-        RequestReindex();
-    }
-
-    private async Task ReindexAsync(CancellationToken ct)
+    /// <summary>Reconstruit l'index. Exécuté par <see cref="Jobs.SearchReindexJob"/> : le moteur refait les tentatives en échec.</summary>
+    public async Task<(int Documents, TimeSpan Elapsed)> ReindexAsync(CancellationToken ct)
     {
         var started = DateTime.UtcNow;
-        List<SearchDocument> documents;
-        using (var scope = scopes.CreateScope())
+        try
         {
-            documents = await BuildDocumentsAsync(scope.ServiceProvider.GetRequiredService<SonNuageDbContext>(), ct);
+            List<SearchDocument> documents;
+            using (var scope = scopes.CreateScope())
+            {
+                documents = await BuildDocumentsAsync(scope.ServiceProvider.GetRequiredService<SonNuageDbContext>(), ct);
+            }
+            await es.EnsureIndexAsync(ct);
+            await es.ReplaceAllAsync(documents, ct);
+            gateway.IndexReady = true;
+            await es.DeleteOldIndexesAsync(ct);
+            var elapsed = DateTime.UtcNow - started;
+            logger.LogInformation("Index de recherche reconstruit : {Count} documents en {Ms} ms", documents.Count, (int)elapsed.TotalMilliseconds);
+            return (documents.Count, elapsed);
         }
-        await es.EnsureIndexAsync(ct);
-        await es.ReplaceAllAsync(documents, ct);
-        gateway.IndexReady = true;
-        await es.DeleteOldIndexesAsync(ct);
-        logger.LogInformation("Index de recherche reconstruit : {Count} documents en {Ms} ms", documents.Count, (int)(DateTime.UtcNow - started).TotalMilliseconds);
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or InvalidOperationException && !ct.IsCancellationRequested)
+        {
+            gateway.ReportFailure(ex);
+            throw;
+        }
     }
 
     internal static async Task<List<SearchDocument>> BuildDocumentsAsync(SonNuageDbContext db, CancellationToken ct)

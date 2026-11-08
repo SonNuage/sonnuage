@@ -150,12 +150,22 @@ public sealed class TranscodeService : IDisposable
         }
     }
 
-    public void ClearCache()
+    /// <summary>Vide le cache (sauf les fichiers en cours d'écriture). Renvoie le nombre de fichiers et d'octets libérés.</summary>
+    public (int Files, long Bytes) ClearCache(CancellationToken ct = default)
     {
         var dir = new DirectoryInfo(_options.TranscodeCachePath);
-        if (!dir.Exists) return;
+        if (!dir.Exists) return (0, 0);
+        var files = 0;
+        long bytes = 0;
         foreach (var f in dir.EnumerateFiles("*", SearchOption.AllDirectories).Where(f => f.Extension != ".part"))
-            TryDelete(f.FullName);
+        {
+            ct.ThrowIfCancellationRequested();
+            var size = f.Length;
+            if (!TryDelete(f.FullName)) continue;
+            files++;
+            bytes += size;
+        }
+        return (files, bytes);
     }
 
     private static void TryTouch(string path)
@@ -165,11 +175,17 @@ public sealed class TranscodeService : IDisposable
         catch (UnauthorizedAccessException) { }
     }
 
-    private static void TryDelete(string path)
+    private static bool TryDelete(string path)
     {
-        try { File.Delete(path); }
-        catch (IOException) { }
-        catch (UnauthorizedAccessException) { }
+        try
+        {
+            File.Delete(path);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
     }
 
     public void Dispose() => _slots.Dispose();

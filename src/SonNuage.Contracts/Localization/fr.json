@@ -563,14 +563,17 @@
       "database": "en base (aucun Elasticsearch configuré)"
     },
     "clearCache": "Vider le cache de transcodage",
-    "cacheCleared": "Cache de transcodage vidé",
+    "cacheCleared": "Purge du cache de transcodage lancée (volet Tâches)",
     "todo": {
       "ytdlp": "yt-dlp n'est pas installé : les imports YouTube sont impossibles.",
       "hold": "YouTube a bloqué les imports : reprise à {time}.",
       "review": "{count} import(s) à vérifier",
       "failed": "{count} import(s) en échec",
       "scan": "La dernière analyse de la bibliothèque a échoué."
-    }
+    },
+    "reindex": "Réindexer la recherche",
+    "reindexStarted": "Réindexation lancée (volet Tâches)",
+    "jobsLink": "Voir les tâches"
   },
   "keys": {
     "title": "Extension de navigateur",
@@ -813,22 +816,35 @@
       "download": "Téléchargements",
       "acoustid": "AcoustID",
       "metadata": "Métadonnées",
-      "library": "Bibliothèque"
+      "library": "Bibliothèque",
+      "sync": "Abonnements"
     },
     "kind": {
       "youtube_download": "Téléchargement YouTube",
       "acoustid_identify": "Empreinte AcoustID",
       "youtube_metadata": "Métadonnées et rangement",
       "library_acoustid_scan": "Préparation du rescan",
-      "library_match": "Comparaison MusicBrainz"
+      "library_match": "Comparaison MusicBrainz",
+      "library_scan": "Scan de la bibliothèque",
+      "search_reindex": "Réindexation de la recherche",
+      "transcode_purge": "Purge du cache de transcodage",
+      "youtube_sync": "Synchronisation d'abonnement"
     },
     "suiteKind": {
       "youtube_import": "Import YouTube",
-      "library_acoustid_rescan": "Rescan AcoustID"
+      "library_acoustid_rescan": "Rescan AcoustID",
+      "library_scan": "Scan de la bibliothèque",
+      "search_reindex": "Réindexation de la recherche",
+      "transcode_purge": "Purge du cache",
+      "youtube_sync": "Synchronisation d'abonnement"
     },
     "suites": {
       "rescanAll": "Rescan AcoustID de toute la bibliothèque",
-      "rescanArtist": "Rescan AcoustID : {artist}"
+      "rescanArtist": "Rescan AcoustID : {artist}",
+      "scan": "Scan complet de la bibliothèque",
+      "reindex": "Réindexation Elasticsearch",
+      "purge": "Purge du cache de transcodage",
+      "sync": "Synchronisation : {title}"
     },
     "steps": {
       "download": "Téléchargement",
@@ -911,6 +927,14 @@
       "genre": "Genre",
       "recordingId": "Enregistrement MusicBrainz",
       "releaseId": "Édition MusicBrainz"
+    },
+    "maintenance": {
+      "scanned": "{seen} fichiers vus : {added} ajoutés, {updated} mis à jour, {removed} supprimés.",
+      "noSearch": "Aucun Elasticsearch configuré : rien à indexer.",
+      "reindexed": "Index reconstruit : {count} documents en {ms} ms.",
+      "purged": "{count} fichiers supprimés ({mb} Mo).",
+      "youtubeHold": "YouTube limite les requêtes : synchronisation remise à plus tard.",
+      "synced": "{queued} vidéos mises en file, {skipped} ignorées."
     }
   },
   "about": {

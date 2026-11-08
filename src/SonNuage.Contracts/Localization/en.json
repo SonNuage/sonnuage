@@ -563,14 +563,17 @@
       "database": "database (no Elasticsearch configured)"
     },
     "clearCache": "Clear transcoding cache",
-    "cacheCleared": "Transcoding cache cleared",
+    "cacheCleared": "Transcode cache purge started (Tasks pane)",
     "todo": {
       "ytdlp": "yt-dlp is not installed: YouTube imports are unavailable.",
       "hold": "YouTube blocked imports: resuming at {time}.",
       "review": "{count} import(s) to review",
       "failed": "{count} failed import(s)",
       "scan": "The last library scan failed."
-    }
+    },
+    "reindex": "Reindex search",
+    "reindexStarted": "Reindex started (Tasks pane)",
+    "jobsLink": "View tasks"
   },
   "keys": {
     "title": "Browser extension",
@@ -813,22 +816,35 @@
       "download": "Downloads",
       "acoustid": "AcoustID",
       "metadata": "Metadata",
-      "library": "Library"
+      "library": "Library",
+      "sync": "Subscriptions"
     },
     "kind": {
       "youtube_download": "YouTube download",
       "acoustid_identify": "AcoustID fingerprint",
       "youtube_metadata": "Metadata and filing",
       "library_acoustid_scan": "Rescan planning",
-      "library_match": "MusicBrainz comparison"
+      "library_match": "MusicBrainz comparison",
+      "library_scan": "Library scan",
+      "search_reindex": "Search reindex",
+      "transcode_purge": "Transcode cache purge",
+      "youtube_sync": "Subscription sync"
     },
     "suiteKind": {
       "youtube_import": "YouTube import",
-      "library_acoustid_rescan": "AcoustID rescan"
+      "library_acoustid_rescan": "AcoustID rescan",
+      "library_scan": "Library scan",
+      "search_reindex": "Search reindex",
+      "transcode_purge": "Cache purge",
+      "youtube_sync": "Subscription sync"
     },
     "suites": {
       "rescanAll": "AcoustID rescan of the whole library",
-      "rescanArtist": "AcoustID rescan: {artist}"
+      "rescanArtist": "AcoustID rescan: {artist}",
+      "scan": "Full library scan",
+      "reindex": "Elasticsearch reindex",
+      "purge": "Transcode cache purge",
+      "sync": "Sync: {title}"
     },
     "steps": {
       "download": "Download",
@@ -911,6 +927,14 @@
       "genre": "Genre",
       "recordingId": "MusicBrainz recording",
       "releaseId": "MusicBrainz release"
+    },
+    "maintenance": {
+      "scanned": "{seen} files seen: {added} added, {updated} updated, {removed} removed.",
+      "noSearch": "No Elasticsearch configured: nothing to index.",
+      "reindexed": "Index rebuilt: {count} documents in {ms} ms.",
+      "purged": "{count} files deleted ({mb} MB).",
+      "youtubeHold": "YouTube is rate-limiting: sync postponed.",
+      "synced": "{queued} videos queued, {skipped} skipped."
     }
   },
   "about": {
