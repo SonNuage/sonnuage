@@ -38,6 +38,9 @@ namespace SonNuage.Server.Data.Migrations
                     b.Property<bool>("HasEmbeddedCover")
                         .HasColumnType("INTEGER");
 
+                    b.Property<Guid?>("MusicBrainzReleaseId")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("NormalizedTitle")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -545,6 +548,12 @@ namespace SonNuage.Server.Data.Migrations
 
                     b.Property<bool>("MetadataLocked")
                         .HasColumnType("INTEGER");
+
+                    b.Property<Guid?>("MusicBrainzRecordingId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("MusicBrainzReleaseId")
+                        .HasColumnType("TEXT");
 
                     b.Property<int?>("SampleRate")
                         .HasColumnType("INTEGER");

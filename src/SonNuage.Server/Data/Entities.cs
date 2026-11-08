@@ -24,6 +24,8 @@ public sealed class Album
     /// <summary>Change à chaque nouvelle pochette, sert d'ETag et invalide les miniatures.</summary>
     public int CoverVersion { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    /// <summary>Édition MusicBrainz de l'album : lue dans les tags, ou liée à la main dans l'admin (le scan ne l'écrase pas).</summary>
+    public Guid? MusicBrainzReleaseId { get; set; }
     public List<Track> Tracks { get; set; } = [];
 }
 
@@ -53,6 +55,11 @@ public sealed class Track
 
     /// <summary>Clés normalisées titre/artiste/album, séparées par des espaces, pour la recherche.</summary>
     public string SearchKey { get; set; } = "";
+
+    /// <summary>Enregistrement MusicBrainz (tag « MusicBrainz Track Id » de Picard), ou reconnu par AcoustID. Non nul = identifié.</summary>
+    public Guid? MusicBrainzRecordingId { get; set; }
+    /// <summary>Édition MusicBrainz d'où vient le morceau.</summary>
+    public Guid? MusicBrainzReleaseId { get; set; }
 
     /// <summary>Métadonnées modifiées à la main : le scan ne les écrase plus.</summary>
     public bool MetadataLocked { get; set; }

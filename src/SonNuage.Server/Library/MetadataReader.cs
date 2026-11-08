@@ -12,7 +12,9 @@ public sealed record AudioMetadata(
     double DurationSeconds,
     int? BitrateKbps,
     int? SampleRate,
-    bool HasEmbeddedPicture);
+    bool HasEmbeddedPicture,
+    Guid? RecordingId = null,
+    Guid? ReleaseId = null);
 
 /// <summary>
 /// Lit les tags avec TagLib#. Ce qui manque est déduit de l'arborescence
@@ -57,6 +59,7 @@ public sealed class MetadataReader(ILogger<MetadataReader> logger)
         int? track = null, disc = null, year = null, bitrate = null, sampleRate = null;
         double duration = 0;
         var hasPicture = false;
+        Guid? recordingId = null, releaseId = null;
 
         try
         {
@@ -71,6 +74,9 @@ public sealed class MetadataReader(ILogger<MetadataReader> logger)
             disc = tag.Disc > 0 ? (int)tag.Disc : null;
             year = tag.Year is > 0 and < 3000 ? (int)tag.Year : null;
             hasPicture = tag.Pictures.Length > 0;
+            // « MusicBrainz Track Id » de Picard est l'identifiant de l'enregistrement.
+            recordingId = MusicBrainzId.Parse(tag.MusicBrainzTrackId);
+            releaseId = MusicBrainzId.Parse(tag.MusicBrainzReleaseId);
 
             if (file.Properties is { } props)
             {
@@ -92,7 +98,7 @@ public sealed class MetadataReader(ILogger<MetadataReader> logger)
         title ??= NameNormalizer.CleanTitle(Path.GetFileName(path), $"{artist} - {album} - ", $"{albumArtist} - {album} - ", $"{artist} - ");
         track ??= NameNormalizer.TrackNumberFromFileName(path);
 
-        return new AudioMetadata(title, artist, albumArtist, album, track, disc, year, genre, duration, bitrate, sampleRate, hasPicture);
+        return new AudioMetadata(title, artist, albumArtist, album, track, disc, year, genre, duration, bitrate, sampleRate, hasPicture, recordingId, releaseId);
     }
 
     public byte[]? ReadEmbeddedPicture(string path)

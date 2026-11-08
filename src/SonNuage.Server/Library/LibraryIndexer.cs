@@ -28,6 +28,9 @@ public sealed class LibraryIndexer(SonNuageDbContext db)
         track.DurationSeconds = meta.DurationSeconds;
         track.BitrateKbps = meta.BitrateKbps;
         track.SampleRate = meta.SampleRate;
+        // Un identifiant reconnu par AcoustID (fichier en lecture seule, tags non réécrits) reste si les tags n'en ont pas.
+        track.MusicBrainzRecordingId = meta.RecordingId ?? track.MusicBrainzRecordingId;
+        track.MusicBrainzReleaseId = meta.ReleaseId ?? track.MusicBrainzReleaseId;
         if (track.MetadataLocked) return;
 
         track.Title = meta.Title;
@@ -54,6 +57,7 @@ public sealed class LibraryIndexer(SonNuageDbContext db)
         track.ArtistId = trackArtist.Id;
         track.SearchKey = $"{NameNormalizer.Key(track.Title)} {NameNormalizer.Key(track.ArtistName)} {album.NormalizedTitle} {albumArtist.NormalizedName}";
         if (album.Year is null && track.Year is not null) album.Year = track.Year;
+        album.MusicBrainzReleaseId ??= track.MusicBrainzReleaseId;
         TouchedAlbums.Add(album.Id);
     }
 
