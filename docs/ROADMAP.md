@@ -201,8 +201,9 @@ plus simple (données locales) à la plus ouverte (bases publiques), sur un mêm
 
 **Couche 1 : dans la bibliothèque (aucune donnée externe)**
 
-- 💡 « À réécouter » : titres likés ou très écoutés, pas joués depuis longtemps.
-- 💡 « Pas encore écouté » : ajouts récents à la bibliothèque que l'utilisateur n'a jamais lancés.
+- ✅ « À réécouter » sur l'accueil : titres écoutés au moins deux fois ou likés il y a plus de 30 jours, pas joués
+  depuis 30 jours.
+- ✅ « Pas encore écouté » sur l'accueil : albums dont l'utilisateur n'a lancé aucun titre, les plus récents d'abord.
 - 💡 Co-écoutes entre comptes du serveur (« ceux qui écoutent X écoutent aussi Y »), sur accord de chaque compte.
 - La lecture infinie (même genre, puis même artiste) en profitera : elle pourra puiser dans ces listes.
 
@@ -256,20 +257,21 @@ contrôle, et écouter un extrait avant de télécharger le morceau entier.
 
 **Rôle et approbation**
 
-- 💡 Nouveau rôle **Contributeur**, entre Utilisateur et Administrateur : il peut créer des demandes de
+- ✅ Nouveau rôle **Contributeur**, entre Utilisateur et Administrateur : il peut créer des demandes de
   téléchargement. Un utilisateur simple ne peut rien demander (décidé le 9 novembre 2026).
-- 💡 Par compte, réglage réservé à l'administrateur : **« Demandes approuvées automatiquement »**. Désactivé :
+- ✅ Par compte, réglage réservé à l'administrateur : **« Demandes approuvées automatiquement »**. Désactivé :
   chaque demande attend l'accord d'un admin. Activé : elle part directement au téléchargement.
-- 💡 **Quota par contributeur**, réglable par l'administrateur pour chaque compte : **100 par jour par défaut**. Au-delà,
-  la demande est refusée avec un message clair.
-- 💡 Statuts d'une demande : **demandée → acceptée ou refusée → en cours → terminée** (refus avec motif ; échec
+- ✅ **Quota par contributeur**, réglable par l'administrateur pour chaque compte : **100 par jour par défaut**
+  (24 heures glissantes). Au-delà, la demande est refusée avec un message clair.
+- ✅ Statuts d'une demande : **demandée → acceptée ou refusée → en cours → terminée** (refus avec motif ; échec
   du téléchargement signalé). L'auteur suit l'état de ses demandes.
-- 💡 Tableau de bord d'administration : encart **« Dernières demandes »** avec les 50 plus récentes et un lien
+- ✅ Tableau de bord d'administration : encart **« Dernières demandes »** avec les 50 plus récentes et un lien
   **« Voir plus »** vers la liste complète.
-- 💡 Page **Demandes** (liste complète) : recherche (titre, artiste, auteur), filtres par statut, auteur et date ;
-  actions approuver, refuser, corriger la correspondance choisie.
-- Garde-fous : refus des doublons (déjà dans la bibliothèque ou déjà demandé), journal de qui a demandé et approuvé
-  quoi (les demandes approuvées automatiquement y figurent aussi).
+- ✅ Page **Demandes** (liste complète) : recherche (titre, chaîne, auteur), filtre par statut ; approuver, refuser
+  avec motif. Côté contributeur : recherche YouTube, bouton « Demander », suivi de ses demandes et de son quota.
+- 💡 Filtres par date, corriger la correspondance choisie.
+- ✅ Garde-fous : refus des doublons (déjà dans la bibliothèque ou déjà demandé), qui a demandé et qui a tranché
+  reste affiché sur chaque demande (les demandes approuvées automatiquement sont marquées comme telles).
 
 **Recherche YouTube par correspondance**
 

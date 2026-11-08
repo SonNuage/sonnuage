@@ -36,6 +36,8 @@ public sealed class AuthSession
     public UserDto? User => Current?.Tokens?.User;
     public bool IsAuthenticated => Current?.Tokens is not null;
     public bool IsAdmin => User?.Role == Roles.Admin;
+    /// <summary>Peut demander des téléchargements (contributeur ou admin).</summary>
+    public bool CanRequest => Roles.CanRequest(User?.Role);
     public string? MediaToken => Current?.Tokens?.MediaToken;
 
     /// <summary>Session du compte actif (mono-compte : la session unique). Null tant qu'aucun compte n'est actif.</summary>

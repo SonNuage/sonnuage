@@ -105,11 +105,28 @@
                         </div>
                     </details>
                 </section>
+
+                <section class="panel">
+                    <div class="viz-head">
+                        <h2>@L["requests.latest"]</h2>
+                        <a class="btn compact" href="admin/requests">@L["requests.viewMore"]</a>
+                    </div>
+                    @if (_requests is { Count: > 0 } requests)
+                    {
+                        <RequestList Items="requests" ShowAuthor="true" OnApprove="ApproveAsync" OnDeny="r => _denying = r" />
+                    }
+                    else
+                    {
+                        <p class="muted">@L["requests.noneAdmin"]</p>
+                    }
+                </section>
             }
 
         </Loader>
     </AdminNav>
 </div>
+
+<DenyRequestModal Request="_denying" OnClose="() => _denying = null" OnDenied="ReplaceRequest" />
 
 @code {
     private static readonly string[] Sources = ["library", "upload", "youtube"];
@@ -122,6 +139,9 @@
     private bool _log;
     private int? _hover;
     private string? _error;
+    private List<DownloadRequestDto>? _requests;
+    private int _pendingRequests;
+    private DownloadRequestDto? _denying;
 
     protected override async Task OnInitializedAsync()
     {
@@ -136,13 +156,42 @@
             var stats = Api.AdminStatsAsync();
             var dashboard = Api.AdminDashboardAsync(_range);
             var youtube = Api.YoutubeStatusAsync();
+            var requests = Api.AdminRequestsAsync(null, null, 0, 50);
+            var pending = Api.AdminRequestsAsync(DownloadRequestStatus.Requested, null, 0, 1);
             _stats = await stats;
             _dashboard = await dashboard;
             _youtube = await youtube;
+            _requests = (await requests)?.Items.ToList();
+            _pendingRequests = (await pending)?.Total ?? 0;
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
             _error = L.Server(ex.Message);
+        }
+    }
+
+    private async Task ApproveAsync(DownloadRequestDto request)
+    {
+        try
+        {
+            if (await Api.AdminApproveRequestAsync(request.Id) is { } updated)
+            {
+                ReplaceRequest(updated);
+                Ui.Notify(L["requests.approved"]);
+            }
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+    }
+
+    private void ReplaceRequest(DownloadRequestDto updated)
+    {
+        if (_requests?.FindIndex(r => r.Id == updated.Id) is { } i and >= 0)
+        {
+            if (_requests[i].Status == DownloadRequestStatus.Requested) _pendingRequests--;
+            _requests[i] = updated;
         }
     }
 
@@ -164,6 +213,7 @@
             if (yt.NeedsReview > 0) yield return ("admin/imports", L["dash.todo.review", ("count", yt.NeedsReview)]);
             if (yt.Failed > 0) yield return ("admin/imports", L["dash.todo.failed", ("count", yt.Failed)]);
         }
+        if (_pendingRequests > 0) yield return ("admin/requests?status=requested", L["dash.todo.requests", ("count", _pendingRequests)]);
         if (_stats?.Scan.LastError is not null) yield return ("admin/settings", L["dash.todo.scan"]);
     }
 

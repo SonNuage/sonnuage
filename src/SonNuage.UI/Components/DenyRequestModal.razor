@@ -1,0 +1,48 @@
+@inject ApiClient Api
+@inject UiState Ui
+
+@* Refus d'une demande de téléchargement, avec un motif facultatif que l'auteur verra. *@
+<Modal Open="Request is not null" OpenChanged="v => { if (!v) OnClose.InvokeAsync(); }" Title="@L["requests.denyTitle", ("title", Request?.Title)]">
+    <ChildContent>
+        <form id="deny-request" @onsubmit="DenyAsync" @onsubmit:preventDefault="true">
+            <input class="input" placeholder="@L["requests.denyReason"]" @bind="_reason" maxlength="500" aria-label="@L["requests.denyReason"]" />
+            <p class="muted small">@L["requests.denyHint"]</p>
+        </form>
+    </ChildContent>
+    <Footer>
+        <button class="btn" @onclick="() => OnClose.InvokeAsync()">@L["common.cancel"]</button>
+        <button class="btn danger" type="submit" form="deny-request">@L["requests.deny"]</button>
+    </Footer>
+</Modal>
+
+@code {
+    [Parameter] public DownloadRequestDto? Request { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<DownloadRequestDto> OnDenied { get; set; }
+
+    private string? _reason;
+    private Guid? _for;
+
+    protected override void OnParametersSet()
+    {
+        if (Request?.Id != _for) { _reason = null; _for = Request?.Id; }
+    }
+
+    private async Task DenyAsync()
+    {
+        if (Request is null) return;
+        try
+        {
+            if (await Api.AdminDenyRequestAsync(Request.Id, _reason) is { } updated)
+            {
+                Ui.Notify(L["requests.denied"]);
+                await OnDenied.InvokeAsync(updated);
+            }
+            await OnClose.InvokeAsync();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+    }
+}

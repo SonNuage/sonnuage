@@ -1,0 +1,48 @@
+@* Liste de demandes de téléchargement : vignette, titre, état, auteur. Avec OnApprove / OnDeny, les boutons de l'admin. *@
+<ul class="yt-list requests">
+    @foreach (var r in Items)
+    {
+        <li @key="r.Id">
+            <img class="yt-thumb" src="@r.ThumbnailUrl" alt="" loading="lazy" />
+            <span class="grow">
+                <span class="strong">@r.Title</span>
+                <span class="muted small block">
+                    @r.Channel@(r.DurationSeconds is { } dur ? $" · {Format.Duration(dur)}" : "")
+                    · @(ShowAuthor ? L["requests.byOn", ("name", r.Username), ("date", L.Date(r.CreatedAt))] : L.Date(r.CreatedAt))
+                </span>
+                @if (r.Note is { } note) { <span class="small block">« @note »</span> }
+                @if (r.Status == DownloadRequestStatus.Denied && r.DenyReason is { } reason) { <span class="small block danger-text">@L["requests.deniedBecause", ("reason", reason)]</span> }
+                @if (r.AutoApproved) { <span class="muted small block">@L["requests.autoApproved"]</span> }
+                else if (r.DecidedBy is { } by && ShowAuthor) { <span class="muted small block">@L["requests.decidedBy", ("name", by)]</span> }
+            </span>
+            <span class="row-actions">
+                <span class="badge @StatusClass(r.Status)">@L["requests.status." + r.Status]</span>
+                @if (r.TrackId is not null) { <a class="icon-btn" href="search?q=@Uri.EscapeDataString(r.Title)" title="@L["requests.find"]"><Icon Name="search" Size="18" /></a> }
+                <a class="icon-btn" href="https://www.youtube.com/watch?v=@r.VideoId" target="_blank" rel="noopener noreferrer" title="@L["yt.explore.open"]"><Icon Name="play" Size="18" /></a>
+                @if (OnApprove.HasDelegate && r.Status is DownloadRequestStatus.Requested or DownloadRequestStatus.Denied)
+                {
+                    <button class="btn compact primary" @onclick="() => OnApprove.InvokeAsync(r)">@L["requests.approve"]</button>
+                }
+                @if (OnDeny.HasDelegate && r.Status == DownloadRequestStatus.Requested)
+                {
+                    <button class="btn compact" @onclick="() => OnDeny.InvokeAsync(r)">@L["requests.deny"]</button>
+                }
+            </span>
+        </li>
+    }
+</ul>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<DownloadRequestDto> Items { get; set; } = [];
+    [Parameter] public bool ShowAuthor { get; set; }
+    [Parameter] public EventCallback<DownloadRequestDto> OnApprove { get; set; }
+    [Parameter] public EventCallback<DownloadRequestDto> OnDeny { get; set; }
+
+    public static string StatusClass(string status) => status switch
+    {
+        DownloadRequestStatus.Done => "good",
+        DownloadRequestStatus.Denied or DownloadRequestStatus.Failed => "bad",
+        DownloadRequestStatus.Requested => "warn",
+        _ => "info",
+    };
+}

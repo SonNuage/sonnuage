@@ -77,6 +77,16 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
         SendRawAsync<UploadSessionDto>(HttpMethod.Put, $"api/admin/uploads/{id}?offset={offset}", new ReadOnlyMemoryContent(data), "application/octet-stream");
     public Task<List<TrackDto>?> AdminCompleteUploadAsync(Guid id) => SendAsync<List<TrackDto>>(HttpMethod.Post, $"api/admin/uploads/{id}/complete");
     public Task AdminCancelUploadAsync(Guid id) => SendAsync(HttpMethod.Delete, $"api/admin/uploads/{id}");
+    // ---- Demandes de téléchargement (contributeurs ; liste et décision : admin) ----
+    public Task<YoutubeListingDto?> RequestSearchAsync(string q, bool music) => GetAsync<YoutubeListingDto>($"api/requests/search?music={music}&q={Uri.EscapeDataString(q)}");
+    public Task<DownloadRequestDto?> CreateRequestAsync(CreateDownloadRequest req) => SendAsync<DownloadRequestDto>(HttpMethod.Post, "api/requests", req);
+    public Task<PagedResult<DownloadRequestDto>?> MyRequestsAsync(int offset, int limit) => GetAsync<PagedResult<DownloadRequestDto>>($"api/requests/mine?offset={offset}&limit={limit}");
+    public Task<RequestQuotaDto?> RequestQuotaAsync() => GetAsync<RequestQuotaDto>("api/requests/quota");
+    public Task<PagedResult<DownloadRequestDto>?> AdminRequestsAsync(string? status, string? q, int offset, int limit) =>
+        GetAsync<PagedResult<DownloadRequestDto>>($"api/admin/requests?offset={offset}&limit={limit}{(string.IsNullOrEmpty(status) ? "" : $"&status={status}")}{Q(q)}");
+    public Task<DownloadRequestDto?> AdminApproveRequestAsync(Guid id) => SendAsync<DownloadRequestDto>(HttpMethod.Post, $"api/admin/requests/{id}/approve");
+    public Task<DownloadRequestDto?> AdminDenyRequestAsync(Guid id, string? reason) => SendAsync<DownloadRequestDto>(HttpMethod.Post, $"api/admin/requests/{id}/deny", new DenyDownloadRequest(reason));
+
     public Task<List<UserDto>?> AdminUsersAsync() => GetAsync<List<UserDto>>("api/admin/users");
     public Task<UserDto?> AdminCreateUserAsync(CreateUserRequest req) => SendAsync<UserDto>(HttpMethod.Post, "api/admin/users", req);
     public Task<UserDto?> AdminUpdateUserAsync(Guid id, UpdateUserRequest req) => SendAsync<UserDto>(HttpMethod.Patch, $"api/admin/users/{id}", req);

@@ -86,7 +86,7 @@
 
     <section class="panel">
         <h2>@L["settings.account"]</h2>
-        <p>@L["settings.loggedInAs"] <strong>@Auth.User?.Username</strong> (@(Auth.IsAdmin ? L["settings.roleAdmin"] : L["settings.roleUser"]))
+        <p>@L["settings.loggedInAs"] <strong>@Auth.User?.Username</strong> (@L[RoleLabels.Key(Auth.User?.Role, "settings")])
             @if (Endpoint.IsConfigurable) { <span> @L["settings.onServer", ("host", Endpoint.BaseAddress?.Host)]</span> }</p>
         <form class="stack" @onsubmit="ChangePasswordAsync" @onsubmit:preventDefault="true">
             <input class="input" type="password" placeholder="@L["settings.currentPassword"]" @bind="_current" autocomplete="current-password" required />

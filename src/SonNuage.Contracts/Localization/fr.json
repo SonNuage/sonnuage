@@ -399,7 +399,8 @@
     "infinitePlayHint": "En fin de file, ajoute des morceaux proches (même genre, puis même artiste) pour que la musique ne s'arrête pas.",
     "infiniteAhead": "Morceaux choisis d'avance",
     "helpHint": "Questions fréquentes, prise en main et versions installées.",
-    "openHelp": "Ouvrir l'aide"
+    "openHelp": "Ouvrir l'aide",
+    "roleContributor": "contributeur"
   },
   "quality": {
     "original": "Originale",
@@ -458,7 +459,17 @@
     "created": "Utilisateur {name} créé",
     "roleChanged": "Rôle modifié",
     "passwordChanged": "Mot de passe modifié",
-    "deleted": "Utilisateur supprimé"
+    "deleted": "Utilisateur supprimé",
+    "roleContributor": "Contributeur",
+    "colRequests": "Demandes",
+    "quotaOf": "Demandes par jour de {name}",
+    "perDay": "par jour",
+    "autoApprove": "Approuvées automatiquement",
+    "requestsAdmin": "Sans limite",
+    "requestsNone": "—",
+    "quotaChanged": "Quota modifié",
+    "autoOn": "Ses demandes partiront directement au téléchargement",
+    "autoOff": "Ses demandes attendront un administrateur"
   },
   "upload": {
     "intro": "Les fichiers sont rangés par artiste et album d'après leurs tags. Pour des fichiers sans tags, indiquez l'artiste et l'album ci-dessous.",
@@ -584,7 +595,11 @@
       "hold": "YouTube a bloqué les imports : reprise à {time}.",
       "review": "{count} import(s) à vérifier",
       "failed": "{count} import(s) en échec",
-      "scan": "La dernière analyse de la bibliothèque a échoué."
+      "scan": "La dernière analyse de la bibliothèque a échoué.",
+      "requests": {
+        "one": "{count} demande de téléchargement en attente",
+        "other": "{count} demandes de téléchargement en attente"
+      }
     },
     "reindex": "Réindexer la recherche",
     "reindexStarted": "Réindexation lancée (volet Tâches)",
@@ -1087,6 +1102,55 @@
       "site": "Site de SonNuage",
       "issues": "Signaler un problème",
       "versions": "Versions installées"
+    }
+  },
+  "requests": {
+    "title": "Demandes",
+    "restricted": "Les demandes de téléchargement sont réservées aux contributeurs.",
+    "quota": "{used} / {limit} demandes sur 24 heures",
+    "noQuota": "Pas de limite de demandes",
+    "autoHint": "Vos demandes partent directement au téléchargement.",
+    "reviewHint": "Un administrateur valide chaque demande avant le téléchargement.",
+    "searchPlaceholder": "Titre, artiste ou lien YouTube",
+    "searchHint": "Cherchez un morceau sur YouTube puis demandez-le : il rejoindra la bibliothèque une fois téléchargé.",
+    "noResult": "Aucun résultat.",
+    "onServer": "Déjà sur le serveur",
+    "asked": "Demandé",
+    "ask": "Demander",
+    "mine": "Mes demandes",
+    "none": "Aucune demande pour l'instant.",
+    "noneAdmin": "Aucune demande.",
+    "more": "Voir plus",
+    "sent": "Demande envoyée : un administrateur va la valider",
+    "sentAuto": "Demande acceptée : le téléchargement commence",
+    "byOn": "par {name}, {date}",
+    "deniedBecause": "Refusée : {reason}",
+    "autoApproved": "Approuvée automatiquement",
+    "decidedBy": "Traitée par {name}",
+    "find": "Chercher dans la bibliothèque",
+    "approve": "Accepter",
+    "deny": "Refuser",
+    "approved": "Demande acceptée",
+    "denied": "Demande refusée",
+    "denyTitle": "Refuser « {title} » ?",
+    "denyReason": "Motif (facultatif)",
+    "denyHint": "L'auteur de la demande verra ce motif.",
+    "latest": "Dernières demandes",
+    "viewMore": "Voir plus",
+    "filterPlaceholder": "Titre, chaîne ou auteur",
+    "filterStatus": "État",
+    "allStatuses": "Tous les états",
+    "count": {
+      "one": "{count} demande",
+      "other": "{count} demandes"
+    },
+    "status": {
+      "requested": "Demandée",
+      "accepted": "Acceptée",
+      "denied": "Refusée",
+      "inProgress": "En cours",
+      "done": "Terminée",
+      "failed": "Échec"
     }
   }
 }

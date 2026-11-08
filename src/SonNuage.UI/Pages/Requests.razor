@@ -1,0 +1,164 @@
+@page "/requests"
+@inject ApiClient Api
+@inject AuthSession Auth
+@inject UiState Ui
+
+<PageTitle>@L["requests.title"] · SonNuage</PageTitle>
+
+<div class="page">
+    <header class="page-header"><h1>@L["requests.title"]</h1></header>
+    @if (!Auth.CanRequest)
+    {
+        <div class="empty"><p>@L["requests.restricted"]</p></div>
+    }
+    else
+    {
+        <section class="panel">
+            <p class="quota-line">
+                @if (_quota is { } q)
+                {
+                    <span class="strong">@(q.Limit is { } limit ? L["requests.quota", ("used", q.Used), ("limit", limit)] : L["requests.noQuota"])</span>
+                    <span class="muted small">@(q.AutoApproved ? L["requests.autoHint"] : L["requests.reviewHint"])</span>
+                }
+            </p>
+            <form class="inline-form" @onsubmit="SearchAsync" @onsubmit:preventDefault="true">
+                <input class="input" placeholder="@L["requests.searchPlaceholder"]" @bind="_query" aria-label="@L["requests.searchPlaceholder"]" />
+                <div class="segmented" role="group" aria-label="Source">
+                    <button type="button" class="@(_music ? "on" : null)" @onclick="() => _music = true">YouTube Music</button>
+                    <button type="button" class="@(!_music ? "on" : null)" @onclick="() => _music = false">YouTube</button>
+                </div>
+                <button class="btn primary" type="submit" disabled="@(_searching || string.IsNullOrWhiteSpace(_query))"><Icon Name="search" Size="18" /> @L["yt.explore.search"]</button>
+            </form>
+            <p class="muted small">@L["requests.searchHint"]</p>
+
+            @if (_searching)
+            {
+                <div class="empty"><Logo Size="16" Animated="true" /> @L["yt.explore.searching"]</div>
+            }
+            else if (_results is { } results)
+            {
+                @if (results.Entries.Count == 0)
+                {
+                    <p class="muted">@L["requests.noResult"]</p>
+                }
+                <ul class="yt-list requests">
+                    @foreach (var v in results.Entries)
+                    {
+                        var known = v.ImportStatus is not null and not "Failed" and not "Skipped";
+                        var asked = _asked.Contains(v.VideoId);
+                        <li @key="v.VideoId" class="@(known ? "known" : null)">
+                            <img class="yt-thumb" src="@v.ThumbnailUrl" alt="" loading="lazy" />
+                            <span class="grow">
+                                <span class="strong">@v.Title</span>
+                                <span class="muted small block">@v.Channel@(v.DurationSeconds is { } dur ? $" · {Format.Duration(dur)}" : "")</span>
+                            </span>
+                            <span class="row-actions">
+                                <a class="icon-btn" href="https://www.youtube.com/watch?v=@v.VideoId" target="_blank" rel="noopener noreferrer" title="@L["yt.explore.open"]"><Icon Name="play" Size="18" /></a>
+                                @if (known)
+                                {
+                                    <span class="badge good">@L["requests.onServer"]</span>
+                                }
+                                else if (asked)
+                                {
+                                    <span class="badge info">@L["requests.asked"]</span>
+                                }
+                                else
+                                {
+                                    <button class="btn compact primary" disabled="@(_sending is not null)" @onclick="() => AskAsync(v)"><Icon Name="add" Size="16" /> @L["requests.ask"]</button>
+                                }
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+
+        <section class="panel">
+            <h2>@L["requests.mine"]</h2>
+            @if (_mine.Count == 0)
+            {
+                <p class="muted">@L["requests.none"]</p>
+            }
+            else
+            {
+                <RequestList Items="_mine" />
+                @if (_mine.Count < _total)
+                {
+                    <button class="btn" @onclick="MoreAsync">@L["requests.more"]</button>
+                }
+            }
+        </section>
+    }
+</div>
+
+@code {
+    private const int Page = 50;
+    private string _query = "";
+    private bool _music = true;
+    private bool _searching;
+    private YoutubeListingDto? _results;
+    private readonly HashSet<string> _asked = [];
+    private string? _sending;
+    private RequestQuotaDto? _quota;
+    private List<DownloadRequestDto> _mine = [];
+    private int _total;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Auth.CanRequest) return;
+        await RunAsync(async () =>
+        {
+            _quota = await Api.RequestQuotaAsync();
+            var page = await Api.MyRequestsAsync(0, Page);
+            _mine = page?.Items.ToList() ?? [];
+            _total = page?.Total ?? 0;
+        });
+    }
+
+    private async Task SearchAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_query)) return;
+        _searching = true;
+        _results = null;
+        await RunAsync(async () => _results = await Api.RequestSearchAsync(_query.Trim(), _music));
+        _searching = false;
+    }
+
+    private async Task AskAsync(YoutubeVideoDto video)
+    {
+        _sending = video.VideoId;
+        await RunAsync(async () =>
+        {
+            if (await Api.CreateRequestAsync(new CreateDownloadRequest(video.VideoId, video.Title, video.Channel, video.DurationSeconds, null)) is { } created)
+            {
+                _asked.Add(video.VideoId);
+                _mine.Insert(0, created);
+                _total++;
+                Ui.Notify(created.AutoApproved ? L["requests.sentAuto"] : L["requests.sent"]);
+                _quota = await Api.RequestQuotaAsync();
+            }
+        });
+        _sending = null;
+    }
+
+    private async Task MoreAsync()
+    {
+        await RunAsync(async () =>
+        {
+            var page = await Api.MyRequestsAsync(_mine.Count, Page);
+            if (page is not null) { _mine.AddRange(page.Items); _total = page.Total; }
+        });
+    }
+
+    private async Task RunAsync(Func<Task> action)
+    {
+        try
+        {
+            await action();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+    }
+}

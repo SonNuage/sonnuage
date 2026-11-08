@@ -13,7 +13,7 @@
         <ChildContent>
         <div class="table-wrap">
             <table class="table">
-                <thead><tr><th>@L["users.colUser"]</th><th>@L["users.colRole"]</th><th>@L["users.colCreated"]</th><th></th></tr></thead>
+                <thead><tr><th>@L["users.colUser"]</th><th>@L["users.colRole"]</th><th>@L["users.colRequests"]</th><th>@L["users.colCreated"]</th><th></th></tr></thead>
                 <tbody>
                     @foreach (var u in _users)
                     {
@@ -22,8 +22,24 @@
                             <td>
                                 <select class="input compact" value="@u.Role" @onchange="e => ChangeRoleAsync(u, e.Value?.ToString())" disabled="@(u.Id == Auth.User?.Id)">
                                     <option value="@Roles.User">@L["users.roleUser"]</option>
+                                    <option value="@Roles.Contributor">@L["users.roleContributor"]</option>
                                     <option value="@Roles.Admin">@L["users.roleAdmin"]</option>
                                 </select>
+                            </td>
+                            <td>
+                                @if (u.Role == Roles.Contributor)
+                                {
+                                    <span class="row small">
+                                        <input class="input compact quota" type="number" min="1" max="@DownloadRequestLimits.MaxPerDay" value="@u.RequestsPerDay"
+                                               aria-label="@L["users.quotaOf", ("name", u.Username)]" @onchange="e => SetQuotaAsync(u, e.Value?.ToString())" />
+                                        @L["users.perDay"]
+                                    </span>
+                                    <label class="row small"><input type="checkbox" checked="@u.AutoApproveRequests" @onchange="e => SetAutoAsync(u, e.Value is true)" /> @L["users.autoApprove"]</label>
+                                }
+                                else
+                                {
+                                    <span class="muted small">@(u.Role == Roles.Admin ? L["users.requestsAdmin"] : L["users.requestsNone"])</span>
+                                }
                             </td>
                             <td>@L.Date(u.CreatedAt)</td>
                             <td class="row-actions">
@@ -70,6 +86,7 @@
         <input class="input" type="password" placeholder="@L["users.passwordMin", ("min", 8)]" @bind="_password" autocomplete="new-password" minlength="8" required />
         <select class="input" @bind="_role">
             <option value="@Roles.User">@L["users.roleUser"]</option>
+            <option value="@Roles.Contributor">@L["users.roleContributor"]</option>
             <option value="@Roles.Admin">@L["users.roleAdmin"]</option>
         </select>
         <div class="row">
@@ -120,6 +137,27 @@
         {
             await Api.AdminUpdateUserAsync(user.Id, new UpdateUserRequest(null, role));
             Ui.Notify(L["users.roleChanged"]);
+        });
+        await LoadAsync();
+    }
+
+    private async Task SetQuotaAsync(UserDto user, string? value)
+    {
+        if (!int.TryParse(value, out var perDay)) return;
+        await RunAsync(async () =>
+        {
+            await Api.AdminUpdateUserAsync(user.Id, new UpdateUserRequest(null, null, perDay));
+            Ui.Notify(L["users.quotaChanged"]);
+        });
+        await LoadAsync();
+    }
+
+    private async Task SetAutoAsync(UserDto user, bool auto)
+    {
+        await RunAsync(async () =>
+        {
+            await Api.AdminUpdateUserAsync(user.Id, new UpdateUserRequest(null, null, null, auto));
+            Ui.Notify(auto ? L["users.autoOn"] : L["users.autoOff"]);
         });
         await LoadAsync();
     }

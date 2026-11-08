@@ -56,7 +56,7 @@
         <span class="avatar">@Initial(Auth.User?.Username)</span>
         <span class="account-who">
             <strong>@Auth.User?.Username</strong>
-            <span>@(Auth.IsAdmin ? L["users.roleAdmin"] : L["users.roleUser"])@(Endpoint.IsConfigurable ? $" · {Endpoint.BaseAddress?.Host}" : "")</span>
+            <span>@L[RoleLabels.Key(Auth.User?.Role)]@(Endpoint.IsConfigurable ? $" · {Endpoint.BaseAddress?.Host}" : "")</span>
         </span>
         <Icon Name="up" Size="18" />
     </button>

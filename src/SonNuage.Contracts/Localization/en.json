@@ -399,7 +399,8 @@
     "infinitePlayHint": "At the end of the queue, adds similar tracks (same genre, then same artist) so the music never stops.",
     "infiniteAhead": "Tracks picked ahead",
     "helpHint": "Frequently asked questions, getting started and installed versions.",
-    "openHelp": "Open help"
+    "openHelp": "Open help",
+    "roleContributor": "contributor"
   },
   "quality": {
     "original": "Original",
@@ -458,7 +459,17 @@
     "created": "User {name} created",
     "roleChanged": "Role changed",
     "passwordChanged": "Password changed",
-    "deleted": "User deleted"
+    "deleted": "User deleted",
+    "roleContributor": "Contributor",
+    "colRequests": "Requests",
+    "quotaOf": "Requests per day for {name}",
+    "perDay": "per day",
+    "autoApprove": "Approved automatically",
+    "requestsAdmin": "No limit",
+    "requestsNone": "—",
+    "quotaChanged": "Quota updated",
+    "autoOn": "Their requests will go straight to download",
+    "autoOff": "Their requests will wait for an administrator"
   },
   "upload": {
     "intro": "Files are filed by artist and album from their tags. For untagged files, enter the artist and album below.",
@@ -584,7 +595,11 @@
       "hold": "YouTube blocked imports: resuming at {time}.",
       "review": "{count} import(s) to review",
       "failed": "{count} failed import(s)",
-      "scan": "The last library scan failed."
+      "scan": "The last library scan failed.",
+      "requests": {
+        "one": "{count} download request waiting",
+        "other": "{count} download requests waiting"
+      }
     },
     "reindex": "Reindex search",
     "reindexStarted": "Reindex started (Tasks pane)",
@@ -1087,6 +1102,55 @@
       "site": "SonNuage website",
       "issues": "Report a problem",
       "versions": "Installed versions"
+    }
+  },
+  "requests": {
+    "title": "Requests",
+    "restricted": "Download requests are for contributors only.",
+    "quota": "{used} / {limit} requests in the last 24 hours",
+    "noQuota": "No request limit",
+    "autoHint": "Your requests go straight to download.",
+    "reviewHint": "An administrator approves each request before it is downloaded.",
+    "searchPlaceholder": "Title, artist or YouTube link",
+    "searchHint": "Search YouTube for a song and request it: it joins the library once downloaded.",
+    "noResult": "No results.",
+    "onServer": "Already on the server",
+    "asked": "Requested",
+    "ask": "Request",
+    "mine": "My requests",
+    "none": "No requests yet.",
+    "noneAdmin": "No requests.",
+    "more": "Show more",
+    "sent": "Request sent: an administrator will review it",
+    "sentAuto": "Request accepted: the download is starting",
+    "byOn": "by {name}, {date}",
+    "deniedBecause": "Denied: {reason}",
+    "autoApproved": "Approved automatically",
+    "decidedBy": "Handled by {name}",
+    "find": "Find in the library",
+    "approve": "Approve",
+    "deny": "Deny",
+    "approved": "Request approved",
+    "denied": "Request denied",
+    "denyTitle": "Deny “{title}”?",
+    "denyReason": "Reason (optional)",
+    "denyHint": "The person who made the request will see this reason.",
+    "latest": "Latest requests",
+    "viewMore": "View more",
+    "filterPlaceholder": "Title, channel or author",
+    "filterStatus": "Status",
+    "allStatuses": "All statuses",
+    "count": {
+      "one": "{count} request",
+      "other": "{count} requests"
+    },
+    "status": {
+      "requested": "Requested",
+      "accepted": "Accepted",
+      "denied": "Denied",
+      "inProgress": "In progress",
+      "done": "Done",
+      "failed": "Failed"
     }
   }
 }

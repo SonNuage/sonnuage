@@ -1,0 +1,127 @@
+@page "/admin/requests"
+@inject ApiClient Api
+@inject UiState Ui
+@inject NavigationManager Nav
+
+<PageTitle>@L["requests.title"] · SonNuage</PageTitle>
+
+<div class="page">
+    <AdminNav Title="@L["requests.title"]">
+        <form class="inline-form" @onsubmit="ApplyAsync" @onsubmit:preventDefault="true">
+            <input class="input" type="search" placeholder="@L["requests.filterPlaceholder"]" @bind="_q" aria-label="@L["requests.filterPlaceholder"]" />
+            <select class="input compact" value="@(Status ?? "")" @onchange="e => SetStatus(e.Value?.ToString())" aria-label="@L["requests.filterStatus"]">
+                <option value="">@L["requests.allStatuses"]</option>
+                @foreach (var s in DownloadRequestStatus.All)
+                {
+                    <option value="@s">@L["requests.status." + s]</option>
+                }
+            </select>
+            <button class="btn" type="submit"><Icon Name="search" Size="18" /> @L["yt.explore.search"]</button>
+        </form>
+        <Loader Loading="_items is null && _error is null" Error="@_error" OnRetry="LoadAsync">
+            @if (_items is { } items)
+            {
+                <p class="muted small">@L["requests.count", ("count", _total)]</p>
+                @if (items.Count == 0)
+                {
+                    <div class="empty"><p>@L["requests.noneAdmin"]</p></div>
+                }
+                else
+                {
+                    <RequestList Items="items" ShowAuthor="true" OnApprove="ApproveAsync" OnDeny="StartDeny" />
+                    @if (items.Count < _total)
+                    {
+                        <button class="btn" @onclick="MoreAsync">@L["requests.more"]</button>
+                    }
+                }
+            }
+        </Loader>
+    </AdminNav>
+</div>
+
+<DenyRequestModal Request="_denying" OnClose="() => _denying = null" OnDenied="Replace" />
+
+@code {
+    private const int Page = 50;
+    [SupplyParameterFromQuery(Name = "status")] public string? Status { get; set; }
+    [SupplyParameterFromQuery(Name = "q")] public string? Q { get; set; }
+
+    private string? _q;
+    private List<DownloadRequestDto>? _items;
+    private int _total;
+    private string? _error;
+    private DownloadRequestDto? _denying;
+
+    protected override Task OnParametersSetAsync()
+    {
+        _q = Q;
+        return LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _error = null;
+        try
+        {
+            var page = await Api.AdminRequestsAsync(Status, Q, 0, Page);
+            _items = page?.Items.ToList() ?? [];
+            _total = page?.Total ?? 0;
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            _error = L.Server(ex.Message);
+        }
+    }
+
+    private void SetStatus(string? status) => Go(string.IsNullOrEmpty(status) ? null : status, _q);
+
+    private Task ApplyAsync()
+    {
+        Go(Status, _q);
+        return Task.CompletedTask;
+    }
+
+    private void Go(string? status, string? q) =>
+        Nav.NavigateTo(Nav.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            ["status"] = status,
+            ["q"] = string.IsNullOrWhiteSpace(q) ? null : q.Trim(),
+        }));
+
+    private async Task MoreAsync()
+    {
+        if (_items is null) return;
+        try
+        {
+            var page = await Api.AdminRequestsAsync(Status, Q, _items.Count, Page);
+            if (page is not null) { _items.AddRange(page.Items); _total = page.Total; }
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+    }
+
+    private async Task ApproveAsync(DownloadRequestDto request)
+    {
+        try
+        {
+            if (await Api.AdminApproveRequestAsync(request.Id) is { } updated)
+            {
+                Replace(updated);
+                Ui.Notify(L["requests.approved"]);
+            }
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+    }
+
+    private void StartDeny(DownloadRequestDto request) => _denying = request;
+
+    private void Replace(DownloadRequestDto updated)
+    {
+        if (_items?.FindIndex(r => r.Id == updated.Id) is { } i and >= 0) _items[i] = updated;
+    }
+}
