@@ -273,7 +273,7 @@ public static class YoutubeEndpoints
         });
     }
 
-    private static Task<IResult> ListingAsync(YtDlp ytDlp, SonNuageDbContext db, string url, int limit, CancellationToken ct) =>
+    internal static Task<IResult> ListingAsync(YtDlp ytDlp, SonNuageDbContext db, string url, int limit, CancellationToken ct) =>
         Run(async () => await WithStatusAsync(db, await ytDlp.ListAsync(url, limit, ct), url, ct));
 
     private static async Task<YoutubeListingTaskDto> ListingTaskAsync(YoutubeListingTasks.Entry entry, SonNuageDbContext db, CancellationToken ct)
@@ -289,7 +289,7 @@ public static class YoutubeEndpoints
         return new YoutubeListingTaskDto(entry.Id, true, entry.Progress.ReadCount, entry.Progress.Total, listing, null);
     }
 
-    private static async Task<YoutubeListingDto> WithStatusAsync(SonNuageDbContext db, YtListing listing, string url, CancellationToken ct)
+    internal static async Task<YoutubeListingDto> WithStatusAsync(SonNuageDbContext db, YtListing listing, string url, CancellationToken ct)
     {
         var ids = listing.Entries.Select(e => e.Id).ToList();
         var known = await db.YoutubeItems.Where(i => ids.Contains(i.VideoId)).ToDictionaryAsync(i => i.VideoId, i => i.Status.ToString(), ct);
@@ -297,7 +297,7 @@ public static class YoutubeEndpoints
             listing.Entries.Select(e => new YoutubeVideoDto(e.Id, e.Title, e.Channel, e.DurationSeconds, e.Thumbnail, known.GetValueOrDefault(e.Id), e.Album)).ToList());
     }
 
-    private static async Task<IResult> Run<T>(Func<Task<T>> action)
+    internal static async Task<IResult> Run<T>(Func<Task<T>> action)
     {
         try
         {

@@ -4,6 +4,13 @@ public static class Roles
 {
     public const string Admin = "admin";
     public const string User = "user";
+    /// <summary>Utilisateur qui peut aussi demander des téléchargements (voir <see cref="DownloadRequestDto"/>).</summary>
+    public const string Contributor = "contributor";
+
+    public static bool IsKnown(string? role) => role is Admin or User or Contributor;
+
+    /// <summary>Peut créer des demandes de téléchargement.</summary>
+    public static bool CanRequest(string? role) => role is Admin or Contributor;
 }
 
 public sealed record LoginRequest(string Username, string Password, string? DeviceName);
@@ -23,7 +30,9 @@ public sealed record TokenResponse(
     UserDto User);
 
 // Language : langue préférée de l'interface (code d'un fichier de traduction), null = celle de l'appareil.
-public sealed record UserDto(Guid Id, string Username, string Role, DateTimeOffset CreatedAt, string? Language = null);
+// RequestsPerDay, AutoApproveRequests : demandes de téléchargement d'un contributeur (quota sur 24 h, approbation sans admin).
+public sealed record UserDto(Guid Id, string Username, string Role, DateTimeOffset CreatedAt, string? Language = null,
+    int RequestsPerDay = DownloadRequestLimits.DefaultPerDay, bool AutoApproveRequests = false);
 
 public sealed record SetLanguageRequest(string? Language);
 

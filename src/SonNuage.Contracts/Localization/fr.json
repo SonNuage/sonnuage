@@ -192,6 +192,14 @@
       "notCancelable": "Cette tâche est déjà terminée.",
       "notRetryable": "Seule une tâche en échec ou annulée, dont l'étape précédente a réussi, peut être relancée.",
       "suiteActive": "Cette suite a encore des tâches en cours ou en attente : annulez-la d’abord."
+    },
+    "requests": {
+      "badVideo": "Vidéo YouTube attendue (identifiant ou lien youtube.com, youtu.be).",
+      "quota": "Quota atteint : {limit} demandes par 24 heures.",
+      "alreadyKnown": "Cette vidéo est déjà dans la bibliothèque ou dans la file d'import.",
+      "duplicate": "Cette vidéo est déjà demandée.",
+      "notPending": "Cette demande a déjà été traitée.",
+      "badQuota": "Quota : entre 1 et {max} demandes par jour."
     }
   },
   "login": {

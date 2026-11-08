@@ -101,6 +101,10 @@ public sealed class User
     public double CrossfadeSeconds { get; set; }
     public bool InfinitePlay { get; set; }
     public int InfiniteAhead { get; set; } = Contracts.PlaybackPreferences.DefaultAhead;
+    /// <summary>Contributeur : demandes de téléchargement permises sur 24 heures glissantes.</summary>
+    public int RequestsPerDay { get; set; } = Contracts.DownloadRequestLimits.DefaultPerDay;
+    /// <summary>Contributeur : ses demandes partent au téléchargement sans attendre un admin.</summary>
+    public bool AutoApproveRequests { get; set; }
 }
 
 public sealed class RefreshToken
@@ -323,4 +327,37 @@ public sealed class CrashReport
     /// <summary>Première ligne du rapport (type et message de l'exception), pour la liste.</summary>
     public required string Headline { get; set; }
     public required string Report { get; set; }
+}
+
+public enum DownloadRequestDecision
+{
+    Requested,
+    Accepted,
+    Denied,
+}
+
+/// <summary>
+/// Demande de téléchargement d'un contributeur. Une fois acceptée, elle suit l'import YouTube lié : son état
+/// « en cours », « terminée » ou « échouée » se lit sur <see cref="YoutubeItem"/>.
+/// </summary>
+public sealed class DownloadRequest
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid UserId { get; set; }
+    public User User { get; set; } = null!;
+    public required string VideoId { get; set; }
+    public required string Title { get; set; }
+    public string? Channel { get; set; }
+    public double? DurationSeconds { get; set; }
+    /// <summary>Mot de l'auteur pour l'admin.</summary>
+    public string? Note { get; set; }
+    public DownloadRequestDecision Decision { get; set; }
+    public string? DenyReason { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset? DecidedAt { get; set; }
+    /// <summary>Admin qui a tranché (nom gardé même s'il est supprimé) ; null si approuvée automatiquement.</summary>
+    public string? DecidedBy { get; set; }
+    public bool AutoApproved { get; set; }
+    public Guid? YoutubeItemId { get; set; }
+    public YoutubeItem? YoutubeItem { get; set; }
 }

@@ -192,6 +192,74 @@ namespace SonNuage.Server.Data.Migrations
                     b.ToTable("CrashReports");
                 });
 
+            modelBuilder.Entity("SonNuage.Server.Data.DownloadRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("AutoApproved")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Channel")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long?>("DecidedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("DecidedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Decision")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DenyReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<double?>("DurationSeconds")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("VideoId")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("YoutubeItemId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("VideoId");
+
+                    b.HasIndex("YoutubeItemId");
+
+                    b.HasIndex("UserId", "CreatedAt");
+
+                    b.ToTable("DownloadRequests");
+                });
+
             modelBuilder.Entity("SonNuage.Server.Data.Favorite", b =>
                 {
                     b.Property<Guid>("UserId")
@@ -607,6 +675,9 @@ namespace SonNuage.Server.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("AutoApproveRequests")
+                        .HasColumnType("INTEGER");
+
                     b.Property<long>("CreatedAt")
                         .HasColumnType("INTEGER");
 
@@ -630,6 +701,9 @@ namespace SonNuage.Server.Data.Migrations
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("RequestsPerDay")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Role")
                         .IsRequired()
@@ -802,6 +876,24 @@ namespace SonNuage.Server.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SonNuage.Server.Data.DownloadRequest", b =>
+                {
+                    b.HasOne("SonNuage.Server.Data.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SonNuage.Server.Data.YoutubeItem", "YoutubeItem")
+                        .WithMany()
+                        .HasForeignKey("YoutubeItemId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("User");
+
+                    b.Navigation("YoutubeItem");
                 });
 
             modelBuilder.Entity("SonNuage.Server.Data.Favorite", b =>

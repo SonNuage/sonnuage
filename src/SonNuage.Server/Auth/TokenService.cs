@@ -18,6 +18,8 @@ public static class AuthConstants
     public const string MediaScheme = "Media";
     public const string MediaPolicy = "media";
     public const string AdminPolicy = "admin";
+    /// <summary>Contributeur ou admin : demandes de téléchargement.</summary>
+    public const string ContributorPolicy = "contributor";
     public const string ApiKeyScheme = "ApiKey";
     /// <summary>Admin connecté, ou clé d'extension de navigateur : uniquement les routes d'ajout d'imports YouTube.</summary>
     public const string ExtensionPolicy = "extension";
@@ -155,7 +157,7 @@ public sealed class TokenService(
 
 public static class UserMapping
 {
-    public static UserDto ToDto(this User u) => new(u.Id, u.Username, u.Role, u.CreatedAt, u.Language);
+    public static UserDto ToDto(this User u) => new(u.Id, u.Username, u.Role, u.CreatedAt, u.Language, u.RequestsPerDay, u.AutoApproveRequests);
 }
 
 public static class ClaimsPrincipalExtensions

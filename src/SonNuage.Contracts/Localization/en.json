@@ -192,6 +192,14 @@
       "notCancelable": "This task has already finished.",
       "notRetryable": "Only a failed or canceled task whose previous step succeeded can be retried.",
       "suiteActive": "This suite still has running or waiting tasks: cancel it first."
+    },
+    "requests": {
+      "badVideo": "A YouTube video is expected (id or youtube.com, youtu.be link).",
+      "quota": "Quota reached: {limit} requests per 24 hours.",
+      "alreadyKnown": "This video is already in the library or the import queue.",
+      "duplicate": "This video has already been requested.",
+      "notPending": "This request has already been handled.",
+      "badQuota": "Quota: between 1 and {max} requests per day."
     }
   },
   "login": {

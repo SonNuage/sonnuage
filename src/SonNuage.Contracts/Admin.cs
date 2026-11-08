@@ -56,4 +56,4 @@ public sealed record UploadSessionDto(Guid Id, string FileName, long Size, long 
 
 public sealed record CreateUserRequest(string Username, string Password, string Role);
 
-public sealed record UpdateUserRequest(string? Password, string? Role);
+public sealed record UpdateUserRequest(string? Password, string? Role, int? RequestsPerDay = null, bool? AutoApproveRequests = null);

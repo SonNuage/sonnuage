@@ -240,7 +240,7 @@ public static class AdminEndpoints
             if (user is null) return Results.NotFound();
             if (req.Role is { } role)
             {
-                if (role is not (Roles.Admin or Roles.User)) return Results.Problem(Tx.Key("errors.unknownRole"), statusCode: 400);
+                if (!Roles.IsKnown(role)) return Results.Problem(Tx.Key("errors.unknownRole"), statusCode: 400);
                 if (role != Roles.Admin && user.Role == Roles.Admin && await db.Users.CountAsync(u => u.Role == Roles.Admin, ct) == 1)
                     return Results.Problem(Tx.Key("errors.admin.lastAdmin"), statusCode: 409);
                 if (user.Role != role)
@@ -249,6 +249,13 @@ public static class AdminEndpoints
                     users.RotateSecurityStamp(user);
                 }
             }
+            if (req.RequestsPerDay is { } perDay)
+            {
+                if (perDay is < 1 or > DownloadRequestLimits.MaxPerDay)
+                    return Results.Problem(Tx.Key("errors.requests.badQuota", ("max", DownloadRequestLimits.MaxPerDay)), statusCode: 400);
+                user.RequestsPerDay = perDay;
+            }
+            if (req.AutoApproveRequests is { } auto) user.AutoApproveRequests = auto;
             if (req.Password is { } password)
             {
                 if (password.Length < UserService.MinPasswordLength)

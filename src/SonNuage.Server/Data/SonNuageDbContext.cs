@@ -16,6 +16,7 @@ public sealed class SonNuageDbContext(DbContextOptions<SonNuageDbContext> option
     public DbSet<PlayEvent> PlayEvents => Set<PlayEvent>();
     public DbSet<YoutubeItem> YoutubeItems => Set<YoutubeItem>();
     public DbSet<YoutubeSubscription> YoutubeSubscriptions => Set<YoutubeSubscription>();
+    public DbSet<DownloadRequest> DownloadRequests => Set<DownloadRequest>();
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
     public DbSet<JobSuite> JobSuites => Set<JobSuite>();
     public DbSet<Job> Jobs => Set<Job>();
@@ -114,6 +115,22 @@ public sealed class SonNuageDbContext(DbContextOptions<SonNuageDbContext> option
             e.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
             e.HasOne(x => x.Subscription).WithMany().HasForeignKey(x => x.SubscriptionId).OnDelete(DeleteBehavior.SetNull);
             e.HasOne(x => x.Track).WithMany().HasForeignKey(x => x.TrackId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        b.Entity<DownloadRequest>(e =>
+        {
+            e.HasIndex(x => x.CreatedAt);
+            e.HasIndex(x => new { x.UserId, x.CreatedAt });
+            e.HasIndex(x => x.VideoId);
+            e.Property(x => x.VideoId).HasMaxLength(32);
+            e.Property(x => x.Title).HasMaxLength(500);
+            e.Property(x => x.Channel).HasMaxLength(200);
+            e.Property(x => x.Note).HasMaxLength(500);
+            e.Property(x => x.DenyReason).HasMaxLength(500);
+            e.Property(x => x.DecidedBy).HasMaxLength(100);
+            e.Property(x => x.Decision).HasConversion<string>().HasMaxLength(16);
+            e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.YoutubeItem).WithMany().HasForeignKey(x => x.YoutubeItemId).OnDelete(DeleteBehavior.SetNull);
         });
 
         b.Entity<YoutubeSubscription>(e =>

@@ -157,6 +157,7 @@ app.MapExtensionEndpoints();
 app.MapDashboardEndpoints();
 app.MapCrashReportEndpoints();
 app.MapDiscoveryEndpoints();
+app.MapDownloadRequestEndpoints();
 
 app.MapFallback("/api/{**path}", () => Results.NotFound());
 app.MapFallback(WebApp.Index);
@@ -188,6 +189,8 @@ static void ConfigureAuthentication(IServiceCollection services)
             .RequireAuthenticatedUser().Build())
         .AddPolicy(AuthConstants.AdminPolicy, p => p.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
             .RequireAuthenticatedUser().RequireClaim("role", SonNuage.Contracts.Roles.Admin))
+        .AddPolicy(AuthConstants.ContributorPolicy, p => p.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
+            .RequireAuthenticatedUser().RequireClaim("role", SonNuage.Contracts.Roles.Admin, SonNuage.Contracts.Roles.Contributor))
         .AddPolicy(AuthConstants.ExtensionPolicy, p => p.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, AuthConstants.ApiKeyScheme)
             .RequireAuthenticatedUser().RequireAssertion(c =>
                 c.User.HasClaim("role", SonNuage.Contracts.Roles.Admin) ||

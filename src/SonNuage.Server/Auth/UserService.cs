@@ -49,7 +49,7 @@ public sealed class UserService(SonNuageDbContext db, IPasswordHasher<User> hash
         username = username.Trim();
         if (username.Length is < 2 or > 64) return (null, Tx.Key("errors.users.usernameLength"));
         if (password.Length < MinPasswordLength) return (null, Tx.Key("errors.passwordMin", ("min", MinPasswordLength)));
-        if (role is not (Roles.Admin or Roles.User)) return (null, Tx.Key("errors.unknownRole"));
+        if (!Roles.IsKnown(role)) return (null, Tx.Key("errors.unknownRole"));
         var normalized = Normalize(username);
         if (await db.Users.AnyAsync(u => u.NormalizedUsername == normalized, ct)) return (null, Tx.Key("errors.users.exists"));
 
