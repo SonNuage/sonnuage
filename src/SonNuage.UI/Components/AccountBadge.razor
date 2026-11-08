@@ -18,6 +18,7 @@
             {
                 <a href="admin" role="menuitem"><Icon Name="admin" Size="18" /> @L["nav.admin"]</a>
             }
+            <a href="help" role="menuitem"><Icon Name="help" Size="18" /> @L["nav.help"]</a>
             @if (Accounts.IsMultiAccount)
             {
                 <hr />
@@ -47,6 +48,7 @@
             </select>
             <hr />
             <button role="menuitem" @onclick="LogoutAsync"><Icon Name="logout" Size="18" /> @L["settings.logout"]</button>
+            <VersionLine />
         </div>
     }
     <button class="account-trigger @(_open ? "open" : "")" title="@L["nav.accountMenu"]" aria-haspopup="menu" aria-expanded="@(_open ? "true" : "false")"

@@ -23,7 +23,7 @@ public static class LibraryEndpoints
                     ? new QualityDto(q.ToWire(), q.Label(), p.Extension, p.BitrateKbps)
                     : new QualityDto(q.ToWire(), q.Label(), "original", null))
                 .ToList();
-            var version = typeof(LibraryEndpoints).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
+            var version = AppVersion.Of(typeof(LibraryEndpoints).Assembly);
             var runtime = $"{System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription} · {System.Runtime.InteropServices.RuntimeInformation.OSDescription}";
             return new ServerInfoDto("SonNuage", version, qualities, transcoder.Available, WebApp.Build(env), runtime);
         }).AllowAnonymous();

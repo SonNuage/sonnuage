@@ -254,7 +254,8 @@
       "system": "System",
       "light": "Light",
       "dark": "Dark"
-    }
+    },
+    "help": "Help"
   },
   "app": {
     "notFound": "Page not found.",
@@ -384,7 +385,9 @@
     "crossfadeHint": "The next track starts while this one fades out (0 to 5 s).",
     "infinitePlay": "Infinite play",
     "infinitePlayHint": "At the end of the queue, adds similar tracks (same genre, then same artist) so the music never stops.",
-    "infiniteAhead": "Tracks picked ahead"
+    "infiniteAhead": "Tracks picked ahead",
+    "helpHint": "Frequently asked questions, getting started and installed versions.",
+    "openHelp": "Open help"
   },
   "quality": {
     "original": "Original",
@@ -977,5 +980,101 @@
     "deleted": "Report deleted.",
     "os": "System",
     "source": "Source"
+  },
+  "versions": {
+    "server": "Server {version}",
+    "ui": "Interface {version}",
+    "platform": {
+      "web": "Web",
+      "android": "Android",
+      "desktop": "Desktop",
+      "ios": "iOS"
+    }
+  },
+  "help": {
+    "title": "Help",
+    "intro": "The essentials for listening, organizing and tuning SonNuage. Tap a question to show its answer.",
+    "start": {
+      "title": "Getting started",
+      "play": {
+        "q": "Start playback",
+        "a": "Tap a track (double-click on desktop): the list it belongs to plays from that track. The play button of an album, playlist or artist plays all of it."
+      },
+      "queue": {
+        "q": "Manage the queue",
+        "a": "A track's ⋮ menu offers “Play next” and “Add to queue”. The queue is shown from the player or the Queue page."
+      },
+      "playlists": {
+        "q": "Playlists and liked songs",
+        "a": "The heart adds a track to “Liked songs”. “Add to playlist”, in the ⋮ menu, files it in an existing or new playlist."
+      },
+      "search": {
+        "q": "Search",
+        "a": "Search covers artists, albums and tracks, and tolerates typos. On desktop, the / key jumps to the search box."
+      },
+      "shuffle": {
+        "q": "Shuffle everything",
+        "a": "“Shuffle the whole library”, on the home page, plays all your music in random order."
+      }
+    },
+    "settings": {
+      "title": "Playback settings",
+      "quality": {
+        "q": "Audio quality",
+        "a": "Choose the playback quality. On Android, a separate quality applies on mobile data to save data. “Original” sends the file as is, FLAC included."
+      },
+      "prefetch": {
+        "q": "Preloaded tracks",
+        "a": "Upcoming tracks are downloaded ahead so playback keeps going when the network weakens."
+      },
+      "crossfade": {
+        "q": "Crossfade",
+        "a": "From 0 to 5 seconds: the next track starts while the current one fades out."
+      },
+      "infinite": {
+        "q": "Infinite play",
+        "a": "At the end of the queue, SonNuage adds similar tracks (same genre, then same artist). This setting and crossfade follow your account on all your devices."
+      }
+    },
+    "apps": {
+      "title": "Apps",
+      "web": {
+        "q": "In the browser",
+        "a": "SonNuage works in any recent browser, nothing to install. After a server update, a banner offers to reload the page."
+      },
+      "android": {
+        "q": "Android and Android Auto",
+        "a": "The Android app plays in the background and shows up in Android Auto. Installed outside the Play Store, it needs “Unknown sources” turned on in Android Auto's developer settings."
+      },
+      "desktop": {
+        "q": "Desktop",
+        "a": "The desktop app has the same interface in its own window."
+      }
+    },
+    "faq": {
+      "title": "Common problems",
+      "cuts": {
+        "q": "Playback cuts out on the go",
+        "a": "Lower the mobile-data quality or raise the number of preloaded tracks in Settings."
+      },
+      "missing": {
+        "q": "An album is missing",
+        "a": "Albums come from the server's music folder: the administrator drops the files there and the scan adds them. Let them know if an album is missing or misfiled."
+      },
+      "password": {
+        "q": "Forgotten password",
+        "a": "Ask your server's administrator to reset it. Once signed in, you can change it in Settings."
+      },
+      "back": {
+        "q": "The phone's Back button",
+        "a": "It first closes the open menu, dialog or full-screen player, then goes back to the previous page."
+      }
+    },
+    "more": {
+      "title": "Going further",
+      "site": "SonNuage website",
+      "issues": "Report a problem",
+      "versions": "Installed versions"
+    }
   }
 }

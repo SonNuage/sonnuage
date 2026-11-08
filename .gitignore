@@ -28,3 +28,6 @@ node_modules/
 *.zip
 publish/
 packages/
+
+# Version écrite au déploiement depuis les sources (voir Dockerfile)
+/VERSION

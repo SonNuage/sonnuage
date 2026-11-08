@@ -206,6 +206,13 @@ select.input { cursor: pointer; }
 .about-hero { display: flex; align-items: center; gap: 1rem; }
 .about-hero h2 { margin: 0; font-size: 1.5rem; }
 .about-hero p { margin: .2rem 0 0; }
+.help details { border-top: 1px solid var(--line); padding: .75rem 0; }
+.help details:first-of-type { border-top: 0; }
+.help summary { cursor: pointer; font-weight: 600; }
+.help details p { margin: .5rem 0 0; color: var(--text-muted); line-height: 1.5; }
+.help h3 { margin: 1.25rem 0 .25rem; font-size: 1rem; }
+.versions { margin: .75rem 0 0; }
+.account-menu .versions { margin: .35rem .75rem .25rem; font-size: .75rem; }
 .facts { display: grid; grid-template-columns: max-content 1fr; gap: .45rem 1.5rem; margin: 0; }
 .facts dt { color: var(--text-muted); }
 .facts dd { margin: 0; overflow-wrap: anywhere; }

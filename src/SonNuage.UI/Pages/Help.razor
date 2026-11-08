@@ -1,0 +1,46 @@
+@page "/help"
+
+<PageTitle>@L["nav.help"] · SonNuage</PageTitle>
+
+<div class="page narrow help">
+    <header class="page-header"><h1>@L["help.title"]</h1></header>
+    <p class="muted">@L["help.intro"]</p>
+
+    @foreach (var (section, items) in Sections)
+    {
+        <section class="panel">
+            <h2>@L[$"help.{section}.title"]</h2>
+            @foreach (var item in items)
+            {
+                <details>
+                    <summary>@L[$"help.{section}.{item}.q"]</summary>
+                    <p>@L[$"help.{section}.{item}.a"]</p>
+                </details>
+            }
+        </section>
+    }
+
+    <section class="panel">
+        <h2>@L["help.more.title"]</h2>
+        <div class="row">
+            <a class="btn" href="@SiteUrl" target="_blank" rel="noopener">@L["help.more.site"]</a>
+            <a class="btn" href="@IssuesUrl" target="_blank" rel="noopener">@L["help.more.issues"]</a>
+        </div>
+        <h3>@L["help.more.versions"]</h3>
+        <VersionLine />
+    </section>
+</div>
+
+@code {
+    private const string SiteUrl = "https://sonnuage.github.io/";
+    private const string IssuesUrl = "https://github.com/SonNuage/sonnuage/issues";
+
+    // Questions de chaque rubrique, dans l'ordre d'affichage (textes : help.<rubrique>.<question>.q / .a).
+    private static readonly (string Section, string[] Items)[] Sections =
+    [
+        ("start", ["play", "queue", "playlists", "search", "shuffle"]),
+        ("settings", ["quality", "prefetch", "crossfade", "infinite"]),
+        ("apps", ["web", "android", "desktop"]),
+        ("faq", ["cuts", "missing", "password", "back"]),
+    ];
+}

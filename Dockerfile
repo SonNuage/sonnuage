@@ -49,9 +49,13 @@ COPY src/SonNuage.Web/*.csproj src/SonNuage.Web/
 COPY src/SonNuage.Server/*.csproj src/SonNuage.Server/
 RUN dotnet restore src/SonNuage.Server/SonNuage.Server.csproj
 COPY src/ src/
+# Version publiée : argument VERSION, sinon fichier VERSION à la racine (écrit au déploiement depuis le tag),
+# sinon celle de Directory.Build.props. Le motif VERSIO[N] n'échoue pas quand le fichier est absent.
+COPY global.json VERSIO[N] ./
 ARG VERSION=
-RUN dotnet publish src/SonNuage.Server/SonNuage.Server.csproj -c Release -o /app --no-restore \
-    ${VERSION:+-p:Version=$VERSION} -p:UseAppHost=false
+RUN V="${VERSION:-$(cat VERSION 2>/dev/null | tr -d '[:space:]')}"; \
+    dotnet publish src/SonNuage.Server/SonNuage.Server.csproj -c Release -o /app --no-restore \
+    ${V:+-p:Version=$V} -p:UseAppHost=false
 
 # Par défaut (docker compose, GitHub) : tout est compilé dans l'image. La CI GitLab, elle, publie l'image de la
 # cible base (runtime-base) et y ajoute l'application publiée par le job (voir .gitlab-ci.yml).

@@ -1,0 +1,30 @@
+@inject ApiClient Api
+@inject IPlatformInfo Platform
+
+@* Versions du serveur, de l'interface partagée et de l'application : à donner quand on signale un problème. *@
+<p class="versions muted small">@string.Join(" · ", Parts())</p>
+
+@code {
+    private static readonly string UiVersion = AppVersion.Of(typeof(VersionLine).Assembly);
+    private string? _server;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _server = (await Api.InfoAsync())?.Version;
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException)
+        {
+            // Serveur injoignable : sa version reste « … ».
+        }
+    }
+
+    private IEnumerable<string> Parts()
+    {
+        yield return L["versions.server", ("version", _server ?? "…")];
+        yield return L["versions.ui", ("version", UiVersion)];
+        string platform = L[$"versions.platform.{Platform.Name}"];
+        yield return Platform.AppVersion is { } app ? $"{platform} {app}" : platform;
+    }
+}

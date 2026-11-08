@@ -254,7 +254,8 @@
       "system": "Système",
       "light": "Clair",
       "dark": "Sombre"
-    }
+    },
+    "help": "Aide"
   },
   "app": {
     "notFound": "Page introuvable.",
@@ -384,7 +385,9 @@
     "crossfadeHint": "Le morceau suivant commence pendant que celui-ci s'éteint (0 à 5 s).",
     "infinitePlay": "Lecture infinie",
     "infinitePlayHint": "En fin de file, ajoute des morceaux proches (même genre, puis même artiste) pour que la musique ne s'arrête pas.",
-    "infiniteAhead": "Morceaux choisis d'avance"
+    "infiniteAhead": "Morceaux choisis d'avance",
+    "helpHint": "Questions fréquentes, prise en main et versions installées.",
+    "openHelp": "Ouvrir l'aide"
   },
   "quality": {
     "original": "Originale",
@@ -977,5 +980,101 @@
     "deleted": "Rapport supprimé.",
     "os": "Système",
     "source": "Origine"
+  },
+  "versions": {
+    "server": "Serveur {version}",
+    "ui": "Interface {version}",
+    "platform": {
+      "web": "Web",
+      "android": "Android",
+      "desktop": "Ordinateur",
+      "ios": "iOS"
+    }
+  },
+  "help": {
+    "title": "Aide",
+    "intro": "L'essentiel pour écouter, organiser et régler SonNuage. Touchez une question pour afficher la réponse.",
+    "start": {
+      "title": "Prise en main",
+      "play": {
+        "q": "Lancer la lecture",
+        "a": "Touchez un titre (double-clic sur ordinateur) : la liste qui le contient est lue à partir de ce titre. Le bouton lecture d'un album, d'une playlist ou d'un artiste lance l'ensemble."
+      },
+      "queue": {
+        "q": "Gérer la file d'attente",
+        "a": "Le menu ⋮ d'un titre propose « Lire ensuite » et « Ajouter à la file ». La file se consulte depuis le lecteur ou la page File d'attente."
+      },
+      "playlists": {
+        "q": "Playlists et titres likés",
+        "a": "Le cœur ajoute un titre à « Titres likés ». « Ajouter à une playlist », dans le menu ⋮, le range dans une playlist existante ou nouvelle."
+      },
+      "search": {
+        "q": "Rechercher",
+        "a": "La recherche porte sur les artistes, les albums et les titres, et tolère les fautes de frappe. Sur ordinateur, la touche / place le curseur dans la recherche."
+      },
+      "shuffle": {
+        "q": "Tout mélanger",
+        "a": "« Mélanger toute la bibliothèque », sur l'accueil, lit toute votre musique dans un ordre aléatoire."
+      }
+    },
+    "settings": {
+      "title": "Réglages de lecture",
+      "quality": {
+        "q": "Qualité audio",
+        "a": "Choisissez la qualité de lecture. Sur Android, une qualité à part s'applique en réseau mobile pour économiser les données. « Originale » envoie le fichier tel quel, FLAC compris."
+      },
+      "prefetch": {
+        "q": "Pistes pré-chargées",
+        "a": "Les titres suivants sont téléchargés à l'avance pour que la lecture continue quand le réseau faiblit."
+      },
+      "crossfade": {
+        "q": "Fondu enchaîné",
+        "a": "De 0 à 5 secondes : le titre suivant démarre pendant que le précédent s'éteint."
+      },
+      "infinite": {
+        "q": "Lecture infinie",
+        "a": "En fin de file, SonNuage ajoute des morceaux proches (même genre, puis même artiste). Ce réglage et le fondu suivent votre compte sur tous vos appareils."
+      }
+    },
+    "apps": {
+      "title": "Applications",
+      "web": {
+        "q": "Dans le navigateur",
+        "a": "SonNuage fonctionne dans tout navigateur récent, sans installation. Après une mise à jour du serveur, un bandeau propose de recharger la page."
+      },
+      "android": {
+        "q": "Android et Android Auto",
+        "a": "L'application Android lit en arrière-plan et s'affiche dans Android Auto. Installée hors du Play Store, elle demande d'activer « Sources inconnues » dans les paramètres développeur d'Android Auto."
+      },
+      "desktop": {
+        "q": "Ordinateur",
+        "a": "L'application pour ordinateur reprend la même interface dans sa propre fenêtre."
+      }
+    },
+    "faq": {
+      "title": "Problèmes fréquents",
+      "cuts": {
+        "q": "La lecture se coupe en déplacement",
+        "a": "Baissez la qualité en réseau mobile ou augmentez le nombre de pistes pré-chargées dans Réglages."
+      },
+      "missing": {
+        "q": "Un album n'apparaît pas",
+        "a": "Les albums viennent du dossier musique du serveur : l'administrateur y dépose les fichiers, puis l'analyse les ajoute. Prévenez-le si un album manque ou est mal rangé."
+      },
+      "password": {
+        "q": "Mot de passe oublié",
+        "a": "Demandez à l'administrateur de votre serveur de le réinitialiser. Une fois connecté, vous pouvez le changer dans Réglages."
+      },
+      "back": {
+        "q": "Le bouton Retour du téléphone",
+        "a": "Il referme d'abord le menu, la fenêtre ou le lecteur plein écran ouvert, puis revient à la page précédente."
+      }
+    },
+    "more": {
+      "title": "Aller plus loin",
+      "site": "Site de SonNuage",
+      "issues": "Signaler un problème",
+      "versions": "Versions installées"
+    }
   }
 }
