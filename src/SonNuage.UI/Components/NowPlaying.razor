@@ -66,7 +66,23 @@
     private static string Pct(double value, double max) =>
         $"--pct: {(max > 0 ? Math.Clamp(value / max * 100, 0, 100) : 0).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}%";
 
-    protected override void OnInitialized() => Player.StateChanged += Refresh;
+    private IDisposable? _backHandler;
+
+    protected override void OnInitialized()
+    {
+        Player.StateChanged += Refresh;
+        // Retour (bouton du téléphone, geste, navigateur) : il referme le plein écran au lieu de quitter la page.
+        // Les liens du plein écran le referment avant de naviguer, ils passent donc sans être retenus.
+        _backHandler = Nav.RegisterLocationChangingHandler(context =>
+        {
+            if (Ui.NowPlayingOpen && !context.IsNavigationIntercepted)
+            {
+                context.PreventNavigation();
+                Ui.SetNowPlayingOpen(false);
+            }
+            return ValueTask.CompletedTask;
+        });
+    }
 
     private void Refresh() => InvokeAsync(StateHasChanged);
 
@@ -86,5 +102,9 @@
         _ => RepeatMode.Off,
     });
 
-    public void Dispose() => Player.StateChanged -= Refresh;
+    public void Dispose()
+    {
+        Player.StateChanged -= Refresh;
+        _backHandler?.Dispose();
+    }
 }
