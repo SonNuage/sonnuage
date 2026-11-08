@@ -218,8 +218,11 @@ plus simple (données locales) à la plus ouverte (bases publiques), sur un mêm
 
 - 💡 Artistes proches de ceux qu'on écoute le plus, depuis les bases publiques ci-dessous, avec leurs titres phares.
 - 💡 Fiche découverte : biographie, genres, albums (MusicBrainz, Wikidata), écoute d'un extrait, puis import.
-- 💡 Recommandations personnelles ListenBrainz, si l'utilisateur choisit d'y envoyer ses écoutes (jeton personnel
-  dans Réglages, désactivé par défaut).
+- 💡 ListenBrainz sur deux niveaux (validés le 8 novembre 2026) :
+  1. sans rien envoyer : artistes proches et nouveautés demandés à partir de la bibliothèque ; aucune écoute ne
+     quitte le serveur ;
+  2. facultatif, par compte : l'utilisateur saisit son jeton ListenBrainz dans Réglages et ses écoutes y sont
+     envoyées (désactivé par défaut), en échange de recommandations personnelles.
 
 **Bases publiques retenues**
 
@@ -239,8 +242,55 @@ plus simple (données locales) à la plus ouverte (bases publiques), sur un mêm
 **Place dans l'appli** : rubriques de l'accueil (« Nouveautés de vos artistes », « À découvrir », « À réécouter »),
 une page Découvrir, et un onglet dans Android Auto.
 
-**Questions ouvertes** : confidentialité entre comptes d'un même serveur (co-écoutes), qui peut importer
-(aujourd'hui l'import YouTube est réservé à l'administrateur), extrait d'écoute avant import (source et droits).
+**Questions ouvertes** : confidentialité entre comptes d'un même serveur (co-écoutes). Import et extrait avant
+import : voir « Demandes de téléchargement » ci-dessous.
+
+## Demandes de téléchargement (à développer après le socle de la découverte)
+
+Demandé le 8 novembre 2026. Permettre à d'autres comptes que l'administrateur de faire entrer de la musique, sous
+contrôle, et écouter un extrait avant de télécharger le morceau entier.
+
+**Rôle et approbation**
+
+- 💡 Nouveau rôle **Contributeur**, entre Utilisateur et Administrateur : il peut créer des demandes de
+  téléchargement. Un utilisateur simple ne le peut pas (à confirmer : bouton « Suggérer à l'admin » sans plus).
+- 💡 Par compte, réglage réservé à l'administrateur : **« Demandes approuvées automatiquement »**. Désactivé :
+  chaque demande attend l'accord d'un admin. Activé : elle part directement au téléchargement.
+- 💡 Page d'administration **Demandes** : approuver, refuser (avec motif), corriger la correspondance choisie ;
+  l'auteur voit l'état de ses demandes (en attente, approuvée, téléchargée, refusée).
+- Garde-fous : quota par compte et par jour, refus des doublons (déjà dans la bibliothèque ou déjà demandé),
+  journal de qui a demandé et approuvé quoi.
+
+**Recherche YouTube par correspondance**
+
+- 💡 Point de départ : une fiche de la découverte (album ou titre MusicBrainz), une recherche sans résultat dans
+  la bibliothèque, ou un lien envoyé par l'extension.
+- 💡 Le serveur cherche sur YouTube (yt-dlp, recherche de quelques résultats) « artiste + titre » et note chaque
+  candidat : durée proche de celle de MusicBrainz, titre et artiste ressemblants, chaîne officielle ou
+  « - Topic » favorisée, versions live, remix ou karaoké écartées si non demandées.
+- 💡 Correspondance sûre : elle est retenue. Douteuse : les meilleurs candidats sont proposés au choix, avec
+  leur score.
+- Un album se traite morceau par morceau (liste des titres MusicBrainz), avec un récapitulatif des titres non
+  trouvés.
+
+**Extrait avant téléchargement**
+
+- 💡 Bouton « Écouter un extrait » sur chaque candidat : le serveur lit une trentaine de secondes via yt-dlp et
+  FFmpeg et les transmet au lecteur, comme un morceau ordinaire. Rien n'est ajouté à la bibliothèque.
+- Extraits mis en cache brièvement et limités en nombre par compte.
+
+**Ce qui ne change pas (sécurité)**
+
+- Seuls les hôtes YouTube vont à yt-dlp. Les cookies et identifiants YouTube restent sur le serveur : les
+  applis ne reçoivent que l'audio de l'extrait, jamais l'adresse de la vidéo source ni de jeton.
+- Le téléchargement lui-même reste une tâche du serveur (gestionnaire de tâches existant), lancée par
+  l'approbation, automatique ou non.
+
+**Ordre proposé** : rôle Contributeur et approbation automatique par compte → page Demandes → recherche YouTube
+par correspondance → extrait avant téléchargement → demandes depuis la découverte (couches 2 et 3).
+
+**Questions ouvertes** : un utilisateur simple peut-il suggérer sans demander ? Quotas par défaut ? Une demande
+approuvée automatiquement reste-t-elle visible par les admins (journal) ou faut-il les prévenir ?
 
 ## Idées
 
