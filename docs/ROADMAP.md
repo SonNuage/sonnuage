@@ -118,9 +118,9 @@ Constat sur le homelab : certains imports prenaient plus de 3 minutes, là où T
   du Play Store. Côté téléphone : Android Auto → toucher 10 fois « Version » → menu ⋮ → Paramètres pour les
   développeurs → cocher « Sources inconnues », puis cocher SonNuage dans « Personnaliser le lanceur ». La reprise
   automatique à la connexion en dépend. Solution durable : publication sur le Play Store (piste de test interne).
-- ✅ **Fondu enchaîné** (web et bureau) : 0 à 5 s par pas de 0,1 s dans Réglages, courbe à puissance constante sur
-  deux éléments audio. Le réglage est masqué sur Android. 🔜 Android : demande deux lecteurs ExoPlayer en relais
-  (Media3 n'a pas de fondu natif).
+- ✅ **Fondu enchaîné** (web, bureau, Android) : 0 à 5 s par pas de 0,1 s dans Réglages, courbe à puissance constante
+  sur deux éléments audio. Android (1.3.0) : un second ExoPlayer joue la fin de la piste qui s'éteint pendant que le
+  lecteur de la session (notification, Android Auto) part sur la suivante.
 - ✅ **Page artiste** : ses 10 titres les plus écoutés, « Voir tout (n) » / « Voir moins », puis la discographie.
 - ✅ **Lecture infinie** (web, bureau, Android) : option dans Réglages, avance réglable de 1 à 10 (3 par défaut).
   Le serveur (`POST /api/radio`) choisit au hasard, par cercles : même genre que les derniers morceaux joués, puis
