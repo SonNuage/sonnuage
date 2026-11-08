@@ -185,24 +185,62 @@ Constat sur le homelab : certains imports prenaient plus de 3 minutes, là où T
      passer Access).
    - Une fois livré : passer la ligne « Compatible API Subsonic » du comparatif de `sonnuage-site` à ✓.
 
-## Découverte et recommandations (à cadrer)
+## Découverte (« discovery »)
 
-Deux besoins distincts, à concevoir ensemble plus tard :
+Demandé le 8 novembre 2026. Faire découvrir de la musique, dans la bibliothèque puis au-delà. Trois couches, de la
+plus simple (données locales) à la plus ouverte (bases publiques), sur un même socle.
 
-- 💡 **Nouveautés (« discovery »)** : ce qui vient d'arriver ou de sortir, chez les artistes qu'on écoute.
-  Pistes :
-  - une rubrique « Nouveautés » de l'accueil, alimentée par les abonnements YouTube synchronisés
-  - les sorties récentes des artistes de la bibliothèque via MusicBrainz, avec proposition d'import
-  - les ajouts récents à la bibliothèque, par utilisateur (ce qu'il n'a pas encore écouté).
-- 💡 **Recommandations fondées sur les écoutes** : « parce que vous avez écouté… ».
-  Préalable : enregistrer un historique d'écoute par utilisateur (titre, date, écoute complète ou passée).
-  Pistes, du plus simple au plus riche :
-  - artistes et albums les plus écoutés, « à réécouter »
-  - co-écoutes entre utilisateurs du serveur
-  - artistes proches via MusicBrainz ou ListenBrainz (envoi des écoutes facultatif)
-  - similarité sonore ou sémantique via Elasticsearch.
-- Questions ouvertes : confidentialité entre comptes d'un même serveur, place dans l'appli (accueil,
-  Android Auto), recommandations limitées à la bibliothèque ou ouvertes à YouTube (import proposé).
+**Socle (préalable à tout le reste)**
+
+- 💡 **Historique d'écoute par utilisateur** : titre, début, durée écoutée, écoute complète ou passée, appareil.
+  Envoyé par chaque appli (web, Android, ordinateur), mis en file hors ligne comme les réglages de lecture.
+- ✅ Identifiants MusicBrainz sur les morceaux et les albums (étape 3 ci-dessus) : la clé commune avec les bases
+  publiques. Reste à poser l'identifiant MusicBrainz de l'**artiste**.
+- 💡 **Cache des données externes** par identifiant MusicBrainz, avec date d'expiration, et appels passés par le
+  gestionnaire de tâches (file « Métadonnées », une requête par seconde pour MusicBrainz).
+
+**Couche 1 : dans la bibliothèque (aucune donnée externe)**
+
+- 💡 « À réécouter » : titres likés ou très écoutés, pas joués depuis longtemps.
+- 💡 « Pas encore écouté » : ajouts récents à la bibliothèque que l'utilisateur n'a jamais lancés.
+- 💡 Co-écoutes entre comptes du serveur (« ceux qui écoutent X écoutent aussi Y »), sur accord de chaque compte.
+- La lecture infinie (même genre, puis même artiste) en profitera : elle pourra puiser dans ces listes.
+
+**Couche 2 : nouveautés des artistes suivis**
+
+- 💡 Sorties récentes et à venir des artistes de la bibliothèque, via MusicBrainz (groupes de parutions par
+  artiste et date) ou l'API « fresh releases » de ListenBrainz, filtrée sur nos artistes.
+- 💡 Les nouvelles vidéos des chaînes YouTube synchronisées, déjà disponibles côté serveur.
+- Action proposée : « Importer » (administrateur, via l'import YouTube existant) ou « Demander à l'admin »
+  pour les autres comptes.
+
+**Couche 3 : artistes et titres à découvrir hors de la bibliothèque**
+
+- 💡 Artistes proches de ceux qu'on écoute le plus, depuis les bases publiques ci-dessous, avec leurs titres phares.
+- 💡 Fiche découverte : biographie, genres, albums (MusicBrainz, Wikidata), écoute d'un extrait, puis import.
+- 💡 Recommandations personnelles ListenBrainz, si l'utilisateur choisit d'y envoyer ses écoutes (jeton personnel
+  dans Réglages, désactivé par défaut).
+
+**Bases publiques retenues**
+
+| Base | Apporte | Accès | Verdict |
+|------|---------|-------|---------|
+| MusicBrainz | discographies, dates de sortie, relations entre artistes, genres | libre (CC0), 1 req/s | socle, déjà utilisé |
+| ListenBrainz | artistes et titres similaires, nouveautés, recommandations perso | libre, identifiants MusicBrainz | source principale |
+| Last.fm | similarité très fournie (artistes, titres), tags | clé d'API gratuite, usage non commercial | complément facultatif (clé fournie par l'admin) |
+| Wikidata | influences, genres, liens | libre (CC0) | enrichissement des fiches |
+| Discogs | styles fins, labels | clé d'API, quotas | plus tard, si besoin |
+| Spotify | (similaires, recommandations) | fermé aux nouvelles applis depuis novembre 2024 | écarté |
+| AcousticBrainz | (similarité sonore) | arrêté en 2022, archives seules | écarté |
+
+**Ordre proposé** : historique d'écoute → « À réécouter » et « Pas encore écouté » → nouveautés des artistes
+(MusicBrainz) → artistes proches (ListenBrainz, Last.fm en complément) → envoi des écoutes à ListenBrainz.
+
+**Place dans l'appli** : rubriques de l'accueil (« Nouveautés de vos artistes », « À découvrir », « À réécouter »),
+une page Découvrir, et un onglet dans Android Auto.
+
+**Questions ouvertes** : confidentialité entre comptes d'un même serveur (co-écoutes), qui peut importer
+(aujourd'hui l'import YouTube est réservé à l'administrateur), extrait d'écoute avant import (source et droits).
 
 ## Idées
 
