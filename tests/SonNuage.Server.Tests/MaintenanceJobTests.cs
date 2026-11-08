@@ -1,3 +1,6 @@
+using SonNuage.Server.Data;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Json;
@@ -116,5 +119,29 @@ public sealed class MaintenanceJobTests(MaintenanceFactory factory) : IClassFixt
         var (job, _) = await OnlyJobAsync(admin, suite);
         Assert.Equal(JobLanes.Sync, job.Lane);
         Assert.NotNull(job.Error);
+    }
+
+    [Fact]
+    public async Task A_job_already_waiting_for_the_same_subject_is_not_requested_twice()
+    {
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<SonNuageDbContext>();
+        var engine = scope.ServiceProvider.GetRequiredService<JobEngine>();
+        var subject = Guid.NewGuid();
+        // En attente jusqu'à demain : le moteur ne la prendra pas pendant le test.
+        var suite = new JobSuite { Kind = JobSuiteKinds.SubscriptionSync, Title = "attente" };
+        suite.Jobs.Add(new Job
+        {
+            Kind = JobKinds.SubscriptionSync.Name, Lane = JobLanes.Sync, Status = JobStatus.Queued, Title = "attente",
+            SubjectId = subject, NotBefore = DateTimeOffset.UtcNow.AddDays(1),
+        });
+        db.JobSuites.Add(suite);
+        await db.SaveChangesAsync(Ct);
+
+        Assert.Null(await engine.EnqueueOnceAsync(db, MaintenanceJobs.Sync(subject, "doublon"), Ct));
+        Assert.Equal(1, await db.Jobs.CountAsync(j => j.SubjectId == subject, Ct));
+
+        await db.Jobs.Where(j => j.SubjectId == subject).ExecuteDeleteAsync(Ct);
+        await db.JobSuites.Where(s => s.Id == suite.Id).ExecuteDeleteAsync(Ct);
     }
 }

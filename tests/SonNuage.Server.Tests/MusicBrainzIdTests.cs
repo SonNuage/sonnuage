@@ -164,4 +164,33 @@ public sealed class MusicBrainzIdTests(TaggedLibraryFactory factory) : IClassFix
         outcome.Apply(track);
         Assert.Null(track.MusicBrainzRecordingId);
     }
+
+    [Fact]
+    public async Task A_rescan_keeps_an_id_set_by_acoustid_when_the_tags_have_none()
+    {
+        var admin = await factory.AdminClientAsync();
+        await factory.WaitForScanAsync(admin);
+        var recording = Guid.NewGuid();
+        var path = await WithDbAsync(async db =>
+        {
+            var t = await db.Tracks.SingleAsync(x => x.Title == "Opening", Ct);
+            t.MusicBrainzRecordingId = recording;
+            await db.SaveChangesAsync(Ct);
+            return t.FilePath;
+        });
+        try
+        {
+            // Fichier modifié : le scan relit ses tags, qui n'ont pas d'identifiant MusicBrainz.
+            File.SetLastWriteTimeUtc(path, DateTime.UtcNow.AddMinutes(1));
+            await factory.Services.GetRequiredService<ScanCoordinator>().RunFullScanAsync(null, Ct);
+
+            var track = await WithDbAsync(db => db.Tracks.AsNoTracking().SingleAsync(x => x.Title == "Opening", Ct));
+            Assert.Equal(recording, track.MusicBrainzRecordingId);
+        }
+        finally
+        {
+            await WithDbAsync(db => db.Tracks.Where(x => x.Title == "Opening")
+                .ExecuteUpdateAsync(s => s.SetProperty(x => x.MusicBrainzRecordingId, (Guid?)null), Ct));
+        }
+    }
 }
