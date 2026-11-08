@@ -127,6 +127,9 @@ Constat sur le homelab : certains imports prenaient plus de 3 minutes, là où T
   même artiste, puis le reste de la bibliothèque, sans jamais reprendre un morceau déjà dans la file. Désactivée
   quand la répétition est active.
 - ✅ **Dépôt iOS** `sonnuage-ios` ajouté aux listes de dépôts (README, site).
+- ✅ **Réglages de lecture liés au compte** (1.4.0) : fondu, lecture infinie et avance sont enregistrés sur le
+  serveur (`/api/me/playback`) et suivent le compte sur tous ses appareils, avec une copie locale pour le hors-ligne.
+  Qualité et pré-chargement restent propres à chaque appareil.
 
 1. 🔜 **Valider le nouveau pipeline en conditions réelles** sur le homelab : un gros import (une discographie),
    puis un rescan AcoustID d'un artiste. Regarder les durées par étape dans le volet Tâches.
