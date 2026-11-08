@@ -111,6 +111,17 @@ Constat sur le homelab : certains imports prenaient plus de 3 minutes, là où T
 
 ## Prochaines étapes
 
+**Demandes du 8 novembre 2026** (en cours) :
+
+- 🔜 **Android Auto : SonNuage absent de la liste des applis de la voiture.** Le son ne sort que si la lecture est
+  lancée depuis le téléphone, d'où l'absence de reprise automatique. Rejoint le point « Démarrage à la connexion »
+  ci-dessous : l'appli doit être déclarée et découverte comme appli multimédia d'Android Auto.
+- 🔜 **Fondu enchaîné** entre deux morceaux : durée réglable de 0 à 5 s par pas de 0,1 s (0 = désactivé).
+- 🔜 **Page artiste** : une dizaine de ses titres, un lien « Voir tout », puis les pochettes de tous ses albums.
+- 🔜 **Lecture infinie** : arrivé près de la fin de la file, ajouter des morceaux d'un genre proche. Avance réglable
+  (3 par défaut) : avec 5 morceaux et une avance de 3, le 6e est choisi en arrivant au 3e, et ainsi de suite.
+- ✅ **Dépôt iOS** `sonnuage-ios` ajouté aux listes de dépôts (README, site).
+
 1. 🔜 **Valider le nouveau pipeline en conditions réelles** sur le homelab : un gros import (une discographie),
    puis un rescan AcoustID d'un artiste. Regarder les durées par étape dans le volet Tâches.
 2. 🔜 **Android Auto, retours du premier essai en voiture** (novembre 2026). La lecture et le lecteur partagé

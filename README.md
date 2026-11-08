@@ -19,6 +19,7 @@ Les autres parties du projet ont leur propre dépôt :
 |---|---|
 | [sonnuage](https://github.com/SonNuage/sonnuage) (celui-ci) | Serveur, client web, bibliothèques partagées `SonNuage.Contracts` et `SonNuage.UI` |
 | [sonnuage-android](https://github.com/SonNuage/sonnuage-android) | Application Android (.NET MAUI Blazor Hybrid, Media3, Android Auto) |
+| [sonnuage-ios](https://github.com/SonNuage/sonnuage-ios) | Application iOS (même projet MAUI Blazor Hybrid que l'appli Android, cible `net10.0-ios`) |
 | [sonnuage-desktop](https://github.com/SonNuage/sonnuage-desktop) | Appli de bureau Windows, macOS, Linux (Photino : webview du système, icône de la barre système) |
 | [sonnuage-extension](https://github.com/SonNuage/sonnuage-extension) | Extension de navigateur (import YouTube, envoi des cookies) |
 
