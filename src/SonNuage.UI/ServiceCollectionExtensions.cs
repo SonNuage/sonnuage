@@ -17,6 +17,7 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient("sonnuage-anonymous", c => c.Timeout = TimeSpan.FromSeconds(15));
         services.AddSingleton<AuthSession>();
         services.AddSingleton<ApiClient>();
+        services.AddSingleton<IPlaybackPreferencesApi>(sp => sp.GetRequiredService<ApiClient>());
         services.AddSingleton<PlaybackSettings>();
         services.AddSingleton<UiState>();
         services.AddSingleton<Localizer>();

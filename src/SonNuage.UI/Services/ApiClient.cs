@@ -11,7 +11,7 @@ public sealed class ApiException(HttpStatusCode status, string message) : Except
 }
 
 /// <summary>Client typé de l'API. Ajoute le jeton, réessaie une fois après renouvellement sur 401.</summary>
-public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint endpoint, AuthSession auth)
+public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint endpoint, AuthSession auth) : IPlaybackPreferencesApi
 {
     // ---- Bibliothèque ----
     public Task<ServerInfoDto?> InfoAsync() => GetAsync<ServerInfoDto>("api/info");
@@ -25,6 +25,8 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     public Task<ArtistDetailDto?> ArtistAsync(Guid id) => GetAsync<ArtistDetailDto>($"api/artists/{id}");
     public Task<List<TrackDto>?> ArtistTracksAsync(Guid id) => GetAsync<List<TrackDto>>($"api/artists/{id}/tracks");
     public Task<List<TrackDto>?> ArtistTopTracksAsync(Guid id, int limit) => GetAsync<List<TrackDto>>($"api/artists/{id}/top?limit={limit}");
+    public Task<PlaybackPreferences?> PlaybackPreferencesAsync() => GetAsync<PlaybackPreferences>("api/me/playback");
+    public Task<PlaybackPreferences?> SavePlaybackPreferencesAsync(PlaybackPreferences prefs) => SendAsync<PlaybackPreferences>(HttpMethod.Put, "api/me/playback", prefs);
     public Task<List<TrackDto>?> RadioAsync(RadioRequest request) => SendAsync<List<TrackDto>>(HttpMethod.Post, "api/radio", request);
     public Task<List<TrackDto>?> RandomTracksAsync(int count) => GetAsync<List<TrackDto>>($"api/tracks/random?count={count}");
     public Task<List<TrackDto>?> LookupTracksAsync(IReadOnlyList<Guid> ids) => SendAsync<List<TrackDto>>(HttpMethod.Post, "api/tracks/lookup", ids);

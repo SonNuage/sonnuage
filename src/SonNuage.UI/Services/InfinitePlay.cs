@@ -1,3 +1,5 @@
+using SonNuage.Contracts;
+
 namespace SonNuage.UI.Services;
 
 /// <summary>
@@ -6,8 +8,8 @@ namespace SonNuage.UI.Services;
 /// </summary>
 public static class InfinitePlay
 {
-    public const int DefaultAhead = 3;
-    public const int MaxAhead = 10;
+    public const int DefaultAhead = PlaybackPreferences.DefaultAhead;
+    public const int MaxAhead = PlaybackPreferences.MaxAhead;
     /// <summary>Morceaux de la file qui servent de point de départ (les derniers écoutés).</summary>
     public const int SeedCount = 4;
 
