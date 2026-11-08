@@ -100,7 +100,7 @@ public static class JobEndpoints
             {
                 title = Tx.Key("jobs.suites.rescanAll");
             }
-            var suite = await engine.EnqueueAsync(db, AcoustIdRescanJob.Plan(title, req.ArtistId, req.Apply, req.Threshold is { } t ? Math.Clamp(t, 0.5, 1) : null, http.User.UserId()), ct);
+            var suite = await engine.EnqueueAsync(db, AcoustIdRescanJob.Plan(title, req.ArtistId, req.Apply, req.Threshold is { } t ? Math.Clamp(t, 0.5, 1) : null, http.User.UserId(), req.IncludeIdentified), ct);
             return Results.Ok(suite.Id);
         });
 

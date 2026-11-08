@@ -838,7 +838,8 @@
       "start": "Start",
       "started": "Task created.",
       "button": "New task",
-      "thresholdHint": "For this task only. Below it, the fix is only suggested in the log."
+      "thresholdHint": "For this task only. Below it, the fix is only suggested in the log.",
+      "includeIdentified": "Also check tracks already identified (MusicBrainz entry known)"
     },
     "log": {
       "canceled": "Canceled.",

@@ -838,7 +838,8 @@
       "start": "Lancer",
       "started": "Tâche créée.",
       "button": "Nouvelle tâche",
-      "thresholdHint": "Pour cette tâche seulement. En dessous, la correction est seulement proposée dans le journal."
+      "thresholdHint": "Pour cette tâche seulement. En dessous, la correction est seulement proposée dans le journal.",
+      "includeIdentified": "Vérifier aussi les morceaux déjà identifiés (fiche MusicBrainz connue)"
     },
     "log": {
       "canceled": "Annulée.",

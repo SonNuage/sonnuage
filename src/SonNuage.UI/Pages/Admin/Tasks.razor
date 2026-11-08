@@ -190,6 +190,10 @@
                 }
             </div>
         }
+        <label class="row small" style="margin: .6rem 0 0; flex-wrap: nowrap; align-items: flex-start">
+            <input type="checkbox" @bind="_includeIdentified" />
+            <span>@L["jobs.create.includeIdentified"]</span>
+        </label>
         <label class="row small" style="margin: .6rem 0; flex-wrap: nowrap; align-items: flex-start">
             <input type="checkbox" @bind="_apply" />
             <span>@L["jobs.create.apply"]</span>
@@ -231,6 +235,7 @@
     private List<ArtistDto>? _artists;
     private ArtistDto? _artist;
     private bool _apply = true;
+    private bool _includeIdentified;
     private double _threshold = 0.9;
     private bool _creating;
 
@@ -361,7 +366,7 @@
         _creating = true;
         await TryAsync(async () =>
         {
-            var suite = await Api.CreateJobAsync(new CreateJobRequest("acoustid-rescan", _byArtist ? _artist?.Id : null, _apply, _apply ? _threshold : null));
+            var suite = await Api.CreateJobAsync(new CreateJobRequest("acoustid-rescan", _byArtist ? _artist?.Id : null, _apply, _apply ? _threshold : null, _includeIdentified));
             Ui.Notify(L["jobs.create.started"]);
             _newTask = false;
             _filter = "active";

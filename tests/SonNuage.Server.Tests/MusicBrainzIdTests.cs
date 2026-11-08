@@ -64,6 +64,21 @@ public sealed class MusicBrainzIdTests(TaggedLibraryFactory factory) : IClassFix
         Assert.Null(untagged.MusicBrainzRecordingId);
     }
 
+    [Fact]
+    public async Task A_rescan_skips_tracks_already_identified_unless_asked()
+    {
+        var admin = await factory.AdminClientAsync();
+        await factory.WaitForScanAsync(admin);
+
+        var skipping = await WithDbAsync(db => AcoustIdRescanJob.Targets(db.Tracks, artistId: null, includeIdentified: false).Select(t => t.Title).ToListAsync(Ct));
+        Assert.DoesNotContain("Tagged Song", skipping);
+        Assert.Contains("Opening", skipping);
+
+        var all = await WithDbAsync(db => AcoustIdRescanJob.Targets(db.Tracks, artistId: null, includeIdentified: true).Select(t => t.Title).ToListAsync(Ct));
+        Assert.Contains("Tagged Song", all);
+        Assert.Equal(skipping.Count + 1, all.Count);
+    }
+
     [Theory]
     [InlineData("8f3471b5-7e6a-48da-86a9-c1c07a0f47ae", "8f3471b5-7e6a-48da-86a9-c1c07a0f47ae")]
     [InlineData(" 8F3471B5-7E6A-48DA-86A9-C1C07A0F47AE ", "8f3471b5-7e6a-48da-86a9-c1c07a0f47ae")]

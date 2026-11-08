@@ -13,6 +13,7 @@ namespace SonNuage.Server.Jobs;
 /// <summary>
 /// Rescan AcoustID de la bibliothèque (toute, ou un artiste) : prépare, dans sa propre suite, une paire de tâches
 /// par morceau - empreinte AcoustID (file « acoustid ») puis comparaison avec MusicBrainz (<see cref="LibraryMatchJob"/>).
+/// Les morceaux déjà identifiés (identifiant d'enregistrement MusicBrainz connu) sont sautés, sauf <c>includeIdentified</c>.
 /// Paramètres : <c>artistId</c> (facultatif), <c>apply</c> (appliquer les correspondances sûres),
 /// <c>threshold</c> (seuil d'acceptation propre à la tâche, sinon celui des réglages).
 /// </summary>
@@ -22,9 +23,17 @@ public sealed class AcoustIdRescanJob(YoutubeSettingsStore settings) : IJobHandl
 
     public JobKind Kind => JobKinds.LibraryAcoustIdScan;
 
-    public static JobPlan Plan(string title, Guid? artistId, bool apply, double? threshold, Guid? createdById) =>
+    public static JobPlan Plan(string title, Guid? artistId, bool apply, double? threshold, Guid? createdById, bool includeIdentified = false) =>
         new JobPlan(JobSuiteKinds.AcoustIdRescan, title, createdById)
-            .Then(JobKinds.LibraryAcoustIdScan, Tx.Key("jobs.steps.plan"), new { artistId, apply, threshold });
+            .Then(JobKinds.LibraryAcoustIdScan, Tx.Key("jobs.steps.plan"), new { artistId, apply, threshold, includeIdentified });
+
+    /// <summary>Morceaux à vérifier : ceux de l'artiste (morceaux et albums), sans ceux déjà identifiés sauf demande.</summary>
+    public static IQueryable<Track> Targets(IQueryable<Track> tracks, Guid? artistId, bool includeIdentified)
+    {
+        if (artistId is { } a) tracks = tracks.Where(t => t.ArtistId == a || t.Album.ArtistId == a);
+        if (!includeIdentified) tracks = tracks.Where(t => t.MusicBrainzRecordingId == null);
+        return tracks;
+    }
 
     public async Task RunAsync(JobContext ctx)
     {
@@ -35,9 +44,7 @@ public sealed class AcoustIdRescanJob(YoutubeSettingsStore settings) : IJobHandl
         var apply = ctx.Get<bool>("apply");
         var threshold = ctx.Get<double?>("threshold");
 
-        var query = db.Tracks.AsNoTracking();
-        if (artistId is { } a) query = query.Where(t => t.ArtistId == a || t.Album.ArtistId == a);
-        var tracks = await query
+        var tracks = await Targets(db.Tracks.AsNoTracking(), artistId, ctx.Get<bool>("includeIdentified"))
             .OrderBy(t => t.AlbumArtistName).ThenBy(t => t.AlbumTitle).ThenBy(t => t.DiscNumber).ThenBy(t => t.TrackNumber)
             .Select(t => new { t.Id, t.FilePath, t.Title, t.ArtistName })
             .ToListAsync(ct);
