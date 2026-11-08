@@ -95,6 +95,16 @@ public class LinkedPlayerTests
         Assert.Equal(("bye", "tab-a"), (bye.Type, bye.From));
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void The_crossfade_setting_follows_what_the_local_player_can_do(bool supported)
+    {
+        // Sur le web, Réglages ne montre le fondu enchaîné que si le lecteur relié le gère.
+        var local = new FakePlayer { SupportsCrossfade = supported };
+        Assert.Equal(supported, new LinkedPlayer(local, local, new Bus().Join("tab")).SupportsCrossfade);
+    }
+
     private static async Task<(LinkedPlayer A, FakePlayer LocalA, LinkedPlayer B, FakePlayer LocalB, Bus Bus)> TwoTabsAsync()
     {
         var bus = new Bus();
@@ -143,6 +153,8 @@ public class LinkedPlayerTests
     /// <summary>Lecteur local minimal : la file et l'état, sans audio.</summary>
     private sealed class FakePlayer : IPlayer, IRestorablePlayer, IAdoptablePlayer
     {
+        public bool SupportsCrossfade { get; init; }
+
         private List<TrackDto> _queue = [];
 
         public PlayerState State { get; private set; } = PlayerState.Empty;

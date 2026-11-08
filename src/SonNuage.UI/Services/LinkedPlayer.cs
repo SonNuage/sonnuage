@@ -39,6 +39,9 @@ public sealed class LinkedPlayer : IPlayer, IRestorablePlayer, IConnectPlayer
 
     public PlayerState State => IsRemote ? _remote : _local.State;
 
+    // Le fondu est un réglage du compte, appliqué par l'onglet qui joue : on l'affiche dès que ce lecteur sait le faire.
+    public bool SupportsCrossfade => _local.SupportsCrossfade;
+
     public async Task RestoreAsync()
     {
         await EnsureStartedAsync();
