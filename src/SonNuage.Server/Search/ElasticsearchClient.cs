@@ -274,7 +274,7 @@ public sealed class ElasticsearchClient(IHttpClientFactory httpFactory, IOptions
             .ToList() ?? [];
 
     /// <summary>Remplace chaque mot inconnu par la meilleure suggestion. Null si rien à corriger.</summary>
-    private static string? Correction(string query, JsonNode? response)
+    internal static string? Correction(string query, JsonNode? response)
     {
         var entries = response?["suggest"]?["fix"]?.AsArray();
         if (entries is null || entries.Count == 0) return null;

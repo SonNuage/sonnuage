@@ -70,7 +70,7 @@ public sealed class CoverService(
         return null;
     }
 
-    private static string SniffExtension(byte[] data) => data switch
+    internal static string SniffExtension(byte[] data) => data switch
     {
         [0x89, 0x50, 0x4E, 0x47, ..] => ".png",
         [0x52, 0x49, 0x46, 0x46, _, _, _, _, 0x57, 0x45, 0x42, 0x50, ..] => ".webp",

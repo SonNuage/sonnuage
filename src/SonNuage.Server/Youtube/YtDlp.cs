@@ -194,7 +194,7 @@ public sealed partial class YtDlp(YoutubeTools tools, FfmpegLocator ffmpeg, Yout
         }
     }
 
-    private static bool IsVideo(JsonObject e) =>
+    internal static bool IsVideo(JsonObject e) =>
         Str(e, "id") is { Length: 11 } && Str(e, "ie_key") is null or "Youtube" && Str(e, "_type") is null or "url" or "video";
 
     // Onglet par son adresse (…/shorts) ou, quand yt-dlp le détaille sur place, par son titre (« Chaîne - Shorts »).
@@ -381,7 +381,7 @@ public sealed partial class YtDlp(YoutubeTools tools, FfmpegLocator ffmpeg, Yout
 
     private static string Shorten(string error) => (error.Length > 600 ? error[..600] + "…" : error).Replace("ERROR: ", "");
 
-    private static YtEntry ToEntry(JsonObject e) => new(
+    internal static YtEntry ToEntry(JsonObject e) => new(
         Str(e, "id")!,
         Str(e, "title") ?? Str(e, "id")!,
         Str(e, "channel") ?? Str(e, "uploader") ?? Str(e, "artist"),
