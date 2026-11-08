@@ -30,6 +30,8 @@ public sealed class WebPlayer : IPlayer, IRestorablePlayer, IAdoptablePlayer, IA
     private double _volume = 1;
     private string? _error;
     private bool _reported;
+    // Un seul appel de lecture infinie à la fois (deux changements de piste rapprochés ne doivent pas doubler l'ajout).
+    private bool _extending;
 
     public event Action? StateChanged;
 
@@ -200,7 +202,10 @@ public sealed class WebPlayer : IPlayer, IRestorablePlayer, IAdoptablePlayer, IA
     public async Task ReloadSettingsAsync()
     {
         await settings.LoadAsync();
+        if (_module is not null) await _module.InvokeVoidAsync("setCrossfade", settings.CrossfadeSeconds);
+        await ExtendAsync();
         await PrefetchAsync();
+        Changed();
     }
 
     public void UpdateTrack(TrackDto track)
@@ -223,10 +228,10 @@ public sealed class WebPlayer : IPlayer, IRestorablePlayer, IAdoptablePlayer, IA
             return;
         }
         _queue.MoveTo(next);
-        await LoadCurrentAsync(autoplay: true);
+        await LoadCurrentAsync(autoplay: true, crossfade: auto ? settings.CrossfadeSeconds : 0);
     }
 
-    private async Task LoadCurrentAsync(bool autoplay, double startAt = 0)
+    private async Task LoadCurrentAsync(bool autoplay, double startAt = 0, double crossfade = 0)
     {
         var track = _queue.Current;
         if (track is null) return;
@@ -244,7 +249,8 @@ public sealed class WebPlayer : IPlayer, IRestorablePlayer, IAdoptablePlayer, IA
             return;
         }
         var m = await ModuleAsync();
-        await m.InvokeVoidAsync("load", Key(track), url, startAt, autoplay, track.DurationSeconds);
+        await m.InvokeVoidAsync("load", Key(track), url, startAt, autoplay, track.DurationSeconds, crossfade);
+        await m.InvokeVoidAsync("setCrossfade", settings.CrossfadeSeconds);
         await m.InvokeVoidAsync("setMetadata", new
         {
             title = track.Title,
@@ -252,8 +258,32 @@ public sealed class WebPlayer : IPlayer, IRestorablePlayer, IAdoptablePlayer, IA
             album = track.AlbumTitle,
             artwork = track.HasCover ? api.CoverUrl(track.AlbumId, 600) : null,
         });
+        await ExtendAsync();
         await PrefetchAsync();
         await SaveAsync();
+    }
+
+    /// <summary>Lecture infinie : complète la file pour garder l'avance réglée après le morceau en cours.</summary>
+    private async Task ExtendAsync()
+    {
+        if (!settings.InfinitePlay || _queue.Repeat != RepeatMode.Off || _extending) return;
+        var needed = InfinitePlay.Needed(_queue.Items.Count, _queue.Index, settings.InfiniteAhead);
+        if (needed == 0) return;
+        _extending = true;
+        try
+        {
+            var ids = _queue.Items.Select(t => t.Id).ToList();
+            var request = new RadioRequest(InfinitePlay.Seeds(ids, _queue.Index), ids.TakeLast(RadioRequest.MaxIds).ToList(), needed);
+            if (await api.RadioAsync(request) is { Count: > 0 } tracks) _queue.Enqueue(tracks, playNext: false);
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            // Sans réseau, la file s'arrêtera simplement à son dernier morceau.
+        }
+        finally
+        {
+            _extending = false;
+        }
     }
 
     private async Task PrefetchAsync()
@@ -354,6 +384,10 @@ public sealed class WebPlayer : IPlayer, IRestorablePlayer, IAdoptablePlayer, IA
 
     [JSInvokable]
     public Task OnEnded() => AdvanceAsync(auto: true);
+
+    /// <summary>Fin proche, fondu enchaîné réglé : le morceau suivant démarre pendant que celui-ci s'éteint.</summary>
+    [JSInvokable]
+    public Task OnNearEnd() => _queue.PeekNext(auto: true) >= 0 ? AdvanceAsync(auto: true) : Task.CompletedTask;
 
     [JSInvokable]
     public void OnError(string key)

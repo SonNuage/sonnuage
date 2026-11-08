@@ -59,6 +59,23 @@
             <input class="input" type="number" min="0" max="10" @bind="_prefetch" />
             <small class="muted">@L["settings.prefetchHint"]</small>
         </label>
+        <label class="field">
+            <span>@L["settings.crossfade"] : <strong>@(_crossfade == 0 ? L["settings.crossfadeOff"] : L["settings.seconds", ("value", _crossfade.ToString("0.0"))])</strong></span>
+            <input type="range" min="0" max="@PlaybackSettings.MaxCrossfadeSeconds" step="0.1" @bind="_crossfade" @bind:event="oninput" />
+            <small class="muted">@L["settings.crossfadeHint"]</small>
+        </label>
+        <label class="field check">
+            <input type="checkbox" @bind="_infinite" />
+            <span>@L["settings.infinitePlay"]</span>
+        </label>
+        <small class="muted">@L["settings.infinitePlayHint"]</small>
+        @if (_infinite)
+        {
+            <label class="field">
+                <span>@L["settings.infiniteAhead"]</span>
+                <input class="input" type="number" min="1" max="@InfinitePlay.MaxAhead" @bind="_ahead" />
+            </label>
+        }
         <button class="btn primary" @onclick="SavePlaybackAsync">@L["common.save"]</button>
     </section>
 
@@ -113,6 +130,9 @@
     private string _quality = "";
     private string _mobileQuality = "";
     private int _prefetch;
+    private double _crossfade;
+    private bool _infinite;
+    private int _ahead;
     private string _current = "";
     private string _next = "";
 
@@ -123,6 +143,9 @@
         _quality = Playback.Quality.ToWire();
         _mobileQuality = Playback.MobileQuality.ToWire();
         _prefetch = Playback.PrefetchCount;
+        _crossfade = Playback.CrossfadeSeconds;
+        _infinite = Playback.InfinitePlay;
+        _ahead = Playback.InfiniteAhead;
         try
         {
             _info = await Api.InfoAsync();
@@ -136,7 +159,7 @@
     {
         StreamQualities.TryParse(_quality, out var q);
         StreamQualities.TryParse(_mobileQuality, out var m);
-        await Playback.SaveAsync(q, m, _prefetch);
+        await Playback.SaveAsync(q, m, _prefetch, _crossfade, _infinite, _ahead);
         await Player.ReloadSettingsAsync();
         Ui.Notify(L["settings.saved"]);
     }

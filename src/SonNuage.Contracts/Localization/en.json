@@ -375,7 +375,14 @@
     "passwordChanged": "Password changed. Please log in again.",
     "language": "Language",
     "languageHint": "Used on all your devices signed in to this account.",
-    "languageSaved": "Language saved"
+    "languageSaved": "Language saved",
+    "crossfade": "Crossfade",
+    "crossfadeOff": "off",
+    "seconds": "{value} s",
+    "crossfadeHint": "The next track starts while this one fades out (0 to 5 s).",
+    "infinitePlay": "Infinite play",
+    "infinitePlayHint": "At the end of the queue, adds similar tracks (same genre, then same artist) so the music never stops.",
+    "infiniteAhead": "Tracks picked ahead"
   },
   "quality": {
     "original": "Original",

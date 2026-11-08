@@ -1,11 +1,18 @@
 // Moteur audio du lecteur web. La file d'attente est gérée en C# (PlayQueue).
 // Ce module joue une piste, pré-télécharge les suivantes en mémoire et relaie MediaSession.
+// Deux éléments audio alternent pour le fondu enchaîné : seul celui qui joue (« audio ») parle à C#,
+// l'autre s'éteint en fondu puis se vide.
 
 const MAX_RETRIES = 6;
 const MAX_PREFETCHED = 4;
 
 let dotnet = null;
 let audio = null;
+let fading = null;
+let fadeTimer = 0;
+let userVolume = 1;
+let crossfadeSeconds = 0;
+let nearEndSent = false;
 let currentKey = null;
 let retries = 0;
 let lastReportedSecond = -1;
@@ -20,22 +27,29 @@ const prefetched = new Map();
 
 export function init(dotnetRef) {
   dotnet = dotnetRef;
-  audio = new Audio();
-  audio.preload = 'auto';
-
-  audio.addEventListener('playing', () => { retries = 0; notify('OnPlaying'); });
-  audio.addEventListener('pause', () => notify('OnPaused'));
-  audio.addEventListener('waiting', () => notify('OnBuffering'));
-  audio.addEventListener('ended', () => notify('OnEnded'));
-  audio.addEventListener('timeupdate', () => {
-    const s = Math.floor(position());
-    if (s !== lastReportedSecond) {
-      lastReportedSecond = s;
-      notify('OnTime', position());
-      updatePositionState();
-    }
-  });
-  audio.addEventListener('error', onError);
+  const elements = [new Audio(), new Audio()];
+  for (const el of elements) {
+    el.preload = 'auto';
+    // Les événements de l'élément qui s'éteint (pause, fin) ne concernent plus la file.
+    const on = (type, handler) => el.addEventListener(type, (e) => { if (el === audio) handler(e); });
+    on('playing', () => { retries = 0; notify('OnPlaying'); });
+    on('pause', () => notify('OnPaused'));
+    on('waiting', () => notify('OnBuffering'));
+    on('ended', () => notify('OnEnded'));
+    on('timeupdate', () => {
+      const s = Math.floor(position());
+      if (s !== lastReportedSecond) {
+        lastReportedSecond = s;
+        notify('OnTime', position());
+        updatePositionState();
+      }
+      checkNearEnd();
+    });
+    on('error', onError);
+  }
+  audio = elements[0];
+  audio.other = elements[1];
+  elements[1].other = elements[0];
 
   if ('mediaSession' in navigator) {
     const ms = navigator.mediaSession;
@@ -66,7 +80,50 @@ function notify(method, ...args) {
 let currentUrl = null;
 let expectedDuration = 0;
 
-export async function load(key, url, startAt, autoplay, duration) {
+// Fondu réglé : prévenir C# quand il reste moins que sa durée, pour qu'il lance le morceau suivant.
+function checkNearEnd() {
+  if (crossfadeSeconds <= 0 || nearEndSent || audio.paused) return;
+  const duration = expectedDuration || (isFinite(audio.duration) ? offset + audio.duration : 0);
+  if (duration > crossfadeSeconds * 2 && duration - position() <= crossfadeSeconds) {
+    nearEndSent = true;
+    notify('OnNearEnd');
+  }
+}
+
+export function setCrossfade(seconds) { crossfadeSeconds = Math.max(0, Math.min(5, seconds || 0)); }
+
+// L'élément qui jouait s'éteint pendant que le nouveau monte (courbe à puissance constante : pas de creux au milieu).
+function crossfade(from, to, seconds) {
+  finishFade();
+  fading = from;
+  const start = performance.now();
+  to.volume = 0;
+  fadeTimer = setInterval(() => {
+    const k = Math.min((performance.now() - start) / (seconds * 1000), 1);
+    from.volume = userVolume * Math.cos(k * Math.PI / 2);
+    to.volume = userVolume * Math.sin(k * Math.PI / 2);
+    if (k >= 1) finishFade();
+  }, 50);
+}
+
+function finishFade() {
+  clearInterval(fadeTimer);
+  fadeTimer = 0;
+  if (fading) {
+    fading.pause();
+    fading.removeAttribute('src');
+    fading.load();
+    fading = null;
+  }
+  if (audio) audio.volume = userVolume;
+}
+
+export async function load(key, url, startAt, autoplay, duration, fade) {
+  // Fondu demandé et un morceau qui joue encore : le nouveau part sur l'autre élément.
+  const fadeFrom = fade > 0 && autoplay && audio.src && !audio.paused ? audio : null;
+  if (fadeFrom) audio = audio.other;
+  else finishFade();
+  nearEndSent = false;
   currentKey = key;
   currentUrl = url;
   expectedDuration = duration || 0;
@@ -81,6 +138,7 @@ export async function load(key, url, startAt, autoplay, duration) {
     const at = resumeAt;
     audio.addEventListener('loadedmetadata', () => seek(at), { once: true });
   }
+  if (fadeFrom) crossfade(fadeFrom, audio, fade);
   if (autoplay) await safePlay();
   evict(new Set([key]));
 }
@@ -128,6 +186,7 @@ function reloadCurrent() {
 export function play() { return safePlay(); }
 export function pause() { audio.pause(); }
 export function stop() {
+  finishFade();
   audio.pause();
   audio.removeAttribute('src');
   audio.load();
@@ -158,7 +217,10 @@ function canSeekTo(t) {
   }
   return false;
 }
-export function setVolume(v) { audio.volume = Math.min(1, Math.max(0, v)); }
+export function setVolume(v) {
+  userVolume = Math.min(1, Math.max(0, v));
+  if (!fading) audio.volume = userVolume;
+}
 
 // Télécharge complètement les pistes suivantes (une à la fois) pour encaisser les coupures réseau.
 // items : [{ key, url }]
@@ -191,7 +253,7 @@ function evict(keep) {
   for (const [key, entry] of prefetched) {
     if (keep.has(key)) continue;
     entry.controller.abort();
-    if (entry.url && audio.src !== entry.url) URL.revokeObjectURL(entry.url);
+    if (entry.url && audio.src !== entry.url && fading?.src !== entry.url) URL.revokeObjectURL(entry.url);
     prefetched.delete(key);
   }
 }

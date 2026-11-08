@@ -375,7 +375,14 @@
     "passwordChanged": "Mot de passe changé. Reconnectez-vous.",
     "language": "Langue",
     "languageHint": "Suivie sur tous vos appareils connectés à ce compte.",
-    "languageSaved": "Langue enregistrée"
+    "languageSaved": "Langue enregistrée",
+    "crossfade": "Fondu enchaîné",
+    "crossfadeOff": "désactivé",
+    "seconds": "{value} s",
+    "crossfadeHint": "Le morceau suivant commence pendant que celui-ci s'éteint (0 à 5 s).",
+    "infinitePlay": "Lecture infinie",
+    "infinitePlayHint": "En fin de file, ajoute des morceaux proches (même genre, puis même artiste) pour que la musique ne s'arrête pas.",
+    "infiniteAhead": "Morceaux choisis d'avance"
   },
   "quality": {
     "original": "Originale",
