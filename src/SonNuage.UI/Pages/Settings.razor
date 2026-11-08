@@ -59,11 +59,14 @@
             <input class="input" type="number" min="0" max="10" @bind="_prefetch" />
             <small class="muted">@L["settings.prefetchHint"]</small>
         </label>
-        <label class="field">
-            <span>@L["settings.crossfade"] : <strong>@(_crossfade == 0 ? L["settings.crossfadeOff"] : L["settings.seconds", ("value", _crossfade.ToString("0.0"))])</strong></span>
-            <input type="range" min="0" max="@PlaybackSettings.MaxCrossfadeSeconds" step="0.1" @bind="_crossfade" @bind:event="oninput" />
-            <small class="muted">@L["settings.crossfadeHint"]</small>
-        </label>
+        @if (Player.SupportsCrossfade)
+        {
+            <label class="field">
+                <span>@L["settings.crossfade"] : <strong>@(_crossfade == 0 ? L["settings.crossfadeOff"] : L["settings.seconds", ("value", _crossfade.ToString("0.0"))])</strong></span>
+                <input type="range" min="0" max="@PlaybackSettings.MaxCrossfadeSeconds" step="0.1" @bind="_crossfade" @bind:event="oninput" />
+                <small class="muted">@L["settings.crossfadeHint"]</small>
+            </label>
+        }
         <label class="field check">
             <input type="checkbox" @bind="_infinite" />
             <span>@L["settings.infinitePlay"]</span>

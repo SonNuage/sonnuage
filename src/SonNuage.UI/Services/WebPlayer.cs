@@ -35,6 +35,8 @@ public sealed class WebPlayer : IPlayer, IRestorablePlayer, IAdoptablePlayer, IA
 
     public event Action? StateChanged;
 
+    public bool SupportsCrossfade => true;
+
     public WebPlayer(IJSRuntime js, ApiClient api, PlaybackSettings settings, IKeyValueStore store, AccountStore accounts)
     {
         this.js = js;

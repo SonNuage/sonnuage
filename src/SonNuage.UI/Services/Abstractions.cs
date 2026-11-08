@@ -50,6 +50,9 @@ public interface IPlayer
     PlayerState State { get; }
     event Action? StateChanged;
 
+    /// <summary>Le lecteur sait enchaîner deux morceaux en fondu (sinon le réglage est masqué).</summary>
+    bool SupportsCrossfade => false;
+
     Task PlayAsync(IReadOnlyList<TrackDto> tracks, int startIndex = 0, bool? shuffle = null);
     Task TogglePlayAsync();
     Task NextAsync();
