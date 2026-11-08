@@ -35,10 +35,21 @@
                 </section>
             }
 
-            <section>
-                <h2>@L["artist.discography"]</h2>
-                <AlbumGrid Albums="a.Albums" ShowArtist="false" />
-            </section>
+            @if (a.Albums.Count > 0)
+            {
+                <section>
+                    <h2>@L["artist.discography"]</h2>
+                    <AlbumGrid Albums="a.Albums" ShowArtist="false" />
+                </section>
+            }
+
+            @if (_appearances is { Count: > 0 } appearances)
+            {
+                <section>
+                    <h2>@L["artist.appearsOn"]</h2>
+                    <TrackList Tracks="appearances" ShowCover="true" />
+                </section>
+            }
         </div>
     }
 </Loader>
@@ -51,6 +62,7 @@
 
     private ArtistDetailDto? _artist;
     private List<TrackDto>? _tracks;
+    private List<TrackDto>? _appearances;
     private bool _all;
     private string? _error;
     private Guid _loaded;
@@ -61,6 +73,7 @@
         _loaded = Id;
         _artist = null;
         _tracks = null;
+        _appearances = null;
         _all = false;
         await LoadAsync();
     }
@@ -72,8 +85,10 @@
         {
             var artist = Api.ArtistAsync(Id);
             var top = Api.ArtistTopTracksAsync(Id, TopCount);
+            var appearances = Api.ArtistAppearancesAsync(Id);
             _artist = await artist;
             _tracks = await top;
+            _appearances = await appearances;
             if (_artist is null) _error = L["artist.notFound"];
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)

@@ -315,7 +315,8 @@
     "topTracks": "Titres populaires",
     "allTracks": "Tous les titres",
     "showAll": "Voir tout ({count})",
-    "showLess": "Voir moins"
+    "showLess": "Voir moins",
+    "appearsOn": "Apparaît sur"
   },
   "search": {
     "placeholder": "Artistes, albums, titres…",

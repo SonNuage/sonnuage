@@ -24,6 +24,7 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     public Task<AlbumDetailDto?> AlbumAsync(Guid id) => GetAsync<AlbumDetailDto>($"api/albums/{id}");
     public Task<ArtistDetailDto?> ArtistAsync(Guid id) => GetAsync<ArtistDetailDto>($"api/artists/{id}");
     public Task<List<TrackDto>?> ArtistTracksAsync(Guid id) => GetAsync<List<TrackDto>>($"api/artists/{id}/tracks");
+    public Task<List<TrackDto>?> ArtistAppearancesAsync(Guid id) => GetAsync<List<TrackDto>>($"api/artists/{id}/appearances");
     public Task<List<TrackDto>?> ArtistTopTracksAsync(Guid id, int limit) => GetAsync<List<TrackDto>>($"api/artists/{id}/top?limit={limit}");
     public Task<PlaybackPreferences?> PlaybackPreferencesAsync() => GetAsync<PlaybackPreferences>("api/me/playback");
     public Task<PlaybackPreferences?> SavePlaybackPreferencesAsync(PlaybackPreferences prefs) => SendAsync<PlaybackPreferences>(HttpMethod.Put, "api/me/playback", prefs);
