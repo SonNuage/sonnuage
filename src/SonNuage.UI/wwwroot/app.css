@@ -486,7 +486,7 @@ select.input { cursor: pointer; }
 .np-context { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
 .np-cover { width: min(100%, 60vh, 520px); align-self: center; box-shadow: 0 16px 48px var(--shadow); border-radius: 8px; }
 .np-meta { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: min(100%, 520px); align-self: center; }
-.np-meta > div { display: flex; flex-direction: column; min-width: 0; }
+.np-meta > div:first-child { display: flex; flex-direction: column; min-width: 0; }
 .np-title { font-size: 1.4rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .np-artist { color: var(--text-muted); }
 .np-seek { width: min(100%, 520px); align-self: center; }
@@ -495,7 +495,7 @@ select.input { cursor: pointer; }
 .np-controls .icon-btn { width: 56px; height: 56px; color: var(--text); }
 .np-controls .icon-btn.on { color: var(--accent); }
 .play-btn.large { width: 64px; height: 64px; }
-.np-actions { display: flex; align-items: center; gap: .25rem; flex-shrink: 0; }
+.np-actions { display: flex; flex-direction: row; align-items: center; gap: .25rem; flex-shrink: 0; }
 
 /* Paroles à la place de la pochette : elles seules défilent, les commandes restent en place. */
 .now-playing.with-lyrics { overflow: hidden; }
