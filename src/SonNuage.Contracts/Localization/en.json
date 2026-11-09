@@ -121,6 +121,10 @@
     "queued": "Added to queue"
   },
   "errors": {
+    "radio": {
+      "placeNotFound": "City “{place}” not found.",
+      "weatherUnavailable": "Open-Meteo is not answering, try again later."
+    },
     "serverNotConfigured": "Server address not configured.",
     "sessionExpired": "Session expired.",
     "generic": "Error",
@@ -1297,5 +1301,94 @@
     "tracksPerArtist": "Top songs per artist",
     "hint": "Each refresh adds new artists (more if needed to reach the minimum) and removes those suggested for longer than the chosen lifetime; they may come back later. The number of songs applies to new artists.",
     "saved": "Discovery settings saved."
+  },
+  "radio": {
+    "title": "Radios",
+    "hint": "Radios made from your library, by season, mood or weather.",
+    "play": "Play the {name} radio",
+    "playing": "{name} radio",
+    "stations": {
+      "halloween": {
+        "name": "Halloween",
+        "description": "Chills, ghosts and dark moods."
+      },
+      "christmas": {
+        "name": "Christmas",
+        "description": "Christmas songs and festive tunes."
+      },
+      "new-year": {
+        "name": "New Year's Eve",
+        "description": "Something to dance to until midnight."
+      },
+      "winter": {
+        "name": "Winter by the fire",
+        "description": "Soft and acoustic, for winter evenings."
+      },
+      "valentine": {
+        "name": "Valentine's Day",
+        "description": "Love songs."
+      },
+      "spring": {
+        "name": "Spring",
+        "description": "Light and bright, like sunny days."
+      },
+      "summer": {
+        "name": "Summer",
+        "description": "Sun, beach and warm rhythms."
+      },
+      "autumn": {
+        "name": "Autumn",
+        "description": "Falling leaves and gentle melancholy."
+      },
+      "good-mood-pop": {
+        "name": "Good mood pop",
+        "description": "Happy songs to make you smile."
+      },
+      "chill": {
+        "name": "Chill",
+        "description": "Calm and easy, to unwind."
+      },
+      "energy": {
+        "name": "Full of energy",
+        "description": "Upbeat, to move or work out."
+      },
+      "party": {
+        "name": "Party",
+        "description": "To dance with friends."
+      },
+      "melancholy": {
+        "name": "Melancholy",
+        "description": "Sad and introspective songs."
+      },
+      "focus": {
+        "name": "Focus",
+        "description": "Mostly instrumental, to work."
+      },
+      "weather": {
+        "name": "Weather radio",
+        "description": "A mood that follows the weather."
+      }
+    },
+    "weather": {
+      "sunny": "Sunny, {temp} °C in {place}",
+      "bright": "Clear sky, {temp} °C in {place}",
+      "cloudy": "Cloudy, {temp} °C in {place}",
+      "fog": "Fog, {temp} °C in {place}",
+      "rain": "Rain, {temp} °C in {place}",
+      "snow": "Snow, {temp} °C in {place}",
+      "storm": "Thunderstorm, {temp} °C in {place}"
+    },
+    "tags": {
+      "suite": "MusicBrainz tags for radios",
+      "done": "Tags read for {albums} albums ({tracks} tagged songs)."
+    },
+    "admin": {
+      "title": "Radios",
+      "place": "Weather radio city",
+      "placeHint": "Only this city's coordinates are sent to Open-Meteo to get the weather. Leave empty to offer no weather radio.",
+      "weatherEnabled": "Offer the weather radio",
+      "saved": "Radio settings saved: {place}.",
+      "savedNoPlace": "Radio settings saved, without weather radio."
+    }
   }
 }

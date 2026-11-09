@@ -83,6 +83,17 @@ builder.Services.AddSingleton<SonNuage.Server.Discovery.ISimilarArtistSource>(sp
 builder.Services.AddSingleton<SonNuage.Server.Subsonic.NowPlayingBoard>();
 builder.Services.AddSingleton<SonNuage.Server.Discovery.DeezerClient>();
 builder.Services.AddHttpClient(SonNuage.Server.Lyrics.LrclibClient.HttpClientName, http => http.Timeout = TimeSpan.FromSeconds(15));
+builder.Services.AddHttpClient(SonNuage.Server.Radio.OpenMeteoWeather.HttpClientName, http =>
+{
+    http.Timeout = TimeSpan.FromSeconds(10);
+    http.DefaultRequestHeaders.UserAgent.ParseAdd("SonNuage/1.0");
+});
+builder.Services.AddSingleton<SonNuage.Server.Radio.RadioSettingsStore>();
+builder.Services.AddSingleton<SonNuage.Server.Radio.IWeatherSource, SonNuage.Server.Radio.OpenMeteoWeather>();
+builder.Services.AddSingleton<SonNuage.Server.Radio.RadioStations>();
+builder.Services.AddSingleton<SonNuage.Server.Radio.IReleaseTagSource>(sp => sp.GetRequiredService<MusicBrainzClient>());
+builder.Services.AddSingleton<IJobHandler, SonNuage.Server.Radio.RadioTagsJob>();
+builder.Services.AddHostedService<SonNuage.Server.Radio.RadioTagsScheduler>();
 builder.Services.AddSingleton<SonNuage.Server.Lyrics.LrclibClient>();
 builder.Services.AddSingleton<SonNuage.Server.Lyrics.LyricsService>();
 builder.Services.AddSingleton<SonNuage.Server.Discovery.DiscoverySettingsStore>();
@@ -180,6 +191,7 @@ app.MapExtensionEndpoints();
 app.MapDashboardEndpoints();
 app.MapCrashReportEndpoints();
 app.MapDiscoveryEndpoints();
+app.MapRadioStationEndpoints();
 app.MapDownloadRequestEndpoints();
 app.MapStorageEndpoints();
 app.MapArtistDiscoveryEndpoints();

@@ -121,6 +121,10 @@
     "queued": "Ajouté à la file d'attente"
   },
   "errors": {
+    "radio": {
+      "placeNotFound": "Ville « {place} » introuvable.",
+      "weatherUnavailable": "Open-Meteo ne répond pas, réessayez plus tard."
+    },
     "serverNotConfigured": "Adresse du serveur non configurée.",
     "sessionExpired": "Session expirée.",
     "generic": "Erreur",
@@ -1297,5 +1301,94 @@
     "tracksPerArtist": "Titres phares par artiste",
     "hint": "Chaque actualisation ajoute de nouveaux artistes (plus s'il en faut pour atteindre le minimum) et retire ceux proposés depuis plus longtemps que la durée choisie ; ils pourront revenir plus tard. Le nombre de titres s'applique aux nouveaux artistes.",
     "saved": "Réglages de la découverte enregistrés."
+  },
+  "radio": {
+    "title": "Radios",
+    "hint": "Des radios tirées de votre bibliothèque, selon la saison, l'ambiance ou la météo.",
+    "play": "Écouter la radio {name}",
+    "playing": "Radio {name}",
+    "stations": {
+      "halloween": {
+        "name": "Halloween",
+        "description": "Frissons, fantômes et ambiances sombres."
+      },
+      "christmas": {
+        "name": "Noël",
+        "description": "Chansons de Noël et airs de fête."
+      },
+      "new-year": {
+        "name": "Réveillon",
+        "description": "De quoi danser jusqu'à minuit."
+      },
+      "winter": {
+        "name": "Hiver au coin du feu",
+        "description": "Doux, acoustique, pour les soirs d'hiver."
+      },
+      "valentine": {
+        "name": "Saint-Valentin",
+        "description": "Chansons d'amour."
+      },
+      "spring": {
+        "name": "Printemps",
+        "description": "Léger et lumineux, comme les beaux jours."
+      },
+      "summer": {
+        "name": "Été",
+        "description": "Soleil, plage et rythmes qui chauffent."
+      },
+      "autumn": {
+        "name": "Automne",
+        "description": "Feuilles mortes et mélancolie douce."
+      },
+      "good-mood-pop": {
+        "name": "Pop bonne humeur",
+        "description": "Des titres joyeux pour sourire."
+      },
+      "chill": {
+        "name": "Détente",
+        "description": "Calme et posé, pour souffler."
+      },
+      "energy": {
+        "name": "Plein d'énergie",
+        "description": "Rythmé, pour bouger ou faire du sport."
+      },
+      "party": {
+        "name": "Soirée",
+        "description": "Pour danser entre amis."
+      },
+      "melancholy": {
+        "name": "Mélancolie",
+        "description": "Titres tristes et introspectifs."
+      },
+      "focus": {
+        "name": "Concentration",
+        "description": "Surtout instrumental, pour travailler."
+      },
+      "weather": {
+        "name": "Météo du moment",
+        "description": "Une ambiance qui suit le temps qu'il fait."
+      }
+    },
+    "weather": {
+      "sunny": "Grand soleil, {temp} °C à {place}",
+      "bright": "Ciel dégagé, {temp} °C à {place}",
+      "cloudy": "Nuageux, {temp} °C à {place}",
+      "fog": "Brouillard, {temp} °C à {place}",
+      "rain": "Pluie, {temp} °C à {place}",
+      "snow": "Neige, {temp} °C à {place}",
+      "storm": "Orage, {temp} °C à {place}"
+    },
+    "tags": {
+      "suite": "Tags MusicBrainz pour les radios",
+      "done": "Tags lus pour {albums} albums ({tracks} titres tagués)."
+    },
+    "admin": {
+      "title": "Radios",
+      "place": "Ville de la radio météo",
+      "placeHint": "Seules les coordonnées de cette ville sont envoyées à Open-Meteo pour connaître le temps qu'il fait. Laissez vide pour ne pas proposer de radio météo.",
+      "weatherEnabled": "Proposer la radio météo",
+      "saved": "Réglages des radios enregistrés : {place}.",
+      "savedNoPlace": "Réglages des radios enregistrés, sans radio météo."
+    }
   }
 }

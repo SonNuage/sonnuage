@@ -1,0 +1,144 @@
+using SonNuage.Contracts;
+using SonNuage.Server.Radio;
+
+namespace SonNuage.Server.Tests;
+
+/// <summary>Stations de saison, d'ambiance et de météo : qui choisit quels morceaux.</summary>
+public sealed class RadioCatalogTests
+{
+    private static TrackProfile Track(string title, string? album = null, string? genre = null, AudioFeel? feel = null, string[]? tags = null,
+        Guid? artist = null) =>
+        TrackProfile.Create(Guid.NewGuid(), artist ?? Guid.NewGuid(), Guid.NewGuid(), true, 200, title, album, genre, tags, feel);
+
+    private static StationDefinition Station(string id) => StationCatalog.Find(id)!;
+
+    private static bool Plays(string station, TrackProfile p) => Station(station).Score(p) >= Station(station).Threshold;
+
+    [Theory]
+    [InlineData(10, 31, true)]
+    [InlineData(11, 2, true)]
+    [InlineData(11, 3, false)]
+    [InlineData(10, 9, false)]
+    public void Halloween_shows_from_mid_october_to_early_november(int month, int day, bool shown) =>
+        Assert.Equal(shown, Station("halloween").Window!.Contains(new DateOnly(2026, month, day)));
+
+    [Theory]
+    [InlineData(12, 24, true)]
+    [InlineData(1, 6, true)]
+    [InlineData(1, 7, false)]
+    [InlineData(11, 30, false)]
+    public void Christmas_spans_the_new_year(int month, int day, bool shown) =>
+        Assert.Equal(shown, Station("christmas").Window!.Contains(new DateOnly(2026, month, day)));
+
+    [Fact]
+    public void Christmas_songs_are_found_by_title_album_or_musicbrainz_tag()
+    {
+        Assert.True(Plays("christmas", Track("Petit Papa Noël")));
+        Assert.True(Plays("christmas", Track("Last Christmas")));
+        Assert.True(Plays("christmas", Track("Song", album: "A Very Special Xmas")));
+        Assert.True(Plays("christmas", Track("All I Want for You", tags: ["christmas music"])));
+        Assert.False(Plays("christmas", Track("Noelle's Song")));
+        Assert.False(Plays("christmas", Track("Highway to Hell", genre: "Hard Rock")));
+    }
+
+    [Fact]
+    public void Halloween_takes_spooky_titles_and_dark_intense_sounds()
+    {
+        Assert.True(Plays("halloween", Track("Thriller")));
+        Assert.True(Plays("halloween", Track("Ghost Town")));
+        Assert.True(Plays("halloween", Track("Song", feel: new AudioFeel(Valence: 0.1, Aggressive: 0.9, Energy: 0.9))));
+        Assert.False(Plays("halloween", Track("Song", feel: new AudioFeel(Valence: 0.8, Aggressive: 0.9, Energy: 0.9))));
+        Assert.False(Plays("halloween", Track("Ghostwriter")));
+    }
+
+    [Fact]
+    public void Good_mood_pop_needs_pop_or_happy_sounds()
+    {
+        Assert.True(Plays("good-mood-pop", Track("Song", genre: "Pop")));
+        Assert.True(Plays("good-mood-pop", Track("Song", genre: "Pop", feel: new AudioFeel(Happy: 0.8, Valence: 0.7, Danceability: 0.6))));
+        Assert.False(Plays("good-mood-pop", Track("Song", genre: "Pop", feel: new AudioFeel(Happy: 0.05, Sad: 0.9, Valence: 0.1))));
+        Assert.False(Plays("good-mood-pop", Track("Song", genre: "Metal")));
+    }
+
+    [Fact]
+    public void Mood_stations_wait_for_the_audio_analysis()
+    {
+        var unknown = Track("Song", genre: "Ambient");
+        Assert.False(Plays("chill", unknown));
+        Assert.True(Plays("chill", Track("Song", feel: new AudioFeel(Relaxed: 0.9, Energy: 0.1, Acoustic: 0.8, Aggressive: 0.05))));
+        Assert.False(Plays("chill", Track("Song", feel: new AudioFeel(Relaxed: 0.1, Energy: 0.95, Aggressive: 0.9))));
+        Assert.True(Plays("energy", Track("Song", feel: new AudioFeel(Energy: 0.9, Danceability: 0.8, Bpm: 128))));
+        Assert.True(Plays("focus", Track("Song", feel: new AudioFeel(Instrumental: 0.95, Relaxed: 0.7, Energy: 0.3, Aggressive: 0.1))));
+        Assert.True(Plays("melancholy", Track("Song", feel: new AudioFeel(Sad: 0.9, Valence: 0.1, Energy: 0.2))));
+    }
+
+    [Theory]
+    [InlineData(0, 25, true, WeatherCategory.Sunny)]
+    [InlineData(0, 8, true, WeatherCategory.Bright)]
+    [InlineData(0, 25, false, WeatherCategory.Bright)]
+    [InlineData(3, 12, true, WeatherCategory.Cloudy)]
+    [InlineData(61, 9, true, WeatherCategory.Rain)]
+    [InlineData(81, 9, true, WeatherCategory.Rain)]
+    [InlineData(73, -2, true, WeatherCategory.Snow)]
+    [InlineData(95, 20, true, WeatherCategory.Storm)]
+    [InlineData(45, 5, true, WeatherCategory.Fog)]
+    public void Weather_codes_map_to_a_mood(int code, double temp, bool day, WeatherCategory expected) =>
+        Assert.Equal(expected, StationCatalog.Category(new WeatherNow(code, temp, day, "Lyon")));
+
+    [Fact]
+    public void Rainy_weather_plays_calm_acoustic_songs_and_rain_songs()
+    {
+        var rain = StationCatalog.ForWeather(new WeatherNow(61, 9, true, "Lyon"));
+        Assert.Equal(RadioStationKinds.Weather, rain.Kind);
+        Assert.True(rain.Score(Track("Song", feel: new AudioFeel(Acoustic: 0.9, Relaxed: 0.9, Sad: 0.6, Energy: 0.1))) >= rain.Threshold);
+        Assert.True(rain.Score(Track("Song", feel: new AudioFeel(Acoustic: 0.5, Relaxed: 0.6, Energy: 0.3))) <
+                    rain.Score(Track("Purple Rain", feel: new AudioFeel(Acoustic: 0.5, Relaxed: 0.6, Energy: 0.3))));
+        Assert.True(rain.Score(Track("Song", feel: new AudioFeel(Acoustic: 0.05, Relaxed: 0.1, Energy: 0.95, Aggressive: 0.9))) < rain.Threshold);
+    }
+
+    [Fact]
+    public void Picking_spreads_artists_and_skips_excluded_tracks()
+    {
+        var a = Guid.NewGuid();
+        var b = Guid.NewGuid();
+        var candidates = Enumerable.Range(0, 6).Select(i => new RadioStations.Candidate(Track($"A{i}", artist: a), 0.9))
+            .Concat(Enumerable.Range(0, 6).Select(i => new RadioStations.Candidate(Track($"B{i}", artist: b), 0.9)))
+            .Concat(Enumerable.Range(0, 6).Select(i => new RadioStations.Candidate(Track($"C{i}"), 0.7)))
+            .ToList();
+        var excluded = candidates.Take(3).Select(c => c.Profile.Id).ToHashSet();
+
+        var ids = RadioStations.Pick(candidates, excluded, 6, new Random(1));
+
+        Assert.Equal(6, ids.Distinct().Count());
+        Assert.DoesNotContain(ids, excluded.Contains);
+        var artists = ids.Select(id => candidates.First(c => c.Profile.Id == id).Profile.ArtistId).ToList();
+        Assert.True(artists.Count(x => x == a) <= 2 && artists.Count(x => x == b) <= 2);
+        Assert.All(artists.Zip(artists.Skip(1)), pair => Assert.NotEqual(pair.First, pair.Second));
+    }
+
+    [Fact]
+    public void Picking_starts_over_when_everything_was_played()
+    {
+        var candidates = Enumerable.Range(0, 3).Select(i => new RadioStations.Candidate(Track($"S{i}"), 0.8)).ToList();
+
+        var ids = RadioStations.Pick(candidates, candidates.Select(c => c.Profile.Id).ToHashSet(), 3, new Random(2));
+
+        Assert.Equal(3, ids.Count);
+    }
+
+    [Fact]
+    public void Account_ratings_hide_disliked_songs_and_favor_liked_ones()
+    {
+        var liked = Track("Song", genre: "Pop");
+        var disliked = Track("Song", genre: "Pop");
+        var albumDisliked = Track("Song", genre: "Pop");
+        var personal = new RadioStations.Personal(new HashSet<Guid> { liked.Id },
+            new Dictionary<Guid, int> { [disliked.Id] = 1, [albumDisliked.AlbumId] = 2 });
+
+        var candidates = RadioStations.Candidates(Station("good-mood-pop"), [liked, disliked, albumDisliked], personal);
+
+        var only = Assert.Single(candidates);
+        Assert.Equal(liked.Id, only.Profile.Id);
+        Assert.True(only.Score > Station("good-mood-pop").Score(liked));
+    }
+}

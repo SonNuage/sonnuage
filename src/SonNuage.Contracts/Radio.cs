@@ -21,3 +21,12 @@ public static class RadioStationKinds
     public const string Mood = "mood";
     public const string Weather = "weather";
 }
+
+/// <summary>
+/// Réglages des radios (admin) : lieu de la radio météo, résolu par Open-Meteo (seules ses coordonnées partent vers
+/// Open-Meteo). <paramref name="Place"/> null : pas de radio météo.
+/// </summary>
+public sealed record RadioSettingsDto(string? Place, double? Latitude, double? Longitude, bool WeatherEnabled = true);
+
+/// <summary>Nouveau lieu de la radio météo (nom de ville) ; vide pour l'enlever.</summary>
+public sealed record RadioSettingsRequest(string? Place, bool WeatherEnabled = true);

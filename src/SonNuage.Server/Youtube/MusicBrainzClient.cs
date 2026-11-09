@@ -21,6 +21,12 @@ public sealed record MbRelease(
 
 public sealed record AcoustIdMatch(string RecordingId, double Score);
 
+/// <summary>
+/// Tags MusicBrainz d'une édition : ceux de l'édition et de son groupe (<see cref="Release"/>), et ceux de chaque
+/// enregistrement (<see cref="ByRecording"/>, clé : identifiant de l'enregistrement). Noms en minuscules → votes.
+/// </summary>
+public sealed record MbReleaseTags(IReadOnlyDictionary<string, int> Release, IReadOnlyDictionary<Guid, IReadOnlyDictionary<string, int>> ByRecording);
+
 public sealed record AudioFingerprint(double DurationSeconds, string Fingerprint);
 
 public sealed class AcoustIdException(string message) : Exception(message);
@@ -40,6 +46,7 @@ public sealed record MbRecording(
 /// MusicBrainz impose au plus une requête par seconde et un User-Agent identifiable.
 /// </summary>
 public sealed class MusicBrainzClient(IHttpClientFactory httpFactory, YoutubeTools tools, IOptions<SonNuageOptions> options, ILogger<MusicBrainzClient> logger)
+    : Radio.IReleaseTagSource
 {
     public const string HttpClientName = "musicbrainz";
     private static readonly SemaphoreSlim Gate = new(1, 1);
@@ -75,6 +82,47 @@ public sealed class MusicBrainzClient(IHttpClientFactory httpFactory, YoutubeToo
             .Where(a => a["score"]?.GetValue<int>() == 100 && a["name"]?.GetValue<string>() is { } n && Library.NameNormalizer.Key(n) == key)
             .Select(a => a["id"]?.GetValue<string>())
             .FirstOrDefault();
+    }
+
+    /// <summary>Tags et genres d'une édition, de son groupe et de ses enregistrements, en une requête ; null si inconnue.</summary>
+    public async Task<MbReleaseTags?> ReleaseTagsAsync(Guid releaseId, CancellationToken ct)
+    {
+        JsonObject? json;
+        try
+        {
+            json = await GetJsonAsync($"{options.Value.MusicBrainzUrl.TrimEnd('/')}/ws/2/release/{releaseId}?fmt=json&inc=tags+genres+release-groups+recordings", ct);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+        if (json is null) return null;
+        var release = Tags(json);
+        foreach (var (name, count) in Tags(json["release-group"] as JsonObject))
+            release[name] = Math.Max(count, release.GetValueOrDefault(name));
+        var byRecording = new Dictionary<Guid, IReadOnlyDictionary<string, int>>();
+        foreach (var medium in (json["media"]?.AsArray() ?? []).OfType<JsonObject>())
+        foreach (var track in (medium["tracks"]?.AsArray() ?? []).OfType<JsonObject>())
+        {
+            if (track["recording"] is JsonObject rec && Guid.TryParse(rec["id"]?.GetValue<string>(), out var id))
+                byRecording[id] = Tags(rec);
+        }
+        return new MbReleaseTags(release, byRecording);
+
+        static Dictionary<string, int> Tags(JsonObject? o)
+        {
+            var tags = new Dictionary<string, int>();
+            foreach (var list in new[] { o?["tags"], o?["genres"] })
+            foreach (var t in (list?.AsArray() ?? []).OfType<JsonObject>())
+            {
+                var name = t["name"]?.GetValue<string>()?.Trim().ToLowerInvariant();
+                if (string.IsNullOrEmpty(name) || name.Length > Data.TrackTag.MaxNameLength) continue;
+                var count = t["count"]?.GetValue<int>() ?? 1;
+                if (count < 1) continue;
+                tags[name] = Math.Max(count, tags.GetValueOrDefault(name));
+            }
+            return tags;
+        }
     }
 
     public async Task<IReadOnlyList<MbRecording>> RecordingsByIdAsync(IReadOnlyList<string> ids, CancellationToken ct) =>
