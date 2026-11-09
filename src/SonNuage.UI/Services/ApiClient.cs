@@ -86,6 +86,7 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     public Task<MatchResultDto?> RequestMatchAsync(string artist, string title) =>
         GetAsync<MatchResultDto>($"api/requests/match?artist={Uri.EscapeDataString(artist)}&title={Uri.EscapeDataString(title)}");
     public Task<DownloadRequestDto?> CreateRequestAsync(CreateDownloadRequest req) => SendAsync<DownloadRequestDto>(HttpMethod.Post, "api/requests", req);
+    public Task RequestAlbumAsync(CreateAlbumRequest req) => SendAsync(HttpMethod.Post, "api/requests/album", req);
     public Task<PagedResult<DownloadRequestDto>?> MyRequestsAsync(int offset, int limit) => GetAsync<PagedResult<DownloadRequestDto>>($"api/requests/mine?offset={offset}&limit={limit}");
     public Task<RequestQuotaDto?> RequestQuotaAsync() => GetAsync<RequestQuotaDto>("api/requests/quota");
     public Task<PagedResult<DownloadRequestDto>?> AdminRequestsAsync(string? status, string? q, int offset, int limit) =>

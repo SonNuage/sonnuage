@@ -120,6 +120,8 @@ button { font: inherit; color: inherit; }
 .disc-actions { display: flex; align-items: center; gap: .4rem; margin-top: auto; }
 .disc-actions .btn { flex: 1; justify-content: center; }
 .disc-state { pointer-events: none; color: var(--text-muted); }
+.disc-actions .disc-album { flex: 0 0 auto; }
+.disc-album.on { border-color: var(--accent); color: var(--accent); }
 @media (max-width: 640px) {
   .disc-row { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: .75rem; margin: 0 -1rem; padding: 0 1rem .4rem; scrollbar-width: none; }
   .disc-row::-webkit-scrollbar { display: none; }

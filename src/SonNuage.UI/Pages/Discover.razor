@@ -89,12 +89,22 @@
                                     {
                                         <button class="btn compact primary" disabled="@(_sending is not null)" @onclick="() => AskAsync(artist, t)"><Icon Name="add" Size="16" /> @L["requests.ask"]</button>
                                     }
-                                    <a class="icon-btn" href="https://www.youtube.com/watch?v=@videoId" target="_blank" rel="noopener noreferrer"
-                                       title="@L["yt.explore.open"]" aria-label="@L["yt.explore.open"]"><Icon Name="open" Size="18" /></a>
                                 }
                                 else
                                 {
                                     <a class="btn compact" href="@MatchLink(artist.Name, t.Title)"><Icon Name="search" Size="16" /> @L["discover.search"]</a>
+                                }
+                                @if (t.ReleaseName is { } album)
+                                {
+                                    var albumAsked = _albums.Contains(AlbumKey(artist.Name, album));
+                                    <button class="btn compact disc-album @(albumAsked ? "on" : null)" disabled="@(albumAsked || _sendingAlbum)"
+                                            title="@(albumAsked ? L["discover.albumAsked"] : L["discover.albumHint", ("album", album)])"
+                                            @onclick="() => AskAlbumAsync(artist.Name, album)"><Icon Name="album" Size="16" /> @L["discover.album"]</button>
+                                }
+                                @if (t.VideoId is { } openId)
+                                {
+                                    <a class="icon-btn" href="https://www.youtube.com/watch?v=@openId" target="_blank" rel="noopener noreferrer"
+                                       title="@L["yt.explore.open"]" aria-label="@L["yt.explore.open"]"><Icon Name="open" Size="18" /></a>
                                 }
                             </div>
                         </article>
@@ -119,6 +129,24 @@
 
     private static string MatchLink(string artist, string title) =>
         $"requests?artist={Uri.EscapeDataString(artist)}&title={Uri.EscapeDataString(title)}";
+
+    private readonly HashSet<string> _albums = [];
+    private bool _sendingAlbum;
+
+    private static string AlbumKey(string artist, string album) => $"{artist}\n{album}".ToLowerInvariant();
+
+    /// <summary>Tout l'album : le serveur retrouve ses titres et les demande un par un, en tâche de fond.</summary>
+    private async Task AskAlbumAsync(string artist, string album)
+    {
+        _sendingAlbum = true;
+        await RunAsync(async () =>
+        {
+            await Api.RequestAlbumAsync(new CreateAlbumRequest(artist, album));
+            _albums.Add(AlbumKey(artist, album));
+            Ui.Notify(L["discover.albumSent", ("album", album)]);
+        });
+        _sendingAlbum = false;
+    }
 
     private async Task AskAsync(DiscoveryArtistDto artist, DiscoveryTrackDto track)
     {
