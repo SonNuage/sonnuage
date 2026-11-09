@@ -1306,6 +1306,7 @@
     "title": "Radios",
     "hint": "Radios made from your library, by season, mood or weather.",
     "play": "Play the {name} radio",
+    "empty": "Nothing to play on this radio for now.",
     "playing": "{name} radio",
     "stations": {
       "halloween": {

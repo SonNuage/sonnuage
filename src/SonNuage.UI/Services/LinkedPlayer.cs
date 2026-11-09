@@ -77,6 +77,10 @@ public sealed class LinkedPlayer : IPlayer, IRestorablePlayer, IConnectPlayer
     public Task PlayAsync(IReadOnlyList<TrackDto> tracks, int startIndex = 0, bool? shuffle = null) =>
         IsRemote ? SendAsync(new PlayerCommand("play", Tracks: tracks, Index: startIndex, Shuffle: shuffle)) : _local.PlayAsync(tracks, startIndex, shuffle);
 
+    /// <summary>Sur un autre appareil, la radio part comme une simple liste : seul ce lecteur-ci sait demander la suite.</summary>
+    public Task PlayStationAsync(string stationId, IReadOnlyList<TrackDto> tracks) =>
+        IsRemote ? PlayAsync(tracks, 0, shuffle: false) : _local.PlayStationAsync(stationId, tracks);
+
     public Task TogglePlayAsync() => IsRemote ? SendAsync(new PlayerCommand("toggle")) : _local.TogglePlayAsync();
 
     public Task NextAsync() => IsRemote ? SendAsync(new PlayerCommand("next")) : _local.NextAsync();

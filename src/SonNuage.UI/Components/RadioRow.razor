@@ -1,0 +1,80 @@
+@inject ApiClient Api
+@inject IPlayer Player
+@inject UiState Ui
+
+@* Radios thématiques (saisons, ambiances, météo) : une rangée de vignettes, un appui lance la radio. *@
+@if (_stations is { Count: > 0 } stations)
+{
+    <section>
+        <h2>@L["radio.title"]</h2>
+        @if (ShowHint)
+        {
+            <p class="muted section-hint">@L["radio.hint"]</p>
+        }
+        <div class="radio-row">
+            @foreach (var s in stations)
+            {
+                <button class="radio-card" @key="s.Id" style="--station: @s.Color" title="@L["radio.play", ("name", s.Name)]"
+                        disabled="@(_starting is not null)" @onclick="() => PlayAsync(s)">
+                    <span class="radio-covers n@(Math.Min(s.CoverAlbumIds.Count, 4))">
+                        @foreach (var album in s.CoverAlbumIds.Take(4))
+                        {
+                            <Cover AlbumId="album" Size="160" Seed="@s.Name" />
+                        }
+                        <span class="radio-play">
+                            @if (_starting == s.Id)
+                            {
+                                <Logo Size="14" Animated="true" />
+                            }
+                            else
+                            {
+                                <Icon Name="play" Size="26" />
+                            }
+                        </span>
+                    </span>
+                    <span class="radio-name">@s.Name</span>
+                    <span class="radio-desc">@s.Description</span>
+                </button>
+            }
+        </div>
+    </section>
+}
+
+@code {
+    [Parameter] public bool ShowHint { get; set; }
+
+    private List<RadioStationDto>? _stations;
+    private string? _starting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _stations = await Api.RadioStationsAsync();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            // Serveur plus ancien, ou injoignable : pas de rangée.
+            _stations = null;
+        }
+    }
+
+    private async Task PlayAsync(RadioStationDto station)
+    {
+        _starting = station.Id;
+        try
+        {
+            var tracks = await Api.RadioStationNextAsync(station.Id, new StationNextRequest([], 25));
+            if (tracks is { Count: > 0 }) await Player.PlayStationAsync(station.Id, tracks);
+            else Ui.Notify(L["radio.empty"], true);
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+        finally
+        {
+            _starting = null;
+        }
+    }
+}

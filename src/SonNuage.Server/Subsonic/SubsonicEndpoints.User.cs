@@ -36,10 +36,15 @@ public static partial class SubsonicEndpoints
             var root = r.Ok();
             var list = root.Add("playlists").List("playlist");
             foreach (var row in rows) list.Add().Fill(row);
+            foreach (var row in await StationPlaylistsAsync(r)) list.Add().Fill(row);
             return root;
         });
 
-        On("getPlaylist", async r => await PlaylistAsync(r, r.RequireId("id", SubsonicIds.Playlist, "Playlist")));
+        On("getPlaylist", async r =>
+        {
+            var id = r.RequireId("id", SubsonicIds.Playlist, "Playlist");
+            return StationOfPlaylist(id) is { } station ? await StationPlaylistAsync(r, id, station) : await PlaylistAsync(r, id);
+        });
 
         // Nouvelle playlist (name), ou contenu remplacé d'une existante (playlistId).
         On("createPlaylist", async r =>

@@ -110,7 +110,9 @@ public static partial class SubsonicEndpoints
         if (SubsonicIds.Parse(id, SubsonicIds.Artist) is { } artist)
             return await r.Db.Artists.Where(a => a.Id == artist).Select(ArtistRows(r.Db, r.UserId)).Select(a => a.CoverAlbumId).FirstOrDefaultAsync(r.Ct);
         if (SubsonicIds.Parse(id, SubsonicIds.Playlist) is { } playlist)
-            return await r.Db.Playlists.Where(p => p.Id == playlist).Select(PlaylistRows).Select(p => p.CoverAlbumId).FirstOrDefaultAsync(r.Ct);
+            return StationOfPlaylist(playlist) is not null
+                ? (await StationPlaylistsAsync(r)).FirstOrDefault(p => p.Id == playlist)?.CoverAlbumId
+                : await r.Db.Playlists.Where(p => p.Id == playlist).Select(PlaylistRows).Select(p => p.CoverAlbumId).FirstOrDefaultAsync(r.Ct);
         if (SubsonicIds.Parse(id, SubsonicIds.Track) is { } track)
             return await r.Db.Tracks.Where(t => t.Id == track).Select(t => (Guid?)t.AlbumId).FirstOrDefaultAsync(r.Ct);
         return null;

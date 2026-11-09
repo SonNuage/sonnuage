@@ -106,6 +106,11 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     public Task RefreshDiscoveryAsync() => SendAsync(HttpMethod.Post, "api/admin/discovery/refresh");
     public Task<StorageStatusDto?> StorageAsync() => GetAsync<StorageStatusDto>("api/admin/storage");
     public Task<StorageStatusDto?> SaveStorageAsync(StorageSettingsDto s) => SendAsync<StorageStatusDto>(HttpMethod.Put, "api/admin/storage", s);
+    public Task<List<RadioStationDto>?> RadioStationsAsync() => GetAsync<List<RadioStationDto>>("api/radio/stations");
+    public Task<List<TrackDto>?> RadioStationNextAsync(string id, StationNextRequest request) =>
+        SendAsync<List<TrackDto>>(HttpMethod.Post, $"api/radio/stations/{Uri.EscapeDataString(id)}/next", request);
+    public Task<RadioSettingsDto?> RadioSettingsAsync() => GetAsync<RadioSettingsDto>("api/admin/radio");
+    public Task<RadioSettingsDto?> SaveRadioSettingsAsync(RadioSettingsRequest s) => SendAsync<RadioSettingsDto>(HttpMethod.Put, "api/admin/radio", s);
     public Task<DiscoverySettingsDto?> DiscoverySettingsAsync() => GetAsync<DiscoverySettingsDto>("api/admin/discovery/settings");
     public Task<DiscoverySettingsDto?> SaveDiscoverySettingsAsync(DiscoverySettingsDto s) => SendAsync<DiscoverySettingsDto>(HttpMethod.Put, "api/admin/discovery/settings", s);
     public Task<MatchResultDto?> RequestMatchAsync(string artist, string title) =>

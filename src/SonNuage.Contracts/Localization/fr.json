@@ -1306,6 +1306,7 @@
     "title": "Radios",
     "hint": "Des radios tirées de votre bibliothèque, selon la saison, l'ambiance ou la météo.",
     "play": "Écouter la radio {name}",
+    "empty": "Rien à jouer pour cette radio pour l'instant.",
     "playing": "Radio {name}",
     "stations": {
       "halloween": {

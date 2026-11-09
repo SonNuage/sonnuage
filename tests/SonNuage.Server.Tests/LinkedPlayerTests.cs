@@ -35,6 +35,19 @@ public class LinkedPlayerTests
     }
 
     [Fact]
+    public async Task A_station_continues_only_on_the_tab_that_plays_it()
+    {
+        var (a, localA, b, _, _) = await TwoTabsAsync();
+
+        await a.PlayStationAsync("chill", Tracks);
+        Assert.Equal("chill", localA.Station);
+
+        await b.PlayStationAsync("party", Tracks);
+        Assert.True(b.IsRemote);
+        Assert.Null(localA.Station);
+    }
+
+    [Fact]
     public async Task Play_here_moves_playback_to_this_tab()
     {
         var (a, localA, b, localB, _) = await TwoTabsAsync();

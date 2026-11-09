@@ -165,6 +165,27 @@ public sealed class RadioStationTests(RadioFactory factory) : IClassFixture<Radi
         }
     }
 
+    [Fact]
+    public async Task Subsonic_apps_see_the_stations_as_read_only_playlists()
+    {
+        var admin = await SessionAsync();
+        var access = (await (await admin.PostAsync("/api/me/subsonic", null, Ct)).Content.ReadFromJsonAsync<SubsonicAccessDto>(Ct))!;
+        var client = factory.CreateClient();
+        async Task<System.Text.Json.JsonElement> Call(string method, string query = "")
+        {
+            var text = await client.GetStringAsync($"/rest/{method}?apiKey={access.Password}&v=1.16.1&c=tests&f=json&{query}", Ct);
+            return System.Text.Json.JsonDocument.Parse(text).RootElement.GetProperty("subsonic-response").Clone();
+        }
+
+        var playlists = (await Call("getPlaylists")).GetProperty("playlists").GetProperty("playlist").EnumerateArray().ToList();
+        var radio = Assert.Single(playlists, p => p.GetProperty("name").GetString() == "Good mood pop radio");
+        Assert.Equal("SonNuage", radio.GetProperty("owner").GetString());
+
+        var playlist = (await Call("getPlaylist", $"id={radio.GetProperty("id").GetString()}")).GetProperty("playlist");
+        Assert.NotEmpty(playlist.GetProperty("entry").EnumerateArray());
+        Assert.Equal("failed", (await Call("deletePlaylist", $"id={radio.GetProperty("id").GetString()}")).GetProperty("status").GetString());
+    }
+
     private async Task<List<RadioStationDto>> StationsAsync(HttpClient client) =>
         (await client.GetFromJsonAsync<List<RadioStationDto>>("/api/radio/stations", Ct))!;
 

@@ -54,6 +54,11 @@ public interface IPlayer
     bool SupportsCrossfade => false;
 
     Task PlayAsync(IReadOnlyList<TrackDto> tracks, int startIndex = 0, bool? shuffle = null);
+    /// <summary>
+    /// Radio thématique : joue ses premiers morceaux puis demande la suite à la station tant qu'on l'écoute (sans
+    /// lecture infinie, le lecteur s'arrête à la fin de ces morceaux).
+    /// </summary>
+    Task PlayStationAsync(string stationId, IReadOnlyList<TrackDto> tracks) => PlayAsync(tracks, 0, shuffle: false);
     Task TogglePlayAsync();
     Task NextAsync();
     Task PreviousAsync();

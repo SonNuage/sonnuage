@@ -32,6 +32,10 @@ public sealed class WebPlayer : IPlayer, IRestorablePlayer, IAdoptablePlayer, IA
     private bool _reported;
     // Un seul appel de lecture infinie à la fois (deux changements de piste rapprochés ne doivent pas doubler l'ajout).
     private bool _extending;
+    /// <summary>Radio thématique en cours : la file se complète avec ses morceaux.</summary>
+    private string? _station;
+    /// <summary>Avance gardée par une radio thématique, même sans lecture infinie.</summary>
+    private const int StationAhead = 5;
 
     public event Action? StateChanged;
 
@@ -78,6 +82,7 @@ public sealed class WebPlayer : IPlayer, IRestorablePlayer, IAdoptablePlayer, IA
             var index = Math.Max(0, tracks.FindIndex(t => t.Id == saved.CurrentId));
             _queue.Load(tracks, index, false);
             _queue.Repeat = saved.Repeat;
+            _station = saved.Station;
             _position = saved.Position;
             // Après un rechargement pour mise à jour, la musique reprend (si le navigateur autorise la lecture automatique).
             await LoadCurrentAsync(autoplay: resume, startAt: saved.Position);
@@ -94,6 +99,7 @@ public sealed class WebPlayer : IPlayer, IRestorablePlayer, IAdoptablePlayer, IA
         await ReportCurrentAsync(completed: false);
         _queue.Load(state.Queue, Math.Max(0, state.CurrentIndex), false);
         _queue.Repeat = state.Repeat;
+        _station = null;
         _volume = state.Volume;
         await (await ModuleAsync()).InvokeVoidAsync("setVolume", _volume);
         await LoadCurrentAsync(autoplay, startAt: state.PositionSeconds);
@@ -107,10 +113,21 @@ public sealed class WebPlayer : IPlayer, IRestorablePlayer, IAdoptablePlayer, IA
     public async Task PlayAsync(IReadOnlyList<TrackDto> tracks, int startIndex = 0, bool? shuffle = null)
     {
         if (tracks.Count == 0) return;
+        _station = null;
         await ReportCurrentAsync(completed: false);
         var repeat = _queue.Repeat;
         _queue.Load(tracks, shuffle == true && startIndex < 0 ? new Random().Next(tracks.Count) : Math.Max(0, startIndex), shuffle ?? _queue.Shuffle);
         _queue.Repeat = repeat;
+        await LoadCurrentAsync(autoplay: true);
+    }
+
+    public async Task PlayStationAsync(string stationId, IReadOnlyList<TrackDto> tracks)
+    {
+        if (tracks.Count == 0) return;
+        await ReportCurrentAsync(completed: false);
+        _queue.Load(tracks, 0, shuffle: false);
+        _queue.Repeat = RepeatMode.Off;
+        _station = stationId;
         await LoadCurrentAsync(autoplay: true);
     }
 
@@ -268,7 +285,13 @@ public sealed class WebPlayer : IPlayer, IRestorablePlayer, IAdoptablePlayer, IA
     /// <summary>Lecture infinie : complète la file pour garder l'avance réglée après le morceau en cours.</summary>
     private async Task ExtendAsync()
     {
-        if (!settings.InfinitePlay || _queue.Repeat != RepeatMode.Off || _extending) return;
+        if (_queue.Repeat != RepeatMode.Off || _extending) return;
+        if (_station is { } station)
+        {
+            await ExtendStationAsync(station);
+            return;
+        }
+        if (!settings.InfinitePlay) return;
         var needed = InfinitePlay.Needed(_queue.Items.Count, _queue.Index, settings.InfiniteAhead);
         if (needed == 0) return;
         _extending = true;
@@ -279,6 +302,32 @@ public sealed class WebPlayer : IPlayer, IRestorablePlayer, IAdoptablePlayer, IA
             if (await api.RadioAsync(request) is { Count: > 0 } tracks) _queue.Enqueue(tracks, playNext: false);
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            // Sans réseau, la file s'arrêtera simplement à son dernier morceau.
+        }
+        finally
+        {
+            _extending = false;
+        }
+    }
+
+    /// <summary>Suite de la radio thématique ; si elle n'est plus proposée (fin de saison), la lecture infinie reprend la main.</summary>
+    private async Task ExtendStationAsync(string station)
+    {
+        var needed = InfinitePlay.Needed(_queue.Items.Count, _queue.Index, Math.Max(settings.InfiniteAhead, StationAhead));
+        if (needed == 0) return;
+        _extending = true;
+        try
+        {
+            var exclude = _queue.Items.Select(t => t.Id).TakeLast(500).ToList();
+            var tracks = await api.RadioStationNextAsync(station, new StationNextRequest(exclude, needed));
+            if (tracks is { Count: > 0 }) _queue.Enqueue(tracks, playNext: false);
+        }
+        catch (ApiException)
+        {
+            _station = null;
+        }
+        catch (HttpRequestException)
         {
             // Sans réseau, la file s'arrêtera simplement à son dernier morceau.
         }
@@ -324,7 +373,7 @@ public sealed class WebPlayer : IPlayer, IRestorablePlayer, IAdoptablePlayer, IA
 
     private async Task SaveAsync()
     {
-        var saved = new SavedQueue(_queue.Items.Take(500).Select(t => t.Id).ToList(), _queue.Current?.Id, _position, _queue.Repeat);
+        var saved = new SavedQueue(_queue.Items.Take(500).Select(t => t.Id).ToList(), _queue.Current?.Id, _position, _queue.Repeat, _station);
         await store.SetAsync(QueueKey, JsonSerializer.Serialize(saved, JsonDefaults.Options));
     }
 
@@ -339,6 +388,7 @@ public sealed class WebPlayer : IPlayer, IRestorablePlayer, IAdoptablePlayer, IA
         if (_queue.Current is not null) await SaveAsync();
         _queueKey = null;
         _queue.Load([], 0, false);
+        _station = null;
         _playing = false;
         _position = 0;
         if (_module is not null) await _module.InvokeVoidAsync("stop");
@@ -417,5 +467,6 @@ public sealed class WebPlayer : IPlayer, IRestorablePlayer, IAdoptablePlayer, IA
         _self?.Dispose();
     }
 
-    private sealed record SavedQueue(List<Guid> Ids, Guid? CurrentId, double Position, RepeatMode Repeat);
+    /// <param name="Station">Radio thématique en cours : elle continue après un rechargement de la page.</param>
+    private sealed record SavedQueue(List<Guid> Ids, Guid? CurrentId, double Position, RepeatMode Repeat, string? Station = null);
 }

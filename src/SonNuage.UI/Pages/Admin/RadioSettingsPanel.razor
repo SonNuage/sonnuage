@@ -1,0 +1,66 @@
+@inject ApiClient Api
+@inject UiState Ui
+
+@* Réglages → Radios : ville de la radio météo (Open-Meteo). *@
+<section class="panel">
+    <h2>@L["radio.admin.title"]</h2>
+    @if (_loaded)
+    {
+        <div class="form-grid">
+            <label class="field">
+                <span>@L["radio.admin.place"]</span>
+                <input class="input" type="text" maxlength="120" placeholder="Lyon" @bind="_place" />
+            </label>
+        </div>
+        <label class="row small" style="margin: .6rem 0; flex-wrap: nowrap; align-items: flex-start">
+            <input type="checkbox" @bind="_weatherEnabled" />
+            <span>@L["radio.admin.weatherEnabled"]</span>
+        </label>
+        <p class="muted small">@L["radio.admin.placeHint"]</p>
+        <button class="btn primary" disabled="@_saving" @onclick="SaveAsync">@L["common.save"]</button>
+    }
+    else
+    {
+        <Logo Size="16" Animated="true" />
+    }
+</section>
+
+@code {
+    private bool _loaded;
+    private string? _place;
+    private bool _weatherEnabled = true;
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync() => await RunAsync(async () => Show(await Api.RadioSettingsAsync()));
+
+    private void Show(RadioSettingsDto? s)
+    {
+        if (s is null) return;
+        (_place, _weatherEnabled) = (s.Place, s.WeatherEnabled);
+        _loaded = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        await RunAsync(async () =>
+        {
+            var saved = await Api.SaveRadioSettingsAsync(new RadioSettingsRequest(_place, _weatherEnabled));
+            Show(saved);
+            Ui.Notify(saved?.Place is { } place ? L["radio.admin.saved", ("place", place)] : L["radio.admin.savedNoPlace"]);
+        });
+        _saving = false;
+    }
+
+    private async Task RunAsync(Func<Task> action)
+    {
+        try
+        {
+            await action();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+    }
+}

@@ -35,8 +35,18 @@ internal sealed class FakePlayer : IPlayer, IRestorablePlayer, IAdoptablePlayer
 
     public Task ReleaseAsync() => Set(State with { IsPlaying = false });
 
+    /// <summary>Radio thématique lancée par <see cref="PlayStationAsync"/> ; null après une lecture ordinaire.</summary>
+    public string? Station { get; private set; }
+
+    public async Task PlayStationAsync(string stationId, IReadOnlyList<TrackDto> tracks)
+    {
+        await PlayAsync(tracks);
+        Station = stationId;
+    }
+
     public Task PlayAsync(IReadOnlyList<TrackDto> tracks, int startIndex = 0, bool? shuffle = null)
     {
+        Station = null;
         _queue = tracks.ToList();
         return Set(State with { Queue = _queue, CurrentIndex = startIndex, IsPlaying = true, PositionSeconds = 0 });
     }
