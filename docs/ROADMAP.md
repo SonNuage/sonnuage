@@ -16,6 +16,7 @@ Légende : ✅ fait · 🔜 prochain · 💡 idée à creuser · ⚠️ limite c
 | Recherche | ✅ Elasticsearch (fautes de frappe, suggestions), avec repli automatique sur la base s'il tombe |
 | Import YouTube | ✅ recherche, playlists, albums, chaînes, abonnements synchronisés, extension de navigateur avec clés API |
 | Tâches | ✅ volet « Tâches » dans l'admin : files, suites de tâches, journal en direct, annulation et relance, rescan AcoustID |
+| Applis tierces | ✅ API Subsonic / OpenSubsonic (`/rest/*`) : Symfonium, Feishin, DSub, Substreamer, Tempo… |
 | Déploiement | ✅ Docker Compose sur le homelab (SonNuage + Elasticsearch), CI GitLab avec runner dédié, APK Android signé |
 
 ## Livré récemment
@@ -163,7 +164,7 @@ Constat sur le homelab : certains imports prenaient plus de 3 minutes, là où T
 7. ✅ **Autres traitements en tâches** : scan complet, réindexation Elasticsearch (bouton « Réindexer la recherche »),
    synchronisation de chaque abonnement (voie `sync`) et purge du cache de transcodage passent par le moteur de
    tâches, avec journal, annulation, nouvelles tentatives et historique dans le volet Tâches.
-8. 🔜 **API Subsonic / OpenSubsonic**, en plus de l'API actuelle (`/api/*` reste inchangée, les clients SonNuage
+8. ✅ (1.16.0) **API Subsonic / OpenSubsonic**, en plus de l'API actuelle (`/api/*` reste inchangée, les clients SonNuage
    continuent de l'utiliser). Ouvre l'appli à tout l'écosystème : Symfonium, Feishin, Substreamer, DSub, Tempo…
    y compris leur Android Auto. Estimation : 2 à 3 sessions, dont une bonne part d'essais avec de vrais clients.
    - **Couche de traduction** sous `/rest/*` (avec et sans suffixe `.view`), réponses XML et JSON (`f=json`),
@@ -184,6 +185,10 @@ Constat sur le homelab : certains imports prenaient plus de 3 minutes, là où T
    - Derrière Cloudflare Access : autoriser `/rest/*` comme `/api/extension/*` (les clients tiers ne savent pas
      passer Access).
    - Une fois livré : passer la ligne « Compatible API Subsonic » du comparatif de `sonnuage-site` à ✓.
+   - **Livré** : mot de passe Subsonic par compte dans Réglages → Applis Subsonic (chiffré, relisible, révocable,
+     sert aussi de clé `apiKey`), environ 45 méthodes sous `/rest/*`, XML, JSON et JSONP, GET et formulaire POST.
+     Favoris : morceaux seulement. Reste : essais avec Symfonium et Feishin, et autoriser `/rest/*` dans
+     Cloudflare Access si le domaine y passe.
 
 ## Découverte (« discovery »)
 
