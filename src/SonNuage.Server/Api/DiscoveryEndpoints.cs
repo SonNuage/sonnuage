@@ -34,7 +34,7 @@ public static class DiscoveryEndpoints
     /// Morceaux proches, du plus au moins proche : même genre qu'un des morceaux de départ, puis même artiste, puis
     /// n'importe lequel. Au hasard dans chaque cercle, jamais un morceau exclu ni deux fois le même.
     /// </summary>
-    private static async Task<List<Guid>> NextAsync(SonNuageDbContext db, RadioRequest req, CancellationToken ct)
+    internal static async Task<List<Guid>> NextAsync(SonNuageDbContext db, RadioRequest req, CancellationToken ct)
     {
         var seeds = await db.Tracks.Where(t => req.SeedTrackIds.Contains(t.Id))
             .Select(t => new { Genre = t.Genre == null ? null : t.Genre.ToLower(), t.ArtistId, AlbumArtistId = t.Album.ArtistId }).ToListAsync(ct);

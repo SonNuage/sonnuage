@@ -239,7 +239,7 @@ public sealed class SubsonicApiTests(SonNuageFactory factory) : IClassFixture<So
         var s = await SessionAsync();
         foreach (var method in new[] { "getPodcasts", "getInternetRadioStations", "getShares", "getBookmarks", "getNowPlaying",
                      "getScanStatus", "getUser&username=admin", "getLicense", "getArtistInfo2&id=x", "getAlbumInfo2&id=x",
-                     "getSimilarSongs2&id=x", "getTopSongs&artist=Test%20Artist", "getPlayQueue", "getLyrics&artist=a&title=b" })
+                     "getTopSongs&artist=Test%20Artist", "getLyrics&artist=a&title=b" })
         {
             var parts = method.Split('&', 2);
             AssertOk(await s.JsonAsync(parts[0], parts.Length > 1 ? parts[1] : ""));

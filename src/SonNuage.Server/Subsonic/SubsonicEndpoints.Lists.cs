@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SonNuage.Contracts;
 using SonNuage.Server.Data;
 using SonNuage.Server.Library;
 using static SonNuage.Server.Subsonic.SubsonicLibrary;
@@ -45,6 +46,9 @@ public static partial class SubsonicEndpoints
         On("getStarred2", r => StarredAsync(r, "starred2"));
         On("getStarred", r => StarredAsync(r, "starred"));
 
+        On("getSimilarSongs2", r => SimilarSongsAsync(r, "similarSongs2"));
+        On("getSimilarSongs", r => SimilarSongsAsync(r, "similarSongs"));
+
         On("getTopSongs", async r =>
         {
             var key = NameNormalizer.Key(r.Require("artist"));
@@ -53,6 +57,28 @@ public static partial class SubsonicEndpoints
                 .Take(r.Int("count", 50, 1, MaxPage)).Select(Song(r.Db, r.UserId)).ToListAsync(r.Ct);
             return SongList(r, "topSongs", songs);
         });
+    }
+
+    /// <summary>
+    /// « Mix » des applis : la radio de SonNuage (même genre, puis même artiste, puis le reste), partie d'un titre,
+    /// d'un album ou d'un artiste. Un titre de départ n'est pas repris dans son propre mix.
+    /// </summary>
+    private static async Task<object> SimilarSongsAsync(SubsonicRequest r, string element)
+    {
+        var raw = r.Require("id");
+        List<Guid> seeds, exclude = [];
+        if (SubsonicIds.Parse(raw, SubsonicIds.Artist) is { } artist)
+            seeds = await r.Db.Tracks.Where(t => t.ArtistId == artist || t.Album.ArtistId == artist).Select(t => t.Id).Take(RadioRequest.MaxIds).ToListAsync(r.Ct);
+        else if (SubsonicIds.Parse(raw, SubsonicIds.Album) is { } album)
+            seeds = await r.Db.Tracks.Where(t => t.AlbumId == album).Select(t => t.Id).Take(RadioRequest.MaxIds).ToListAsync(r.Ct);
+        else if (SubsonicIds.Parse(raw, SubsonicIds.Track) is { } track && await r.Db.Tracks.AnyAsync(t => t.Id == track, r.Ct))
+            seeds = exclude = [track];
+        else seeds = [];
+        if (seeds.Count == 0) throw SubsonicException.NotFound("Item");
+
+        var ids = await Api.DiscoveryEndpoints.NextAsync(r.Db, new RadioRequest(seeds, exclude, r.Int("count", 50, 1, MaxPage)), r.Ct);
+        var rows = await r.Db.Tracks.Where(t => ids.Contains(t.Id)).Select(Song(r.Db, r.UserId)).ToListAsync(r.Ct);
+        return SongList(r, element, ids.Select(id => rows.First(s => s.Id == id)));
     }
 
     private static SubsonicNode SongList(SubsonicRequest r, string element, IEnumerable<SongRow> songs)
