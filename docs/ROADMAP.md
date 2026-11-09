@@ -227,19 +227,21 @@ plus simple (données locales) à la plus ouverte (bases publiques), sur un mêm
 
 **Découverte par artiste** (demandé le 9 novembre 2026)
 
-- 💡 **Fiches d'artistes à découvrir, stockées en base** : artistes proches de ceux de la bibliothèque (ListenBrainz,
-  MusicBrainz), avec leurs titres phares, leurs albums, la source et la date de mise à jour. Rafraîchies par une
-  tâche de fond (file « Métadonnées »), pas à chaque affichage.
-- 💡 **Extraits pré-téléchargés** pour ces titres phares, dans un dossier à part (`var/discovery/previews`,
+- ✅ (1.10.0) **Fiches d'artistes à découvrir, stockées en base** (page « Découvrir ») : 24 artistes proches des
+  plus écoutés de la bibliothèque (ListenBrainz, identifiants MusicBrainz), avec « Proche de … » et 3 titres phares
+  chacun (ListenBrainz si un jeton `SonNuage:ListenBrainzToken` est fourni, sinon Deezer, sans compte), retrouvés
+  sur YouTube par la recherche par correspondance. Tâche de fond « discovery.refresh » chaque semaine, ou bouton
+  « Actualiser » (admin). Reste : albums des artistes proposés.
+- ✅ (1.10.0) **Extraits pré-téléchargés** pour ces titres phares, dans un dossier à part (`var/discovery/previews`,
   distinct du cache des extraits à la demande) : la page se lit tout de suite, sans attendre yt-dlp. Préparés
   par la même tâche, quelques-uns à la fois, et gardés tant que l'artiste reste proposé.
 - ✅ (1.9.0) **Place allouée aux extraits**, réglable dans Réglages → Stockage (2 Go par défaut) : au-delà, les
-  extraits les plus anciens sont supprimés. Reste à y inclure les extraits pré-téléchargés de la découverte
-  (les moins récents ou déjà importés en premier).
+  extraits les plus anciens sont supprimés. Les extraits pré-téléchargés de la découverte comptent dedans
+  (1.10.0) ; les extraits à la demande partent en premier.
 - ✅ (1.9.0) **Espace libre minimum sur le disque**, réglable dans Réglages → Stockage (5 Go par défaut) : en
   dessous, **tout téléchargement attend** (imports YouTube reportés de 10 minutes sans compter d'essai, extraits
   refusés), avec une alerte sur le tableau de bord. Les téléchargements reprennent seuls quand la place revient.
-- Une demande depuis une fiche passe par la recherche par correspondance ci-dessous, puis par le circuit
+- ✅ (1.10.0) Une demande depuis une fiche passe par la recherche par correspondance ci-dessous, puis par le circuit
   habituel des demandes (quota, approbation).
 
 **Bases publiques retenues**
@@ -247,7 +249,8 @@ plus simple (données locales) à la plus ouverte (bases publiques), sur un mêm
 | Base | Apporte | Accès | Verdict |
 |------|---------|-------|---------|
 | MusicBrainz | discographies, dates de sortie, relations entre artistes, genres | libre (CC0), 1 req/s | socle, déjà utilisé |
-| ListenBrainz | artistes et titres similaires, nouveautés, recommandations perso | libre, identifiants MusicBrainz | source principale |
+| ListenBrainz | artistes et titres similaires, nouveautés, recommandations perso | libre, identifiants MusicBrainz ; titres phares sous jeton depuis fin 2026 | source principale |
+| Deezer | titres phares d'un artiste (classement de popularité) | API publique sans compte, 50 req / 5 s | relais des titres phares |
 | Last.fm | similarité très fournie (artistes, titres), tags | clé d'API gratuite, usage non commercial | complément facultatif (clé fournie par l'admin) |
 | Wikidata | influences, genres, liens | libre (CC0) | enrichissement des fiches |
 | Discogs | styles fins, labels | clé d'API, quotas | plus tard, si besoin |
