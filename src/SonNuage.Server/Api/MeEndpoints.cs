@@ -11,6 +11,24 @@ public static class MeEndpoints
     {
         var g = app.MapGroup("/api/me").RequireAuthorization().WithTags("Me");
 
+        // Mot de passe des applis Subsonic : relisible par son propriétaire (il le saisit dans chaque appli).
+        g.MapGet("/subsonic", async (HttpContext http, SonNuageDbContext db, Subsonic.SubsonicPasswords passwords, CancellationToken ct) =>
+            await db.Users.FindAsync([http.User.UserId()], ct) is { } user ? Results.Ok(Access(user, passwords.Read(user))) : Results.Unauthorized());
+
+        g.MapPost("/subsonic", async (HttpContext http, SonNuageDbContext db, Subsonic.SubsonicPasswords passwords, TimeProvider time, CancellationToken ct) =>
+        {
+            if (await db.Users.FindAsync([http.User.UserId()], ct) is not { } user) return Results.Unauthorized();
+            var password = await passwords.CreateAsync(db, user, time.GetUtcNow(), ct);
+            return Results.Ok(Access(user, password));
+        });
+
+        g.MapDelete("/subsonic", async (HttpContext http, SonNuageDbContext db, CancellationToken ct) =>
+        {
+            if (await db.Users.FindAsync([http.User.UserId()], ct) is not { } user) return Results.Unauthorized();
+            await Subsonic.SubsonicPasswords.RevokeAsync(db, user, ct);
+            return Results.NoContent();
+        });
+
         g.MapGet("/favorites", async (HttpContext http, SonNuageDbContext db, CancellationToken ct) =>
         {
             var userId = http.User.UserId();
@@ -76,4 +94,7 @@ public static class MeEndpoints
             return await LibraryEndpoints.TracksInOrderAsync(db, userId, ids, ct);
         });
     }
+
+    private static SubsonicAccessDto Access(User user, string? password) =>
+        new(password is not null, user.Username, password, password is null ? null : user.SubsonicPasswordCreatedAt);
 }

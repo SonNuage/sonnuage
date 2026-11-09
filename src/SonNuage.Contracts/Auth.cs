@@ -37,4 +37,10 @@ public sealed record UserDto(Guid Id, string Username, string Role, DateTimeOffs
 
 public sealed record SetLanguageRequest(string? Language);
 
+/// <summary>
+/// Accès des applis Subsonic (Symfonium, Feishin, DSub…) : nom d'utilisateur et mot de passe Subsonic, distinct de
+/// celui du compte, à saisir dans l'appli avec l'adresse du serveur.
+/// </summary>
+public sealed record SubsonicAccessDto(bool Enabled, string Username, string? Password, DateTimeOffset? CreatedAt);
+
 public sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword);

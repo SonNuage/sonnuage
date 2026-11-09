@@ -830,6 +830,15 @@ namespace SonNuage.Server.Data.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("SubsonicKeyHash")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SubsonicPassword")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("SubsonicPasswordCreatedAt")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasMaxLength(64)

@@ -12,6 +12,7 @@ using SonNuage.Server.Storage;
 using SonNuage.Server.Streaming;
 using SonNuage.Server.Youtube;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -35,6 +36,13 @@ builder.Services.AddDbContext<SonNuageDbContext>((sp, db) =>
     db.UseSqlite($"Data Source={sp.GetRequiredService<IOptions<SonNuageOptions>>().Value.DatabasePath}"));
 
 builder.Services.AddSingleton(TimeProvider.System);
+// Clés de chiffrement (mot de passe Subsonic) dans le dossier de données : elles survivent à la reconstruction du conteneur.
+builder.Services.AddDataProtection().SetApplicationName("SonNuage");
+builder.Services.AddOptions<Microsoft.AspNetCore.DataProtection.KeyManagement.KeyManagementOptions>()
+    .Configure<IOptions<SonNuageOptions>, ILoggerFactory>((o, sonnuage, logs) =>
+        o.XmlRepository = new Microsoft.AspNetCore.DataProtection.Repositories.FileSystemXmlRepository(
+            new DirectoryInfo(Path.Combine(sonnuage.Value.DataPath, "keys")), logs));
+builder.Services.AddSingleton<SonNuage.Server.Subsonic.SubsonicPasswords>();
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<SigningKeyProvider>();
 builder.Services.AddScoped<TokenService>();

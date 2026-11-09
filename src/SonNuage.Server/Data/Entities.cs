@@ -116,6 +116,11 @@ public sealed class User
     public DateTimeOffset? LastSeenAt { get; set; }
     /// <summary>Appareil de cette dernière connexion (nom donné à la connexion, ex. « samsung SM-G990B2 »).</summary>
     public string? LastSeenDevice { get; set; }
+    /// <summary>Mot de passe des applis Subsonic, chiffré (voir <see cref="Subsonic.SubsonicPasswords"/>). Null = désactivé.</summary>
+    public string? SubsonicPassword { get; set; }
+    /// <summary>Empreinte du mot de passe Subsonic, pour la clé d'API OpenSubsonic (<c>apiKey</c>) qui ne donne pas le nom.</summary>
+    public string? SubsonicKeyHash { get; set; }
+    public DateTimeOffset? SubsonicPasswordCreatedAt { get; set; }
 }
 
 public sealed class RefreshToken
