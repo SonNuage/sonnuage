@@ -177,14 +177,10 @@ public sealed class JobEngine(
         if (job is null || job.Status is not (JobStatus.Failed or JobStatus.Canceled)) return false;
         var dependsOnDone = job.DependsOnId is not { } dep || await db.Jobs.AnyAsync(j => j.Id == dep && j.Status == JobStatus.Succeeded, ct);
         if (!dependsOnDone) return false;
-        job.Status = JobStatus.Queued;
-        job.Error = null;
-        job.Attempts = 0;
-        job.CancelRequested = false;
-        job.NotBefore = now;
-        job.FinishedAt = null;
-        job.Progress = null;
-        await db.SaveChangesAsync(ct);
+
+        // Les tâches suivantes redeviennent « en attente » AVANT que la tâche reparte : sinon elle pourrait finir entre
+        // les deux, sans personne à débloquer, et la suite resterait en attente pour toujours.
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
         for (var ids = new List<Guid> { jobId }; ids.Count > 0;)
         {
             var next = await db.Jobs.Where(j => j.DependsOnId != null && ids.Contains(j.DependsOnId.Value) && j.Status == JobStatus.Canceled)
@@ -193,6 +189,15 @@ public sealed class JobEngine(
                 .SetProperty(j => j.Error, (string?)null).SetProperty(j => j.FinishedAt, (DateTimeOffset?)null).SetProperty(j => j.Attempts, 0), ct);
             ids = next;
         }
+        job.Status = JobStatus.Queued;
+        job.Error = null;
+        job.Attempts = 0;
+        job.CancelRequested = false;
+        job.NotBefore = now;
+        job.FinishedAt = null;
+        job.Progress = null;
+        await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
         Log(jobId, "info", Tx.Key("jobs.log.retried"));
         Wake(job.Lane);
         return true;
