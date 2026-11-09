@@ -13,13 +13,13 @@ public static class SubsonicLibrary
 
     public sealed record SongRow(Guid Id, string Title, string ArtistName, Guid ArtistId, string AlbumArtistName, string AlbumTitle,
         Guid AlbumId, int? TrackNumber, int? DiscNumber, int? Year, string? Genre, double Duration, int? Bitrate, int? SampleRate,
-        long Size, string FilePath, bool HasCover, DateTimeOffset Created, DateTimeOffset? Starred, Guid? MusicBrainzId, int PlayCount);
+        long Size, string FilePath, bool HasCover, DateTimeOffset Created, DateTimeOffset? Starred, Guid? MusicBrainzId, int PlayCount, int? Rating);
 
     public sealed record AlbumRow(Guid Id, string Title, Guid ArtistId, string ArtistName, int? Year, int SongCount, double Duration,
-        bool HasCover, DateTimeOffset Created, string? Genre, Guid? MusicBrainzId, int PlayCount, DateTimeOffset? Starred);
+        bool HasCover, DateTimeOffset Created, string? Genre, Guid? MusicBrainzId, int PlayCount, DateTimeOffset? Starred, int? Rating);
 
     public sealed record ArtistRow(Guid Id, string Name, string SortName, int AlbumCount, Guid? CoverAlbumId, string? MusicBrainzId,
-        DateTimeOffset? Starred);
+        DateTimeOffset? Starred, int? Rating);
 
     public sealed record PlaylistRow(Guid Id, string Name, string? Comment, string Owner, int SongCount, double Duration,
         DateTimeOffset Created, DateTimeOffset Changed, Guid? CoverAlbumId);
@@ -30,7 +30,8 @@ public static class SubsonicLibrary
         t.Album.CoverPath != null || t.Album.HasEmbeddedCover, t.CreatedAt,
         db.Favorites.Where(f => f.UserId == userId && f.TrackId == t.Id).Select(f => (DateTimeOffset?)f.CreatedAt).FirstOrDefault(),
         t.MusicBrainzRecordingId,
-        db.PlayEvents.Count(p => p.UserId == userId && p.TrackId == t.Id));
+        db.PlayEvents.Count(p => p.UserId == userId && p.TrackId == t.Id),
+        db.Ratings.Where(x => x.UserId == userId && x.ItemId == t.Id).Select(x => (int?)x.Value).FirstOrDefault());
 
     public static Expression<Func<Album, AlbumRow>> Album(SonNuageDbContext db, Guid userId) => a => new AlbumRow(
         a.Id, a.Title, a.ArtistId, a.Artist.Name, a.Year, a.Tracks.Count, a.Tracks.Sum(t => t.DurationSeconds),
@@ -38,13 +39,15 @@ public static class SubsonicLibrary
         a.Tracks.Where(t => t.Genre != null).Select(t => t.Genre).FirstOrDefault(),
         a.MusicBrainzReleaseId,
         db.PlayEvents.Count(p => p.UserId == userId && p.Track.AlbumId == a.Id),
-        db.FavoriteAlbums.Where(f => f.UserId == userId && f.AlbumId == a.Id).Select(f => (DateTimeOffset?)f.CreatedAt).FirstOrDefault());
+        db.FavoriteAlbums.Where(f => f.UserId == userId && f.AlbumId == a.Id).Select(f => (DateTimeOffset?)f.CreatedAt).FirstOrDefault(),
+        db.Ratings.Where(x => x.UserId == userId && x.ItemId == a.Id).Select(x => (int?)x.Value).FirstOrDefault());
 
     public static Expression<Func<Artist, ArtistRow>> ArtistRows(SonNuageDbContext db, Guid userId) => ar => new ArtistRow(
         ar.Id, ar.Name, ar.SortName, ar.Albums.Count,
         ar.Albums.Where(al => al.CoverPath != null || al.HasEmbeddedCover).OrderByDescending(al => al.Year).Select(al => (Guid?)al.Id).FirstOrDefault(),
         ar.MusicBrainzId,
-        db.FavoriteArtists.Where(f => f.UserId == userId && f.ArtistId == ar.Id).Select(f => (DateTimeOffset?)f.CreatedAt).FirstOrDefault());
+        db.FavoriteArtists.Where(f => f.UserId == userId && f.ArtistId == ar.Id).Select(f => (DateTimeOffset?)f.CreatedAt).FirstOrDefault(),
+        db.Ratings.Where(x => x.UserId == userId && x.ItemId == ar.Id).Select(x => (int?)x.Value).FirstOrDefault());
 
     public static readonly Expression<Func<Playlist, PlaylistRow>> PlaylistRows = p => new PlaylistRow(
         p.Id, p.Name, p.Description, p.Owner.Username, p.Entries.Count, p.Entries.Sum(e => e.Track.DurationSeconds),
@@ -79,6 +82,7 @@ public static class SubsonicLibrary
             .Attr("playCount", s.PlayCount)
             .Attr("created", s.Created)
             .Attr("starred", s.Starred)
+            .Attr("userRating", s.Rating)
             .Attr("albumId", SubsonicIds.Of(SubsonicIds.Album, s.AlbumId))
             .Attr("artistId", SubsonicIds.Of(SubsonicIds.Artist, s.ArtistId))
             .Attr("type", "music")
@@ -103,6 +107,7 @@ public static class SubsonicLibrary
             .Attr("year", a.Year)
             .Attr("genre", a.Genre)
             .Attr("starred", a.Starred)
+            .Attr("userRating", a.Rating)
             .Attr("musicBrainzId", a.MusicBrainzId?.ToString());
     }
 
@@ -112,6 +117,7 @@ public static class SubsonicLibrary
         .Attr("albumCount", a.AlbumCount)
         .Attr("coverArt", a.CoverAlbumId is null ? null : SubsonicIds.Of(SubsonicIds.Artist, a.Id))
         .Attr("starred", a.Starred)
+        .Attr("userRating", a.Rating)
         .Attr("musicBrainzId", a.MusicBrainzId);
 
     public static SubsonicNode Fill(this SubsonicNode n, PlaylistRow p) => n

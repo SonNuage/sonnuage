@@ -210,6 +210,16 @@ public sealed class FavoriteArtist
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 
+/// <summary>Note de 1 à 5 d'un compte sur un titre, un album ou un artiste (identifiants uniques entre les trois).</summary>
+public sealed class UserRating
+{
+    public const int Max = 5;
+    public Guid UserId { get; set; }
+    public Guid ItemId { get; set; }
+    public int Value { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; }
+}
+
 public sealed class PlayEvent
 {
     public long Id { get; set; }

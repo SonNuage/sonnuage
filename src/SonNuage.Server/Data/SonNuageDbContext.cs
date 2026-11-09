@@ -15,6 +15,7 @@ public sealed class SonNuageDbContext(DbContextOptions<SonNuageDbContext> option
     public DbSet<Favorite> Favorites => Set<Favorite>();
     public DbSet<FavoriteAlbum> FavoriteAlbums => Set<FavoriteAlbum>();
     public DbSet<FavoriteArtist> FavoriteArtists => Set<FavoriteArtist>();
+    public DbSet<UserRating> Ratings => Set<UserRating>();
     public DbSet<PlayEvent> PlayEvents => Set<PlayEvent>();
     public DbSet<DiscoveryArtist> DiscoveryArtists => Set<DiscoveryArtist>();
     public DbSet<DiscoveryTrack> DiscoveryTracks => Set<DiscoveryTrack>();
@@ -129,6 +130,12 @@ public sealed class SonNuageDbContext(DbContextOptions<SonNuageDbContext> option
             e.HasIndex(x => x.AlbumId);
             e.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(x => x.Album).WithMany().HasForeignKey(x => x.AlbumId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<UserRating>(e =>
+        {
+            e.HasKey(x => new { x.UserId, x.ItemId });
+            e.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<FavoriteArtist>(e =>

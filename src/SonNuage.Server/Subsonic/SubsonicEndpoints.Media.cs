@@ -36,6 +36,28 @@ public static partial class SubsonicEndpoints
             return Results.File(cover.Path, cover.ContentType, enableRangeProcessing: false);
         });
 
+        // Note de 1 à 5 sur un titre, un album ou un artiste ; 0 la retire.
+        On("setRating", async r =>
+        {
+            var raw = r.Require("id");
+            var rating = r.IntOrNull("rating") ?? throw new SubsonicException(SubsonicError.MissingParameter, "Required parameter is missing: rating");
+            if (rating is < 0 or > UserRating.Max) throw new SubsonicException(SubsonicError.Generic, "Rating must be between 0 and 5");
+            Guid? id = SubsonicIds.Parse(raw, SubsonicIds.Album) is { } album && await r.Db.Albums.AnyAsync(a => a.Id == album, r.Ct) ? album
+                : SubsonicIds.Parse(raw, SubsonicIds.Artist) is { } artist && await r.Db.Artists.AnyAsync(a => a.Id == artist, r.Ct) ? artist
+                : SubsonicIds.Parse(raw, SubsonicIds.Track) is { } track && await r.Db.Tracks.AnyAsync(t => t.Id == track, r.Ct) ? track
+                : null;
+            if (id is not { } itemId) throw SubsonicException.NotFound("Item");
+
+            var uid = r.UserId;
+            await r.Db.Ratings.Where(x => x.UserId == uid && x.ItemId == itemId).ExecuteDeleteAsync(r.Ct);
+            if (rating > 0)
+            {
+                r.Db.Ratings.Add(new UserRating { UserId = uid, ItemId = itemId, Value = rating, UpdatedAt = r.Service<TimeProvider>().GetUtcNow() });
+                await r.Db.SaveChangesAsync(r.Ct);
+            }
+            return r.Ok();
+        });
+
         On("star", r => StarAsync(r, star: true));
         On("unstar", r => StarAsync(r, star: false));
 

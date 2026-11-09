@@ -929,6 +929,25 @@ namespace SonNuage.Server.Data.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("SonNuage.Server.Data.UserRating", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("UpdatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Value")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("UserId", "ItemId");
+
+                    b.ToTable("Ratings");
+                });
+
             modelBuilder.Entity("SonNuage.Server.Data.YoutubeItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1303,6 +1322,15 @@ namespace SonNuage.Server.Data.Migrations
                     b.Navigation("Artist");
 
                     b.Navigation("Track");
+                });
+
+            modelBuilder.Entity("SonNuage.Server.Data.UserRating", b =>
+                {
+                    b.HasOne("SonNuage.Server.Data.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("SonNuage.Server.Data.YoutubeItem", b =>

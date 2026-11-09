@@ -110,8 +110,10 @@ public static partial class SubsonicEndpoints
             "alphabeticalByArtist" => albums.OrderBy(a => a.Artist.SortName).ThenBy(a => a.Year).ThenBy(a => a.Id),
             "recent" => albums.Where(a => db.PlayEvents.Any(p => p.UserId == uid && p.Track.AlbumId == a.Id))
                 .OrderByDescending(a => db.PlayEvents.Where(p => p.UserId == uid && p.Track.AlbumId == a.Id).Max(p => p.PlayedAt)).ThenBy(a => a.Id),
-            "frequent" or "highest" => albums.Where(a => db.PlayEvents.Any(p => p.UserId == uid && p.Track.AlbumId == a.Id))
+            "frequent" => albums.Where(a => db.PlayEvents.Any(p => p.UserId == uid && p.Track.AlbumId == a.Id))
                 .OrderByDescending(a => db.PlayEvents.Count(p => p.UserId == uid && p.Track.AlbumId == a.Id)).ThenBy(a => a.Id),
+            "highest" => albums.Where(a => db.Ratings.Any(x => x.UserId == uid && x.ItemId == a.Id))
+                .OrderByDescending(a => db.Ratings.Where(x => x.UserId == uid && x.ItemId == a.Id).Max(x => x.Value)).ThenBy(a => a.Title).ThenBy(a => a.Id),
             "starred" => albums.Where(a => db.FavoriteAlbums.Any(f => f.UserId == uid && f.AlbumId == a.Id))
                 .OrderByDescending(a => db.FavoriteAlbums.Where(f => f.UserId == uid && f.AlbumId == a.Id).Max(f => f.CreatedAt)).ThenBy(a => a.Id),
             "byYear" => ByYear(albums, r.Int("fromYear", 0), r.Int("toYear", 9999)),
