@@ -18,7 +18,7 @@ public static class ArtistDiscoveryEndpoints
         app.MapGet("/api/discovery/artists", async (SonNuageDbContext db, IOptions<SonNuageOptions> options, CancellationToken ct) =>
         {
             var artists = await db.DiscoveryArtists.AsNoTracking().Include(a => a.Tracks)
-                .OrderByDescending(a => a.Score).ToListAsync(ct);
+                .OrderByDescending(a => a.AddedAt).ThenByDescending(a => a.Score).ToListAsync(ct);
             var videoIds = artists.SelectMany(a => a.Tracks).Where(t => t.VideoId != null).Select(t => t.VideoId!).Distinct().ToList();
             var imports = await db.YoutubeItems.Where(i => videoIds.Contains(i.VideoId))
                 .Select(i => new { i.VideoId, i.Status }).ToListAsync(ct);
@@ -34,7 +34,7 @@ public static class ArtistDiscoveryEndpoints
                         t.VideoId is null ? null : $"https://i.ytimg.com/vi/{t.VideoId}/mqdefault.jpg",
                         t.MatchScore,
                         t.VideoId is not null && File.Exists(Path.Combine(dir, $"{t.VideoId}.mp3")),
-                        t.VideoId is null ? null : status.GetValueOrDefault(t.VideoId))).ToList())).ToList());
+                        t.VideoId is null ? null : status.GetValueOrDefault(t.VideoId))).ToList(), a.AddedAt)).ToList());
         }).RequireAuthorization(AuthConstants.ContributorPolicy).WithTags("Discovery");
 
         app.MapPost("/api/admin/discovery/refresh", async (IServiceScopeFactory scopes, CancellationToken ct) =>

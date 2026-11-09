@@ -5,14 +5,14 @@ using SonNuage.Server.Jobs;
 namespace SonNuage.Server.Discovery;
 
 /// <summary>
-/// Actualise la découverte une fois par semaine (premier passage quelques minutes après le démarrage), et plus tôt
-/// s'il reste du travail (titres phares à chercher ou à retrouver sur YouTube), au plus toutes les 6 heures.
+/// Complète la découverte toutes les 6 heures (premier passage quelques minutes après le démarrage) : chaque
+/// actualisation ajoute de nouveaux artistes et retire ceux de plus de 7 jours.
 /// </summary>
 public sealed class DiscoveryScheduler(IServiceScopeFactory scopes, TimeProvider time, ILogger<DiscoveryScheduler> logger) : BackgroundService
 {
     private static readonly TimeSpan FirstCheck = TimeSpan.FromMinutes(5);
-    private static readonly TimeSpan CheckEvery = TimeSpan.FromHours(6);
-    private static readonly TimeSpan RefreshEvery = TimeSpan.FromDays(7);
+    private static readonly TimeSpan CheckEvery = TimeSpan.FromMinutes(30);
+    private static readonly TimeSpan RefreshEvery = TimeSpan.FromHours(6);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -43,9 +43,7 @@ public sealed class DiscoveryScheduler(IServiceScopeFactory scopes, TimeProvider
         var db = scope.ServiceProvider.GetRequiredService<SonNuageDbContext>();
         if (!await db.Tracks.AnyAsync(ct)) return;
         var last = await db.Jobs.Where(j => j.Kind == JobKinds.DiscoveryRefresh.Name).MaxAsync(j => (DateTimeOffset?)j.NotBefore, ct);
-        var pending = await db.DiscoveryArtists.AnyAsync(a => a.TracksFetchedAt == null, ct)
-            || await db.DiscoveryTracks.AnyAsync(t => t.MatchedAt == null, ct);
-        if (last is { } l && time.GetUtcNow() - l < (pending ? CheckEvery : RefreshEvery)) return;
+        if (last is { } l && time.GetUtcNow() - l < RefreshEvery) return;
         await scopes.RequestAsync(MaintenanceJobs.DiscoveryRefresh(), ct);
     }
 }

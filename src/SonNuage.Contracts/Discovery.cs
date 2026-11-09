@@ -7,7 +7,9 @@ public sealed record DiscoveryTrackDto(Guid Id, string Title, double? DurationSe
     string? Channel, string? ThumbnailUrl, int? MatchScore, bool PreviewReady, string? ImportStatus);
 
 /// <summary>Artiste proche de ceux de la bibliothèque. <paramref name="BecauseOf"/> : les artistes de la bibliothèque qui y mènent.</summary>
-public sealed record DiscoveryArtistDto(Guid Id, string Name, string? Comment, IReadOnlyList<string> BecauseOf, IReadOnlyList<DiscoveryTrackDto> Tracks);
+/// <param name="AddedAt">Proposé pour la première fois (les plus récents d'abord ; retiré au bout de 7 jours).</param>
+public sealed record DiscoveryArtistDto(Guid Id, string Name, string? Comment, IReadOnlyList<string> BecauseOf, IReadOnlyList<DiscoveryTrackDto> Tracks,
+    DateTimeOffset AddedAt = default);
 
 /// <param name="UpdatedAt">Dernière actualisation terminée (null : jamais).</param>
 /// <param name="Refreshing">Une actualisation attend ou tourne.</param>

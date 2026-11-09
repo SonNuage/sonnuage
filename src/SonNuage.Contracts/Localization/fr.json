@@ -988,7 +988,8 @@
       "matchFailed": "« {title} » introuvable sur YouTube : {message}",
       "matched": "{found} titres retrouvés sur YouTube sur {count} cherchés",
       "quotaReached": "Place allouée aux extraits atteinte : les autres extraits attendront",
-      "prefetched": "{count} extraits pré-téléchargés"
+      "prefetched": "{count} extraits pré-téléchargés",
+      "updated": "{added} nouveaux artistes, {expired} retirés (plus de 7 jours), {count} proposés, à partir de {seeds} artistes de la bibliothèque"
     },
     "requests": {
       "albumNotFound": "Album « {album} » de {artist} introuvable sur Deezer",
@@ -1221,13 +1222,14 @@
     "refresh": "Actualiser",
     "refreshStarted": "Actualisation lancée : elle peut prendre plusieurs minutes (recherches YouTube et extraits).",
     "firstRun": "Première actualisation en cours : revenez dans quelques minutes.",
-    "none": "Rien à proposer pour l'instant. La découverte s'actualise chaque semaine à partir des artistes de la bibliothèque.",
+    "none": "Rien à proposer pour l'instant. La découverte se complète toutes les 6 heures à partir des artistes de la bibliothèque.",
     "because": "Proche de {artists}",
     "notFound": "Pas trouvé sur YouTube automatiquement",
     "search": "Chercher",
     "album": "Album",
     "albumHint": "Demander tout l'album « {album} »",
     "albumSent": "Album « {album} » demandé : ses titres arrivent dans vos demandes au fil des recherches.",
-    "albumAsked": "Album demandé"
+    "albumAsked": "Album demandé",
+    "new": "Nouveau"
   }
 }

@@ -988,7 +988,8 @@
       "matchFailed": "“{title}” not found on YouTube: {message}",
       "matched": "{found} songs found on YouTube out of {count} searched",
       "quotaReached": "Preview space is full: the other previews will wait",
-      "prefetched": "{count} previews downloaded"
+      "prefetched": "{count} previews downloaded",
+      "updated": "{added} new artists, {expired} removed (older than 7 days), {count} suggested, from {seeds} library artists"
     },
     "requests": {
       "albumNotFound": "Album “{album}” by {artist} not found on Deezer",
@@ -1221,13 +1222,14 @@
     "refresh": "Refresh",
     "refreshStarted": "Refresh started: it can take several minutes (YouTube searches and previews).",
     "firstRun": "First refresh in progress: come back in a few minutes.",
-    "none": "Nothing to suggest yet. Discovery refreshes every week from the library artists.",
+    "none": "Nothing to suggest yet. Discovery grows every 6 hours from the library artists.",
     "because": "Close to {artists}",
     "notFound": "Not found on YouTube automatically",
     "search": "Search",
     "album": "Album",
     "albumHint": "Request the whole album “{album}”",
     "albumSent": "Album “{album}” requested: its songs show up in your requests as they are found.",
-    "albumAsked": "Album requested"
+    "albumAsked": "Album requested",
+    "new": "New"
   }
 }

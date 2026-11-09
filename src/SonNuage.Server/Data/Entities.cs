@@ -377,6 +377,8 @@ public sealed class DiscoveryArtist
     public double Score { get; set; }
     /// <summary>Artistes de la bibliothèque qui y mènent, un par ligne, du plus proche au moins proche.</summary>
     public string BecauseOf { get; set; } = "";
+    /// <summary>Proposé pour la première fois (les plus récents s'affichent en haut ; retiré au bout de 7 jours).</summary>
+    public DateTimeOffset AddedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
     /// <summary>Titres phares lus (null : pas encore).</summary>
     public DateTimeOffset? TracksFetchedAt { get; set; }

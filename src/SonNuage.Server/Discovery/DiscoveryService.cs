@@ -32,7 +32,12 @@ public sealed class DiscoveryService(
 {
     public const int SeedCount = 12;
     public const int SimilarPerSeed = 25;
-    public const int MaxArtists = 24;
+    /// <summary>Candidats classés à chaque actualisation, parmi lesquels on prend les nouveaux.</summary>
+    public const int CandidatePool = 200;
+    /// <summary>Nouveaux artistes ajoutés à chaque actualisation (toutes les 6 heures)…</summary>
+    public const int NewPerRun = 6;
+    /// <summary>… ou plus, pour en afficher au moins autant.</summary>
+    public const int MinShown = 24;
     public const int TracksPerArtist = 3;
     public const int MinMatchScore = 60;
     private const int PrefetchPerRun = 40;
@@ -52,9 +57,10 @@ public sealed class DiscoveryService(
         ctx.Report(0.3);
         var ranked = DiscoveryRanker.Rank(seeds,
             await db.Artists.Where(a => a.MusicBrainzId != null).Select(a => a.MusicBrainzId!).ToListAsync(ct),
-            await db.Artists.Select(a => a.Name).ToListAsync(ct), MaxArtists);
-        if (seeds.Count > 0 && ranked.Count > 0) await SaveArtistsAsync(db, ranked, ct);
-        ctx.Info(Tx.Key("jobs.discovery.artists", ("seeds", seeds.Count), ("count", ranked.Count)));
+            await db.Artists.Select(a => a.Name).ToListAsync(ct), CandidatePool);
+        var update = await SaveArtistsAsync(db, ranked, ct);
+        ctx.Info(Tx.Key("jobs.discovery.updated", ("seeds", seeds.Count), ("added", update.Added.Count), ("expired", update.Expired.Count),
+            ("count", await db.DiscoveryArtists.CountAsync(ct))));
         ctx.Report(0.4);
 
         await FetchTracksAsync(db, ctx, ct);
@@ -102,27 +108,40 @@ public sealed class DiscoveryService(
         return seeds;
     }
 
-    private async Task SaveArtistsAsync(SonNuageDbContext db, IReadOnlyList<RankedArtist> ranked, CancellationToken ct)
+    /// <summary>
+    /// Actualisation incrémentale (<see cref="DiscoveryRanker.Plan"/>) : retire les propositions de plus de 7 jours,
+    /// ajoute les nouvelles, et met à jour la proximité de celles qui restent.
+    /// </summary>
+    private async Task<DiscoveryUpdate> SaveArtistsAsync(SonNuageDbContext db, IReadOnlyList<RankedArtist> ranked, CancellationToken ct)
     {
         var now = time.GetUtcNow();
         var existing = await db.DiscoveryArtists.Include(a => a.Tracks).ToListAsync(ct);
-        var keep = ranked.Select(r => r.MusicBrainzId).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        db.DiscoveryArtists.RemoveRange(existing.Where(a => !keep.Contains(a.MusicBrainzId)));
-        foreach (var r in ranked)
+        var update = DiscoveryRanker.Plan(ranked, existing.Select(a => (a.MusicBrainzId, a.AddedAt)).ToList(), now, NewPerRun, MinShown);
+        var expired = update.Expired.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        db.DiscoveryArtists.RemoveRange(existing.Where(a => expired.Contains(a.MusicBrainzId)));
+
+        var byId = ranked.ToDictionary(r => r.MusicBrainzId, StringComparer.OrdinalIgnoreCase);
+        foreach (var artist in existing.Where(a => !expired.Contains(a.MusicBrainzId)))
         {
-            var artist = existing.FirstOrDefault(a => string.Equals(a.MusicBrainzId, r.MusicBrainzId, StringComparison.OrdinalIgnoreCase));
-            if (artist is null)
-            {
-                artist = new DiscoveryArtist { MusicBrainzId = r.MusicBrainzId, Name = r.Name };
-                db.DiscoveryArtists.Add(artist);
-            }
+            if (byId.TryGetValue(artist.MusicBrainzId, out var r)) Apply(artist, r);
+            artist.UpdatedAt = now;
+        }
+        foreach (var r in update.Added)
+        {
+            var artist = new DiscoveryArtist { MusicBrainzId = r.MusicBrainzId, Name = r.Name, AddedAt = now, UpdatedAt = now };
+            Apply(artist, r);
+            db.DiscoveryArtists.Add(artist);
+        }
+        await db.SaveChangesAsync(ct);
+        return update;
+
+        static void Apply(DiscoveryArtist artist, RankedArtist r)
+        {
             artist.Name = r.Name;
             artist.Comment = r.Comment;
             artist.Score = r.Score;
             artist.BecauseOf = string.Join('\n', r.BecauseOf.Take(5));
-            artist.UpdatedAt = now;
         }
-        await db.SaveChangesAsync(ct);
     }
 
     private async Task FetchTracksAsync(SonNuageDbContext db, JobContext ctx, CancellationToken ct)

@@ -207,6 +207,9 @@ namespace SonNuage.Server.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<long>("AddedAt")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("BecauseOf")
                         .IsRequired()
                         .HasMaxLength(2000)

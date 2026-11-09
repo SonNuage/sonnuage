@@ -80,6 +80,29 @@ public sealed class ArtistDiscoveryTests(SonNuageFactory factory) : IClassFixtur
     }
 
     [Fact]
+    public void Each_refresh_adds_new_artists_and_drops_those_older_than_seven_days()
+    {
+        var now = new DateTimeOffset(2026, 11, 9, 12, 0, 0, TimeSpan.Zero);
+        RankedArtist R(string id, double score) => new(id, id, null, score, []);
+        var ranked = new[] { R("a", 9), R("b", 8), R("c", 7), R("d", 6), R("e", 5) };
+
+        // « a » a 8 jours : il part, et ne revient pas dans la même actualisation (mais pourra revenir ensuite).
+        var plan = DiscoveryRanker.Plan(ranked, [("a", now.AddDays(-8)), ("b", now.AddDays(-1))], now, newPerRun: 2, minShown: 1);
+        Assert.Equal(["a"], plan.Expired);
+        Assert.Equal(["c", "d"], plan.Added.Select(r => r.MusicBrainzId));
+
+        // Moins d'artistes que le minimum affiché : on complète jusqu'au minimum.
+        var first = DiscoveryRanker.Plan(ranked, [], now, newPerRun: 2, minShown: 4);
+        Assert.Equal(["a", "b", "c", "d"], first.Added.Select(r => r.MusicBrainzId));
+        Assert.Empty(first.Expired);
+
+        // Plus rien de neuf : rien n'est ajouté, rien de récent n'est retiré.
+        var none = DiscoveryRanker.Plan([R("b", 8)], [("b", now.AddDays(-6.9))], now, newPerRun: 2, minShown: 1);
+        Assert.Empty(none.Added);
+        Assert.Empty(none.Expired);
+    }
+
+    [Fact]
     public void Similar_artists_are_ranked_across_seeds_without_those_already_in_the_library()
     {
         var ranked = DiscoveryRanker.Rank(
