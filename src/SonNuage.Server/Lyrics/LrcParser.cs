@@ -12,15 +12,21 @@ public static partial class LrcParser
 {
     public static LyricsDto Parse(string text, string? source)
     {
-        var rows = text.ReplaceLineEndings("\n").Split('\n');
+        var rows = Rows(text);
         var offset = rows.Select(r => OffsetTag().Match(r.Trim())).FirstOrDefault(m => m.Success) is { } m
             && int.TryParse(m.Groups[1].Value, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var ms) ? ms / 1000.0 : 0;
 
         var timed = rows.SelectMany(r => Timed(r.Trim(), offset)).OrderBy(l => l.StartSeconds).ToList();
         return timed.Count > 0
             ? new LyricsDto(true, timed, source)
-            : new LyricsDto(false, Plain(rows), source);
+            : new LyricsDto(false, PlainLines(rows, keepTags: false), source);
     }
+
+    /// <summary>Texte brut tel quel : « [Refrain: X] » est un titre de section, pas une métadonnée.</summary>
+    public static LyricsDto Plain(string text, string? source) =>
+        new(false, PlainLines(Rows(text), keepTags: true), source);
+
+    private static string[] Rows(string text) => text.ReplaceLineEndings("\n").Split('\n');
 
     private static IEnumerable<LyricLineDto> Timed(string row, double offset)
     {
@@ -40,10 +46,10 @@ public static partial class LrcParser
     }
 
     // Texte brut : sans métadonnées, sans lignes vides en tête ni en fin, une seule ligne vide entre deux strophes.
-    private static List<LyricLineDto> Plain(IEnumerable<string> rows)
+    private static List<LyricLineDto> PlainLines(IEnumerable<string> rows, bool keepTags)
     {
         var lines = new List<LyricLineDto>();
-        foreach (var row in rows.Select(r => r.Trim()).Where(r => !MetadataTag().IsMatch(r)))
+        foreach (var row in rows.Select(r => r.Trim()).Where(r => keepTags || !MetadataTag().IsMatch(r)))
         {
             if (row.Length == 0 && (lines.Count == 0 || lines[^1].Text.Length == 0)) continue;
             lines.Add(new LyricLineDto(null, row));

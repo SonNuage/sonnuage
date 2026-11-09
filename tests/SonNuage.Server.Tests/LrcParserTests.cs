@@ -69,6 +69,15 @@ public sealed class LrcParserTests
     }
 
     [Fact]
+    public void Plain_text_keeps_bracketed_section_names()
+    {
+        var lyrics = LrcParser.Plain("[Refrain: Damso]\nParoles\n", "lrclib");
+
+        Assert.False(lyrics.Synced);
+        Assert.Equal([new LyricLineDto(null, "[Refrain: Damso]"), new LyricLineDto(null, "Paroles")], lyrics.Lines);
+    }
+
+    [Fact]
     public void Empty_text_has_no_lines()
     {
         Assert.Empty(LrcParser.Parse("[ar:Artiste]\n\n", null).Lines);
