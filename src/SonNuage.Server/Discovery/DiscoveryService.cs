@@ -129,7 +129,7 @@ public sealed class DiscoveryService(
     {
         var stale = time.GetUtcNow() - TracksRefresh;
         var artists = await db.DiscoveryArtists.Include(a => a.Tracks)
-            .Where(a => a.TracksFetchedAt == null || a.TracksFetchedAt < stale)
+            .Where(a => a.TracksFetchedAt == null || a.TracksFetchedAt < stale || !a.Tracks.Any())
             .OrderByDescending(a => a.Score).ToListAsync(ct);
         foreach (var artist in artists)
         {
