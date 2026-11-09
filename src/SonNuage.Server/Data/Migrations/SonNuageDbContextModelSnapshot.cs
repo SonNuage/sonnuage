@@ -666,6 +666,47 @@ namespace SonNuage.Server.Data.Migrations
                     b.ToTable("RefreshTokens");
                 });
 
+            modelBuilder.Entity("SonNuage.Server.Data.SavedQueue", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("ChangedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ChangedBy")
+                        .HasMaxLength(80)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("CurrentTrackId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("PositionMs")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("SavedQueues");
+                });
+
+            modelBuilder.Entity("SonNuage.Server.Data.SavedQueueEntry", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("TrackId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("UserId", "Position");
+
+                    b.HasIndex("TrackId");
+
+                    b.ToTable("SavedQueueEntries");
+                });
+
             modelBuilder.Entity("SonNuage.Server.Data.Track", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1128,6 +1169,34 @@ namespace SonNuage.Server.Data.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SonNuage.Server.Data.SavedQueue", b =>
+                {
+                    b.HasOne("SonNuage.Server.Data.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SonNuage.Server.Data.SavedQueueEntry", b =>
+                {
+                    b.HasOne("SonNuage.Server.Data.Track", "Track")
+                        .WithMany()
+                        .HasForeignKey("TrackId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SonNuage.Server.Data.SavedQueue", null)
+                        .WithMany("Entries")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Track");
+                });
+
             modelBuilder.Entity("SonNuage.Server.Data.Track", b =>
                 {
                     b.HasOne("SonNuage.Server.Data.Album", "Album")
@@ -1206,6 +1275,11 @@ namespace SonNuage.Server.Data.Migrations
                 });
 
             modelBuilder.Entity("SonNuage.Server.Data.Playlist", b =>
+                {
+                    b.Navigation("Entries");
+                });
+
+            modelBuilder.Entity("SonNuage.Server.Data.SavedQueue", b =>
                 {
                     b.Navigation("Entries");
                 });

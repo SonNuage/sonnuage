@@ -167,6 +167,31 @@ public sealed class Favorite
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 
+/// <summary>
+/// File de lecture d'un compte, enregistrée par une appli Subsonic pour être reprise sur un autre appareil
+/// (même titre, même seconde). Une par compte.
+/// </summary>
+public sealed class SavedQueue
+{
+    public const int MaxEntries = 2000;
+    public const int MaxClientLength = 80;
+    public Guid UserId { get; set; }
+    public User User { get; set; } = null!;
+    public Guid? CurrentTrackId { get; set; }
+    public long PositionMs { get; set; }
+    public DateTimeOffset ChangedAt { get; set; }
+    public string? ChangedBy { get; set; }
+    public List<SavedQueueEntry> Entries { get; set; } = [];
+}
+
+public sealed class SavedQueueEntry
+{
+    public Guid UserId { get; set; }
+    public int Position { get; set; }
+    public Guid TrackId { get; set; }
+    public Track Track { get; set; } = null!;
+}
+
 public sealed class PlayEvent
 {
     public long Id { get; set; }

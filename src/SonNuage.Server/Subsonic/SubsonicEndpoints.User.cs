@@ -143,7 +143,5 @@ public static partial class SubsonicEndpoints
         Empty("getAlbumInfo2", "albumInfo");
         Empty("getVideos", "videos", "video");
         Empty("getChatMessages", "chatMessages", "chatMessage");
-        On("getPlayQueue", r => r.Ok());
-        On("savePlayQueue", r => r.Ok());
     }
 }

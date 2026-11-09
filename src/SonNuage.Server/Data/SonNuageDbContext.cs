@@ -24,6 +24,8 @@ public sealed class SonNuageDbContext(DbContextOptions<SonNuageDbContext> option
     public DbSet<Job> Jobs => Set<Job>();
     public DbSet<JobLog> JobLogs => Set<JobLog>();
     public DbSet<CrashReport> CrashReports => Set<CrashReport>();
+    public DbSet<SavedQueue> SavedQueues => Set<SavedQueue>();
+    public DbSet<SavedQueueEntry> SavedQueueEntries => Set<SavedQueueEntry>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -68,6 +70,21 @@ public sealed class SonNuageDbContext(DbContextOptions<SonNuageDbContext> option
                 e.Property(p).HasMaxLength(CrashReport.MaxFieldLength);
             e.Property(x => x.Headline).HasMaxLength(CrashReport.MaxHeadlineLength);
             e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<SavedQueue>(e =>
+        {
+            e.HasKey(x => x.UserId);
+            e.Property(x => x.ChangedBy).HasMaxLength(SavedQueue.MaxClientLength);
+            e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(x => x.Entries).WithOne().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<SavedQueueEntry>(e =>
+        {
+            e.HasKey(x => new { x.UserId, x.Position });
+            e.HasIndex(x => x.TrackId);
+            e.HasOne(x => x.Track).WithMany().HasForeignKey(x => x.TrackId).OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<User>(e =>

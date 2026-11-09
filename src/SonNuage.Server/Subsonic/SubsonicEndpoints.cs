@@ -33,6 +33,7 @@ public static partial class SubsonicEndpoints
         RegisterUser();
         RegisterEmpty();
         RegisterLyrics();
+        RegisterQueue();
     }
 
     private static void On(string method, Func<SubsonicRequest, Task<object>> handler) => Handlers[method] = new Handler(handler);
