@@ -233,12 +233,12 @@ plus simple (données locales) à la plus ouverte (bases publiques), sur un mêm
 - 💡 **Extraits pré-téléchargés** pour ces titres phares, dans un dossier à part (`var/discovery/previews`,
   distinct du cache des extraits à la demande) : la page se lit tout de suite, sans attendre yt-dlp. Préparés
   par la même tâche, quelques-uns à la fois, et gardés tant que l'artiste reste proposé.
-- 💡 **Place allouée aux extraits**, réglable dans l'administration (par exemple 2 Go par défaut) : au-delà, les
-  extraits des artistes les moins récents ou déjà importés sont supprimés en premier, et aucun nouveau n'est
-  préparé.
-- 💡 **Espace libre minimum sur le disque**, réglable dans l'administration (par exemple 5 Go par défaut) : en
-  dessous, **tout téléchargement est bloqué** (imports YouTube, demandes acceptées, extraits), avec un message
-  clair et une alerte sur le tableau de bord. Les téléchargements reprennent seuls quand la place revient.
+- ✅ (1.9.0) **Place allouée aux extraits**, réglable dans Réglages → Stockage (2 Go par défaut) : au-delà, les
+  extraits les plus anciens sont supprimés. Reste à y inclure les extraits pré-téléchargés de la découverte
+  (les moins récents ou déjà importés en premier).
+- ✅ (1.9.0) **Espace libre minimum sur le disque**, réglable dans Réglages → Stockage (5 Go par défaut) : en
+  dessous, **tout téléchargement attend** (imports YouTube reportés de 10 minutes sans compter d'essai, extraits
+  refusés), avec une alerte sur le tableau de bord. Les téléchargements reprennent seuls quand la place revient.
 - Une demande depuis une fiche passe par la recherche par correspondance ci-dessous, puis par le circuit
   habituel des demandes (quota, approbation).
 
@@ -294,11 +294,12 @@ contrôle, et écouter un extrait avant de télécharger le morceau entier.
 
 - 💡 Point de départ : une fiche de la découverte (album ou titre MusicBrainz), une recherche sans résultat dans
   la bibliothèque, ou un lien envoyé par l'extension.
-- 💡 Le serveur cherche sur YouTube (yt-dlp, recherche de quelques résultats) « artiste + titre » et note chaque
-  candidat : durée proche de celle de MusicBrainz, titre et artiste ressemblants, chaîne officielle ou
-  « - Topic » favorisée, versions live, remix ou karaoké écartées si non demandées.
-- 💡 Correspondance sûre : elle est retenue. Douteuse : les meilleurs candidats sont proposés au choix, avec
-  leur score.
+- ✅ (1.9.0) Mode **« Artiste et titre »** de la page Demandes : le serveur cherche sur YouTube Music et YouTube
+  en parallèle et note chaque candidat sur 100 : mots du titre retrouvés, artiste dans la chaîne ou le titre,
+  chaîne « - Topic » favorisée, durée proche de celle de MusicBrainz (cherchée si on ne la donne pas), versions
+  live, remix, karaoké ou reprise écartées si non demandées.
+- ✅ Correspondance sûre (80 et plus) : mise en avant comme « Meilleure correspondance ». Douteuse : les
+  candidats sont proposés au choix, avec leur score, l'extrait et le lien YouTube.
 - Un album se traite morceau par morceau (liste des titres MusicBrainz), avec un récapitulatif des titres non
   trouvés.
 

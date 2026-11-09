@@ -610,7 +610,8 @@
       "requests": {
         "one": "{count} demande de téléchargement en attente",
         "other": "{count} demandes de téléchargement en attente"
-      }
+      },
+      "lowSpace": "Disque presque plein ({free} libres, minimum {min} Go) : téléchargements en pause"
     },
     "reindex": "Réindexer la recherche",
     "reindexStarted": "Réindexation lancée (volet Tâches)",
@@ -1182,5 +1183,16 @@
     "bestMatch": "Meilleure correspondance",
     "score": "{score} %",
     "scoreHint": "Ressemblance avec l'artiste et le titre cherchés (titre, artiste, chaîne, durée)"
+  },
+  "storage": {
+    "title": "Stockage",
+    "free": "{free} libres sur {total}",
+    "previews": "Extraits : {size}",
+    "blocked": "Téléchargements en pause",
+    "minFree": "Espace libre minimum (Go)",
+    "previewQuota": "Place des extraits (Go)",
+    "minFreeHint": "Sous cet espace libre sur le disque de la musique, tout téléchargement attend (imports YouTube, demandes, extraits). Ils reprennent seuls quand la place revient.",
+    "previewQuotaHint": "Au-delà, les extraits les plus anciens sont supprimés. Ils seront refaits à la prochaine écoute.",
+    "saved": "Réglages de stockage enregistrés"
   }
 }

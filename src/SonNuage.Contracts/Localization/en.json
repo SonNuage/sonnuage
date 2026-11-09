@@ -610,7 +610,8 @@
       "requests": {
         "one": "{count} download request waiting",
         "other": "{count} download requests waiting"
-      }
+      },
+      "lowSpace": "Disk almost full ({free} free, {min} GB minimum): downloads paused"
     },
     "reindex": "Reindex search",
     "reindexStarted": "Reindex started (Tasks pane)",
@@ -1182,5 +1183,16 @@
     "bestMatch": "Best match",
     "score": "{score}%",
     "scoreHint": "How close it is to the artist and title you searched for (title, artist, channel, length)"
+  },
+  "storage": {
+    "title": "Storage",
+    "free": "{free} free of {total}",
+    "previews": "Previews: {size}",
+    "blocked": "Downloads paused",
+    "minFree": "Minimum free space (GB)",
+    "previewQuota": "Preview space (GB)",
+    "minFreeHint": "Below this free space on the music disk, every download waits (YouTube imports, requests, previews). They resume on their own once space comes back.",
+    "previewQuotaHint": "Beyond it, the oldest previews are deleted. They are made again the next time someone listens.",
+    "saved": "Storage settings saved"
   }
 }

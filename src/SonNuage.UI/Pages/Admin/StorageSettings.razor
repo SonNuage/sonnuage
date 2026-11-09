@@ -1,0 +1,78 @@
+@inject ApiClient Api
+@inject UiState Ui
+
+@* Réglages → Stockage : espace libre minimum (en dessous, plus aucun téléchargement) et place des extraits. *@
+<section class="panel">
+    <h2>@L["storage.title"]</h2>
+    @if (_status is { } st)
+    {
+        <p>
+            @if (st.FreeBytes is { } free && st.TotalBytes is { } total)
+            {
+                <span>@L["storage.free", ("free", Format.Bytes(free)), ("total", Format.Bytes(total))]</span><span class="sep">·</span>
+            }
+            <span>@L["storage.previews", ("size", Format.Bytes(st.PreviewBytes))]</span>
+            @if (st.DownloadsBlocked)
+            {
+                <span class="badge bad">@L["storage.blocked"]</span>
+            }
+        </p>
+        <div class="form-grid">
+            <label class="field">
+                <span>@L["storage.minFree"]</span>
+                <input class="input" type="number" min="0" step="0.5" @bind="_minFree" />
+            </label>
+            <label class="field">
+                <span>@L["storage.previewQuota"]</span>
+                <input class="input" type="number" min="0.1" step="0.5" @bind="_previewQuota" />
+            </label>
+        </div>
+        <p class="muted small">@L["storage.minFreeHint"]</p>
+        <p class="muted small">@L["storage.previewQuotaHint"]</p>
+        <button class="btn primary" disabled="@_saving" @onclick="SaveAsync">@L["common.save"]</button>
+    }
+    else
+    {
+        <Logo Size="16" Animated="true" />
+    }
+</section>
+
+@code {
+    private StorageStatusDto? _status;
+    private double _minFree;
+    private double _previewQuota;
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync() => await RunAsync(async () => Show(await Api.StorageAsync()));
+
+    private void Show(StorageStatusDto? status)
+    {
+        _status = status;
+        if (status is null) return;
+        _minFree = status.Settings.MinFreeGb;
+        _previewQuota = status.Settings.PreviewQuotaGb;
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        await RunAsync(async () =>
+        {
+            Show(await Api.SaveStorageAsync(new StorageSettingsDto(_minFree, _previewQuota)));
+            Ui.Notify(L["storage.saved"]);
+        });
+        _saving = false;
+    }
+
+    private async Task RunAsync(Func<Task> action)
+    {
+        try
+        {
+            await action();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+    }
+}

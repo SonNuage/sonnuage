@@ -141,6 +141,7 @@
     private string? _error;
     private List<DownloadRequestDto>? _requests;
     private int _pendingRequests;
+    private StorageStatusDto? _storage;
     private DownloadRequestDto? _denying;
 
     protected override async Task OnInitializedAsync()
@@ -158,11 +159,13 @@
             var youtube = Api.YoutubeStatusAsync();
             var requests = Api.AdminRequestsAsync(null, null, 0, 50);
             var pending = Api.AdminRequestsAsync(DownloadRequestStatus.Requested, null, 0, 1);
+            var storage = Api.StorageAsync();
             _stats = await stats;
             _dashboard = await dashboard;
             _youtube = await youtube;
             _requests = (await requests)?.Items.ToList();
             _pendingRequests = (await pending)?.Total ?? 0;
+            _storage = await storage;
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
@@ -213,6 +216,8 @@
             if (yt.NeedsReview > 0) yield return ("admin/imports", L["dash.todo.review", ("count", yt.NeedsReview)]);
             if (yt.Failed > 0) yield return ("admin/imports", L["dash.todo.failed", ("count", yt.Failed)]);
         }
+        if (_storage is { DownloadsBlocked: true } st)
+            yield return ("admin/settings", L["dash.todo.lowSpace", ("free", Format.Bytes(st.FreeBytes ?? 0)), ("min", st.Settings.MinFreeGb)]);
         if (_pendingRequests > 0) yield return ("admin/requests?status=requested", L["dash.todo.requests", ("count", _pendingRequests)]);
         if (_stats?.Scan.LastError is not null) yield return ("admin/settings", L["dash.todo.scan"]);
     }
