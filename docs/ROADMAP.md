@@ -17,9 +17,19 @@ Légende : ✅ fait · 🔜 prochain · 💡 idée à creuser · ⚠️ limite c
 | Import YouTube | ✅ recherche, playlists, albums, chaînes, abonnements synchronisés, extension de navigateur avec clés API |
 | Tâches | ✅ volet « Tâches » dans l'admin : files, suites de tâches, journal en direct, annulation et relance, rescan AcoustID |
 | Applis tierces | ✅ API Subsonic / OpenSubsonic (`/rest/*`) : Symfonium, Feishin, DSub, Substreamer, Tempo… |
+| Paroles | ✅ synchronisées dans le lecteur : fichier `.lrc` à côté du morceau, sinon LRCLIB (aussi par Subsonic) |
 | Déploiement | ✅ Docker Compose sur le homelab (SonNuage + Elasticsearch), CI GitLab avec runner dédié, APK Android signé |
 
 ## Livré récemment
+
+### Paroles (novembre 2026)
+
+- Bouton « Paroles » dans le lecteur plein écran (et dans la barre du lecteur sur ordinateur) : la ligne chantée
+  est mise en avant et reste au milieu, un appui sur une ligne y saute. Texte brut quand rien n'est daté.
+- Un fichier `.lrc` posé à côté du fichier audio passe en premier. Sinon LRCLIB (base libre, sans compte),
+  recherche exacte puis au plus près de la durée. Réponses gardées dans `<DataPath>/lyrics`, une absence
+  redemandée après une semaine.
+- Applis Subsonic : `getLyricsBySongId` (extension OpenSubsonic `songLyrics`) et `getLyrics`.
 
 ### Imports YouTube rangés par identifiant (novembre 2026)
 
@@ -344,7 +354,6 @@ depuis la découverte (couches 2 et 3).
 - 💡 Sauvegarde automatique de la base SQLite (copie à chaud, rotation).
 - 💡 Recherche sémantique (« musique calme pour travailler ») via le modèle d'inférence d'Elasticsearch,
   déjà prévu dans la configuration (`SonNuage__Search__SemanticInferenceId`).
-- 💡 Paroles synchronisées (LRCLIB) dans le lecteur.
 
 ## Limites connues
 
