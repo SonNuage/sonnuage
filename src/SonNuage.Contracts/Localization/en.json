@@ -415,7 +415,9 @@
     "infiniteAhead": "Tracks picked ahead",
     "helpHint": "Frequently asked questions, getting started and installed versions.",
     "openHelp": "Open help",
-    "roleContributor": "contributor"
+    "roleContributor": "contributor",
+    "adminHint": "Library, YouTube imports, requests, users, jobs and server settings.",
+    "openAdmin": "Open administration"
   },
   "quality": {
     "original": "Original",

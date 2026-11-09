@@ -415,7 +415,9 @@
     "infiniteAhead": "Morceaux choisis d'avance",
     "helpHint": "Questions fréquentes, prise en main et versions installées.",
     "openHelp": "Ouvrir l'aide",
-    "roleContributor": "contributeur"
+    "roleContributor": "contributeur",
+    "adminHint": "Bibliothèque, imports YouTube, demandes, utilisateurs, tâches et réglages du serveur.",
+    "openAdmin": "Ouvrir l'administration"
   },
   "quality": {
     "original": "Originale",

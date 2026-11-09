@@ -13,6 +13,16 @@
 <div class="page narrow">
     <header class="page-header"><h1>@L["nav.settings"]</h1></header>
 
+    @* Sur ordinateur, l'administration est aussi dans la pastille du compte ; sur mobile (sans pastille), seulement ici. *@
+    @if (Auth.IsAdmin)
+    {
+        <section class="panel">
+            <h2>@L["nav.admin"]</h2>
+            <p class="muted">@L["settings.adminHint"]</p>
+            <a class="btn primary" href="admin"><Icon Name="admin" Size="18" /> @L["settings.openAdmin"]</a>
+        </section>
+    }
+
     <section class="panel">
         <h2>@L["settings.language"]</h2>
         <label class="field">
