@@ -35,6 +35,7 @@ public sealed class DiscoveryService(
     public const int MaxArtists = 24;
     public const int TracksPerArtist = 3;
     private const int MinMatchScore = 60;
+    private const int SearchResults = 8;
     private const int PrefetchPerRun = 40;
     private static readonly TimeSpan MbidRetry = TimeSpan.FromDays(30);
     private static readonly TimeSpan TracksRefresh = TimeSpan.FromDays(30);
@@ -183,8 +184,13 @@ public sealed class DiscoveryService(
         {
             try
             {
-                var listing = await ytDlp.SearchAsync($"{track.Artist.Name} {track.Title}", true, 6, ct);
-                var best = YoutubeMatcher.Rank(new MatchQuery(track.Artist.Name, track.Title, track.DurationSeconds), listing.Entries).FirstOrDefault();
+                // YouTube Music et YouTube, comme la recherche par correspondance des demandes : la recherche
+                // YouTube Music ne donne ni chaîne ni durée, YouTube apporte la chaîne officielle et la durée.
+                var text = $"{track.Artist.Name} {track.Title}";
+                var music = await ytDlp.SearchAsync(text, true, SearchResults, ct);
+                var videos = await ytDlp.SearchAsync(text, false, SearchResults, ct);
+                var best = YoutubeMatcher.Rank(new MatchQuery(track.Artist.Name, track.Title, track.DurationSeconds),
+                    music.Entries.Concat(videos.Entries)).FirstOrDefault();
                 if (best is { Score: >= MinMatchScore })
                 {
                     track.VideoId = best.Entry.Id;
@@ -192,6 +198,11 @@ public sealed class DiscoveryService(
                     track.Channel = best.Entry.Channel is { Length: > 200 } c ? c[..200] : best.Entry.Channel;
                     track.MatchScore = best.Score;
                     found++;
+                }
+                else
+                {
+                    track.VideoId = track.VideoTitle = track.Channel = null;
+                    track.MatchScore = null;
                 }
                 track.MatchedAt = time.GetUtcNow();
                 await db.SaveChangesAsync(ct);
