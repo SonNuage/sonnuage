@@ -131,14 +131,11 @@ public static partial class SubsonicEndpoints
             return root;
         });
 
-        Empty("getNowPlaying", "nowPlaying", "entry");
         Empty("getPodcasts", "podcasts", "channel");
         Empty("getNewestPodcasts", "newestPodcasts", "episode");
         Empty("getInternetRadioStations", "internetRadioStations", "internetRadioStation");
         Empty("getShares", "shares", "share");
         Empty("getBookmarks", "bookmarks", "bookmark");
-        Empty("getArtistInfo", "artistInfo", "similarArtist");
-        Empty("getArtistInfo2", "artistInfo2", "similarArtist");
         Empty("getAlbumInfo", "albumInfo");
         Empty("getAlbumInfo2", "albumInfo");
         Empty("getVideos", "videos", "video");

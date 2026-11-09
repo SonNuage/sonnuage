@@ -35,6 +35,7 @@ public sealed class SubsonicNode
     private readonly List<SubsonicNode> _children = [];
     private readonly HashSet<string> _lists = [];
     private readonly List<(string Name, IReadOnlyList<object> Values)> _values = [];
+    private readonly List<(string Name, object Value)> _elements = [];
     private string? _text;
 
     private SubsonicNode(string name) => Name = name;
@@ -63,6 +64,13 @@ public sealed class SubsonicNode
     public SubsonicNode Text(string? text)
     {
         _text = text;
+        return this;
+    }
+
+    /// <summary>Élément simple (<c>&lt;musicBrainzId&gt;…&lt;/musicBrainzId&gt;</c>) : une valeur en JSON. Omis s'il est nul.</summary>
+    public SubsonicNode Element(string name, object? value)
+    {
+        if (value is not null) _elements.Add((name, value));
         return this;
     }
 
@@ -109,6 +117,7 @@ public sealed class SubsonicNode
         w.WriteStartElement(Name, Namespace);
         foreach (var (key, value) in _attrs) w.WriteAttributeString(key, Format(value));
         if (_text is not null) w.WriteString(_text);
+        foreach (var (name, value) in _elements) w.WriteElementString(name, Namespace, Format(value));
         foreach (var (name, values) in _values)
             foreach (var value in values) w.WriteElementString(name, Namespace, Format(value));
         foreach (var child in _children) child.WriteXml(w, isRoot: false);
@@ -137,6 +146,11 @@ public sealed class SubsonicNode
             WriteJsonValue(w, value);
         }
         if (_text is not null) w.WriteString("value", _text);
+        foreach (var (name, value) in _elements)
+        {
+            w.WritePropertyName(name);
+            WriteJsonValue(w, value);
+        }
         foreach (var (name, values) in _values)
         {
             w.WritePropertyName(name);

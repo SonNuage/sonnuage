@@ -7,13 +7,19 @@ namespace SonNuage.Server.Discovery;
 
 public sealed record SimilarArtist(string MusicBrainzId, string Name, string? Comment, double Score);
 
+/// <summary>Artistes proches d'un artiste MusicBrainz (ListenBrainz ; remplacé dans les tests).</summary>
+public interface ISimilarArtistSource
+{
+    Task<IReadOnlyList<SimilarArtist>> SimilarArtistsAsync(string artistMbid, CancellationToken ct);
+}
+
 public sealed record TopRecording(string Title, string? RecordingMbid, double? LengthSeconds, string? ReleaseName);
 
 /// <summary>
 /// ListenBrainz (libre, identifiants MusicBrainz) : artistes proches d'un artiste, et ses titres les plus écoutés.
 /// Rien n'est envoyé d'autre que l'identifiant MusicBrainz de l'artiste. Une requête par seconde au plus.
 /// </summary>
-public sealed class ListenBrainzClient(IHttpClientFactory httpFactory, IOptions<SonNuageOptions> options, ILogger<ListenBrainzClient> logger)
+public sealed class ListenBrainzClient(IHttpClientFactory httpFactory, IOptions<SonNuageOptions> options, ILogger<ListenBrainzClient> logger) : ISimilarArtistSource
 {
     // Algorithme public des « artistes similaires » de ListenBrainz (sessions d'écoute sur environ 20 ans).
     private const string SimilarAlgorithm = "session_based_days_7500_session_300_contribution_5_threshold_10_limit_100_filter_True_skip_30";

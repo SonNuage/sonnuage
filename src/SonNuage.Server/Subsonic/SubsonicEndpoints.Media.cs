@@ -64,10 +64,17 @@ public static partial class SubsonicEndpoints
         // submission=false : « en cours de lecture », non retenu. Sinon une écoute complète, à l'heure donnée (ms).
         On("scrobble", async r =>
         {
-            if (!r.Bool("submission", true)) return r.Ok();
             var ids = r.GetAll("id").Select(id => SubsonicIds.Parse(id, SubsonicIds.Track)).OfType<Guid>().ToList();
-            var times = r.GetAll("time");
             var durations = await r.Db.Tracks.Where(t => ids.Contains(t.Id)).ToDictionaryAsync(t => t.Id, t => t.DurationSeconds, r.Ct);
+            var board = r.Service<NowPlayingBoard>();
+            if (!r.Bool("submission", true))
+            {
+                if (ids.LastOrDefault(durations.ContainsKey) is var playing && playing != Guid.Empty)
+                    board.Start(r.UserId, r.User.Username, r.Get("c"), playing, durations[playing]);
+                return r.Ok();
+            }
+            foreach (var id in ids) board.Finish(r.UserId, r.Get("c"), id);
+            var times = r.GetAll("time");
             var now = r.Service<TimeProvider>().GetUtcNow();
             for (var i = 0; i < ids.Count; i++)
             {

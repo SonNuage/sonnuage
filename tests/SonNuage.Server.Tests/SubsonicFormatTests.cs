@@ -81,6 +81,20 @@ public sealed class SubsonicFormatTests
     }
 
     [Fact]
+    public void Simple_elements_are_text_children_in_xml_and_plain_values_in_json()
+    {
+        var root = SubsonicNode.Ok("1");
+        root.Add("artistInfo2").Element("musicBrainzId", "abc").Element("biography", null);
+
+        var info = XDocument.Parse(root.ToXml()).Root!.Element(Ns + "artistInfo2")!;
+        Assert.Equal("abc", (string?)info.Element(Ns + "musicBrainzId"));
+        Assert.Null(info.Element(Ns + "biography"));
+        var json = JsonDocument.Parse(root.ToJson()).RootElement.GetProperty("subsonic-response").GetProperty("artistInfo2");
+        Assert.Equal("abc", json.GetProperty("musicBrainzId").GetString());
+        Assert.False(json.TryGetProperty("biography", out _));
+    }
+
+    [Fact]
     public void Value_lists_are_repeated_elements_in_xml_and_plain_arrays_in_json()
     {
         var root = SubsonicNode.Ok("1");

@@ -79,6 +79,8 @@ builder.Services.AddSingleton<YtDlp>();
 builder.Services.AddSingleton<PreviewService>();
 builder.Services.AddSingleton<StorageGuard>();
 builder.Services.AddSingleton<SonNuage.Server.Discovery.ListenBrainzClient>();
+builder.Services.AddSingleton<SonNuage.Server.Discovery.ISimilarArtistSource>(sp => sp.GetRequiredService<SonNuage.Server.Discovery.ListenBrainzClient>());
+builder.Services.AddSingleton<SonNuage.Server.Subsonic.NowPlayingBoard>();
 builder.Services.AddSingleton<SonNuage.Server.Discovery.DeezerClient>();
 builder.Services.AddHttpClient(SonNuage.Server.Lyrics.LrclibClient.HttpClientName, http => http.Timeout = TimeSpan.FromSeconds(15));
 builder.Services.AddSingleton<SonNuage.Server.Lyrics.LrclibClient>();
