@@ -112,8 +112,8 @@ public static partial class SubsonicEndpoints
                 .OrderByDescending(a => db.PlayEvents.Where(p => p.UserId == uid && p.Track.AlbumId == a.Id).Max(p => p.PlayedAt)).ThenBy(a => a.Id),
             "frequent" or "highest" => albums.Where(a => db.PlayEvents.Any(p => p.UserId == uid && p.Track.AlbumId == a.Id))
                 .OrderByDescending(a => db.PlayEvents.Count(p => p.UserId == uid && p.Track.AlbumId == a.Id)).ThenBy(a => a.Id),
-            // SonNuage ne retient que les morceaux en favori, pas les albums.
-            "starred" => albums.Where(_ => false),
+            "starred" => albums.Where(a => db.FavoriteAlbums.Any(f => f.UserId == uid && f.AlbumId == a.Id))
+                .OrderByDescending(a => db.FavoriteAlbums.Where(f => f.UserId == uid && f.AlbumId == a.Id).Max(f => f.CreatedAt)).ThenBy(a => a.Id),
             "byYear" => ByYear(albums, r.Int("fromYear", 0), r.Int("toYear", 9999)),
             "byGenre" => GenreFilter(albums, r.Require("genre")).OrderBy(a => a.Title).ThenBy(a => a.Id),
             _ => throw new SubsonicException(SubsonicError.Generic, $"Unknown list type: {type}"),
@@ -152,7 +152,7 @@ public static partial class SubsonicEndpoints
         }
 
         var artistRows = await artists.OrderBy(a => a.SortName).ThenBy(a => a.Id)
-            .Skip(r.Int("artistOffset", 0)).Take(r.Int("artistCount", 20, 0, MaxPage)).Select(ArtistRows).ToListAsync(r.Ct);
+            .Skip(r.Int("artistOffset", 0)).Take(r.Int("artistCount", 20, 0, MaxPage)).Select(ArtistRows(r.Db, r.UserId)).ToListAsync(r.Ct);
         var albumRows = await albums.OrderBy(a => a.Title).ThenBy(a => a.Id)
             .Skip(r.Int("albumOffset", 0)).Take(r.Int("albumCount", 20, 0, MaxPage)).Select(Album(db, uid)).ToListAsync(r.Ct);
         var songRows = await songs.OrderBy(t => t.Title).ThenBy(t => t.Id)
@@ -172,12 +172,18 @@ public static partial class SubsonicEndpoints
     private static async Task<object> StarredAsync(SubsonicRequest r, string element)
     {
         var (db, uid) = (r.Db, r.UserId);
+        var artists = await db.FavoriteArtists.Where(f => f.UserId == uid).OrderByDescending(f => f.CreatedAt)
+            .Select(f => f.Artist).Select(ArtistRows(db, uid)).ToListAsync(r.Ct);
+        var albums = await db.FavoriteAlbums.Where(f => f.UserId == uid).OrderByDescending(f => f.CreatedAt)
+            .Select(f => f.Album).Select(Album(db, uid)).ToListAsync(r.Ct);
         var songs = await db.Favorites.Where(f => f.UserId == uid).OrderByDescending(f => f.CreatedAt)
             .Select(f => f.Track).Select(Song(db, uid)).ToListAsync(r.Ct);
         var root = r.Ok();
         var node = root.Add(element);
-        node.List("artist");
-        node.List("album");
+        var artistList = node.List("artist");
+        foreach (var artist in artists) artistList.Add().Fill(artist);
+        var albumList = node.List("album");
+        foreach (var album in albums) albumList.Add().Fill(album, legacy: element == "starred");
         var list = node.List("song");
         foreach (var song in songs) list.Add().Fill(song);
         return root;

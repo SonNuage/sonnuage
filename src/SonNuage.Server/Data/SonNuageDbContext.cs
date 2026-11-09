@@ -13,6 +13,8 @@ public sealed class SonNuageDbContext(DbContextOptions<SonNuageDbContext> option
     public DbSet<Playlist> Playlists => Set<Playlist>();
     public DbSet<PlaylistEntry> PlaylistEntries => Set<PlaylistEntry>();
     public DbSet<Favorite> Favorites => Set<Favorite>();
+    public DbSet<FavoriteAlbum> FavoriteAlbums => Set<FavoriteAlbum>();
+    public DbSet<FavoriteArtist> FavoriteArtists => Set<FavoriteArtist>();
     public DbSet<PlayEvent> PlayEvents => Set<PlayEvent>();
     public DbSet<DiscoveryArtist> DiscoveryArtists => Set<DiscoveryArtist>();
     public DbSet<DiscoveryTrack> DiscoveryTracks => Set<DiscoveryTrack>();
@@ -119,6 +121,22 @@ public sealed class SonNuageDbContext(DbContextOptions<SonNuageDbContext> option
             e.HasKey(x => new { x.UserId, x.TrackId });
             e.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(x => x.Track).WithMany().HasForeignKey(x => x.TrackId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<FavoriteAlbum>(e =>
+        {
+            e.HasKey(x => new { x.UserId, x.AlbumId });
+            e.HasIndex(x => x.AlbumId);
+            e.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Album).WithMany().HasForeignKey(x => x.AlbumId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<FavoriteArtist>(e =>
+        {
+            e.HasKey(x => new { x.UserId, x.ArtistId });
+            e.HasIndex(x => x.ArtistId);
+            e.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Artist).WithMany().HasForeignKey(x => x.ArtistId).OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<PlayEvent>(e =>

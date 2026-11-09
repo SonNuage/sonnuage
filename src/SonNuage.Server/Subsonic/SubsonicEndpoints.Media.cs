@@ -85,7 +85,7 @@ public static partial class SubsonicEndpoints
     {
         if (SubsonicIds.Parse(id, SubsonicIds.Album) is { } album) return album;
         if (SubsonicIds.Parse(id, SubsonicIds.Artist) is { } artist)
-            return await r.Db.Artists.Where(a => a.Id == artist).Select(ArtistRows).Select(a => a.CoverAlbumId).FirstOrDefaultAsync(r.Ct);
+            return await r.Db.Artists.Where(a => a.Id == artist).Select(ArtistRows(r.Db, r.UserId)).Select(a => a.CoverAlbumId).FirstOrDefaultAsync(r.Ct);
         if (SubsonicIds.Parse(id, SubsonicIds.Playlist) is { } playlist)
             return await r.Db.Playlists.Where(p => p.Id == playlist).Select(PlaylistRows).Select(p => p.CoverAlbumId).FirstOrDefaultAsync(r.Ct);
         if (SubsonicIds.Parse(id, SubsonicIds.Track) is { } track)
@@ -93,18 +93,36 @@ public static partial class SubsonicEndpoints
         return null;
     }
 
-    /// <summary>Favoris : SonNuage ne retient que les morceaux (<c>id</c>). Les albums et artistes sont acceptés sans effet.</summary>
+    /// <summary>
+    /// Favoris : titres (<c>id</c>), albums (<c>albumId</c>, ou <c>id</c> d'un album chez les anciens clients) et
+    /// artistes (<c>artistId</c>, ou <c>id</c> d'un artiste).
+    /// </summary>
     private static async Task<object> StarAsync(SubsonicRequest r, bool star)
     {
-        var ids = r.GetAll("id").Select(id => SubsonicIds.Parse(id, SubsonicIds.Track)).OfType<Guid>().Distinct().ToList();
-        var existing = await r.Db.Tracks.Where(t => ids.Contains(t.Id)).Select(t => t.Id).ToListAsync(r.Ct);
-        var favorites = await r.Db.Favorites.Where(f => f.UserId == r.UserId && existing.Contains(f.TrackId)).ToListAsync(r.Ct);
+        var raw = r.GetAll("id");
+        var tracks = raw.Select(id => SubsonicIds.Parse(id, SubsonicIds.Track)).OfType<Guid>().Distinct().ToList();
+        var albums = raw.Concat(r.GetAll("albumId")).Select(id => SubsonicIds.Parse(id, SubsonicIds.Album)).OfType<Guid>().Distinct().ToList();
+        var artists = raw.Concat(r.GetAll("artistId")).Select(id => SubsonicIds.Parse(id, SubsonicIds.Artist)).OfType<Guid>().Distinct().ToList();
+        var uid = r.UserId;
+
+        var existingTracks = await r.Db.Tracks.Where(t => tracks.Contains(t.Id)).Select(t => t.Id).ToListAsync(r.Ct);
+        var existingAlbums = await r.Db.Albums.Where(a => albums.Contains(a.Id)).Select(a => a.Id).ToListAsync(r.Ct);
+        var existingArtists = await r.Db.Artists.Where(a => artists.Contains(a.Id)).Select(a => a.Id).ToListAsync(r.Ct);
+        var trackFavs = await r.Db.Favorites.Where(f => f.UserId == uid && existingTracks.Contains(f.TrackId)).ToListAsync(r.Ct);
+        var albumFavs = await r.Db.FavoriteAlbums.Where(f => f.UserId == uid && existingAlbums.Contains(f.AlbumId)).ToListAsync(r.Ct);
+        var artistFavs = await r.Db.FavoriteArtists.Where(f => f.UserId == uid && existingArtists.Contains(f.ArtistId)).ToListAsync(r.Ct);
         if (star)
         {
-            foreach (var id in existing.Except(favorites.Select(f => f.TrackId)))
-                r.Db.Favorites.Add(new Favorite { UserId = r.UserId, TrackId = id });
+            r.Db.Favorites.AddRange(existingTracks.Except(trackFavs.Select(f => f.TrackId)).Select(id => new Favorite { UserId = uid, TrackId = id }));
+            r.Db.FavoriteAlbums.AddRange(existingAlbums.Except(albumFavs.Select(f => f.AlbumId)).Select(id => new FavoriteAlbum { UserId = uid, AlbumId = id }));
+            r.Db.FavoriteArtists.AddRange(existingArtists.Except(artistFavs.Select(f => f.ArtistId)).Select(id => new FavoriteArtist { UserId = uid, ArtistId = id }));
         }
-        else r.Db.Favorites.RemoveRange(favorites);
+        else
+        {
+            r.Db.Favorites.RemoveRange(trackFavs);
+            r.Db.FavoriteAlbums.RemoveRange(albumFavs);
+            r.Db.FavoriteArtists.RemoveRange(artistFavs);
+        }
         await r.Db.SaveChangesAsync(r.Ct);
         return r.Ok();
     }

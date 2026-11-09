@@ -192,6 +192,24 @@ public sealed class SavedQueueEntry
     public Track Track { get; set; } = null!;
 }
 
+/// <summary>Album en favori (étoile d'une appli Subsonic).</summary>
+public sealed class FavoriteAlbum
+{
+    public Guid UserId { get; set; }
+    public Guid AlbumId { get; set; }
+    public Album Album { get; set; } = null!;
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+}
+
+/// <summary>Artiste en favori (étoile d'une appli Subsonic).</summary>
+public sealed class FavoriteArtist
+{
+    public Guid UserId { get; set; }
+    public Guid ArtistId { get; set; }
+    public Artist Artist { get; set; } = null!;
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+}
+
 public sealed class PlayEvent
 {
     public long Id { get; set; }

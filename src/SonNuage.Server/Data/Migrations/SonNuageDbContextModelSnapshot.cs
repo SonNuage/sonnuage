@@ -389,6 +389,42 @@ namespace SonNuage.Server.Data.Migrations
                     b.ToTable("Favorites");
                 });
 
+            modelBuilder.Entity("SonNuage.Server.Data.FavoriteAlbum", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("AlbumId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("UserId", "AlbumId");
+
+                    b.HasIndex("AlbumId");
+
+                    b.ToTable("FavoriteAlbums");
+                });
+
+            modelBuilder.Entity("SonNuage.Server.Data.FavoriteArtist", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("ArtistId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("UserId", "ArtistId");
+
+                    b.HasIndex("ArtistId");
+
+                    b.ToTable("FavoriteArtists");
+                });
+
             modelBuilder.Entity("SonNuage.Server.Data.Job", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1089,6 +1125,40 @@ namespace SonNuage.Server.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Track");
+                });
+
+            modelBuilder.Entity("SonNuage.Server.Data.FavoriteAlbum", b =>
+                {
+                    b.HasOne("SonNuage.Server.Data.Album", "Album")
+                        .WithMany()
+                        .HasForeignKey("AlbumId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SonNuage.Server.Data.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Album");
+                });
+
+            modelBuilder.Entity("SonNuage.Server.Data.FavoriteArtist", b =>
+                {
+                    b.HasOne("SonNuage.Server.Data.Artist", "Artist")
+                        .WithMany()
+                        .HasForeignKey("ArtistId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SonNuage.Server.Data.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Artist");
                 });
 
             modelBuilder.Entity("SonNuage.Server.Data.Job", b =>

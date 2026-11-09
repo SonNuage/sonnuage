@@ -50,7 +50,7 @@ public static partial class SubsonicEndpoints
         On("getArtist", async r =>
         {
             var id = r.RequireId("id", SubsonicIds.Artist, "Artist");
-            var artist = await r.Db.Artists.Where(a => a.Id == id).Select(ArtistRows).FirstOrDefaultAsync(r.Ct) ?? throw SubsonicException.NotFound("Artist");
+            var artist = await r.Db.Artists.Where(a => a.Id == id).Select(ArtistRows(r.Db, r.UserId)).FirstOrDefaultAsync(r.Ct) ?? throw SubsonicException.NotFound("Artist");
             var root = r.Ok();
             var node = root.Add("artist").Fill(artist);
             var albums = node.List("album");
@@ -85,7 +85,7 @@ public static partial class SubsonicEndpoints
             var root = r.Ok();
             if (SubsonicIds.Parse(raw, SubsonicIds.Artist) is { } artistId)
             {
-                var artist = await r.Db.Artists.Where(a => a.Id == artistId).Select(ArtistRows).FirstOrDefaultAsync(r.Ct) ?? throw SubsonicException.NotFound("Directory");
+                var artist = await r.Db.Artists.Where(a => a.Id == artistId).Select(ArtistRows(r.Db, r.UserId)).FirstOrDefaultAsync(r.Ct) ?? throw SubsonicException.NotFound("Directory");
                 var dir = root.Add("directory").Attr("id", raw).Attr("name", artist.Name);
                 var children = dir.List("child");
                 foreach (var album in await AlbumsOfAsync(r, artistId)) children.Add().Fill(album, legacy: true);
@@ -119,7 +119,7 @@ public static partial class SubsonicEndpoints
             if (long.TryParse(r.Get("ifModifiedSince"), out var since) && since >= lastModified) return root;
         }
 
-        var artists = await r.Db.Artists.Where(a => a.Albums.Any()).OrderBy(a => a.SortName).ThenBy(a => a.Id).Select(ArtistRows).ToListAsync(r.Ct);
+        var artists = await r.Db.Artists.Where(a => a.Albums.Any()).OrderBy(a => a.SortName).ThenBy(a => a.Id).Select(ArtistRows(r.Db, r.UserId)).ToListAsync(r.Ct);
         foreach (var group in artists.GroupBy(a => IndexLetter(string.IsNullOrEmpty(a.SortName) ? a.Name : a.SortName)).OrderBy(g => g.Key == "#" ? "~" : g.Key))
         {
             var list = indexes.Add().Attr("name", group.Key).List("artist");
