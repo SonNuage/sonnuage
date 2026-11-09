@@ -178,6 +178,7 @@ app.MapDiscoveryEndpoints();
 app.MapDownloadRequestEndpoints();
 app.MapStorageEndpoints();
 app.MapArtistDiscoveryEndpoints();
+SonNuage.Server.Subsonic.SubsonicEndpoints.MapSubsonicEndpoints(app);
 
 app.MapFallback("/api/{**path}", () => Results.NotFound());
 app.MapFallback(WebApp.Index);

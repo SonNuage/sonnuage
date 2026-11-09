@@ -81,6 +81,19 @@ public sealed class SubsonicFormatTests
     }
 
     [Fact]
+    public void Value_lists_are_repeated_elements_in_xml_and_plain_arrays_in_json()
+    {
+        var root = SubsonicNode.Ok("1");
+        root.List("openSubsonicExtensions").Add().Attr("name", "formPost").Values("versions", [1, 2]);
+
+        var ext = XDocument.Parse(root.ToXml()).Root!.Element(Ns + "openSubsonicExtensions")!;
+        Assert.Equal(["1", "2"], ext.Elements(Ns + "versions").Select(v => v.Value));
+        using var json = JsonDocument.Parse(root.ToJson());
+        var versions = json.RootElement.GetProperty("subsonic-response").GetProperty("openSubsonicExtensions")[0].GetProperty("versions");
+        Assert.Equal([1, 2], versions.EnumerateArray().Select(v => v.GetInt32()));
+    }
+
+    [Fact]
     public void An_error_is_a_failed_response_with_code_and_message()
     {
         var error = SubsonicNode.Error("1", SubsonicError.WrongCredentials, "Wrong username or password");

@@ -35,7 +35,13 @@ public static class StreamEndpoints
 
         var track = await db.Tracks.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id, ct);
         if (track is null || !File.Exists(track.FilePath)) return Results.NotFound();
+        return await ServeAsync(track, requested, start, http, transcoder, ct);
+    }
 
+    /// <summary>Envoie le morceau dans la qualité voulue (original, ou transcodé et mis en cache). Partagé avec l'API Subsonic.</summary>
+    internal static async Task<IResult> ServeAsync(Track track, StreamQuality requested, double? start, HttpContext http,
+        TranscodeService transcoder, CancellationToken ct)
+    {
         http.Response.Headers.CacheControl = "private, no-store";
         // Indique au client ce qu'il reçoit réellement (la qualité peut être rabattue sur l'original).
         var profile = transcoder.Available ? TranscodeProfile.Resolve(track, requested) : null;

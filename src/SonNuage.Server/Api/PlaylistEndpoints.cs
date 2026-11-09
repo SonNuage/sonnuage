@@ -8,7 +8,7 @@ namespace SonNuage.Server.Api;
 
 public static class PlaylistEndpoints
 {
-    private const int MaxEntries = 10_000;
+    internal const int MaxEntries = 10_000;
 
     public static void MapPlaylistEndpoints(this IEndpointRouteBuilder app)
     {

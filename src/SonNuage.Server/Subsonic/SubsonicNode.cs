@@ -34,6 +34,7 @@ public sealed class SubsonicNode
     private readonly List<(string Key, object Value)> _attrs = [];
     private readonly List<SubsonicNode> _children = [];
     private readonly HashSet<string> _lists = [];
+    private readonly List<(string Name, IReadOnlyList<object> Values)> _values = [];
     private string? _text;
 
     private SubsonicNode(string name) => Name = name;
@@ -62,6 +63,13 @@ public sealed class SubsonicNode
     public SubsonicNode Text(string? text)
     {
         _text = text;
+        return this;
+    }
+
+    /// <summary>Liste de valeurs simples : éléments répétés en XML, tableau de nombres ou de textes en JSON.</summary>
+    public SubsonicNode Values(string name, IEnumerable<object> values)
+    {
+        _values.Add((name, values.ToList()));
         return this;
     }
 
@@ -101,6 +109,8 @@ public sealed class SubsonicNode
         w.WriteStartElement(Name, Namespace);
         foreach (var (key, value) in _attrs) w.WriteAttributeString(key, Format(value));
         if (_text is not null) w.WriteString(_text);
+        foreach (var (name, values) in _values)
+            foreach (var value in values) w.WriteElementString(name, Namespace, Format(value));
         foreach (var child in _children) child.WriteXml(w, isRoot: false);
         w.WriteEndElement();
     }
@@ -127,6 +137,13 @@ public sealed class SubsonicNode
             WriteJsonValue(w, value);
         }
         if (_text is not null) w.WriteString("value", _text);
+        foreach (var (name, values) in _values)
+        {
+            w.WritePropertyName(name);
+            w.WriteStartArray();
+            foreach (var value in values) WriteJsonValue(w, value);
+            w.WriteEndArray();
+        }
         foreach (var name in _children.Select(c => c.Name).Concat(_lists).Distinct())
         {
             var group = _children.Where(c => c.Name == name).ToList();
