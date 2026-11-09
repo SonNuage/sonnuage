@@ -1,0 +1,76 @@
+@inject ApiClient Api
+@inject UiState Ui
+
+@* Réglages → Découverte : fréquence, nouveaux artistes par actualisation, minimum affiché, durée, titres par artiste. *@
+<section class="panel">
+    <h2>@L["discoverySettings.title"]</h2>
+    @if (_loaded)
+    {
+        <div class="form-grid">
+            <label class="field">
+                <span>@L["discoverySettings.refreshHours"]</span>
+                <input class="input" type="number" min="1" max="@DiscoverySettingsDto.MaxRefreshHours" step="1" @bind="_refreshHours" />
+            </label>
+            <label class="field">
+                <span>@L["discoverySettings.newPerRun"]</span>
+                <input class="input" type="number" min="0" max="@DiscoverySettingsDto.MaxNewPerRun" step="1" @bind="_newPerRun" />
+            </label>
+            <label class="field">
+                <span>@L["discoverySettings.minShown"]</span>
+                <input class="input" type="number" min="0" max="@DiscoverySettingsDto.MaxMinShown" step="1" @bind="_minShown" />
+            </label>
+            <label class="field">
+                <span>@L["discoverySettings.maxAgeDays"]</span>
+                <input class="input" type="number" min="1" max="@DiscoverySettingsDto.MaxMaxAgeDays" step="1" @bind="_maxAgeDays" />
+            </label>
+            <label class="field">
+                <span>@L["discoverySettings.tracksPerArtist"]</span>
+                <input class="input" type="number" min="1" max="@DiscoverySettingsDto.MaxTracksPerArtist" step="1" @bind="_tracksPerArtist" />
+            </label>
+        </div>
+        <p class="muted small">@L["discoverySettings.hint"]</p>
+        <button class="btn primary" disabled="@_saving" @onclick="SaveAsync">@L["common.save"]</button>
+    }
+    else
+    {
+        <Logo Size="16" Animated="true" />
+    }
+</section>
+
+@code {
+    private bool _loaded;
+    private int _refreshHours, _newPerRun, _minShown, _maxAgeDays, _tracksPerArtist;
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync() => await RunAsync(async () => Show(await Api.DiscoverySettingsAsync()));
+
+    private void Show(DiscoverySettingsDto? s)
+    {
+        if (s is null) return;
+        (_refreshHours, _newPerRun, _minShown, _maxAgeDays, _tracksPerArtist) = (s.RefreshHours, s.NewPerRun, s.MinShown, s.MaxAgeDays, s.TracksPerArtist);
+        _loaded = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        await RunAsync(async () =>
+        {
+            Show(await Api.SaveDiscoverySettingsAsync(new DiscoverySettingsDto(_refreshHours, _newPerRun, _minShown, _maxAgeDays, _tracksPerArtist)));
+            Ui.Notify(L["discoverySettings.saved"]);
+        });
+        _saving = false;
+    }
+
+    private async Task RunAsync(Func<Task> action)
+    {
+        try
+        {
+            await action();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+    }
+}

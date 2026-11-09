@@ -83,6 +83,8 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     public Task RefreshDiscoveryAsync() => SendAsync(HttpMethod.Post, "api/admin/discovery/refresh");
     public Task<StorageStatusDto?> StorageAsync() => GetAsync<StorageStatusDto>("api/admin/storage");
     public Task<StorageStatusDto?> SaveStorageAsync(StorageSettingsDto s) => SendAsync<StorageStatusDto>(HttpMethod.Put, "api/admin/storage", s);
+    public Task<DiscoverySettingsDto?> DiscoverySettingsAsync() => GetAsync<DiscoverySettingsDto>("api/admin/discovery/settings");
+    public Task<DiscoverySettingsDto?> SaveDiscoverySettingsAsync(DiscoverySettingsDto s) => SendAsync<DiscoverySettingsDto>(HttpMethod.Put, "api/admin/discovery/settings", s);
     public Task<MatchResultDto?> RequestMatchAsync(string artist, string title) =>
         GetAsync<MatchResultDto>($"api/requests/match?artist={Uri.EscapeDataString(artist)}&title={Uri.EscapeDataString(title)}");
     public Task<DownloadRequestDto?> CreateRequestAsync(CreateDownloadRequest req) => SendAsync<DownloadRequestDto>(HttpMethod.Post, "api/requests", req);
