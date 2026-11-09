@@ -5,7 +5,7 @@
 
 @if (State.Current is { } track)
 {
-    <div class="now-playing">
+    <div class="now-playing @(Ui.LyricsShown ? "with-lyrics" : "")">
         <header class="np-header">
             <button class="icon-btn" title="@L["player.collapse"]" @onclick="() => Ui.SetNowPlayingOpen(false)"><Icon Name="down" Size="28" /></button>
             @if (Player is IConnectPlayer { IsRemote: true } connect)
@@ -19,18 +19,30 @@
             <button class="icon-btn" title="@L["nav.queue"]" @onclick='() => Go("queue")'><Icon Name="queue" /></button>
         </header>
 
-        <div class="np-cover">
-            <Cover AlbumId="track.AlbumId" HasCover="track.HasCover" Size="600" Seed="@track.AlbumTitle" />
-        </div>
+        @if (Ui.LyricsShown)
+        {
+            <LyricsView Track="track" />
+        }
+        else
+        {
+            <div class="np-cover">
+                <Cover AlbumId="track.AlbumId" HasCover="track.HasCover" Size="600" Seed="@track.AlbumTitle" />
+            </div>
+        }
 
         <div class="np-meta">
             <div>
                 <a class="np-title" href="album/@track.AlbumId" @onclick='() => Ui.SetNowPlayingOpen(false)'>@track.Title</a>
                 <a class="np-artist" href="artist/@track.ArtistId" @onclick='() => Ui.SetNowPlayingOpen(false)'>@track.ArtistName</a>
             </div>
-            <button class="icon-btn fav @(track.IsFavorite ? "on" : "")" title="@L["common.favorite"]" @onclick="() => Ui.ToggleFavoriteAsync(track)">
-                <Icon Name="@(track.IsFavorite ? "heart" : "heart-outline")" Size="28" />
-            </button>
+            <div class="np-actions">
+                <button class="icon-btn @(Ui.LyricsShown ? "on" : "")" title="@(Ui.LyricsShown ? L["player.lyrics.hide"] : L["player.lyrics.show"])" aria-pressed="@(Ui.LyricsShown ? "true" : "false")" @onclick="() => Ui.SetLyricsShown(!Ui.LyricsShown)">
+                    <Icon Name="lyrics" Size="28" />
+                </button>
+                <button class="icon-btn fav @(track.IsFavorite ? "on" : "")" title="@L["common.favorite"]" @onclick="() => Ui.ToggleFavoriteAsync(track)">
+                    <Icon Name="@(track.IsFavorite ? "heart" : "heart-outline")" Size="28" />
+                </button>
+            </div>
         </div>
 
         <div class="np-seek">
@@ -71,6 +83,7 @@
     protected override void OnInitialized()
     {
         Player.StateChanged += Refresh;
+        Ui.Changed += Refresh;
         // Retour (bouton du téléphone, geste, navigateur) : il referme le plein écran au lieu de quitter la page.
         // Les liens du plein écran le referment avant de naviguer, ils passent donc sans être retenus.
         _backHandler = Nav.CloseOnBack(() => Ui.NowPlayingOpen, () => Ui.SetNowPlayingOpen(false));
@@ -97,6 +110,7 @@
     public void Dispose()
     {
         Player.StateChanged -= Refresh;
+        Ui.Changed -= Refresh;
         _backHandler?.Dispose();
     }
 }

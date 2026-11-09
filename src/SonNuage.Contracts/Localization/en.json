@@ -256,6 +256,13 @@
     "mute": "Mute",
     "collapse": "Collapse",
     "nowPlaying": "Now playing",
+    "lyrics": {
+      "show": "Lyrics",
+      "hide": "Back to the cover",
+      "none": "No lyrics found",
+      "sourceLocal": "Lyrics from the .lrc file",
+      "sourceLrclib": "Lyrics: LRCLIB"
+    },
     "remote": {
       "title": "Play the music in this tab",
       "elsewhere": "Playing in another tab",

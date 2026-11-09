@@ -256,6 +256,13 @@
     "mute": "Couper le son",
     "collapse": "Réduire",
     "nowPlaying": "En cours de lecture",
+    "lyrics": {
+      "show": "Paroles",
+      "hide": "Revenir à la pochette",
+      "none": "Aucunes paroles trouvées",
+      "sourceLocal": "Paroles du fichier .lrc",
+      "sourceLrclib": "Paroles : LRCLIB"
+    },
     "remote": {
       "title": "Faire jouer la musique dans cet onglet",
       "elsewhere": "Lecture dans un autre onglet",

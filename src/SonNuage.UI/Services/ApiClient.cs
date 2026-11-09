@@ -40,6 +40,8 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     public Task<PlaybackPreferences?> SavePlaybackPreferencesAsync(PlaybackPreferences prefs) => SendAsync<PlaybackPreferences>(HttpMethod.Put, "api/me/playback", prefs);
     public Task<List<TrackDto>?> RadioAsync(RadioRequest request) => SendAsync<List<TrackDto>>(HttpMethod.Post, "api/radio", request);
     public Task<List<TrackDto>?> RandomTracksAsync(int count) => GetAsync<List<TrackDto>>($"api/tracks/random?count={count}");
+    /// <summary>Paroles du morceau, null s'il n'y en a pas.</summary>
+    public Task<LyricsDto?> LyricsAsync(Guid trackId) => GetAsync<LyricsDto>($"api/tracks/{trackId}/lyrics");
     public Task<List<TrackDto>?> LookupTracksAsync(IReadOnlyList<Guid> ids) => SendAsync<List<TrackDto>>(HttpMethod.Post, "api/tracks/lookup", ids);
     public Task<SearchResultDto?> SearchAsync(string q, int limit = 20) => GetAsync<SearchResultDto>($"api/search?limit={limit}&q={Uri.EscapeDataString(q)}");
     public Task<List<string>?> SuggestAsync(string q, int limit = 8) => GetAsync<List<string>>($"api/search/suggest?limit={limit}&q={Uri.EscapeDataString(q)}");
