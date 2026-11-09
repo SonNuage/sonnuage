@@ -818,6 +818,9 @@ namespace SonNuage.Server.Data.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<long?>("TagsFetchedAt")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -842,6 +845,65 @@ namespace SonNuage.Server.Data.Migrations
                     b.ToTable("Tracks");
                 });
 
+            modelBuilder.Entity("SonNuage.Server.Data.TrackAudioFeatures", b =>
+                {
+                    b.Property<Guid>("TrackId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double?>("Acoustic")
+                        .HasColumnType("REAL");
+
+                    b.Property<double?>("Aggressive")
+                        .HasColumnType("REAL");
+
+                    b.Property<long>("AnalyzedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double?>("Bpm")
+                        .HasColumnType("REAL");
+
+                    b.Property<double?>("Danceability")
+                        .HasColumnType("REAL");
+
+                    b.Property<double?>("Electronic")
+                        .HasColumnType("REAL");
+
+                    b.Property<double?>("Energy")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("Error")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("FileModifiedUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double?>("Happy")
+                        .HasColumnType("REAL");
+
+                    b.Property<double?>("Instrumental")
+                        .HasColumnType("REAL");
+
+                    b.Property<double?>("Party")
+                        .HasColumnType("REAL");
+
+                    b.Property<double?>("Relaxed")
+                        .HasColumnType("REAL");
+
+                    b.Property<double?>("Sad")
+                        .HasColumnType("REAL");
+
+                    b.Property<double?>("Valence")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("TrackId");
+
+                    b.ToTable("AudioFeatures");
+                });
+
             modelBuilder.Entity("SonNuage.Server.Data.TrackGuest", b =>
                 {
                     b.Property<Guid>("TrackId")
@@ -855,6 +917,25 @@ namespace SonNuage.Server.Data.Migrations
                     b.HasIndex("ArtistId");
 
                     b.ToTable("TrackGuests");
+                });
+
+            modelBuilder.Entity("SonNuage.Server.Data.TrackTag", b =>
+                {
+                    b.Property<Guid>("TrackId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(80)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Count")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("TrackId", "Name");
+
+                    b.HasIndex("Name");
+
+                    b.ToTable("TrackTags");
                 });
 
             modelBuilder.Entity("SonNuage.Server.Data.User", b =>
@@ -1305,6 +1386,17 @@ namespace SonNuage.Server.Data.Migrations
                     b.Navigation("Artist");
                 });
 
+            modelBuilder.Entity("SonNuage.Server.Data.TrackAudioFeatures", b =>
+                {
+                    b.HasOne("SonNuage.Server.Data.Track", "Track")
+                        .WithOne()
+                        .HasForeignKey("SonNuage.Server.Data.TrackAudioFeatures", "TrackId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Track");
+                });
+
             modelBuilder.Entity("SonNuage.Server.Data.TrackGuest", b =>
                 {
                     b.HasOne("SonNuage.Server.Data.Artist", "Artist")
@@ -1322,6 +1414,15 @@ namespace SonNuage.Server.Data.Migrations
                     b.Navigation("Artist");
 
                     b.Navigation("Track");
+                });
+
+            modelBuilder.Entity("SonNuage.Server.Data.TrackTag", b =>
+                {
+                    b.HasOne("SonNuage.Server.Data.Track", null)
+                        .WithMany()
+                        .HasForeignKey("TrackId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("SonNuage.Server.Data.UserRating", b =>

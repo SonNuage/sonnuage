@@ -79,6 +79,9 @@ public sealed class Track
     /// <summary>Métadonnées modifiées à la main : le scan ne les écrase plus.</summary>
     public bool MetadataLocked { get; set; }
 
+    /// <summary>Dernière lecture des tags MusicBrainz (<see cref="TrackTag"/>) ; null : jamais lus.</summary>
+    public DateTimeOffset? TagsFetchedAt { get; set; }
+
     public Guid AlbumId { get; set; }
     public Album Album { get; set; } = null!;
     /// <summary>Artiste principal du crédit (<see cref="ArtistName"/> sans ses invités).</summary>
@@ -218,6 +221,55 @@ public sealed class UserRating
     public Guid ItemId { get; set; }
     public int Value { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
+}
+
+/// <summary>
+/// Caractéristiques sonores d'un morceau, calculées par l'analyse audio (Essentia). Les probabilités vont de 0 à 1 ;
+/// null quand le modèle n'a rien donné. Refaite quand le fichier change ou que <see cref="CurrentVersion"/> monte.
+/// </summary>
+public sealed class TrackAudioFeatures
+{
+    /// <summary>Version des modèles et du calcul : la monter fait réanalyser toute la bibliothèque.</summary>
+    public const int CurrentVersion = 1;
+    public const int MaxErrorLength = 500;
+
+    public Guid TrackId { get; set; }
+    public Track Track { get; set; } = null!;
+    public int Version { get; set; }
+    public DateTimeOffset AnalyzedAt { get; set; }
+    /// <summary>Date du fichier analysé : un fichier remplacé est réanalysé.</summary>
+    public DateTime FileModifiedUtc { get; set; }
+    /// <summary>Échec de l'analyse (fichier illisible…) : pas de nouvel essai avant un changement du fichier ou de version.</summary>
+    public string? Error { get; set; }
+
+    /// <summary>Tempo, en battements par minute.</summary>
+    public double? Bpm { get; set; }
+    public double? Danceability { get; set; }
+    /// <summary>Énergie perçue (0 calme, 1 intense).</summary>
+    public double? Energy { get; set; }
+    /// <summary>Valence : 0 sombre, 1 joyeux.</summary>
+    public double? Valence { get; set; }
+    public double? Happy { get; set; }
+    public double? Sad { get; set; }
+    public double? Relaxed { get; set; }
+    public double? Aggressive { get; set; }
+    public double? Party { get; set; }
+    public double? Acoustic { get; set; }
+    public double? Electronic { get; set; }
+    public double? Instrumental { get; set; }
+}
+
+/// <summary>
+/// Tag MusicBrainz d'un morceau (enregistrement, édition ou groupe d'éditions), en minuscules : « christmas »,
+/// « halloween », « summer », genres… Sert aux radios de saison et d'ambiance.
+/// </summary>
+public sealed class TrackTag
+{
+    public const int MaxNameLength = 80;
+    public Guid TrackId { get; set; }
+    public required string Name { get; set; }
+    /// <summary>Nombre de votes MusicBrainz (au moins 1).</summary>
+    public int Count { get; set; }
 }
 
 public sealed class PlayEvent

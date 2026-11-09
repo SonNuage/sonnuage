@@ -29,6 +29,8 @@ public sealed class SonNuageDbContext(DbContextOptions<SonNuageDbContext> option
     public DbSet<CrashReport> CrashReports => Set<CrashReport>();
     public DbSet<SavedQueue> SavedQueues => Set<SavedQueue>();
     public DbSet<SavedQueueEntry> SavedQueueEntries => Set<SavedQueueEntry>();
+    public DbSet<TrackAudioFeatures> AudioFeatures => Set<TrackAudioFeatures>();
+    public DbSet<TrackTag> TrackTags => Set<TrackTag>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -130,6 +132,21 @@ public sealed class SonNuageDbContext(DbContextOptions<SonNuageDbContext> option
             e.HasIndex(x => x.AlbumId);
             e.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(x => x.Album).WithMany().HasForeignKey(x => x.AlbumId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<TrackAudioFeatures>(e =>
+        {
+            e.HasKey(x => x.TrackId);
+            e.Property(x => x.Error).HasMaxLength(TrackAudioFeatures.MaxErrorLength);
+            e.HasOne(x => x.Track).WithOne().HasForeignKey<TrackAudioFeatures>(x => x.TrackId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<TrackTag>(e =>
+        {
+            e.HasKey(x => new { x.TrackId, x.Name });
+            e.Property(x => x.Name).HasMaxLength(TrackTag.MaxNameLength);
+            e.HasIndex(x => x.Name);
+            e.HasOne<Track>().WithMany().HasForeignKey(x => x.TrackId).OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<UserRating>(e =>
