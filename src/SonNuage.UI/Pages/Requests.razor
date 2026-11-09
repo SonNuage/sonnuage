@@ -53,7 +53,8 @@
                                 <span class="muted small block">@v.Channel@(v.DurationSeconds is { } dur ? $" · {Format.Duration(dur)}" : "")</span>
                             </span>
                             <span class="row-actions">
-                                <a class="icon-btn" href="https://www.youtube.com/watch?v=@v.VideoId" target="_blank" rel="noopener noreferrer" title="@L["yt.explore.open"]"><Icon Name="play" Size="18" /></a>
+                                @if (!known) { <PreviewButton VideoId="@v.VideoId" DurationSeconds="v.DurationSeconds" /> }
+                                <a class="icon-btn" href="https://www.youtube.com/watch?v=@v.VideoId" target="_blank" rel="noopener noreferrer" title="@L["yt.explore.open"]"><Icon Name="open" Size="18" /></a>
                                 @if (known)
                                 {
                                     <span class="badge good">@L["requests.onServer"]</span>

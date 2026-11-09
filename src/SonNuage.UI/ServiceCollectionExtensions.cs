@@ -20,6 +20,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IPlaybackPreferencesApi>(sp => sp.GetRequiredService<ApiClient>());
         services.AddSingleton<PlaybackSettings>();
         services.AddSingleton<UiState>();
+        services.AddSingleton<PreviewPlayer>();
         services.AddSingleton<Localizer>();
         services.AddSingleton<ThemeSettings>();
         // L'appli hôte peut fournir la sienne (partagée avec son journal de plantage).

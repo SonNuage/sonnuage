@@ -96,6 +96,7 @@ button { font: inherit; color: inherit; }
 .btn.danger { border-color: var(--danger); color: var(--danger); }
 .btn.wide { width: 100%; }
 .btn.compact { padding: .3rem .7rem; font-size: .85rem; }
+.preview-btn.on { border-color: var(--accent); color: var(--accent); }
 .link { background: none; border: 0; padding: 0; color: var(--text-muted); cursor: pointer; text-decoration: underline; }
 
 .icon-btn {

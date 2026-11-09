@@ -171,6 +171,15 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
         return new Uri(endpoint.BaseAddress, $"api/tracks/{trackId}/stream?quality={quality.ToWire()}&t={token}").ToString();
     }
 
+    /// <summary>Extrait de 30 s d'une vidéo YouTube (contributeurs), lu par une balise audio : jeton média dans l'adresse.</summary>
+    public async Task<string?> PreviewUrlAsync(string videoId, double? durationSeconds)
+    {
+        var token = await auth.GetMediaTokenAsync();
+        if (token is null || endpoint.BaseAddress is null) return null;
+        var duration = durationSeconds is > 0 ? $"d={Math.Round(durationSeconds.Value).ToString(System.Globalization.CultureInfo.InvariantCulture)}&" : "";
+        return new Uri(endpoint.BaseAddress, $"api/requests/preview/{Uri.EscapeDataString(videoId)}?{duration}t={token}").ToString();
+    }
+
     // ---- Plomberie ----
 
     private static string Q(string? q) => string.IsNullOrWhiteSpace(q) ? "" : $"&q={Uri.EscapeDataString(q)}";

@@ -1156,6 +1156,11 @@
       "inProgress": "En cours",
       "done": "Terminée",
       "failed": "Échec"
-    }
+    },
+    "preview": "Extrait",
+    "previewStop": "Arrêter",
+    "previewLoading": "Préparation…",
+    "previewHint": "Écouter 30 secondes avant de demander le morceau",
+    "previewFailed": "Extrait indisponible pour cette vidéo. Essayez de l'ouvrir sur YouTube."
   }
 }

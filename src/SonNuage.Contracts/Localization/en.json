@@ -1156,6 +1156,11 @@
       "inProgress": "In progress",
       "done": "Done",
       "failed": "Failed"
-    }
+    },
+    "preview": "Preview",
+    "previewStop": "Stop",
+    "previewLoading": "Preparing…",
+    "previewHint": "Listen to 30 seconds before requesting the song",
+    "previewFailed": "No preview for this video. Try opening it on YouTube."
   }
 }

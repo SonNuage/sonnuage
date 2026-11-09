@@ -304,7 +304,7 @@
                                 <span class="muted small block">@v.Channel@(v.DurationSeconds is { } dur ? $" · {Format.Duration(dur)}" : "")</span>
                             </span>
                             @if (v.ImportStatus is { } status) { <span class="badge @StatusClass(status)">@StatusLabel(status)</span> }
-                            <a class="icon-btn" href="https://www.youtube.com/watch?v=@v.VideoId" target="_blank" rel="noopener noreferrer" title="@L["yt.explore.open"]"><Icon Name="play" Size="18" /></a>
+                            <a class="icon-btn" href="https://www.youtube.com/watch?v=@v.VideoId" target="_blank" rel="noopener noreferrer" title="@L["yt.explore.open"]"><Icon Name="open" Size="18" /></a>
                         </li>
                     }
                 </ul>

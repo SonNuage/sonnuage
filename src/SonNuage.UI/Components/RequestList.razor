@@ -18,7 +18,8 @@
             <span class="row-actions">
                 <span class="badge @StatusClass(r.Status)">@L["requests.status." + r.Status]</span>
                 @if (r.TrackId is not null) { <a class="icon-btn" href="search?q=@Uri.EscapeDataString(r.Title)" title="@L["requests.find"]"><Icon Name="search" Size="18" /></a> }
-                <a class="icon-btn" href="https://www.youtube.com/watch?v=@r.VideoId" target="_blank" rel="noopener noreferrer" title="@L["yt.explore.open"]"><Icon Name="play" Size="18" /></a>
+                @if (r.TrackId is null) { <PreviewButton VideoId="@r.VideoId" DurationSeconds="r.DurationSeconds" /> }
+                <a class="icon-btn" href="https://www.youtube.com/watch?v=@r.VideoId" target="_blank" rel="noopener noreferrer" title="@L["yt.explore.open"]"><Icon Name="open" Size="18" /></a>
                 @if (OnApprove.HasDelegate && r.Status is DownloadRequestStatus.Requested or DownloadRequestStatus.Denied)
                 {
                     <button class="btn compact primary" @onclick="() => OnApprove.InvokeAsync(r)">@L["requests.approve"]</button>

@@ -37,7 +37,35 @@ try {
   // Stockage indisponible (navigation privée stricte) : thème du système.
 }
 
+// Extraits YouTube (page Demandes) : une balise audio à part, hors du lecteur. L'état remonte à PreviewPlayer.
+const preview = (() => {
+  let audio = null;
+  let owner = null;
+  const send = (state) => { if (owner) owner.invokeMethodAsync('OnPreviewAudio', state).catch(() => {}); };
+  const stop = () => {
+    if (!audio) return;
+    audio.onplaying = audio.onended = audio.onerror = null;
+    audio.pause();
+    audio.removeAttribute('src');
+    audio.load();
+    audio = null;
+  };
+  return {
+    play: (url, dotnet) => {
+      stop();
+      owner = dotnet;
+      audio = new Audio(url);
+      audio.onplaying = () => send('playing');
+      audio.onended = () => send('ended');
+      audio.onerror = () => send('error');
+      audio.play().catch((e) => { if (!e || e.name !== 'AbortError') send('error'); });
+    },
+    stop,
+  };
+})();
+
 window.sonnuage = {
+  preview,
   languages: () => (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language]).join(','),
   setLanguage: (code) => { document.documentElement.lang = code; },
   setTheme: applyTheme,
