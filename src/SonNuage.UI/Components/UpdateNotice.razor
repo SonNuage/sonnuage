@@ -16,21 +16,21 @@
 @code {
     private static readonly TimeSpan Interval = TimeSpan.FromMinutes(2);
 
-    private string? _loaded;
+    private readonly UpdateWatch _watch = new();
     private bool _outdated;
     private Timer? _timer;
 
     protected override async Task OnInitializedAsync()
     {
         if (!Platform.ServedByServer) return;
-        _loaded = await BuildAsync();
+        _watch.Saw(await BuildAsync());
         _timer = new Timer(_ => InvokeAsync(CheckAsync), null, Interval, Interval);
     }
 
     private async Task CheckAsync()
     {
-        if (_outdated || _loaded is null) return;
-        if (await BuildAsync() is { } current && current != _loaded)
+        if (_outdated) return;
+        if (_watch.Saw(await BuildAsync()))
         {
             _outdated = true;
             StateHasChanged();

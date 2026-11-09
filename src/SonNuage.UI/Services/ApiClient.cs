@@ -14,7 +14,17 @@ public sealed class ApiException(HttpStatusCode status, string message) : Except
 public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint endpoint, AuthSession auth) : IPlaybackPreferencesApi
 {
     // ---- Bibliothèque ----
-    public Task<ServerInfoDto?> InfoAsync() => GetAsync<ServerInfoDto>("api/info");
+    // Route publique : lue sans session (écran de connexion, démarrage avant la reprise de session, message de mise à jour).
+    public async Task<ServerInfoDto?> InfoAsync()
+    {
+        var http = httpFactory.CreateClient("sonnuage");
+        http.BaseAddress = endpoint.BaseAddress ?? throw new ApiException(0, Text("errors.serverNotConfigured"));
+        using var request = new HttpRequestMessage(HttpMethod.Get, "api/info");
+        Localize(request);
+        using var response = await http.SendAsync(request);
+        await EnsureSuccessAsync(response);
+        return await response.Content.ReadFromJsonAsync<ServerInfoDto>(JsonDefaults.Options);
+    }
     public Task<UserDto?> SetLanguageAsync(string? language) => SendAsync<UserDto>(HttpMethod.Put, "api/auth/language", new SetLanguageRequest(language));
     public Task<HomeDto?> HomeAsync() => GetAsync<HomeDto>("api/home");
     public Task<PagedResult<AlbumDto>?> AlbumsAsync(string sort, int offset, int limit, string? q = null) =>
