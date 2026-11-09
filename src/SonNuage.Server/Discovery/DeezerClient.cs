@@ -20,22 +20,26 @@ public sealed class DeezerClient(IHttpClientFactory httpFactory, IOptions<SonNua
     {
         var baseUrl = options.Value.DeezerUrl.TrimEnd('/');
         var id = ParseArtistId(await GetAsync($"{baseUrl}/search/artist?q={Uri.EscapeDataString(artistName)}&limit=10", ct), artistName);
-        return id is { } artistId ? ParseTop(await GetAsync($"{baseUrl}/artist/{artistId}/top?limit={TopLimit}", ct)) : [];
+        return id is { } artistId ? ParseTop(await GetAsync($"{baseUrl}/artist/{artistId}/top?limit={TopLimit}", ct), artistId) : [];
     }
 
+    /// <summary>Parmi les artistes de ce nom (homonymes), le plus suivi.</summary>
     internal static long? ParseArtistId(string json, string artistName)
     {
         var key = Library.NameNormalizer.Key(artistName);
         return Data(json)
-            .Where(a => Str(a, "name") is { } name && Library.NameNormalizer.Key(name) == key)
-            .Select(a => a["id"] is JsonValue v && v.GetValueKind() == JsonValueKind.Number ? v.GetValue<long>() : (long?)null)
-            .FirstOrDefault(id => id is not null);
+            .Where(a => Str(a, "name") is { } name && Library.NameNormalizer.Key(name) == key && Long(a, "id") is not null)
+            .OrderByDescending(a => Long(a, "nb_fan") ?? 0)
+            .Select(a => Long(a, "id"))
+            .FirstOrDefault();
     }
 
-    internal static IReadOnlyList<TopRecording> ParseTop(string json) =>
+    /// <summary>Titres phares, ceux de l'artiste d'abord, puis ceux où il n'est qu'invité.</summary>
+    internal static IReadOnlyList<TopRecording> ParseTop(string json, long artistId) =>
         Data(json)
             .Select(t => (Track: t, Title: Str(t, "title_short") is { Length: > 0 } s ? s : Str(t, "title")))
             .Where(t => t.Title is { Length: > 0 })
+            .OrderBy(t => t.Track["artist"] is JsonObject a && Long(a, "id") == artistId ? 0 : 1)
             .Select(t => new TopRecording(t.Title!, null,
                 t.Track["duration"] is JsonValue d && d.GetValueKind() == JsonValueKind.Number && d.GetValue<double>() > 0 ? d.GetValue<double>() : null,
                 t.Track["album"] is JsonObject album ? Str(album, "title") : null))
@@ -67,6 +71,9 @@ public sealed class DeezerClient(IHttpClientFactory httpFactory, IOptions<SonNua
             Gate.Release();
         }
     }
+
+    private static long? Long(JsonObject o, string key) =>
+        o[key] is JsonValue v && v.GetValueKind() == JsonValueKind.Number ? v.GetValue<long>() : null;
 
     private static string? Str(JsonObject o, string key) =>
         o[key] is JsonValue v && v.GetValueKind() == JsonValueKind.String ? v.GetValue<string>() : null;

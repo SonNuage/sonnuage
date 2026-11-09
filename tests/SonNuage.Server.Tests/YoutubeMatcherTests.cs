@@ -33,6 +33,24 @@ public sealed class YoutubeMatcherTests
     }
 
     [Fact]
+    public void Karaoke_channels_and_tributes_never_pass_for_the_song()
+    {
+        // Relevés en production : des reprises qui mettaient le nom de l'artiste dans leur titre.
+        var cases = new (MatchQuery Query, string Title)[]
+        {
+            (new("Ariana Grande", "7 rings", 178), "7 rings (made popular by Ariana Grande) [vocal version]"),
+            (new("Ariana Grande", "positions", 172), "positions (Originally Performed by Ariana Grande)"),
+            (new("Halsey", "Without Me", 201), "Without Me (Lower Key) [Originally Performed by Halsey]"),
+            (new("Lady Gaga", "Shallow", 216), "Shallow (As Originally Performed By Lady Gaga & Bradley Cooper)"),
+            (new("twenty one pilots", "Heathens", 195), "Heathens - Tribute to Twenty One Pilots"),
+            (new("Justin Bieber", "Beauty And A Beat", 228), "Beauty And A Beat (In the Style of Justin Bieber)"),
+            (new("Madonna", "La Isla Bonita", 242), "La Isla Bonita (Made Famous By Madonna) [Backing Track]"),
+        };
+        foreach (var (query, title) in cases)
+            Assert.True(YoutubeMatcher.Score(query, Video(title, null, query.DurationSeconds)) < 60, title);
+    }
+
+    [Fact]
     public void A_far_duration_or_another_artist_lowers_the_score()
     {
         var right = YoutubeMatcher.Score(Query, Video("Daft Punk - Get Lucky", "Daft Punk", 248));

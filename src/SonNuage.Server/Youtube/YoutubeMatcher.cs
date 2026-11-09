@@ -31,6 +31,9 @@ public static class YoutubeMatcher
     [
         "live", "remix", "karaoke", "cover", "reprise", "instrumental", "sped up", "slowed", "nightcore", "reverb", "8d",
         "acapella", "a cappella", "reaction", "tutorial", "tuto", "extended", "mashup", "bass boosted", "parody", "parodie",
+        // Chaînes de karaoké et de reprises, qui mettent le nom de l'artiste dans leur titre.
+        "made popular", "made famous", "originally performed", "as performed", "in the style of", "tribute", "vocal version",
+        "lower key", "higher key", "backing track", "piano version", "guitar version",
     ];
 
     public static int Score(MatchQuery query, YtEntry entry)
