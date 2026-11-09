@@ -22,6 +22,21 @@ Légende : ✅ fait · 🔜 prochain · 💡 idée à creuser · ⚠️ limite c
 
 ## Livré récemment
 
+### Radios thématiques, favoris et notes (novembre 2026)
+
+- **Radios** sur l'accueil et dans Découvrir : saisons et fêtes (Halloween, Noël, Réveillon, Saint-Valentin,
+  printemps, été, automne, hiver, chacune sur sa période), humeurs (Pop bonne humeur, Détente, Plein d'énergie,
+  Soirée, Mélancolie, Concentration) et radio « Météo du moment » selon le temps qu'il fait dans la ville choisie (Open-Meteo, sans clé :
+  seules les coordonnées de la ville partent). Chaque morceau est noté selon son titre, son genre, ses tags
+  MusicBrainz (récupérés une fois par album, rafraîchis tous les 90 jours) et son analyse audio. Une radio ne
+  s'affiche qu'avec au moins 15 morceaux possibles ; les notes de 1 ou 2 l'écartent, les favoris passent plus
+  souvent, jamais deux fois de suite le même artiste. La file se complète tant qu'on écoute.
+- Ville de la radio météo : admin → Réglages YouTube → Radios.
+- Applis Subsonic : chaque radio est une playlist en lecture seule « Radio … », retirée à chaque ouverture.
+- Android : radios dans l'appli et dossier « Radios » dans Android Auto.
+- **Favoris d'albums et d'artistes** (cœur sur leur page, sections dans Favoris) et **notes de 1 à 5 étoiles** sur
+  les morceaux, albums et artistes (aussi sous le titre dans le lecteur plein écran). Partagés avec les applis Subsonic.
+
 ### Subsonic, deuxième vague (novembre 2026)
 
 - Mix : `getSimilarSongs2` / `getSimilarSongs` à partir d'un titre, d'un album ou d'un artiste, avec le moteur de
@@ -209,7 +224,7 @@ Constat sur le homelab : certains imports prenaient plus de 3 minutes, là où T
    - **Livré** : mot de passe Subsonic par compte dans Réglages → Applis Subsonic (chiffré, relisible, révocable,
      sert aussi de clé `apiKey`), environ 45 méthodes sous `/rest/*`, XML, JSON et JSONP, GET et formulaire POST.
      Depuis : mix, file partagée, favoris d'albums et d'artistes, notes, infos d'artiste, en cours d'écoute.
-     Reste : favoris d'albums et d'artistes et notes dans l'interface SonNuage ; essais avec Symfonium et Feishin, et autoriser `/rest/*` dans
+     Reste : essais avec Symfonium et Feishin, et autoriser `/rest/*` dans
      Cloudflare Access si le domaine y passe.
 
 ## Découverte (« discovery »)
