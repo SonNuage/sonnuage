@@ -32,6 +32,11 @@ Légende : ✅ fait · 🔜 prochain · 💡 idée à creuser · ⚠️ limite c
   s'affiche qu'avec au moins 15 morceaux possibles ; les notes de 1 ou 2 l'écartent, les favoris passent plus
   souvent, jamais deux fois de suite le même artiste. La file se complète tant qu'on écoute.
 - Ville de la radio météo : admin → Réglages YouTube → Radios.
+- **Analyse audio** (Essentia, sur le serveur, rien ne sort) : humeur (joyeux, triste, détendu, agressif, festif),
+  dansant, acoustique ou électronique, voix ou instrumental, énergie, valence et tempo. Environ 7 s par morceau, par
+  lots de 50, un seul à la fois ; relancée après chaque scan. Volet dans Réglages (activer, avancement, lancer).
+  Image amd64 seulement (environ 800 Mo de plus) ; ailleurs l'analyse se désactive et les radios d'humeur s'appuient
+  sur le titre, le genre et les tags. Modèles Essentia sous licence CC BY-NC-SA 4.0.
 - Applis Subsonic : chaque radio est une playlist en lecture seule « Radio … », retirée à chaque ouverture.
 - Android : radios dans l'appli et dossier « Radios » dans Android Auto.
 - **Favoris d'albums et d'artistes** (cœur sur leur page, sections dans Favoris) et **notes de 1 à 5 étoiles** sur
