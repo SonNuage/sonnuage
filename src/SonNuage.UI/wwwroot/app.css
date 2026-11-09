@@ -825,6 +825,11 @@ button.tab { border: 0; cursor: pointer; color: inherit; display: inline-flex; a
 .account-name { display: flex; flex-direction: column; min-width: 0; }
 .account-name strong { overflow: hidden; text-overflow: ellipsis; }
 
+/* Applis Subsonic : champ en lecture seule suivi de ses boutons (afficher, copier), le champ rétrécit sur mobile. */
+.copy-field { display: flex; align-items: center; gap: .25rem; }
+.copy-field .input { flex: 1 1 auto; min-width: 0; }
+.copy-field .icon-btn { flex: none; }
+
 /* Tâches */
 .lanes { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: .6rem; margin-bottom: 1.25rem; }
 .lane { display: flex; flex-direction: column; gap: .15rem; background: var(--bg-elevated); border-radius: var(--radius); border-left: 3px solid var(--border); padding: .6rem .9rem; }

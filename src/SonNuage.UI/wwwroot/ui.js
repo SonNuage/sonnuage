@@ -64,8 +64,36 @@ const preview = (() => {
   };
 })();
 
+// Copie dans le presse-papiers. Hors contexte sécurisé (http sur le réseau local), navigator.clipboard n'existe pas :
+// on passe alors par une zone de texte temporaire.
+const copy = async (text) => {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Refusé (permission, page sans le focus) : on tente l'ancienne méthode.
+    }
+  }
+  const area = document.createElement('textarea');
+  area.value = text;
+  area.setAttribute('readonly', '');
+  area.style.position = 'fixed';
+  area.style.opacity = '0';
+  document.body.appendChild(area);
+  area.select();
+  try {
+    return document.execCommand('copy');
+  } catch {
+    return false;
+  } finally {
+    area.remove();
+  }
+};
+
 window.sonnuage = {
   preview,
+  copy,
   languages: () => (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language]).join(','),
   setLanguage: (code) => { document.documentElement.lang = code; },
   setTheme: applyTheme,

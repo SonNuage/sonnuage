@@ -52,6 +52,9 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     public Task ReportPlayAsync(PlayEventRequest play) => SendAsync(HttpMethod.Post, "api/me/plays", play);
     public Task ChangePasswordAsync(string current, string next) =>
         SendAsync(HttpMethod.Post, "api/auth/password", new ChangePasswordRequest(current, next));
+    public Task<SubsonicAccessDto?> SubsonicAccessAsync() => GetAsync<SubsonicAccessDto>("api/me/subsonic");
+    public Task<SubsonicAccessDto?> CreateSubsonicPasswordAsync() => SendAsync<SubsonicAccessDto>(HttpMethod.Post, "api/me/subsonic");
+    public Task RevokeSubsonicPasswordAsync() => SendAsync(HttpMethod.Delete, "api/me/subsonic");
 
     // ---- Playlists ----
     public Task<List<PlaylistDto>?> PlaylistsAsync() => GetAsync<List<PlaylistDto>>("api/playlists");
