@@ -22,6 +22,17 @@ Légende : ✅ fait · 🔜 prochain · 💡 idée à creuser · ⚠️ limite c
 
 ## Livré récemment
 
+### Subsonic, deuxième vague (novembre 2026)
+
+- Mix : `getSimilarSongs2` / `getSimilarSongs` à partir d'un titre, d'un album ou d'un artiste, avec le moteur de
+  la radio de découverte.
+- File de lecture partagée entre appareils : `savePlayQueue` / `getPlayQueue`.
+- `lastModified` réel sur `getIndexes` (fin du dernier scan) : les clients ne relisent plus tout pour rien.
+- Favoris d'albums et d'artistes, notes de 1 à 5 (`setRating`), listes « mieux notés » et « favoris » complètes.
+- `getArtistInfo2` : identifiant MusicBrainz et artistes proches de la bibliothèque selon ListenBrainz (pas de
+  biographie ni de photo).
+- `getNowPlaying` : ce qu'écoutent les comptes dans leurs applis Subsonic, effacé à la fin du titre.
+
 ### Paroles (novembre 2026)
 
 - Bouton « Paroles » dans le lecteur plein écran (et dans la barre du lecteur sur ordinateur) : la ligne chantée
@@ -197,7 +208,8 @@ Constat sur le homelab : certains imports prenaient plus de 3 minutes, là où T
    - Une fois livré : passer la ligne « Compatible API Subsonic » du comparatif de `sonnuage-site` à ✓.
    - **Livré** : mot de passe Subsonic par compte dans Réglages → Applis Subsonic (chiffré, relisible, révocable,
      sert aussi de clé `apiKey`), environ 45 méthodes sous `/rest/*`, XML, JSON et JSONP, GET et formulaire POST.
-     Favoris : morceaux seulement. Reste : essais avec Symfonium et Feishin, et autoriser `/rest/*` dans
+     Depuis : mix, file partagée, favoris d'albums et d'artistes, notes, infos d'artiste, en cours d'écoute.
+     Reste : favoris d'albums et d'artistes et notes dans l'interface SonNuage ; essais avec Symfonium et Feishin, et autoriser `/rest/*` dans
      Cloudflare Access si le domaine y passe.
 
 ## Découverte (« discovery »)
