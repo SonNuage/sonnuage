@@ -28,19 +28,17 @@ public class SearchGatewayTests
     [Fact]
     public async Task Slow_answer_falls_back_then_is_served_once_it_arrives()
     {
+        // Elasticsearch « lent » : il ne répond que quand le test le décide, quelle que soit la charge de la machine.
         var gateway = Gateway(200);
+        var answer = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
         var watch = Stopwatch.StartNew();
-        var first = await gateway.TryAsync("k", async ct =>
-        {
-            await Task.Delay(700, ct);
-            return "es";
-        });
+        var first = await gateway.TryAsync("k", _ => answer.Task);
         Assert.Null(first);
-        Assert.InRange(watch.ElapsedMilliseconds, 150, 650);
+        Assert.True(watch.ElapsedMilliseconds >= 150, $"repli au bout de {watch.ElapsedMilliseconds} ms seulement");
         Assert.False(gateway.Degraded);
 
         // La requête a continué en arrière-plan : la frappe suivante identique profite de son résultat.
-        await Task.Delay(900, TestContext.Current.CancellationToken);
+        answer.SetResult("es");
         var second = await gateway.TryAsync<string>("k", _ => throw new InvalidOperationException("ne doit pas être rappelé"));
         Assert.Equal("es", second);
     }
