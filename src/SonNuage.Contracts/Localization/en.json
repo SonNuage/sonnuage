@@ -818,6 +818,29 @@
     "switched": "Active account: {account}",
     "loggedOut": "Signed out of {account}"
   },
+  "subsonic": {
+    "title": "Subsonic apps",
+    "intro": "Use SonNuage in Subsonic-compatible apps (Symfonium, Feishin, DSub, Substreamer, Tempo…) with a dedicated password, separate from your account password.",
+    "create": "Create a Subsonic password",
+    "created": "Subsonic password created.",
+    "server": "Server address",
+    "username": "Username",
+    "password": "Password",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyFailed": "Couldn't copy. Select the text to copy it.",
+    "show": "Show password",
+    "hide": "Hide password",
+    "createdOn": "Created on {date}",
+    "renew": "New password",
+    "renewConfirm": "New Subsonic password?",
+    "renewHint": "The old password will stop working. You'll need to enter the new one in every app that uses it.",
+    "renewed": "New password created. Update it in your apps.",
+    "disable": "Disable",
+    "disableConfirm": "Disable Subsonic access?",
+    "disableHint": "Subsonic apps will no longer be able to sign in to your account. You can create a new password later.",
+    "disabled": "Subsonic access disabled."
+  },
   "android": {
     "recent": "Recent",
     "sessionExpired": "Session expired: log in again in the app."

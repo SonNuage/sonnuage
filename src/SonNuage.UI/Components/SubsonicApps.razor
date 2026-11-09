@@ -1,0 +1,135 @@
+@* Accès des applis Subsonic (Symfonium, Feishin, DSub…) : adresse, nom d'utilisateur et mot de passe dédié à recopier dans l'appli. *@
+@inject ApiClient Api
+@inject UiState Ui
+@inject IServerEndpoint Endpoint
+@inject IJSRuntime Js
+
+<section class="panel">
+    <h2>@L["subsonic.title"]</h2>
+    <p class="muted">@L["subsonic.intro"]</p>
+
+    @if (_access is { Enabled: true, Password: { } password } access)
+    {
+        @if (Server is { } server)
+        {
+            <div class="field">
+                <span>@L["subsonic.server"]</span>
+                <div class="copy-field">
+                    <input class="input mono" readonly value="@server" aria-label="@L["subsonic.server"]" onfocus="this.select()" />
+                    <button class="icon-btn" title="@L["subsonic.copy"]" @onclick="() => CopyAsync(server)"><Icon Name="copy" Size="20" /></button>
+                </div>
+            </div>
+        }
+        <div class="field">
+            <span>@L["subsonic.username"]</span>
+            <div class="copy-field">
+                <input class="input mono" readonly value="@access.Username" aria-label="@L["subsonic.username"]" onfocus="this.select()" />
+                <button class="icon-btn" title="@L["subsonic.copy"]" @onclick="() => CopyAsync(access.Username)"><Icon Name="copy" Size="20" /></button>
+            </div>
+        </div>
+        <div class="field">
+            <span>@L["subsonic.password"]</span>
+            <div class="copy-field">
+                <input class="input mono" type="@(_shown ? "text" : "password")" readonly value="@password" autocomplete="off"
+                       aria-label="@L["subsonic.password"]" onfocus="this.select()" />
+                <button class="icon-btn" title="@(_shown ? L["subsonic.hide"] : L["subsonic.show"])" aria-pressed="@(_shown ? "true" : "false")"
+                        @onclick="() => _shown = !_shown"><Icon Name="@(_shown ? "visibility-off" : "visibility")" Size="20" /></button>
+                <button class="icon-btn" title="@L["subsonic.copy"]" @onclick="() => CopyAsync(password)"><Icon Name="copy" Size="20" /></button>
+            </div>
+        </div>
+        @if (access.CreatedAt is { } created)
+        {
+            <p class="muted small">@L["subsonic.createdOn", ("date", L.Date(created))]</p>
+        }
+        <div class="row">
+            <button class="btn" disabled="@_busy" @onclick="() => _confirm = Pending.Renew"><Icon Name="refresh" Size="18" /> @L["subsonic.renew"]</button>
+            <button class="btn danger" disabled="@_busy" @onclick="() => _confirm = Pending.Disable">@L["subsonic.disable"]</button>
+        </div>
+    }
+    else if (_access is not null)
+    {
+        <button class="btn primary" disabled="@_busy" @onclick="CreateAsync"><Icon Name="key" Size="18" /> @L["subsonic.create"]</button>
+    }
+</section>
+
+<Modal Open="_confirm is not null" OpenChanged="v => { if (!v) _confirm = null; }"
+       Title="@(_confirm == Pending.Renew ? L["subsonic.renewConfirm"] : L["subsonic.disableConfirm"])">
+    <ChildContent><p>@(_confirm == Pending.Renew ? L["subsonic.renewHint"] : L["subsonic.disableHint"])</p></ChildContent>
+    <Footer>
+        <button class="btn" @onclick="() => _confirm = null">@L["common.cancel"]</button>
+        @if (_confirm == Pending.Renew)
+        {
+            <button class="btn danger" @onclick="RenewAsync">@L["subsonic.renew"]</button>
+        }
+        else
+        {
+            <button class="btn danger" @onclick="DisableAsync">@L["subsonic.disable"]</button>
+        }
+    </Footer>
+</Modal>
+
+@code {
+    private enum Pending { Renew, Disable }
+
+    private SubsonicAccessDto? _access;
+    private bool _shown;
+    private bool _busy;
+    private Pending? _confirm;
+
+    // Web : l'origine de la page. Applis : le serveur du compte actif. Sans barre finale, comme on le saisit.
+    private string? Server => Endpoint.BaseAddress?.ToString().TrimEnd('/');
+
+    protected override Task OnInitializedAsync() => Run(async () => _access = await Api.SubsonicAccessAsync());
+
+    private Task CreateAsync() => Run(async () =>
+    {
+        _access = await Api.CreateSubsonicPasswordAsync();
+        Ui.Notify(L["subsonic.created"]);
+    });
+
+    private Task RenewAsync() => Run(async () =>
+    {
+        _confirm = null;
+        _access = await Api.CreateSubsonicPasswordAsync();
+        Ui.Notify(L["subsonic.renewed"]);
+    });
+
+    private Task DisableAsync() => Run(async () =>
+    {
+        _confirm = null;
+        await Api.RevokeSubsonicPasswordAsync();
+        _access = _access is null ? null : _access with { Enabled = false, Password = null, CreatedAt = null };
+        _shown = false;
+        Ui.Notify(L["subsonic.disabled"]);
+    });
+
+    private async Task CopyAsync(string text)
+    {
+        try
+        {
+            var copied = await Js.InvokeAsync<bool>("sonnuage.copy", text);
+            Ui.Notify(copied ? L["subsonic.copied"] : L["subsonic.copyFailed"], !copied);
+        }
+        catch (JSException)
+        {
+            Ui.Notify(L["subsonic.copyFailed"], true);
+        }
+    }
+
+    private async Task Run(Func<Task> action)
+    {
+        _busy = true;
+        try
+        {
+            await action();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

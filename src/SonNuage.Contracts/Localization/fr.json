@@ -818,6 +818,29 @@
     "switched": "Compte actif : {account}",
     "loggedOut": "Déconnecté de {account}"
   },
+  "subsonic": {
+    "title": "Applis Subsonic",
+    "intro": "Écoutez SonNuage dans les applis compatibles Subsonic (Symfonium, Feishin, DSub, Substreamer, Tempo…) avec un mot de passe dédié, distinct de celui de votre compte.",
+    "create": "Créer un mot de passe Subsonic",
+    "created": "Mot de passe Subsonic créé.",
+    "server": "Adresse du serveur",
+    "username": "Nom d'utilisateur",
+    "password": "Mot de passe",
+    "copy": "Copier",
+    "copied": "Copié",
+    "copyFailed": "Copie impossible. Sélectionnez le texte pour le copier.",
+    "show": "Afficher le mot de passe",
+    "hide": "Masquer le mot de passe",
+    "createdOn": "Créé le {date}",
+    "renew": "Nouveau mot de passe",
+    "renewConfirm": "Nouveau mot de passe Subsonic ?",
+    "renewHint": "L'ancien mot de passe cessera de fonctionner. Il faudra saisir le nouveau dans chaque appli qui l'utilise.",
+    "renewed": "Nouveau mot de passe créé. Mettez-le à jour dans vos applis.",
+    "disable": "Désactiver",
+    "disableConfirm": "Désactiver l'accès Subsonic ?",
+    "disableHint": "Les applis Subsonic ne pourront plus se connecter à votre compte. Vous pourrez créer un nouveau mot de passe plus tard.",
+    "disabled": "Accès Subsonic désactivé."
+  },
   "android": {
     "recent": "Récents",
     "sessionExpired": "Session expirée : reconnectez-vous dans l'application."
