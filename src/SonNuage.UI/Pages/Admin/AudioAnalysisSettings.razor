@@ -1,0 +1,100 @@
+@implements IDisposable
+@inject ApiClient Api
+@inject UiState Ui
+
+@* Réglages → Analyse audio (Essentia) : avancement, activation, lancement immédiat. *@
+<section class="panel">
+    <h2>@L["analysis.title"]</h2>
+    @if (_status is { } s)
+    {
+        @if (!s.Available)
+        {
+            <p class="muted">@L["analysis.unavailable"]</p>
+        }
+        else
+        {
+            <label class="row small" style="margin: 0 0 .6rem; flex-wrap: nowrap; align-items: flex-start">
+                <input type="checkbox" checked="@s.Enabled" disabled="@_saving" @onchange="e => SetEnabledAsync(e.Value is true)" />
+                <span>@L["analysis.enabled"]</span>
+            </label>
+            <p>
+                @if (s.Running)
+                {
+                    <Logo Size="16" Animated="true" />
+                }
+                @L["analysis.progress", ("analyzed", L.Number(s.Analyzed)), ("total", L.Number(s.Total))]
+                @if (s.Errors > 0)
+                {
+                    <span class="sep">·</span><span>@L["analysis.errors", ("count", s.Errors)]</span>
+                }
+                @if (s.Pending > 0)
+                {
+                    <span class="sep">·</span><span>@L["analysis.pending", ("count", L.Number(s.Pending))]</span>
+                }
+            </p>
+            @if (s.Total > 0)
+            {
+                <progress max="@s.Total" value="@(s.Analyzed + s.Errors)"></progress>
+            }
+            <p class="muted small">@L["analysis.hint"]</p>
+            <div class="row">
+                <button class="btn primary" disabled="@(!s.Enabled || s.Running || s.Pending == 0)" @onclick="RunAsync"><Icon Name="refresh" Size="18" /> @L["analysis.run"]</button>
+                <a class="btn" href="admin/tasks">@L["dash.jobsLink"]</a>
+            </div>
+        }
+    }
+    else
+    {
+        <Logo Size="16" Animated="true" />
+    }
+</section>
+
+@code {
+    private AudioAnalysisStatusDto? _status;
+    private bool _saving;
+    private Timer? _timer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CallAsync(async () => _status = await Api.AudioAnalysisAsync());
+        // Avancement suivi tant qu'une analyse tourne.
+        _timer = new Timer(_ => InvokeAsync(async () =>
+        {
+            if (_status?.Running != true) return;
+            await CallAsync(async () => _status = await Api.AudioAnalysisAsync());
+            StateHasChanged();
+        }), null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
+    }
+
+    private async Task SetEnabledAsync(bool enabled)
+    {
+        _saving = true;
+        await CallAsync(async () =>
+        {
+            _status = await Api.SaveAudioAnalysisAsync(new AudioAnalysisSettingsDto(enabled));
+            Ui.Notify(L["analysis.saved"]);
+        });
+        _saving = false;
+    }
+
+    private async Task RunAsync() =>
+        await CallAsync(async () =>
+        {
+            _status = await Api.RunAudioAnalysisAsync();
+            Ui.Notify(L["analysis.started"]);
+        });
+
+    private async Task CallAsync(Func<Task> action)
+    {
+        try
+        {
+            await action();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+    }
+
+    public void Dispose() => _timer?.Dispose();
+}
