@@ -22,8 +22,10 @@ public static class JobLanes
     public const string Sync = "sync";
     /// <summary>Actualisation de la découverte par artiste (longue : recherches YouTube et extraits) : une à la fois.</summary>
     public const string Discovery = "discovery";
+    /// <summary>Analyse audio (Essentia, gourmande en calcul) : un lot à la fois.</summary>
+    public const string Analysis = "analysis";
 
-    public static readonly IReadOnlyList<string> All = [Download, AcoustId, Metadata, Library, Sync, Discovery];
+    public static readonly IReadOnlyList<string> All = [Download, AcoustId, Metadata, Library, Sync, Discovery, Analysis];
 }
 
 /// <summary>Type de tâche déclaré : nom, file, priorité par défaut, nombre de tentatives.</summary>
@@ -43,6 +45,8 @@ public static class JobKinds
     public static readonly JobKind SubscriptionSync = new("youtube.sync", JobLanes.Sync);
     public static readonly JobKind DiscoveryRefresh = new("discovery.refresh", JobLanes.Discovery);
     public static readonly JobKind RequestAlbum = new("requests.album", JobLanes.Discovery, Priority: 5);
+    /// <summary>Analyse audio d'un lot de morceaux ; la suite enchaîne les lots tant qu'il en reste.</summary>
+    public static readonly JobKind AudioAnalysis = new("analysis.audio", JobLanes.Analysis);
 }
 
 /// <summary>Types de suites (création depuis l'admin, filtres).</summary>
@@ -56,6 +60,7 @@ public static class JobSuiteKinds
     public const string SubscriptionSync = "youtube.sync";
     public const string DiscoveryRefresh = "discovery.refresh";
     public const string RequestAlbum = "requests.album";
+    public const string AudioAnalysis = "analysis.audio";
 }
 
 public interface IJobHandler
