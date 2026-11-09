@@ -18,6 +18,31 @@ public sealed class AdminTests(SonNuageFactory factory) : IClassFixture<SonNuage
     }
 
     [Fact]
+    public async Task The_admin_sees_when_and_from_which_device_a_user_last_connected()
+    {
+        var admin = await factory.AdminClientAsync();
+        var dora = await CreateUserAsync(admin, "dora");
+        Assert.Null(dora.LastSeenAt);
+
+        var phone = factory.CreateClient();
+        var login = await phone.PostAsJsonAsync("/api/auth/login", new LoginRequest("dora", "password-1234", "Pixel 8"), Ct);
+        var tokens = (await login.Content.ReadFromJsonAsync<TokenResponse>(Ct))!;
+        var afterLogin = await UserAsync(admin, dora.Id);
+        Assert.NotNull(afterLogin.LastSeenAt);
+        Assert.Equal("Pixel 8", afterLogin.LastSeenDevice);
+
+        // L'appli reste connectée des semaines : chaque renouvellement de session compte comme une connexion.
+        await Task.Delay(50, Ct);
+        (await phone.PostAsJsonAsync("/api/auth/refresh", new RefreshRequest(tokens.RefreshToken), Ct)).EnsureSuccessStatusCode();
+        var afterRefresh = await UserAsync(admin, dora.Id);
+        Assert.True(afterRefresh.LastSeenAt > afterLogin.LastSeenAt);
+        Assert.Equal("Pixel 8", afterRefresh.LastSeenDevice);
+    }
+
+    private static async Task<UserDto> UserAsync(HttpClient admin, Guid id) =>
+        (await admin.GetFromJsonAsync<List<UserDto>>("/api/admin/users", Ct))!.Single(u => u.Id == id);
+
+    [Fact]
     public async Task The_last_admin_cannot_be_demoted_and_roles_and_passwords_are_checked()
     {
         var admin = await factory.AdminClientAsync();

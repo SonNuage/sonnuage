@@ -87,6 +87,9 @@ public sealed class TokenService(
             ExpiresAt = now.AddDays(o.RefreshTokenDays),
         };
         db.RefreshTokens.Add(refresh);
+        // Connexion ou renouvellement de session : c'est la dernière connexion de l'utilisateur.
+        user.LastSeenAt = now;
+        user.LastSeenDevice = refresh.DeviceName;
         if (replacing is not null)
         {
             replacing.RevokedAt = now;
@@ -159,7 +162,8 @@ public sealed class TokenService(
 
 public static class UserMapping
 {
-    public static UserDto ToDto(this User u) => new(u.Id, u.Username, u.Role, u.CreatedAt, u.Language, u.RequestsPerDay, u.AutoApproveRequests);
+    public static UserDto ToDto(this User u) =>
+        new(u.Id, u.Username, u.Role, u.CreatedAt, u.Language, u.RequestsPerDay, u.AutoApproveRequests, u.LastSeenAt, u.LastSeenDevice);
 }
 
 public static class ClaimsPrincipalExtensions

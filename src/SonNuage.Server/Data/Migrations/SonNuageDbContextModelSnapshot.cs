@@ -805,6 +805,12 @@ namespace SonNuage.Server.Data.Migrations
                         .HasMaxLength(16)
                         .HasColumnType("TEXT");
 
+                    b.Property<long?>("LastSeenAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("LastSeenDevice")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("NormalizedUsername")
                         .IsRequired()
                         .HasColumnType("TEXT");

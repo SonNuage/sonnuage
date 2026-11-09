@@ -32,7 +32,8 @@ public sealed record TokenResponse(
 // Language : langue préférée de l'interface (code d'un fichier de traduction), null = celle de l'appareil.
 // RequestsPerDay, AutoApproveRequests : demandes de téléchargement d'un contributeur (quota sur 24 h, approbation sans admin).
 public sealed record UserDto(Guid Id, string Username, string Role, DateTimeOffset CreatedAt, string? Language = null,
-    int RequestsPerDay = DownloadRequestLimits.DefaultPerDay, bool AutoApproveRequests = false);
+    int RequestsPerDay = DownloadRequestLimits.DefaultPerDay, bool AutoApproveRequests = false,
+    DateTimeOffset? LastSeenAt = null, string? LastSeenDevice = null);
 
 public sealed record SetLanguageRequest(string? Language);
 

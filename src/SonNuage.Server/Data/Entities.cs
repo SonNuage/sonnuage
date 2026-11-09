@@ -109,6 +109,13 @@ public sealed class User
     public int RequestsPerDay { get; set; } = Contracts.DownloadRequestLimits.DefaultPerDay;
     /// <summary>Contributeur : ses demandes partent au téléchargement sans attendre un admin.</summary>
     public bool AutoApproveRequests { get; set; }
+    /// <summary>
+    /// Dernière connexion : à la saisie du mot de passe et à chaque renouvellement de session (toutes les quelques
+    /// minutes tant que l'appli sert), donc aussi pour une appli restée connectée des semaines.
+    /// </summary>
+    public DateTimeOffset? LastSeenAt { get; set; }
+    /// <summary>Appareil de cette dernière connexion (nom donné à la connexion, ex. « samsung SM-G990B2 »).</summary>
+    public string? LastSeenDevice { get; set; }
 }
 
 public sealed class RefreshToken
