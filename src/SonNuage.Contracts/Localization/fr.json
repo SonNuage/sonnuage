@@ -206,6 +206,11 @@
       "noFfmpeg": "ffmpeg manque sur le serveur : impossible de préparer un extrait.",
       "noFile": "yt-dlp n'a produit aucun extrait.",
       "failed": "Extrait indisponible : {message}"
+    },
+    "storage": {
+      "minFree": "L'espace libre minimum va de 0 à {max} Go.",
+      "previewQuota": "La place des extraits va de {min} à {max} Go.",
+      "lowSpace": "Disque presque plein : {free} Go libres, sous le minimum de {min} Go. Les téléchargements reprendront quand de la place sera libérée."
     }
   },
   "login": {

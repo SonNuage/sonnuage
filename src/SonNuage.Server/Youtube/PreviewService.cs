@@ -8,7 +8,7 @@ namespace SonNuage.Server.Youtube;
 /// produit une fois (yt-dlp ne télécharge que le passage) puis gardé en cache disque : réécouter ou chercher dans
 /// l'extrait est immédiat. Deux productions au plus en même temps, et une seule par vidéo.
 /// </summary>
-public sealed class PreviewService(YtDlp ytDlp, IOptions<SonNuageOptions> options, ILogger<PreviewService> logger)
+public sealed class PreviewService(YtDlp ytDlp, Storage.StorageGuard storage, IOptions<SonNuageOptions> options, ILogger<PreviewService> logger)
 {
     public const int Seconds = 30;
     private const int Parallel = 2;
@@ -33,6 +33,7 @@ public sealed class PreviewService(YtDlp ytDlp, IOptions<SonNuageOptions> option
     {
         var path = PathFor(videoId);
         if (File.Exists(path)) return path;
+        storage.EnsureRoom();
         var lazy = _running.GetOrAdd(videoId, id => new Lazy<Task<string>>(() => ProduceAsync(id, duration, path)));
         return await lazy.Value.WaitAsync(ct);
     }
@@ -64,12 +65,24 @@ public sealed class PreviewService(YtDlp ytDlp, IOptions<SonNuageOptions> option
         }
     }
 
-    /// <summary>Le cache ne grossit pas sans fin : extraits de plus de 7 jours, puis les plus anciens au-delà de 500.</summary>
+    /// <summary>Place occupée par les extraits en cache.</summary>
+    public long CachedBytes()
+    {
+        var dir = new DirectoryInfo(Dir);
+        return dir.Exists ? dir.EnumerateFiles("*.mp3").Sum(f => f.Length) : 0;
+    }
+
+    /// <summary>
+    /// Le cache ne grossit pas sans fin : extraits de plus de 7 jours, au-delà de 500, puis les plus anciens tant que
+    /// la place allouée aux extraits (réglage de l'admin) est dépassée.
+    /// </summary>
     private void Prune()
     {
         var files = new DirectoryInfo(Dir).EnumerateFiles("*.mp3").OrderByDescending(f => f.LastWriteTimeUtc).ToList();
         var limit = DateTime.UtcNow - MaxAge;
-        foreach (var file in files.Where((f, i) => i >= MaxCached || f.LastWriteTimeUtc < limit))
+        var quota = storage.PreviewQuotaBytes;
+        long kept = 0;
+        foreach (var file in files.Where((f, i) => i >= MaxCached || f.LastWriteTimeUtc < limit || (kept += f.Length) > quota))
         {
             try
             {

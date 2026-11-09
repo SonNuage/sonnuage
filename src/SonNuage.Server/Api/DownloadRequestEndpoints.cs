@@ -113,6 +113,10 @@ public static class DownloadRequestEndpoints
             {
                 return Results.Problem(Tx.Key("errors.preview.failed", ("message", ex.Message)), statusCode: StatusCodes.Status502BadGateway);
             }
+            catch (Storage.StorageFullException ex)
+            {
+                return Results.Problem(ex.Message, statusCode: StatusCodes.Status507InsufficientStorage);
+            }
         }).RequireAuthorization(AuthConstants.ContributorMediaPolicy).WithTags("Requests");
 
         var admin = app.MapGroup("/api/admin/requests").RequireAuthorization(AuthConstants.AdminPolicy).WithTags("Admin");

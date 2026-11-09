@@ -206,6 +206,11 @@
       "noFfmpeg": "ffmpeg is missing on the server: previews can't be prepared.",
       "noFile": "yt-dlp produced no preview.",
       "failed": "Preview unavailable: {message}"
+    },
+    "storage": {
+      "minFree": "The minimum free space must be between 0 and {max} GB.",
+      "previewQuota": "The preview space must be between {min} and {max} GB.",
+      "lowSpace": "Disk almost full: {free} GB free, below the {min} GB minimum. Downloads will resume once space is freed."
     }
   },
   "login": {

@@ -92,20 +92,20 @@ public static class DashboardEndpoints
         a.Root == b.Root
         || (a.Format == b.Format && a.TotalBytes == b.TotalBytes && Math.Abs(a.FreeBytes - b.FreeBytes) < FreeSpaceDrift);
 
+    /// <summary>Disque qui porte <paramref name="path"/> : le point de montage le plus long qui le contient.</summary>
+    public static Disk? DiskOf(string path)
+    {
+        var full = Path.GetFullPath(path);
+        return DriveInfo.GetDrives().Where(d => d.IsReady)
+            .Where(d => full.StartsWith(d.RootDirectory.FullName, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+            .MaxBy(d => d.RootDirectory.FullName.Length) is { } d
+            ? new Disk(d.RootDirectory.FullName, d.DriveFormat, d.TotalSize, d.AvailableFreeSpace)
+            : null;
+    }
+
     /// <summary>Disque qui accueille les envois et imports, découpé en musique (par provenance), caches, autres fichiers et libre.</summary>
     private static StorageDto? Storage(SonNuageOptions o, IReadOnlyList<SourceTotalDto> sources)
     {
-        var drives = DriveInfo.GetDrives().Where(d => d.IsReady).ToList();
-        Disk? DiskOf(string path)
-        {
-            var full = Path.GetFullPath(path);
-            return drives
-                .Where(d => full.StartsWith(d.RootDirectory.FullName, OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
-                .MaxBy(d => d.RootDirectory.FullName.Length) is { } d
-                ? new Disk(d.RootDirectory.FullName, d.DriveFormat, d.TotalSize, d.AvailableFreeSpace)
-                : null;
-        }
-
         try
         {
             if (DiskOf(o.UploadPath) is not { } disk) return null;

@@ -24,6 +24,7 @@ public sealed class YoutubeImporter(
     MetadataResolver resolver,
     YoutubeLibraryWriter writer,
     YoutubeSettingsStore settings,
+    Storage.StorageGuard storage,
     ScanCoordinator scans,
     IOptions<SonNuageOptions> options,
     TimeProvider time,
@@ -31,6 +32,7 @@ public sealed class YoutubeImporter(
 {
     private static readonly TimeSpan FirstHold = TimeSpan.FromMinutes(30);
     private static readonly TimeSpan MaxHold = TimeSpan.FromHours(12);
+    private static readonly TimeSpan StorageRetry = TimeSpan.FromMinutes(10);
     internal static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
     private readonly Channel<bool> _wake = Channel.CreateBounded<bool>(new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropWrite });
@@ -218,6 +220,8 @@ public sealed class YoutubeImporter(
         if (item is null || item.Status is not (YoutubeItemStatus.Queued or YoutubeItemStatus.Downloading or YoutubeItemStatus.Failed))
             throw new JobAbortedException(Tx.Key("jobs.yt.notQueued"));
         if (HoldUntil is { } until && until > time.GetUtcNow()) throw new JobDeferredException(until, HoldReason ?? "");
+        // Disque presque plein : on attend que la place revienne, sans compter de tentative.
+        if (storage.DownloadsBlocked) throw new JobDeferredException(time.GetUtcNow() + StorageRetry, storage.LowSpaceMessage());
 
         var id = item.Id;
         var workDir = WorkDir(item.VideoId);
