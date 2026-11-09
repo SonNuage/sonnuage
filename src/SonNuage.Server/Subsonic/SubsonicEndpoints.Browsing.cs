@@ -103,13 +103,23 @@ public static partial class SubsonicEndpoints
         });
     }
 
+    /// <summary>Démarrage du serveur : date de la bibliothèque tant qu'aucun scan n'est fini depuis.</summary>
+    private static readonly DateTimeOffset StartedAt = DateTimeOffset.UtcNow;
+
     private static async Task<object> ArtistIndexAsync(SubsonicRequest r, string element)
     {
-        var artists = await r.Db.Artists.Where(a => a.Albums.Any()).OrderBy(a => a.SortName).ThenBy(a => a.Id).Select(ArtistRows).ToListAsync(r.Ct);
         var root = r.Ok();
         var node = root.Add(element).Attr("ignoredArticles", IgnoredArticles);
-        if (element == "indexes") node.Attr("lastModified", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
         var indexes = node.List("index");
+        if (element == "indexes")
+        {
+            // Date du dernier scan : une appli qui synchronise ne relit tout que si la bibliothèque a changé.
+            var lastModified = (r.Service<ScanCoordinator>().Status.LastFinishedAt ?? StartedAt).ToUnixTimeMilliseconds();
+            node.Attr("lastModified", lastModified);
+            if (long.TryParse(r.Get("ifModifiedSince"), out var since) && since >= lastModified) return root;
+        }
+
+        var artists = await r.Db.Artists.Where(a => a.Albums.Any()).OrderBy(a => a.SortName).ThenBy(a => a.Id).Select(ArtistRows).ToListAsync(r.Ct);
         foreach (var group in artists.GroupBy(a => IndexLetter(string.IsNullOrEmpty(a.SortName) ? a.Name : a.SortName)).OrderBy(g => g.Key == "#" ? "~" : g.Key))
         {
             var list = indexes.Add().Attr("name", group.Key).List("artist");
