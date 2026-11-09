@@ -94,7 +94,7 @@
         try
         {
             var page = await Api.AdminRequestsAsync(Status, Q, _items.Count, Page);
-            if (page is not null) { _items.AddRange(page.Items); _total = page.Total; }
+            if (page is not null) { Paging.AppendNew(_items, page.Items, r => r.Id); _total = page.Total; }
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {

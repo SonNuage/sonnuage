@@ -96,6 +96,9 @@
     private int _total;
     private bool _loading;
     private string? _error;
+    // Un rechargement (onglet, filtre, tri) rend caduc le chargement en cours : sa réponse tardive est ignorée.
+    private readonly LoadGeneration _loads = new();
+    private int _generation;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -114,13 +117,21 @@
 
     private async Task ReloadAsync()
     {
+        _generation = _loads.Start();
         _albums.Clear();
         _artists.Clear();
         _total = 0;
-        await LoadMoreAsync();
+        await LoadAsync(_generation);
     }
 
+    // Un double appui sur « Afficher plus » ne charge pas deux fois la même page.
     private async Task LoadMoreAsync()
+    {
+        if (_loading) return;
+        await LoadAsync(_generation);
+    }
+
+    private async Task LoadAsync(int generation)
     {
         _loading = true;
         _error = null;
@@ -129,21 +140,21 @@
             if (Current == "albums")
             {
                 var page = await Api.AlbumsAsync(_sort, _albums.Count, PageSize, _filter);
-                if (page is not null) { _albums.AddRange(page.Items); _total = page.Total; }
+                if (page is not null && _loads.IsCurrent(generation)) { Paging.AppendNew(_albums, page.Items, a => a.Id); _total = page.Total; }
             }
             else if (Current == "artists")
             {
                 var page = await Api.ArtistsAsync(_artists.Count, PageSize, _filter);
-                if (page is not null) { _artists.AddRange(page.Items); _total = page.Total; }
+                if (page is not null && _loads.IsCurrent(generation)) { Paging.AppendNew(_artists, page.Items, a => a.Id); _total = page.Total; }
             }
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
-            _error = L.Server(ex.Message);
+            if (_loads.IsCurrent(generation)) _error = L.Server(ex.Message);
         }
         finally
         {
-            _loading = false;
+            if (_loads.IsCurrent(generation)) _loading = false;
         }
     }
 

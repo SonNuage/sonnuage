@@ -55,7 +55,7 @@ public static class LibraryEndpoints
                 var key = NameNormalizer.Key(q);
                 query = query.Where(a => a.NormalizedName.Contains(key));
             }
-            return await PageAsync(query.OrderBy(a => a.SortName).Select(Projections.Artist), offset, limit, ct);
+            return await PageAsync(query.OrderBy(a => a.SortName).ThenBy(a => a.Id).Select(Projections.Artist), offset, limit, ct);
         });
 
         g.MapGet("/artists/{id:guid}", async (Guid id, SonNuageDbContext db, CancellationToken ct) =>
@@ -88,10 +88,10 @@ public static class LibraryEndpoints
             }
             query = sort switch
             {
-                "recent" => query.OrderByDescending(a => a.CreatedAt),
-                "year" => query.OrderByDescending(a => a.Year).ThenBy(a => a.Title),
-                "artist" => query.OrderBy(a => a.Artist.SortName).ThenBy(a => a.Year),
-                _ => query.OrderBy(a => a.Title),
+                "recent" => query.OrderByDescending(a => a.CreatedAt).ThenBy(a => a.Id),
+                "year" => query.OrderByDescending(a => a.Year).ThenBy(a => a.Title).ThenBy(a => a.Id),
+                "artist" => query.OrderBy(a => a.Artist.SortName).ThenBy(a => a.Year).ThenBy(a => a.Id),
+                _ => query.OrderBy(a => a.Title).ThenBy(a => a.Id),
             };
             return await PageAsync(query.Select(Projections.Album), offset, limit, ct);
         });

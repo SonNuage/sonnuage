@@ -128,6 +128,9 @@
     private int _total;
     private string _query = "";
     private bool _loading;
+    // Une nouvelle recherche rend caduc le chargement en cours : sa réponse tardive est ignorée.
+    private readonly LoadGeneration _loads = new();
+    private int _generation;
     private string? _error;
     private AlbumDetailDto? _album;
     private string _albumTitle = "";
@@ -173,31 +176,39 @@
 
     private async Task SearchAsync()
     {
+        _generation = _loads.Start();
         _tracks.Clear();
         _total = 0;
-        await LoadMoreAsync();
+        await LoadAsync(_generation);
     }
 
+    // Un double appui sur « Afficher plus » ne charge pas deux fois la même page.
     private async Task LoadMoreAsync()
+    {
+        if (_loading) return;
+        await LoadAsync(_generation);
+    }
+
+    private async Task LoadAsync(int generation)
     {
         _loading = true;
         _error = null;
         try
         {
             var page = await Api.AdminTracksAsync(_query, AlbumId, _tracks.Count, PageSize);
-            if (page is not null)
+            if (page is not null && _loads.IsCurrent(generation))
             {
-                _tracks.AddRange(page.Items);
+                Paging.AppendNew(_tracks, page.Items, t => t.Id);
                 _total = page.Total;
             }
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
-            _error = L.Server(ex.Message);
+            if (_loads.IsCurrent(generation)) _error = L.Server(ex.Message);
         }
         finally
         {
-            _loading = false;
+            if (_loads.IsCurrent(generation)) _loading = false;
         }
     }
 

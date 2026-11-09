@@ -231,7 +231,7 @@
         await RunAsync(async () =>
         {
             var page = await Api.MyRequestsAsync(_mine.Count, Page);
-            if (page is not null) { _mine.AddRange(page.Items); _total = page.Total; }
+            if (page is not null) { Paging.AppendNew(_mine, page.Items, r => r.Id); _total = page.Total; }
         });
     }
 
