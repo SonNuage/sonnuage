@@ -225,6 +225,23 @@ plus simple (données locales) à la plus ouverte (bases publiques), sur un mêm
   2. facultatif, par compte : l'utilisateur saisit son jeton ListenBrainz dans Réglages et ses écoutes y sont
      envoyées (désactivé par défaut), en échange de recommandations personnelles.
 
+**Découverte par artiste** (demandé le 9 novembre 2026)
+
+- 💡 **Fiches d'artistes à découvrir, stockées en base** : artistes proches de ceux de la bibliothèque (ListenBrainz,
+  MusicBrainz), avec leurs titres phares, leurs albums, la source et la date de mise à jour. Rafraîchies par une
+  tâche de fond (file « Métadonnées »), pas à chaque affichage.
+- 💡 **Extraits pré-téléchargés** pour ces titres phares, dans un dossier à part (`var/discovery/previews`,
+  distinct du cache des extraits à la demande) : la page se lit tout de suite, sans attendre yt-dlp. Préparés
+  par la même tâche, quelques-uns à la fois, et gardés tant que l'artiste reste proposé.
+- 💡 **Place allouée aux extraits**, réglable dans l'administration (par exemple 2 Go par défaut) : au-delà, les
+  extraits des artistes les moins récents ou déjà importés sont supprimés en premier, et aucun nouveau n'est
+  préparé.
+- 💡 **Espace libre minimum sur le disque**, réglable dans l'administration (par exemple 5 Go par défaut) : en
+  dessous, **tout téléchargement est bloqué** (imports YouTube, demandes acceptées, extraits), avec un message
+  clair et une alerte sur le tableau de bord. Les téléchargements reprennent seuls quand la place revient.
+- Une demande depuis une fiche passe par la recherche par correspondance ci-dessous, puis par le circuit
+  habituel des demandes (quota, approbation).
+
 **Bases publiques retenues**
 
 | Base | Apporte | Accès | Verdict |
