@@ -342,7 +342,17 @@
     "notYetPlayedHint": "Albums in the library you have never started."
   },
   "favorites": {
-    "empty": "Tap the heart on a track to find it here."
+    "empty": "Tap the heart on a track, an album or an artist to find it here.",
+    "albums": "Favorite albums",
+    "artists": "Favorite artists"
+  },
+  "rating": {
+    "label": "Rating",
+    "set": {
+      "one": "{count} star",
+      "other": "{count} stars"
+    },
+    "clear": "Remove rating"
   },
   "queue": {
     "nothing": "Nothing playing.",

@@ -48,6 +48,14 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
 
     // ---- Moi ----
     public Task<List<TrackDto>?> FavoritesAsync() => GetAsync<List<TrackDto>>("api/me/favorites");
+    public Task<List<AlbumDto>?> FavoriteAlbumsAsync() => GetAsync<List<AlbumDto>>("api/me/favorites/albums");
+    public Task<List<ArtistDto>?> FavoriteArtistsAsync() => GetAsync<List<ArtistDto>>("api/me/favorites/artists");
+    public Task SetAlbumFavoriteAsync(Guid albumId, bool favorite) =>
+        SendAsync(favorite ? HttpMethod.Put : HttpMethod.Delete, $"api/me/favorites/albums/{albumId}");
+    public Task SetArtistFavoriteAsync(Guid artistId, bool favorite) =>
+        SendAsync(favorite ? HttpMethod.Put : HttpMethod.Delete, $"api/me/favorites/artists/{artistId}");
+    /// <summary>Note d'un titre, d'un album ou d'un artiste, de 1 à 5 ; 0 la retire.</summary>
+    public Task SetRatingAsync(Guid itemId, int value) => SendAsync(HttpMethod.Put, $"api/me/ratings/{itemId}", new RatingRequest(value));
     public Task SetFavoriteAsync(Guid trackId, bool favorite) =>
         SendAsync(favorite ? HttpMethod.Put : HttpMethod.Delete, $"api/me/favorites/{trackId}");
     public Task<List<TrackDto>?> RecentAsync(int count = 50) => GetAsync<List<TrackDto>>($"api/me/recent?count={count}");

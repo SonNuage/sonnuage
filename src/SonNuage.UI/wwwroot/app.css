@@ -154,6 +154,15 @@ button { font: inherit; color: inherit; }
 .icon-btn.on { color: var(--accent); }
 .icon-btn.danger:hover { color: var(--danger); }
 .fav.on { color: var(--accent); }
+.stars { display: inline-flex; align-items: center; gap: 0; }
+.star {
+  display: inline-flex; padding: 3px; border: 0; background: transparent; border-radius: 4px;
+  color: var(--text-muted); cursor: pointer; transition: color .1s, transform .1s;
+}
+.star:hover, .star:focus-visible { color: var(--text); }
+.star:active { transform: scale(.88); }
+.star.on { color: var(--accent); }
+.np-meta .stars { margin: .2rem 0 0 -3px; }
 
 .play-btn {
   display: inline-flex; align-items: center; justify-content: center;

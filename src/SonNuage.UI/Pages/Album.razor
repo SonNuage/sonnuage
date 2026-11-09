@@ -2,6 +2,7 @@
 @inject ApiClient Api
 @inject IPlayer Player
 @inject AuthSession Auth
+@inject UiState Ui
 
 <PageTitle>@(_album?.Album.Title ?? L["common.album"]) · SonNuage</PageTitle>
 
@@ -25,12 +26,16 @@
             <div class="actions">
                 <button class="play-btn large" title="@L["common.play"]" @onclick="() => Player.PlayAsync(a.Tracks, 0, shuffle: false)"><Icon Name="play" Size="32" /></button>
                 <button class="icon-btn" title="@L["player.shuffle"]" @onclick="() => Player.PlayAsync(a.Tracks, -1, shuffle: true)"><Icon Name="shuffle" Size="28" /></button>
+                <button class="icon-btn fav @(_favorite ? "on" : "")" title="@L["common.favorite"]" aria-pressed="@(_favorite ? "true" : "false")" @onclick="ToggleFavoriteAsync">
+                    <Icon Name="@(_favorite ? "heart" : "heart-outline")" Size="28" />
+                </button>
                 <button class="icon-btn" title="@L["track.addToPlaylist"]" @onclick="() => _picker = true"><Icon Name="playlist-add" Size="28" /></button>
                 <button class="icon-btn" title="@L["common.addToQueue"]" @onclick="() => Player.EnqueueAsync(a.Tracks, playNext: false)"><Icon Name="queue" Size="28" /></button>
                 @if (Auth.IsAdmin)
                 {
                     <a class="icon-btn" title="@L["common.edit"]" href="admin/library?album=@a.Album.Id"><Icon Name="edit" Size="24" /></a>
                 }
+                <RatingStars Value="_rating" OnChange="RateAsync" />
             </div>
 
             <TrackList Tracks="_tracks" ShowAlbum="false" ShowTrackNumbers="true" />
@@ -46,6 +51,8 @@
     private List<TrackDto> _tracks = [];
     private string? _error;
     private bool _picker;
+    private bool _favorite;
+    private int? _rating;
     private Guid _loaded;
 
     protected override async Task OnParametersSetAsync()
@@ -63,11 +70,26 @@
         {
             _album = await Api.AlbumAsync(Id);
             if (_album is null) _error = L["album.notFound"];
-            else _tracks = _album.Tracks.ToList();
+            else
+            {
+                _tracks = _album.Tracks.ToList();
+                _favorite = _album.IsFavorite;
+                _rating = _album.Rating;
+            }
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
             _error = L.Server(ex.Message);
         }
+    }
+
+    private async Task ToggleFavoriteAsync()
+    {
+        if (await Ui.SetAlbumFavoriteAsync(Id, !_favorite)) _favorite = !_favorite;
+    }
+
+    private async Task RateAsync(int value)
+    {
+        if (await Ui.SetRatingAsync(Id, value)) _rating = value > 0 ? value : null;
     }
 }

@@ -34,6 +34,7 @@
             <div>
                 <a class="np-title" href="album/@track.AlbumId" @onclick='() => Ui.SetNowPlayingOpen(false)'>@track.Title</a>
                 <a class="np-artist" href="artist/@track.ArtistId" @onclick='() => Ui.SetNowPlayingOpen(false)'>@track.ArtistName</a>
+                <RatingStars Value="track.Rating" OnChange="v => Ui.RateTrackAsync(track, v)" Size="18" />
             </div>
             <div class="np-actions">
                 <button class="icon-btn @(Ui.LyricsShown ? "on" : "")" title="@(Ui.LyricsShown ? L["player.lyrics.hide"] : L["player.lyrics.show"])" aria-pressed="@(Ui.LyricsShown ? "true" : "false")" @onclick="() => Ui.SetLyricsShown(!Ui.LyricsShown)">

@@ -1,0 +1,18 @@
+@* Note de 1 à 5 : un appui sur l'étoile déjà choisie retire la note. *@
+<div class="stars" role="radiogroup" aria-label="@L["rating.label"]">
+    @for (var i = 1; i <= 5; i++)
+    {
+        var n = i;
+        var lit = n <= (Value ?? 0);
+        <button type="button" class="star @(lit ? "on" : "")" role="radio" aria-checked="@(Value == n ? "true" : "false")"
+                title="@(Value == n ? L["rating.clear"] : L["rating.set", ("count", n)])" @onclick="() => OnChange.InvokeAsync(Value == n ? 0 : n)">
+            <Icon Name="@(lit ? "star" : "star-outline")" Size="Size" />
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter] public int? Value { get; set; }
+    [Parameter] public EventCallback<int> OnChange { get; set; }
+    [Parameter] public int Size { get; set; } = 22;
+}

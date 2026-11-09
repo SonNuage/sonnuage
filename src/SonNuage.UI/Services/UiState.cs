@@ -79,6 +79,39 @@ public sealed class UiState(ApiClient api, IPlayer player, Localizer L)
         }
     }
 
+    public Task<bool> SetAlbumFavoriteAsync(Guid albumId, bool favorite) =>
+        SaveAsync(() => api.SetAlbumFavoriteAsync(albumId, favorite), favorite ? "toast.favoriteAdded" : "toast.favoriteRemoved");
+
+    public Task<bool> SetArtistFavoriteAsync(Guid artistId, bool favorite) =>
+        SaveAsync(() => api.SetArtistFavoriteAsync(artistId, favorite), favorite ? "toast.favoriteAdded" : "toast.favoriteRemoved");
+
+    /// <summary>Note d'un album ou d'un artiste (0 la retire) ; false si le serveur l'a refusée.</summary>
+    public Task<bool> SetRatingAsync(Guid itemId, int value) => SaveAsync(() => api.SetRatingAsync(itemId, value), null);
+
+    /// <summary>Note du titre, reportée dans la file de lecture.</summary>
+    public async Task<TrackDto> RateTrackAsync(TrackDto track, int value)
+    {
+        if (!await SetRatingAsync(track.Id, value)) return track;
+        var updated = track with { Rating = value > 0 ? value : null };
+        player.UpdateTrack(updated);
+        return updated;
+    }
+
+    private async Task<bool> SaveAsync(Func<Task> call, string? toast)
+    {
+        try
+        {
+            await call();
+            if (toast is not null) Notify(L[toast]);
+            return true;
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Notify(L.Server(ex.Message), true);
+            return false;
+        }
+    }
+
     public async Task AddToPlaylistAsync(Guid playlistId, IReadOnlyList<Guid> trackIds)
     {
         try

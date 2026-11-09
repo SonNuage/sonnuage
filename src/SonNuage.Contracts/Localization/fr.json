@@ -342,7 +342,17 @@
     "notYetPlayedHint": "Des albums de la bibliothèque que vous n'avez jamais lancés."
   },
   "favorites": {
-    "empty": "Touchez le cœur d'un titre pour le retrouver ici."
+    "empty": "Touchez le cœur d'un titre, d'un album ou d'un artiste pour le retrouver ici.",
+    "albums": "Albums favoris",
+    "artists": "Artistes favoris"
+  },
+  "rating": {
+    "label": "Note",
+    "set": {
+      "one": "{count} étoile",
+      "other": "{count} étoiles"
+    },
+    "clear": "Retirer la note"
   },
   "queue": {
     "nothing": "Rien en cours de lecture.",

@@ -21,6 +21,10 @@
             <div class="actions">
                 <button class="play-btn large" title="@L["artist.playAll"]" @onclick="() => PlayAllAsync(false)"><Icon Name="play" Size="32" /></button>
                 <button class="icon-btn" title="@L["player.shuffle"]" @onclick="() => PlayAllAsync(true)"><Icon Name="shuffle" Size="28" /></button>
+                <button class="icon-btn fav @(_favorite ? "on" : "")" title="@L["common.favorite"]" aria-pressed="@(_favorite ? "true" : "false")" @onclick="ToggleFavoriteAsync">
+                    <Icon Name="@(_favorite ? "heart" : "heart-outline")" Size="28" />
+                </button>
+                <RatingStars Value="_rating" OnChange="RateAsync" />
             </div>
 
             @if (_tracks is { Count: > 0 } tracks)
@@ -64,6 +68,8 @@
     private List<TrackDto>? _tracks;
     private List<TrackDto>? _appearances;
     private bool _all;
+    private bool _favorite;
+    private int? _rating;
     private string? _error;
     private Guid _loaded;
 
@@ -90,11 +96,26 @@
             _tracks = await top;
             _appearances = await appearances;
             if (_artist is null) _error = L["artist.notFound"];
+            else
+            {
+                _favorite = _artist.IsFavorite;
+                _rating = _artist.Rating;
+            }
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
             _error = L.Server(ex.Message);
         }
+    }
+
+    private async Task ToggleFavoriteAsync()
+    {
+        if (await Ui.SetArtistFavoriteAsync(Id, !_favorite)) _favorite = !_favorite;
+    }
+
+    private async Task RateAsync(int value)
+    {
+        if (await Ui.SetRatingAsync(Id, value)) _rating = value > 0 ? value : null;
     }
 
     private async Task ToggleAllAsync()

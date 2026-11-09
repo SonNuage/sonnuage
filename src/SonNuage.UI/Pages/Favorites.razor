@@ -20,16 +20,43 @@
     </div>
 
     <Loader Loading="_loading" Error="@_error" OnRetry="LoadAsync">
-        @if (_tracks.Count == 0)
+        @if (_tracks.Count == 0 && _albums.Count == 0 && _artists.Count == 0)
         {
             <p class="empty">@L["favorites.empty"]</p>
         }
         <TrackList Tracks="_tracks" ShowCover="true" />
+
+        @if (_albums.Count > 0)
+        {
+            <section>
+                <h2>@L["favorites.albums"]</h2>
+                <AlbumGrid Albums="_albums" />
+            </section>
+        }
+
+        @if (_artists.Count > 0)
+        {
+            <section>
+                <h2>@L["favorites.artists"]</h2>
+                <div class="grid">
+                    @foreach (var a in _artists)
+                    {
+                        <a class="card" href="artist/@a.Id" @key="a.Id">
+                            <div class="card-cover round"><Cover AlbumId="a.CoverAlbumId" HasCover="a.CoverAlbumId is not null" Round="true" Seed="@a.Name" /></div>
+                            <span class="card-title">@a.Name</span>
+                            <span class="card-sub">@L["common.albums", ("count", a.AlbumCount)]</span>
+                        </a>
+                    }
+                </div>
+            </section>
+        }
     </Loader>
 </div>
 
 @code {
     private List<TrackDto> _tracks = [];
+    private List<AlbumDto> _albums = [];
+    private List<ArtistDto> _artists = [];
     private bool _loading = true;
     private string? _error;
 
@@ -41,7 +68,12 @@
         _error = null;
         try
         {
-            _tracks = await Api.FavoritesAsync() ?? [];
+            var tracks = Api.FavoritesAsync();
+            var albums = Api.FavoriteAlbumsAsync();
+            var artists = Api.FavoriteArtistsAsync();
+            _tracks = await tracks ?? [];
+            _albums = await albums ?? [];
+            _artists = await artists ?? [];
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
