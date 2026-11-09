@@ -96,7 +96,16 @@
     "date": "{MMM} {d}, {yyyy}",
     "dateTime": "{MMM} {d}, {yyyy}, {HH}:{mm}",
     "percent": "{value}%",
-    "hoursShort": "{value} h"
+    "hoursShort": "{value} h",
+    "ago": {
+      "now": "just now",
+      "minutes": "{count} min ago",
+      "hours": "{count} h ago",
+      "days": {
+        "one": "{count} day ago",
+        "other": "{count} days ago"
+      }
+    }
   },
   "toast": {
     "favoriteAdded": "Added to Liked Songs",
@@ -486,7 +495,9 @@
     "requestsNone": "—",
     "quotaChanged": "Quota updated",
     "autoOn": "Their requests will go straight to download",
-    "autoOff": "Their requests will wait for an administrator"
+    "autoOff": "Their requests will wait for an administrator",
+    "colLastSeen": "Last connection",
+    "neverSeen": "Never"
   },
   "upload": {
     "intro": "Files are filed by artist and album from their tags. For untagged files, enter the artist and album below.",

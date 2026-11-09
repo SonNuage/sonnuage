@@ -13,7 +13,7 @@
         <ChildContent>
         <div class="table-wrap">
             <table class="table">
-                <thead><tr><th>@L["users.colUser"]</th><th>@L["users.colRole"]</th><th>@L["users.colRequests"]</th><th>@L["users.colCreated"]</th><th></th></tr></thead>
+                <thead><tr><th>@L["users.colUser"]</th><th>@L["users.colRole"]</th><th>@L["users.colRequests"]</th><th>@L["users.colLastSeen"]</th><th>@L["users.colCreated"]</th><th></th></tr></thead>
                 <tbody>
                     @foreach (var u in _users)
                     {
@@ -39,6 +39,20 @@
                                 else
                                 {
                                     <span class="muted small">@(u.Role == Roles.Admin ? L["users.requestsAdmin"] : L["users.requestsNone"])</span>
+                                }
+                            </td>
+                            <td>
+                                @if (u.LastSeenAt is { } seen)
+                                {
+                                    <span title="@L.DateTime(seen)">@L.Ago(seen)</span>
+                                    @if (!string.IsNullOrWhiteSpace(u.LastSeenDevice))
+                                    {
+                                        <div class="muted small">@u.LastSeenDevice</div>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="muted">@L["users.neverSeen"]</span>
                                 }
                             </td>
                             <td>@L.Date(u.CreatedAt)</td>

@@ -57,6 +57,10 @@ public sealed class Localizer
 
     public string DateTime(DateTimeOffset value) => DateText("format.dateTime", value.ToLocalTime());
 
+    /// <summary>« il y a 5 min », « il y a 2 jours » ; au-delà d'un mois, la date.</summary>
+    public string Ago(DateTimeOffset value) =>
+        RelativeTime.Of(value, DateTimeOffset.UtcNow) is { } r ? this[r.Key, ("count", r.Count)] : Date(value);
+
     private string DateText(string key, DateTimeOffset d) => this[key,
         ("d", d.Day.ToString()), ("dd", d.Day.ToString("00")), ("MM", d.Month.ToString("00")),
         ("MMM", Format.ShortMonth(d.Month)), ("MMMM", Format.Month(d.Month)), ("yyyy", d.Year.ToString()),

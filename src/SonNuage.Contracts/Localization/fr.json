@@ -96,7 +96,16 @@
     "date": "{dd}/{MM}/{yyyy}",
     "dateTime": "{dd}/{MM}/{yyyy} {HH}:{mm}",
     "percent": "{value} %",
-    "hoursShort": "{value} h"
+    "hoursShort": "{value} h",
+    "ago": {
+      "now": "à l'instant",
+      "minutes": "il y a {count} min",
+      "hours": "il y a {count} h",
+      "days": {
+        "one": "il y a {count} jour",
+        "other": "il y a {count} jours"
+      }
+    }
   },
   "toast": {
     "favoriteAdded": "Ajouté aux favoris",
@@ -486,7 +495,9 @@
     "requestsNone": "—",
     "quotaChanged": "Quota modifié",
     "autoOn": "Ses demandes partiront directement au téléchargement",
-    "autoOff": "Ses demandes attendront un administrateur"
+    "autoOff": "Ses demandes attendront un administrateur",
+    "colLastSeen": "Dernière connexion",
+    "neverSeen": "Jamais"
   },
   "upload": {
     "intro": "Les fichiers sont rangés par artiste et album d'après leurs tags. Pour des fichiers sans tags, indiquez l'artiste et l'album ci-dessous.",
