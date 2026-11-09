@@ -67,6 +67,7 @@ MusicBrainzClient.ConfigureHttp(builder.Services.AddHttpClient(MusicBrainzClient
 builder.Services.AddSingleton<YoutubeTools>();
 builder.Services.AddSingleton<YoutubeSettingsStore>();
 builder.Services.AddSingleton<YtDlp>();
+builder.Services.AddSingleton<PreviewService>();
 builder.Services.AddSingleton<YoutubeListingTasks>();
 builder.Services.AddSingleton<MusicBrainzClient>();
 builder.Services.AddSingleton<MetadataResolver>();
@@ -195,6 +196,8 @@ static void ConfigureAuthentication(IServiceCollection services)
             .RequireAuthenticatedUser().RequireAssertion(c =>
                 c.User.HasClaim("role", SonNuage.Contracts.Roles.Admin) ||
                 c.User.HasClaim(ApiKeyAuthenticationHandler.KindClaim, nameof(ApiKeyKind.BrowserExtension))))
+        .AddPolicy(AuthConstants.ContributorMediaPolicy, p => p.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, AuthConstants.MediaScheme)
+            .RequireAuthenticatedUser().RequireClaim("role", SonNuage.Contracts.Roles.Admin, SonNuage.Contracts.Roles.Contributor))
         .AddPolicy(AuthConstants.MediaPolicy, p => p.AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, AuthConstants.MediaScheme)
             .RequireAuthenticatedUser());
 

@@ -200,6 +200,11 @@
       "duplicate": "This video has already been requested.",
       "notPending": "This request has already been handled.",
       "badQuota": "Quota: between 1 and {max} requests per day."
+    },
+    "preview": {
+      "noFfmpeg": "ffmpeg is missing on the server: previews can't be prepared.",
+      "noFile": "yt-dlp produced no preview.",
+      "failed": "Preview unavailable: {message}"
     }
   },
   "login": {

@@ -60,6 +60,7 @@ public sealed partial class YtDlp(YoutubeTools tools, FfmpegLocator ffmpeg, Yout
     public const int ParallelReads = 4;
     private readonly SemaphoreSlim _reads = new(ParallelReads, ParallelReads);
     private static readonly TimeSpan DownloadTimeout = TimeSpan.FromMinutes(30);
+    private static readonly TimeSpan PreviewTimeout = TimeSpan.FromMinutes(2);
     private const string ThrottledRate = "100K";
 
     public static string WatchUrl(string videoId) => $"https://www.youtube.com/watch?v={videoId}";
@@ -250,6 +251,27 @@ public sealed partial class YtDlp(YoutubeTools tools, FfmpegLocator ffmpeg, Yout
 
         return await ReadDownloadAsync(workDir, videoId, ct)
             ?? throw new YtDlpException(YtDlpFailure.Other, "yt-dlp n'a produit aucun fichier audio.");
+    }
+
+    /// <summary>
+    /// Extrait de <paramref name="seconds"/> secondes à partir de <paramref name="start"/>, en MP3 : yt-dlp ne
+    /// télécharge que ce passage (--download-sections, avec ffmpeg) puis le convertit. Rend le chemin du fichier.
+    /// </summary>
+    public async Task<string> PreviewAsync(string videoId, int start, int seconds, string workDir, CancellationToken ct)
+    {
+        if (!ffmpeg.Available) throw new YtDlpException(YtDlpFailure.Other, Tx.Key("errors.preview.noFfmpeg"));
+        Directory.CreateDirectory(workDir);
+        var section = string.Create(CultureInfo.InvariantCulture, $"*{start}-{start + seconds}");
+        await RunAsync([
+            "--no-playlist", "--no-warnings", "--no-part", "--no-mtime",
+            "-f", "bestaudio[ext=m4a]/bestaudio/best[acodec!=none]",
+            "--download-sections", section,
+            "-x", "--audio-format", "mp3", "--audio-quality", "5",
+            "-o", Path.Combine(workDir, "%(id)s.%(ext)s"),
+            WatchUrl(videoId),
+        ], null, PreviewTimeout, ct);
+        return Directory.EnumerateFiles(workDir, $"{videoId}.mp3").FirstOrDefault()
+            ?? throw new YtDlpException(YtDlpFailure.Other, Tx.Key("errors.preview.noFile"));
     }
 
     /// <summary>Fichier audio et fiche d'une vidéo déjà téléchargée dans <paramref name="workDir"/>, ou null s'il en manque.</summary>

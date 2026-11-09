@@ -64,6 +64,7 @@ public sealed class SonNuageOptions
     public string DatabasePath => Path.Combine(DataPath, "sonnuage.db");
     public string TranscodeCachePath => Path.Combine(DataPath, "cache", "transcode");
     public string CoverCachePath => Path.Combine(DataPath, "cache", "covers");
+    public string PreviewCachePath => Path.Combine(DataPath, "cache", "previews");
     public string UploadTempPath => Path.Combine(DataPath, "uploads-tmp");
     /// <summary>Où atterrissent les morceaux importés de YouTube (sous le dossier d'envoi : supprimables depuis l'admin).</summary>
     public string YoutubePath => Path.Combine(UploadPath, "YouTube");

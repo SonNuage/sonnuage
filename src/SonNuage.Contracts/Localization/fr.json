@@ -200,6 +200,11 @@
       "duplicate": "Cette vidéo est déjà demandée.",
       "notPending": "Cette demande a déjà été traitée.",
       "badQuota": "Quota : entre 1 et {max} demandes par jour."
+    },
+    "preview": {
+      "noFfmpeg": "ffmpeg manque sur le serveur : impossible de préparer un extrait.",
+      "noFile": "yt-dlp n'a produit aucun extrait.",
+      "failed": "Extrait indisponible : {message}"
     }
   },
   "login": {

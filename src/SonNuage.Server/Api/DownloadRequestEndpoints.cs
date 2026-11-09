@@ -72,6 +72,22 @@ public static class DownloadRequestEndpoints
                 isAdmin || user.AutoApproveRequests));
         });
 
+        // Lu par un élément audio : le jeton média passe dans l'adresse (?t=), d'où une politique à part.
+        app.MapGet("/api/requests/preview/{videoId}", async (string videoId, double? d, HttpContext http, PreviewService previews, CancellationToken ct) =>
+        {
+            if (!YoutubeImporter.IsVideoId(videoId)) return Results.Problem(Tx.Key("errors.requests.badVideo"), statusCode: 400);
+            try
+            {
+                var path = await previews.GetAsync(videoId, d is > 0 and < 86_400 ? d : null, ct);
+                http.Response.Headers.CacheControl = "private, max-age=3600";
+                return Results.File(path, "audio/mpeg", enableRangeProcessing: true);
+            }
+            catch (YtDlpException ex)
+            {
+                return Results.Problem(Tx.Key("errors.preview.failed", ("message", ex.Message)), statusCode: StatusCodes.Status502BadGateway);
+            }
+        }).RequireAuthorization(AuthConstants.ContributorMediaPolicy).WithTags("Requests");
+
         var admin = app.MapGroup("/api/admin/requests").RequireAuthorization(AuthConstants.AdminPolicy).WithTags("Admin");
 
         admin.MapGet("", async (string? status, string? q, Guid? userId, int? offset, int? limit, SonNuageDbContext db, CancellationToken ct) =>
