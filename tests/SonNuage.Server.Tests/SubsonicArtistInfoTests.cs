@@ -12,7 +12,8 @@ namespace SonNuage.Server.Tests;
 /// <summary>Artistes proches fournis par un faux ListenBrainz : seuls ceux de la bibliothèque comptent.</summary>
 public sealed class SimilarArtistsFactory : SonNuageFactory
 {
-    public int Calls;
+    /// <summary>Artistes demandés à ListenBrainz, dans l'ordre (tous les tests de la classe partagent le serveur).</summary>
+    public readonly System.Collections.Concurrent.ConcurrentQueue<string> Asked = new();
 
     protected override void ConfigureMore(IWebHostBuilder builder) =>
         builder.ConfigureServices(s => s.AddSingleton<ISimilarArtistSource>(new Fake(this)));
@@ -21,7 +22,7 @@ public sealed class SimilarArtistsFactory : SonNuageFactory
     {
         public Task<IReadOnlyList<SimilarArtist>> SimilarArtistsAsync(string artistMbid, CancellationToken ct)
         {
-            Interlocked.Increment(ref owner.Calls);
+            owner.Asked.Enqueue(artistMbid);
             IReadOnlyList<SimilarArtist> list = artistMbid == "mbid-test"
                 ? [new("mbid-elsewhere", "Pas dans la bibliothèque", null, 0.9), new("mbid-other", "Other Band", null, 0.5)]
                 : [];
@@ -75,7 +76,7 @@ public sealed class SubsonicArtistInfoTests(SimilarArtistsFactory factory) : ICl
 
         var legacy = (await call("getArtistInfo", $"id={ids["Test Artist"]}")).GetProperty("artistInfo");
         Assert.Single(legacy.GetProperty("similarArtist").EnumerateArray());
-        Assert.Equal(1, factory.Calls);
+        Assert.Single(factory.Asked, m => m == "mbid-test");
     }
 
     [Fact]
