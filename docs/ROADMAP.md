@@ -230,8 +230,9 @@ plus simple (données locales) à la plus ouverte (bases publiques), sur un mêm
 - ✅ (1.10.0) **Fiches d'artistes à découvrir, stockées en base** (page « Découvrir ») : 24 artistes proches des
   plus écoutés de la bibliothèque (ListenBrainz, identifiants MusicBrainz), avec « Proche de … » et 3 titres phares
   chacun (ListenBrainz si un jeton `SonNuage:ListenBrainzToken` est fourni, sinon Deezer, sans compte), retrouvés
-  sur YouTube par la recherche par correspondance. Tâche de fond « discovery.refresh » chaque semaine, ou bouton
-  « Actualiser » (admin). Reste : albums des artistes proposés.
+  sur YouTube par la recherche par correspondance. Tâche de fond « discovery.refresh » toutes les 6 heures, incrémentale
+  (1.12.0) : 6 nouveaux artistes à chaque passage (au moins 24 affichés), les plus récents en haut avec un badge
+  « Nouveau », retirés au bout de 7 jours sans être écartés pour la suite ; ou bouton « Actualiser » (admin). Reste : albums des artistes proposés.
 - ✅ (1.10.0) **Extraits pré-téléchargés** pour ces titres phares, dans un dossier à part (`var/discovery/previews`,
   distinct du cache des extraits à la demande) : la page se lit tout de suite, sans attendre yt-dlp. Préparés
   par la même tâche, quelques-uns à la fois, et gardés tant que l'artiste reste proposé.

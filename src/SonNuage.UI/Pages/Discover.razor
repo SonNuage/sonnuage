@@ -43,6 +43,7 @@
             <section class="discover-artist" @key="artist.Id">
                 <header class="discover-artist-head">
                     <h2>@artist.Name</h2>
+                    @if (DateTimeOffset.UtcNow - artist.AddedAt < TimeSpan.FromDays(1)) { <span class="badge good">@L["discover.new"]</span> }
                     @if (artist.Comment is { } comment) { <span class="muted small">@comment</span> }
                 </header>
                 @if (artist.BecauseOf.Count > 0)
