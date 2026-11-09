@@ -145,8 +145,6 @@ public static partial class SubsonicEndpoints
         Empty("getSimilarSongs2", "similarSongs2", "song");
         Empty("getVideos", "videos", "video");
         Empty("getChatMessages", "chatMessages", "chatMessage");
-        Empty("getLyrics", "lyrics");
-        Empty("getLyricsBySongId", "lyricsList", "structuredLyrics");
         On("getPlayQueue", r => r.Ok());
         On("savePlayQueue", r => r.Ok());
     }

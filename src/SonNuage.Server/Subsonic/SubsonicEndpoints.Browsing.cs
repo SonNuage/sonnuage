@@ -21,7 +21,7 @@ public static partial class SubsonicEndpoints
         {
             var root = r.Ok();
             var list = root.List("openSubsonicExtensions");
-            foreach (var name in new[] { "apiKeyAuthentication", "formPost", "transcodeOffset" })
+            foreach (var name in new[] { "apiKeyAuthentication", "formPost", "songLyrics", "transcodeOffset" })
                 list.Add().Attr("name", name).Values("versions", [1]);
             return root;
         });
