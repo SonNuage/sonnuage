@@ -287,9 +287,14 @@ contrôle, et écouter un extrait avant de télécharger le morceau entier.
 
 **Extrait avant téléchargement**
 
-- 💡 Bouton « Écouter un extrait » sur chaque candidat : le serveur lit une trentaine de secondes via yt-dlp et
-  FFmpeg et les transmet au lecteur, comme un morceau ordinaire. Rien n'est ajouté à la bibliothèque.
-- Extraits mis en cache brièvement et limités en nombre par compte.
+- ✅ Bouton **« Extrait »** (1.8.0) sur les résultats de la page Demandes et sur les demandes pas encore
+  téléchargées (l'admin écoute avant d'accepter). yt-dlp ne télécharge que 30 secondes, vers le tiers du morceau
+  (`--download-sections`), converties en MP3 ; rien n'est ajouté à la bibliothèque. Un seul extrait à la fois, dans
+  une balise audio à part : il met le lecteur en pause et s'arrête si la lecture reprend.
+- ✅ Extraits en cache disque 7 jours (500 au plus), produits une fois par vidéo, deux à la fois sur le serveur.
+- 💡 Limite d'extraits par compte, si le besoin apparaît (pour l'instant réservés aux contributeurs et admins).
+- 💡 Message d'échec détaillé (vidéo bloquée, réservée aux majeurs…) : la balise audio ne transmet pas le texte
+  de l'erreur, l'interface affiche un message générique et le détail reste dans le journal du serveur.
 
 **Ce qui ne change pas (sécurité)**
 
