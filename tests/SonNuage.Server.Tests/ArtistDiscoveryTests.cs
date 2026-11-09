@@ -36,6 +36,26 @@ public sealed class ArtistDiscoveryTests(SonNuageFactory factory) : IClassFixtur
     }
 
     [Fact]
+    public void Deezer_gives_the_top_songs_of_the_artist_with_the_same_name()
+    {
+        var id = DeezerClient.ParseArtistId("""
+            {"data":[{"id":1,"name":"Pink Floyd Tribute"},{"id":860,"name":"Pink  Floyd"},{"id":2,"name":"Pink Floyd"}],"total":3}
+            """, "Pink Floyd");
+        Assert.Equal(860, id);
+        Assert.Null(DeezerClient.ParseArtistId("""{"data":[{"id":1,"name":"Pink Floyd Tribute"}]}""", "Pink Floyd"));
+        Assert.Null(DeezerClient.ParseArtistId("""{"error":{"type":"Exception","code":4}}""", "Pink Floyd"));
+
+        var top = DeezerClient.ParseTop("""
+            {"data":[{"id":116914042,"title":"Wish You Were Here (2011 Remaster)","title_short":"Wish You Were Here","duration":334,"album":{"title":"Wish You Were Here"}},
+                     {"id":2,"title":"Time","duration":0},
+                     {"id":3,"duration":10}]}
+            """);
+        Assert.Equal([("Wish You Were Here", 334.0, "Wish You Were Here"), ("Time", null, null)],
+            top.Select(t => (t.Title, t.LengthSeconds, t.ReleaseName)));
+        Assert.All(top, t => Assert.Null(t.RecordingMbid));
+    }
+
+    [Fact]
     public void Similar_artists_are_ranked_across_seeds_without_those_already_in_the_library()
     {
         var ranked = DiscoveryRanker.Rank(

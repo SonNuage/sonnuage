@@ -47,6 +47,9 @@ public sealed class SonNuageOptions
     public string MusicBrainzUrl { get; set; } = "https://musicbrainz.org";
     public string ListenBrainzUrl { get; set; } = "https://api.listenbrainz.org";
     public string ListenBrainzLabsUrl { get; set; } = "https://labs.api.listenbrainz.org";
+    public string DeezerUrl { get; set; } = "https://api.deezer.com";
+    /// <summary>Jeton utilisateur ListenBrainz (facultatif) : certains points d'accès l'exigent, sinon Deezer prend le relais.</summary>
+    public string? ListenBrainzToken { get; set; }
 
     /// <summary>Compte admin créé au premier démarrage si la base ne contient aucun utilisateur.</summary>
     public string? InitialAdminUser { get; set; } = "admin";

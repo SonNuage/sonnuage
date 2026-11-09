@@ -12,13 +12,14 @@ namespace SonNuage.Server.Discovery;
 /// Actualise la découverte par artiste (tâche « discovery.refresh ») :
 /// 1. les artistes les plus écoutés de la bibliothèque reçoivent leur identifiant MusicBrainz ;
 /// 2. ListenBrainz donne leurs artistes proches, classés et enregistrés en base (sans ceux qu'on a déjà) ;
-/// 3. leurs titres phares (ListenBrainz) sont retrouvés sur YouTube par la recherche par correspondance ;
+/// 3. leurs titres phares (ListenBrainz, sinon Deezer) sont retrouvés sur YouTube par la recherche par correspondance ;
 /// 4. un extrait de 30 s est pré-téléchargé pour chacun, dans <c>var/discovery/previews</c>, tant que la place
 ///    allouée aux extraits et l'espace libre minimum le permettent.
 /// Chaque étape garde ce qui est déjà fait : une actualisation interrompue reprend où elle en était.
 /// </summary>
 public sealed class DiscoveryService(
     ListenBrainzClient listenBrainz,
+    DeezerClient deezer,
     MusicBrainzClient musicBrainz,
     YtDlp ytDlp,
     YoutubeTools tools,
@@ -134,7 +135,9 @@ public sealed class DiscoveryService(
         {
             try
             {
-                var top = (await listenBrainz.TopRecordingsAsync(artist.MusicBrainzId, ct))
+                var found = await listenBrainz.TopRecordingsAsync(artist.MusicBrainzId, ct);
+                if (found.Count == 0) found = await deezer.TopTracksAsync(artist.Name, ct);
+                var top = found
                     .DistinctBy(r => Library.NameNormalizer.Key(r.Title)).Take(TracksPerArtist).ToList();
                 var previous = artist.Tracks.GroupBy(t => Library.NameNormalizer.Key(t.Title)).ToDictionary(g => g.Key, g => g.First());
                 db.DiscoveryTracks.RemoveRange(artist.Tracks.Where(t => !top.Any(r => Library.NameNormalizer.Key(r.Title) == Library.NameNormalizer.Key(t.Title))));

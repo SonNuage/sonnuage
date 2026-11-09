@@ -71,6 +71,7 @@ builder.Services.AddSingleton<YtDlp>();
 builder.Services.AddSingleton<PreviewService>();
 builder.Services.AddSingleton<StorageGuard>();
 builder.Services.AddSingleton<SonNuage.Server.Discovery.ListenBrainzClient>();
+builder.Services.AddSingleton<SonNuage.Server.Discovery.DeezerClient>();
 builder.Services.AddSingleton<SonNuage.Server.Discovery.DiscoveryService>();
 builder.Services.AddHostedService<SonNuage.Server.Discovery.DiscoveryScheduler>();
 builder.Services.AddSingleton<YoutubeListingTasks>();

@@ -54,7 +54,10 @@ public sealed class ListenBrainzClient(IHttpClientFactory httpFactory, IOptions<
             if (wait > TimeSpan.Zero) await Task.Delay(wait, ct);
             _lastCall = DateTime.UtcNow;
             var http = httpFactory.CreateClient(MusicBrainzClient.HttpClientName);
-            using var response = await http.GetAsync(url, ct);
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            if (options.Value.ListenBrainzToken is { Length: > 0 } token)
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Token", token);
+            using var response = await http.SendAsync(request, ct);
             if (!response.IsSuccessStatusCode)
             {
                 logger.LogInformation("ListenBrainz {Status} pour {Url}", (int)response.StatusCode, url);
