@@ -22,9 +22,10 @@ public static class DiscoveryRanker
     /// Un artiste qui part ne revient pas dans la même actualisation, mais peut revenir dans une suivante.
     /// </summary>
     public static DiscoveryUpdate Plan(IReadOnlyList<RankedArtist> ranked, IReadOnlyCollection<(string MusicBrainzId, DateTimeOffset AddedAt)> current,
-        DateTimeOffset now, int newPerRun, int minShown)
+        DateTimeOffset now, int newPerRun, int minShown, TimeSpan? maxAge = null)
     {
-        var expired = current.Where(c => now - c.AddedAt >= MaxAge).Select(c => c.MusicBrainzId).ToList();
+        var age = maxAge ?? MaxAge;
+        var expired = current.Where(c => now - c.AddedAt >= age).Select(c => c.MusicBrainzId).ToList();
         var shown = current.Select(c => c.MusicBrainzId).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var wanted = Math.Max(newPerRun, minShown - (current.Count - expired.Count));
         return new DiscoveryUpdate(expired, ranked.Where(a => !shown.Contains(a.MusicBrainzId)).Take(wanted).ToList());

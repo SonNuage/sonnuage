@@ -160,6 +160,39 @@ public sealed class ArtistDiscoveryTests(SonNuageFactory factory) : IClassFixtur
         Assert.Equal(2048, (await response.Content.ReadAsByteArrayAsync(Ct)).Length);
     }
 
+    [Fact]
+    public async Task Discovery_settings_are_adjustable_by_the_admin_within_limits()
+    {
+        var admin = await factory.AdminClientAsync();
+        var contributor = await ClientAsync("disco-settings", Roles.Contributor);
+        Assert.Equal(HttpStatusCode.Forbidden, (await contributor.GetAsync("/api/admin/discovery/settings", Ct)).StatusCode);
+        Assert.Equal(DiscoverySettingsDto.Defaults, await admin.GetFromJsonAsync<DiscoverySettingsDto>("/api/admin/discovery/settings", Ct));
+        Assert.Equal(new DiscoverySettingsDto(6, 6, 24, 7, 3), DiscoverySettingsDto.Defaults);
+
+        foreach (var bad in new[] { new DiscoverySettingsDto(0, 6, 24, 7, 3), new DiscoverySettingsDto(6, -1, 24, 7, 3),
+                     new DiscoverySettingsDto(6, 6, 1000, 7, 3), new DiscoverySettingsDto(6, 6, 24, 0, 3), new DiscoverySettingsDto(6, 6, 24, 7, 11) })
+            Assert.Equal(HttpStatusCode.BadRequest, (await admin.PutAsJsonAsync("/api/admin/discovery/settings", bad, Ct)).StatusCode);
+
+        try
+        {
+            var mine = new DiscoverySettingsDto(12, 4, 10, 14, 5);
+            Assert.Equal(mine, await (await admin.PutAsJsonAsync("/api/admin/discovery/settings", mine, Ct)).Content.ReadFromJsonAsync<DiscoverySettingsDto>(Ct));
+            Assert.Equal(mine, await admin.GetFromJsonAsync<DiscoverySettingsDto>("/api/admin/discovery/settings", Ct));
+        }
+        finally
+        {
+            await admin.PutAsJsonAsync("/api/admin/discovery/settings", DiscoverySettingsDto.Defaults, Ct);
+        }
+    }
+
+    [Fact]
+    public void The_age_limit_of_a_recommendation_follows_the_setting()
+    {
+        var now = new DateTimeOffset(2026, 11, 9, 12, 0, 0, TimeSpan.Zero);
+        var plan = DiscoveryRanker.Plan([], [("a", now.AddDays(-8)), ("b", now.AddDays(-3))], now, newPerRun: 0, minShown: 0, maxAge: TimeSpan.FromDays(2));
+        Assert.Equal(["a", "b"], plan.Expired);
+    }
+
     private async Task<HttpClient> ClientAsync(string name, string role)
     {
         var admin = await factory.AdminClientAsync();

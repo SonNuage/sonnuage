@@ -37,6 +37,11 @@ public static class ArtistDiscoveryEndpoints
                         t.VideoId is null ? null : status.GetValueOrDefault(t.VideoId))).ToList(), a.AddedAt)).ToList());
         }).RequireAuthorization(AuthConstants.ContributorPolicy).WithTags("Discovery");
 
+        var settings = app.MapGroup("/api/admin/discovery/settings").RequireAuthorization(AuthConstants.AdminPolicy).WithTags("Admin");
+        settings.MapGet("", (Discovery.DiscoverySettingsStore store) => store.Settings);
+        settings.MapPut("", (DiscoverySettingsDto s, Discovery.DiscoverySettingsStore store) =>
+            store.Save(s) is { } error ? Results.Problem(error, statusCode: StatusCodes.Status400BadRequest) : Results.Ok(store.Settings));
+
         app.MapPost("/api/admin/discovery/refresh", async (IServiceScopeFactory scopes, CancellationToken ct) =>
         {
             await scopes.RequestAsync(MaintenanceJobs.DiscoveryRefresh(), ct);

@@ -212,6 +212,9 @@
       "minFree": "The minimum free space must be between 0 and {max} GB.",
       "previewQuota": "The preview space must be between {min} and {max} GB.",
       "lowSpace": "Disk almost full: {free} GB free, below the {min} GB minimum. Downloads will resume once space is freed."
+    },
+    "discovery": {
+      "settings": "Settings out of range: refresh every 1 to {hours} hours, 0 to {perRun} new artists, 0 to {shown} shown at least, 1 to {days} days, 1 to {tracks} songs per artist."
     }
   },
   "login": {
@@ -1231,5 +1234,15 @@
     "albumSent": "Album “{album}” requested: its songs show up in your requests as they are found.",
     "albumAsked": "Album requested",
     "new": "New"
+  },
+  "discoverySettings": {
+    "title": "Discovery",
+    "refreshHours": "Refresh every (hours)",
+    "newPerRun": "New artists per refresh",
+    "minShown": "Artists shown at least",
+    "maxAgeDays": "Suggestion lifetime (days)",
+    "tracksPerArtist": "Top songs per artist",
+    "hint": "Each refresh adds new artists (more if needed to reach the minimum) and removes those suggested for longer than the chosen lifetime; they may come back later. The number of songs applies to new artists.",
+    "saved": "Discovery settings saved."
   }
 }

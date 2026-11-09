@@ -212,6 +212,9 @@
       "minFree": "L'espace libre minimum va de 0 à {max} Go.",
       "previewQuota": "La place des extraits va de {min} à {max} Go.",
       "lowSpace": "Disque presque plein : {free} Go libres, sous le minimum de {min} Go. Les téléchargements reprendront quand de la place sera libérée."
+    },
+    "discovery": {
+      "settings": "Réglages hors limites : actualisation de 1 à {hours} heures, de 0 à {perRun} nouveaux artistes, minimum affiché de 0 à {shown}, durée de 1 à {days} jours, de 1 à {tracks} titres par artiste."
     }
   },
   "login": {
@@ -1231,5 +1234,15 @@
     "albumSent": "Album « {album} » demandé : ses titres arrivent dans vos demandes au fil des recherches.",
     "albumAsked": "Album demandé",
     "new": "Nouveau"
+  },
+  "discoverySettings": {
+    "title": "Découverte",
+    "refreshHours": "Actualiser toutes les (heures)",
+    "newPerRun": "Nouveaux artistes par actualisation",
+    "minShown": "Artistes affichés au minimum",
+    "maxAgeDays": "Durée d'une proposition (jours)",
+    "tracksPerArtist": "Titres phares par artiste",
+    "hint": "Chaque actualisation ajoute de nouveaux artistes (plus s'il en faut pour atteindre le minimum) et retire ceux proposés depuis plus longtemps que la durée choisie ; ils pourront revenir plus tard. Le nombre de titres s'applique aux nouveaux artistes.",
+    "saved": "Réglages de la découverte enregistrés."
   }
 }

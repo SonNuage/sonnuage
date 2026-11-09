@@ -14,3 +14,19 @@ public sealed record DiscoveryArtistDto(Guid Id, string Name, string? Comment, I
 /// <param name="UpdatedAt">Dernière actualisation terminée (null : jamais).</param>
 /// <param name="Refreshing">Une actualisation attend ou tourne.</param>
 public sealed record DiscoveryPageDto(DateTimeOffset? UpdatedAt, bool Refreshing, IReadOnlyList<DiscoveryArtistDto> Artists);
+
+/// <summary>
+/// Réglages de la découverte (admin). Toutes les <paramref name="RefreshHours"/> heures, l'actualisation ajoute
+/// <paramref name="NewPerRun"/> nouveaux artistes (ou plus pour en afficher au moins <paramref name="MinShown"/>),
+/// retire ceux proposés depuis plus de <paramref name="MaxAgeDays"/> jours, et garde
+/// <paramref name="TracksPerArtist"/> titres phares par artiste.
+/// </summary>
+public sealed record DiscoverySettingsDto(int RefreshHours, int NewPerRun, int MinShown, int MaxAgeDays, int TracksPerArtist)
+{
+    public static readonly DiscoverySettingsDto Defaults = new(6, 6, 24, 7, 3);
+    public const int MaxRefreshHours = 168;
+    public const int MaxNewPerRun = 50;
+    public const int MaxMinShown = 200;
+    public const int MaxMaxAgeDays = 90;
+    public const int MaxTracksPerArtist = 10;
+}

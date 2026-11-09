@@ -26,6 +26,7 @@ public sealed class DiscoveryService(
     Streaming.FfmpegLocator ffmpeg,
     PreviewService previews,
     StorageGuard storage,
+    DiscoverySettingsStore settings,
     IOptions<SonNuageOptions> options,
     TimeProvider time,
     ILogger<DiscoveryService> logger)
@@ -34,11 +35,7 @@ public sealed class DiscoveryService(
     public const int SimilarPerSeed = 25;
     /// <summary>Candidats classés à chaque actualisation, parmi lesquels on prend les nouveaux.</summary>
     public const int CandidatePool = 200;
-    /// <summary>Nouveaux artistes ajoutés à chaque actualisation (toutes les 6 heures)…</summary>
-    public const int NewPerRun = 6;
-    /// <summary>… ou plus, pour en afficher au moins autant.</summary>
-    public const int MinShown = 24;
-    public const int TracksPerArtist = 3;
+
     public const int MinMatchScore = 60;
     private const int PrefetchPerRun = 40;
     private static readonly TimeSpan MbidRetry = TimeSpan.FromDays(30);
@@ -116,7 +113,9 @@ public sealed class DiscoveryService(
     {
         var now = time.GetUtcNow();
         var existing = await db.DiscoveryArtists.Include(a => a.Tracks).ToListAsync(ct);
-        var update = DiscoveryRanker.Plan(ranked, existing.Select(a => (a.MusicBrainzId, a.AddedAt)).ToList(), now, NewPerRun, MinShown);
+        var s = settings.Settings;
+        var update = DiscoveryRanker.Plan(ranked, existing.Select(a => (a.MusicBrainzId, a.AddedAt)).ToList(), now, s.NewPerRun, s.MinShown,
+            TimeSpan.FromDays(s.MaxAgeDays));
         var expired = update.Expired.ToHashSet(StringComparer.OrdinalIgnoreCase);
         db.DiscoveryArtists.RemoveRange(existing.Where(a => expired.Contains(a.MusicBrainzId)));
 
@@ -157,7 +156,7 @@ public sealed class DiscoveryService(
                 var found = await listenBrainz.TopRecordingsAsync(artist.MusicBrainzId, ct);
                 if (found.Count == 0) found = await deezer.TopTracksAsync(artist.Name, ct);
                 var top = found
-                    .DistinctBy(r => Library.NameNormalizer.Key(r.Title)).Take(TracksPerArtist).ToList();
+                    .DistinctBy(r => Library.NameNormalizer.Key(r.Title)).Take(settings.Settings.TracksPerArtist).ToList();
                 var previous = artist.Tracks.GroupBy(t => Library.NameNormalizer.Key(t.Title)).ToDictionary(g => g.Key, g => g.First());
                 db.DiscoveryTracks.RemoveRange(artist.Tracks.Where(t => !top.Any(r => Library.NameNormalizer.Key(r.Title) == Library.NameNormalizer.Key(t.Title))));
                 for (var i = 0; i < top.Count; i++)
