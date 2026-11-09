@@ -97,6 +97,9 @@ button { font: inherit; color: inherit; }
 .btn.wide { width: 100%; }
 .btn.compact { padding: .3rem .7rem; font-size: .85rem; }
 .preview-btn.on { border-color: var(--accent); color: var(--accent); }
+.request-mode { margin-bottom: .6rem; }
+.match-summary { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin: .6rem 0 0; }
+.good-text { color: var(--ok-text); }
 .link { background: none; border: 0; padding: 0; color: var(--text-muted); cursor: pointer; text-decoration: underline; }
 
 .icon-btn {

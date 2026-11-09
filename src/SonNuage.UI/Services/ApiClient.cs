@@ -79,6 +79,8 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     public Task AdminCancelUploadAsync(Guid id) => SendAsync(HttpMethod.Delete, $"api/admin/uploads/{id}");
     // ---- Demandes de téléchargement (contributeurs ; liste et décision : admin) ----
     public Task<YoutubeListingDto?> RequestSearchAsync(string q, bool music) => GetAsync<YoutubeListingDto>($"api/requests/search?music={music}&q={Uri.EscapeDataString(q)}");
+    public Task<MatchResultDto?> RequestMatchAsync(string artist, string title) =>
+        GetAsync<MatchResultDto>($"api/requests/match?artist={Uri.EscapeDataString(artist)}&title={Uri.EscapeDataString(title)}");
     public Task<DownloadRequestDto?> CreateRequestAsync(CreateDownloadRequest req) => SendAsync<DownloadRequestDto>(HttpMethod.Post, "api/requests", req);
     public Task<PagedResult<DownloadRequestDto>?> MyRequestsAsync(int offset, int limit) => GetAsync<PagedResult<DownloadRequestDto>>($"api/requests/mine?offset={offset}&limit={limit}");
     public Task<RequestQuotaDto?> RequestQuotaAsync() => GetAsync<RequestQuotaDto>("api/requests/quota");

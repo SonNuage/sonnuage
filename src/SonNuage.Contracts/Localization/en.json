@@ -1162,6 +1162,20 @@
     "previewStop": "Stop",
     "previewLoading": "Preparing…",
     "previewHint": "Listen to 30 seconds before requesting the song",
-    "previewFailed": "No preview for this video. Try opening it on YouTube."
+    "previewFailed": "No preview for this video. Try opening it on YouTube.",
+    "modeLabel": "Search type",
+    "modeMatch": "Artist and title",
+    "modeFree": "Free search",
+    "artist": "Artist",
+    "songTitle": "Song title",
+    "matchSearch": "Find",
+    "matchHint": "The server searches YouTube Music and YouTube and scores each result: title, artist, official channel, duration. Live, remix or karaoke versions are pushed down unless you ask for them.",
+    "matchSure": "Sure match",
+    "matchUnsure": "Check: pick the right version",
+    "expected": "Expected length {duration}",
+    "expectedMb": "Expected length {duration} (MusicBrainz)",
+    "bestMatch": "Best match",
+    "score": "{score}%",
+    "scoreHint": "How close it is to the artist and title you searched for (title, artist, channel, length)"
   }
 }

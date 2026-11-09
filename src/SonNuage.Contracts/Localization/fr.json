@@ -1162,6 +1162,20 @@
     "previewStop": "Arrêter",
     "previewLoading": "Préparation…",
     "previewHint": "Écouter 30 secondes avant de demander le morceau",
-    "previewFailed": "Extrait indisponible pour cette vidéo. Essayez de l'ouvrir sur YouTube."
+    "previewFailed": "Extrait indisponible pour cette vidéo. Essayez de l'ouvrir sur YouTube.",
+    "modeLabel": "Type de recherche",
+    "modeMatch": "Artiste et titre",
+    "modeFree": "Recherche libre",
+    "artist": "Artiste",
+    "songTitle": "Titre du morceau",
+    "matchSearch": "Trouver",
+    "matchHint": "Le serveur cherche sur YouTube Music et YouTube et note chaque résultat : titre, artiste, chaîne officielle, durée. Les versions live, remix ou karaoké sont écartées si vous ne les demandez pas.",
+    "matchSure": "Correspondance sûre",
+    "matchUnsure": "À vérifier : choisissez la bonne version",
+    "expected": "Durée attendue {duration}",
+    "expectedMb": "Durée attendue {duration} (MusicBrainz)",
+    "bestMatch": "Meilleure correspondance",
+    "score": "{score} %",
+    "scoreHint": "Ressemblance avec l'artiste et le titre cherchés (titre, artiste, chaîne, durée)"
   }
 }

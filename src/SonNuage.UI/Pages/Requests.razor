@@ -21,21 +21,64 @@
                     <span class="muted small">@(q.AutoApproved ? L["requests.autoHint"] : L["requests.reviewHint"])</span>
                 }
             </p>
-            <form class="inline-form" @onsubmit="SearchAsync" @onsubmit:preventDefault="true">
-                <input class="input" placeholder="@L["requests.searchPlaceholder"]" @bind="_query" aria-label="@L["requests.searchPlaceholder"]" />
-                <div class="segmented" role="group" aria-label="Source">
-                    <button type="button" class="@(_music ? "on" : null)" @onclick="() => _music = true">YouTube Music</button>
-                    <button type="button" class="@(!_music ? "on" : null)" @onclick="() => _music = false">YouTube</button>
-                </div>
-                <button class="btn primary" type="submit" disabled="@(_searching || string.IsNullOrWhiteSpace(_query))"><Icon Name="search" Size="18" /> @L["yt.explore.search"]</button>
-            </form>
-            <p class="muted small">@L["requests.searchHint"]</p>
+            <div class="segmented request-mode" role="group" aria-label="@L["requests.modeLabel"]">
+                <button type="button" class="@(_byMatch ? "on" : null)" @onclick="() => _byMatch = true">@L["requests.modeMatch"]</button>
+                <button type="button" class="@(!_byMatch ? "on" : null)" @onclick="() => _byMatch = false">@L["requests.modeFree"]</button>
+            </div>
+            @if (_byMatch)
+            {
+                <form class="inline-form" @onsubmit="MatchAsync" @onsubmit:preventDefault="true">
+                    <input class="input" placeholder="@L["requests.artist"]" @bind="_artist" aria-label="@L["requests.artist"]" />
+                    <input class="input" placeholder="@L["requests.songTitle"]" @bind="_title" aria-label="@L["requests.songTitle"]" />
+                    <button class="btn primary" type="submit" disabled="@(_searching || string.IsNullOrWhiteSpace(_artist) || string.IsNullOrWhiteSpace(_title))"><Icon Name="search" Size="18" /> @L["requests.matchSearch"]</button>
+                </form>
+                <p class="muted small">@L["requests.matchHint"]</p>
+            }
+            else
+            {
+                <form class="inline-form" @onsubmit="SearchAsync" @onsubmit:preventDefault="true">
+                    <input class="input" placeholder="@L["requests.searchPlaceholder"]" @bind="_query" aria-label="@L["requests.searchPlaceholder"]" />
+                    <div class="segmented" role="group" aria-label="Source">
+                        <button type="button" class="@(_music ? "on" : null)" @onclick="() => _music = true">YouTube Music</button>
+                        <button type="button" class="@(!_music ? "on" : null)" @onclick="() => _music = false">YouTube</button>
+                    </div>
+                    <button class="btn primary" type="submit" disabled="@(_searching || string.IsNullOrWhiteSpace(_query))"><Icon Name="search" Size="18" /> @L["yt.explore.search"]</button>
+                </form>
+                <p class="muted small">@L["requests.searchHint"]</p>
+            }
 
             @if (_searching)
             {
                 <div class="empty"><Logo Size="16" Animated="true" /> @L["yt.explore.searching"]</div>
             }
-            else if (_results is { } results)
+            else if (_byMatch && _match is { } match)
+            {
+                <p class="match-summary">
+                    @if (match.Candidates.Count == 0)
+                    {
+                        <span class="muted">@L["requests.noResult"]</span>
+                    }
+                    else if (match.Sure)
+                    {
+                        <span class="badge good">@L["requests.matchSure"]</span>
+                    }
+                    else
+                    {
+                        <span class="badge warn">@L["requests.matchUnsure"]</span>
+                    }
+                    @if (match.DurationSeconds is { } expected)
+                    {
+                        <span class="muted small">@(match.DurationFromMusicBrainz ? L["requests.expectedMb", ("duration", Format.Duration(expected))] : L["requests.expected", ("duration", Format.Duration(expected))])</span>
+                    }
+                </p>
+                <ul class="yt-list requests">
+                    @foreach (var (c, i) in match.Candidates.Select((c, i) => (c, i)))
+                    {
+                        @Row(c.Video, c.Score, i == 0 && match.Sure)
+                    }
+                </ul>
+            }
+            else if (!_byMatch && _results is { } results)
             {
                 @if (results.Entries.Count == 0)
                 {
@@ -44,31 +87,7 @@
                 <ul class="yt-list requests">
                     @foreach (var v in results.Entries)
                     {
-                        var known = v.ImportStatus is not null and not "Failed" and not "Skipped";
-                        var asked = _asked.Contains(v.VideoId);
-                        <li @key="v.VideoId" class="@(known ? "known" : null)">
-                            <img class="yt-thumb" src="@v.ThumbnailUrl" alt="" loading="lazy" />
-                            <span class="grow">
-                                <span class="strong">@v.Title</span>
-                                <span class="muted small block">@v.Channel@(v.DurationSeconds is { } dur ? $" · {Format.Duration(dur)}" : "")</span>
-                            </span>
-                            <span class="row-actions">
-                                @if (!known) { <PreviewButton VideoId="@v.VideoId" DurationSeconds="v.DurationSeconds" /> }
-                                <a class="icon-btn" href="https://www.youtube.com/watch?v=@v.VideoId" target="_blank" rel="noopener noreferrer" title="@L["yt.explore.open"]"><Icon Name="open" Size="18" /></a>
-                                @if (known)
-                                {
-                                    <span class="badge good">@L["requests.onServer"]</span>
-                                }
-                                else if (asked)
-                                {
-                                    <span class="badge info">@L["requests.asked"]</span>
-                                }
-                                else
-                                {
-                                    <button class="btn compact primary" disabled="@(_sending is not null)" @onclick="() => AskAsync(v)"><Icon Name="add" Size="16" /> @L["requests.ask"]</button>
-                                }
-                            </span>
-                        </li>
+                        @Row(v, null, false)
                     }
                 </ul>
             }
@@ -96,6 +115,10 @@
     private const int Page = 50;
     private string _query = "";
     private bool _music = true;
+    private bool _byMatch = true;
+    private string _artist = "";
+    private string _title = "";
+    private MatchResultDto? _match;
     private bool _searching;
     private YoutubeListingDto? _results;
     private readonly HashSet<string> _asked = [];
@@ -122,6 +145,48 @@
         _searching = true;
         _results = null;
         await RunAsync(async () => _results = await Api.RequestSearchAsync(_query.Trim(), _music));
+        _searching = false;
+    }
+
+    private RenderFragment Row(YoutubeVideoDto v, int? score, bool best) => __builder =>
+    {
+        var known = v.ImportStatus is not null and not "Failed" and not "Skipped";
+        var asked = _asked.Contains(v.VideoId);
+        <li @key="v.VideoId" class="@(known ? "known" : best ? "selected" : null)">
+            <img class="yt-thumb" src="@v.ThumbnailUrl" alt="" loading="lazy" />
+            <span class="grow">
+                <span class="strong">@v.Title</span>
+                <span class="muted small block">@v.Channel@(v.DurationSeconds is { } dur ? $" · {Format.Duration(dur)}" : "")</span>
+                @if (best) { <span class="small block good-text">@L["requests.bestMatch"]</span> }
+            </span>
+            <span class="row-actions">
+                @if (score is { } sc) { <span class="badge @ScoreClass(sc)" title="@L["requests.scoreHint"]">@L["requests.score", ("score", sc)]</span> }
+                @if (!known) { <PreviewButton VideoId="@v.VideoId" DurationSeconds="v.DurationSeconds" /> }
+                <a class="icon-btn" href="https://www.youtube.com/watch?v=@v.VideoId" target="_blank" rel="noopener noreferrer" title="@L["yt.explore.open"]"><Icon Name="open" Size="18" /></a>
+                @if (known)
+                {
+                    <span class="badge good">@L["requests.onServer"]</span>
+                }
+                else if (asked)
+                {
+                    <span class="badge info">@L["requests.asked"]</span>
+                }
+                else
+                {
+                    <button class="btn compact primary" disabled="@(_sending is not null)" @onclick="() => AskAsync(v)"><Icon Name="add" Size="16" /> @L["requests.ask"]</button>
+                }
+            </span>
+        </li>
+    };
+
+    private static string ScoreClass(int score) => score >= 80 ? "good" : score >= 50 ? "warn" : "bad";
+
+    private async Task MatchAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_artist) || string.IsNullOrWhiteSpace(_title)) return;
+        _searching = true;
+        _match = null;
+        await RunAsync(async () => _match = await Api.RequestMatchAsync(_artist.Trim(), _title.Trim()));
         _searching = false;
     }
 
