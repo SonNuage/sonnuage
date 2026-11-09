@@ -23,6 +23,47 @@ public sealed class DeezerClient(IHttpClientFactory httpFactory, IOptions<SonNua
         return id is { } artistId ? ParseTop(await GetAsync($"{baseUrl}/artist/{artistId}/top?limit={TopLimit}", ct), artistId) : [];
     }
 
+    /// <summary>Titres d'un album de l'artiste, dans l'ordre (aucun si Deezer ne le trouve pas).</summary>
+    public async Task<IReadOnlyList<TopRecording>> AlbumTracksAsync(string artist, string album, CancellationToken ct)
+    {
+        var baseUrl = options.Value.DeezerUrl.TrimEnd('/');
+        var precise = $"artist:\"{artist}\" album:\"{album}\"";
+        var id = ParseAlbumId(await GetAsync($"{baseUrl}/search/album?q={Uri.EscapeDataString(precise)}&limit=25", ct), artist, album)
+            ?? ParseAlbumId(await GetAsync($"{baseUrl}/search/album?q={Uri.EscapeDataString($"{artist} {album}")}&limit=25", ct), artist, album);
+        return id is { } albumId ? ParseAlbumTracks(await GetAsync($"{baseUrl}/album/{albumId}/tracks?limit=100", ct)) : [];
+    }
+
+    /// <summary>L'album de l'artiste portant ce titre, sinon une de ses éditions (Deluxe, Remastered…).</summary>
+    internal static long? ParseAlbumId(string json, string artist, string album)
+    {
+        var artistKey = Library.NameNormalizer.Key(artist);
+        var albumKey = AlbumKey(album);
+        var candidates = Data(json)
+            .Where(a => a["artist"] is JsonObject ar && Str(ar, "name") is { } name && Library.NameNormalizer.Key(name) == artistKey)
+            .Where(a => Long(a, "id") is not null && Str(a, "title") is not null)
+            .ToList();
+        var exact = candidates.FirstOrDefault(a => AlbumKey(Str(a, "title")!) == albumKey);
+        var edition = candidates.FirstOrDefault(a => AlbumKey(WithoutEdition(Str(a, "title")!)) == albumKey);
+        return Long(exact ?? edition ?? new JsonObject(), "id");
+    }
+
+    internal static IReadOnlyList<TopRecording> ParseAlbumTracks(string json) =>
+        Data(json)
+            .Select(t => (Track: t, Title: Str(t, "title_short") is { Length: > 0 } s ? s : Str(t, "title")))
+            .Where(t => t.Title is { Length: > 0 })
+            .Select(t => new TopRecording(t.Title!, null,
+                t.Track["duration"] is JsonValue d && d.GetValueKind() == JsonValueKind.Number && d.GetValue<double>() > 0 ? d.GetValue<double>() : null, null))
+            .ToList();
+
+    // Mots du titre, parenthèses comprises : « Discovery (Tribute) » n'est pas « Discovery ».
+    private static string AlbumKey(string title) => string.Join(' ', YoutubeMatcher.Words(title));
+
+    // « Discovery (Deluxe Edition) » → « Discovery » ; « Discovery (Tribute) » reste tel quel.
+    private static string WithoutEdition(string title) =>
+        System.Text.RegularExpressions.Regex.Replace(title,
+            @"\s*[\(\[][^\)\]]*\b(deluxe|edition|[ée]dition|remaster(ed)?|expanded|anniversary|bonus|version|special)\b[^\)\]]*[\)\]]",
+            "", System.Text.RegularExpressions.RegexOptions.IgnoreCase).Trim();
+
     /// <summary>Parmi les artistes de ce nom (homonymes), le plus suivi.</summary>
     internal static long? ParseArtistId(string json, string artistName)
     {

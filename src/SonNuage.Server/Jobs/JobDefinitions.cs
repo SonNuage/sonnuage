@@ -42,6 +42,7 @@ public static class JobKinds
     public static readonly JobKind TranscodePurge = new("transcode.purge", JobLanes.Library);
     public static readonly JobKind SubscriptionSync = new("youtube.sync", JobLanes.Sync);
     public static readonly JobKind DiscoveryRefresh = new("discovery.refresh", JobLanes.Discovery);
+    public static readonly JobKind RequestAlbum = new("requests.album", JobLanes.Discovery, Priority: 5);
 }
 
 /// <summary>Types de suites (création depuis l'admin, filtres).</summary>
@@ -54,6 +55,7 @@ public static class JobSuiteKinds
     public const string TranscodePurge = "transcode.purge";
     public const string SubscriptionSync = "youtube.sync";
     public const string DiscoveryRefresh = "discovery.refresh";
+    public const string RequestAlbum = "requests.album";
 }
 
 public interface IJobHandler

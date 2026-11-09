@@ -50,6 +50,9 @@ public sealed record DownloadRequestDto(
 public sealed record RequestQuotaDto(int Used, int? Limit, bool AutoApproved);
 
 /// <summary>Un résultat YouTube noté sur 100 pour « artiste + titre ».</summary>
+/// <summary>Demande d'un album entier : ses titres sont cherchés sur YouTube puis demandés un par un, en tâche de fond.</summary>
+public sealed record CreateAlbumRequest(string Artist, string Album);
+
 public sealed record MatchCandidateDto(YoutubeVideoDto Video, int Score);
 
 /// <summary>

@@ -58,6 +58,28 @@ public sealed class ArtistDiscoveryTests(SonNuageFactory factory) : IClassFixtur
     }
 
     [Fact]
+    public void Deezer_finds_the_album_of_the_artist_and_its_tracks_in_order()
+    {
+        var search = """
+            {"data":[{"id":1,"title":"Discovery (Tribute)","artist":{"name":"Daft Punk"}},
+                     {"id":2,"title":"Discovery","artist":{"name":"Electric Light Orchestra"}},
+                     {"id":302127,"title":"Discovery","artist":{"name":"Daft Punk"}},
+                     {"id":3,"title":"Discovery (Deluxe Edition)","artist":{"name":"Daft Punk"}}]}
+            """;
+        Assert.Equal(302127, DeezerClient.ParseAlbumId(search, "Daft Punk", "Discovery"));
+        // Sans titre exact, une édition de l'album (« Deluxe », « Remastered »…) fait l'affaire.
+        Assert.Equal(3, DeezerClient.ParseAlbumId(search.Replace("\"id\":302127", "\"id\":4").Replace("\"title\":\"Discovery\",\"artist\":{\"name\":\"Daft Punk\"}", "\"title\":\"Autre\",\"artist\":{\"name\":\"Daft Punk\"}"), "Daft Punk", "Discovery"));
+        Assert.Null(DeezerClient.ParseAlbumId(search, "Justice", "Discovery"));
+
+        var tracks = DeezerClient.ParseAlbumTracks("""
+            {"data":[{"id":1,"title":"One More Time","duration":320,"artist":{"name":"Daft Punk"}},
+                     {"id":2,"title":"Aerodynamic","title_short":"Aerodynamic","duration":212},
+                     {"id":3,"duration":10}]}
+            """);
+        Assert.Equal([("One More Time", 320.0), ("Aerodynamic", 212.0)], tracks.Select(t => (t.Title, t.LengthSeconds!.Value)));
+    }
+
+    [Fact]
     public void Similar_artists_are_ranked_across_seeds_without_those_already_in_the_library()
     {
         var ranked = DiscoveryRanker.Rank(

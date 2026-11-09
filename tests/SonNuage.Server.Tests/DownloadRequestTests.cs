@@ -167,4 +167,20 @@ public sealed class DownloadRequestTests(SonNuageFactory factory) : IClassFixtur
         // Sans yt-dlp (tests) : la recherche échoue proprement, sans appeler MusicBrainz pour rien.
         Assert.Equal(HttpStatusCode.BadGateway, (await contributor.GetAsync("/api/requests/match?artist=Daft%20Punk&title=Get%20Lucky&duration=248", Ct)).StatusCode);
     }
+
+    [Fact]
+    public async Task A_whole_album_is_requested_in_the_background_by_contributors()
+    {
+        var (user, _) = await AccountAsync("album-regular", Roles.User);
+        var (contributor, me) = await AccountAsync("album-contrib", Roles.Contributor);
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await user.PostAsJsonAsync("/api/requests/album", new CreateAlbumRequest("Daft Punk", "Discovery"), Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await contributor.PostAsJsonAsync("/api/requests/album", new CreateAlbumRequest("Daft Punk", " "), Ct)).StatusCode);
+
+        var response = await contributor.PostAsJsonAsync("/api/requests/album", new CreateAlbumRequest("Daft Punk", "Discovery"), Ct);
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<SonNuageDbContext>();
+        Assert.True(await db.JobSuites.AnyAsync(s => s.Kind == "requests.album" && s.CreatedById == me.Id, Ct));
+    }
 }

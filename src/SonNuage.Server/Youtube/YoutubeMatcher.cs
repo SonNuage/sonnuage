@@ -13,6 +13,22 @@ public sealed record RankedEntry(YtEntry Entry, int Score);
 /// ou le titre (30, +5 pour une chaîne « - Topic »), durée proche (20, ou 10 si inconnue). Mots en trop : −2 chacun
 /// (−10 au plus). Versions live, remix, karaoké, reprise… non demandées : −45.
 /// </summary>
+public static class MatchSearch
+{
+    public const int Results = 8;
+
+    /// <summary>
+    /// Cherche « artiste titre » sur YouTube Music et sur YouTube (qui apporte la chaîne et la durée), puis classe.
+    /// </summary>
+    public static async Task<IReadOnlyList<RankedEntry>> MatchAsync(this YtDlp ytDlp, MatchQuery query, int officialMinScore, CancellationToken ct)
+    {
+        var text = $"{query.Artist} {query.Title}";
+        var music = await ytDlp.SearchAsync(text, true, Results, ct);
+        var videos = await ytDlp.SearchAsync(text, false, Results, ct);
+        return YoutubeMatcher.Rank(query, music.Entries.Concat(videos.Entries), officialMinScore);
+    }
+}
+
 public static class YoutubeMatcher
 {
     /// <summary>Au-dessus, la correspondance est retenue d'office ; en dessous, on propose les candidats au choix.</summary>

@@ -96,6 +96,7 @@ builder.Services.AddSingleton<IJobHandler, SearchReindexJob>();
 builder.Services.AddSingleton<IJobHandler, TranscodePurgeJob>();
 builder.Services.AddSingleton<IJobHandler, SubscriptionSyncJob>();
 builder.Services.AddSingleton<IJobHandler, DiscoveryRefreshJob>();
+builder.Services.AddSingleton<IJobHandler, AlbumRequestJob>();
 
 ConfigureAuthentication(builder.Services);
 

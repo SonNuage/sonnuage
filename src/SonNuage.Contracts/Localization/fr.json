@@ -200,7 +200,8 @@
       "duplicate": "Cette vidéo est déjà demandée.",
       "notPending": "Cette demande a déjà été traitée.",
       "badQuota": "Quota : entre 1 et {max} demandes par jour.",
-      "matchQuery": "Indiquez l'artiste et le titre (200 et 300 caractères au plus)."
+      "matchQuery": "Indiquez l'artiste et le titre (200 et 300 caractères au plus).",
+      "albumQuery": "Indiquez l'artiste et l'album."
     },
     "preview": {
       "noFfmpeg": "ffmpeg manque sur le serveur : impossible de préparer un extrait.",
@@ -887,7 +888,8 @@
       "reindex": "Réindexation Elasticsearch",
       "purge": "Purge du cache de transcodage",
       "sync": "Synchronisation : {title}",
-      "discovery": "Actualisation de la découverte"
+      "discovery": "Actualisation de la découverte",
+      "album": "Album « {album} » de {artist}"
     },
     "steps": {
       "download": "Téléchargement",
@@ -987,6 +989,11 @@
       "matched": "{found} titres retrouvés sur YouTube sur {count} cherchés",
       "quotaReached": "Place allouée aux extraits atteinte : les autres extraits attendront",
       "prefetched": "{count} extraits pré-téléchargés"
+    },
+    "requests": {
+      "albumNotFound": "Album « {album} » de {artist} introuvable sur Deezer",
+      "albumTrackNotFound": "« {title} » introuvable sur YouTube",
+      "albumDone": "{created} titres demandés, {skipped} déjà sur le serveur ou déjà demandés, {missing} introuvables, sur {count}"
     }
   },
   "about": {
@@ -1217,6 +1224,10 @@
     "none": "Rien à proposer pour l'instant. La découverte s'actualise chaque semaine à partir des artistes de la bibliothèque.",
     "because": "Proche de {artists}",
     "notFound": "Pas trouvé sur YouTube automatiquement",
-    "search": "Chercher"
+    "search": "Chercher",
+    "album": "Album",
+    "albumHint": "Demander tout l'album « {album} »",
+    "albumSent": "Album « {album} » demandé : ses titres arrivent dans vos demandes au fil des recherches.",
+    "albumAsked": "Album demandé"
   }
 }

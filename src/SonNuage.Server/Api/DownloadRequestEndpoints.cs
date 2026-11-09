@@ -59,32 +59,33 @@ public static class DownloadRequestEndpoints
 
         mine.MapPost("", async (CreateDownloadRequest req, HttpContext http, SonNuageDbContext db, YoutubeImporter importer, TimeProvider time, CancellationToken ct) =>
         {
-            if (VideoIdOf(req.Video) is not { } videoId) return Results.Problem(Tx.Key("errors.requests.badVideo"), statusCode: 400);
             var user = await db.Users.FindAsync([http.User.UserId()], ct);
             if (user is null) return Results.Unauthorized();
-            var now = time.GetUtcNow();
-            if (user.Role != Roles.Admin && await UsedAsync(db, user.Id, now, ct) >= user.RequestsPerDay)
-                return Results.Problem(Tx.Key("errors.requests.quota", ("limit", user.RequestsPerDay)), statusCode: 429);
-            if (await db.YoutubeItems.AnyAsync(i => i.VideoId == videoId && i.Status != YoutubeItemStatus.Failed && i.Status != YoutubeItemStatus.Skipped, ct))
-                return Results.Problem(Tx.Key("errors.requests.alreadyKnown"), statusCode: 409);
-            if (await db.DownloadRequests.AnyAsync(r => r.VideoId == videoId && r.Decision == DownloadRequestDecision.Requested, ct))
-                return Results.Problem(Tx.Key("errors.requests.duplicate"), statusCode: 409);
-
-            var request = new DownloadRequest
+            var (outcome, request) = await CreateAsync(db, importer, user, req, time.GetUtcNow(), ct);
+            return outcome switch
             {
-                UserId = user.Id,
-                User = user,
-                VideoId = videoId,
-                Title = Clean(req.Title, 500) ?? videoId,
-                Channel = Clean(req.Channel, 200),
-                DurationSeconds = req.DurationSeconds is > 0 and < 86_400 ? req.DurationSeconds : null,
-                Note = Clean(req.Note, 500),
-                CreatedAt = now,
+                CreateOutcome.Created => Results.Ok(ToDto(request!)),
+                CreateOutcome.BadVideo => Results.Problem(Tx.Key("errors.requests.badVideo"), statusCode: 400),
+                CreateOutcome.Quota => Results.Problem(Tx.Key("errors.requests.quota", ("limit", user.RequestsPerDay)), statusCode: 429),
+                CreateOutcome.Known => Results.Problem(Tx.Key("errors.requests.alreadyKnown"), statusCode: 409),
+                _ => Results.Problem(Tx.Key("errors.requests.duplicate"), statusCode: 409),
             };
-            db.DownloadRequests.Add(request);
-            if (user.Role == Roles.Admin || user.AutoApproveRequests) await AcceptAsync(db, importer, request, null, now, ct);
-            else await db.SaveChangesAsync(ct);
-            return Results.Ok(ToDto(request));
+        });
+
+        // Album entier : ses titres (Deezer) sont retrouvés sur YouTube puis demandés un par un, en tâche de fond.
+        mine.MapPost("/album", async (CreateAlbumRequest req, HttpContext http, SonNuageDbContext db, Jobs.JobEngine engine, TimeProvider time, CancellationToken ct) =>
+        {
+            if (Clean(req.Artist, 200) is not { } artist || Clean(req.Album, 300) is not { } album)
+                return Results.Problem(Tx.Key("errors.requests.albumQuery"), statusCode: 400);
+            var user = await db.Users.FindAsync([http.User.UserId()], ct);
+            if (user is null) return Results.Unauthorized();
+            if (user.Role != Roles.Admin && await UsedAsync(db, user.Id, time.GetUtcNow(), ct) >= user.RequestsPerDay)
+                return Results.Problem(Tx.Key("errors.requests.quota", ("limit", user.RequestsPerDay)), statusCode: 429);
+            var title = Tx.Key("jobs.suites.album", ("artist", artist), ("album", album));
+            var plan = new Jobs.JobPlan(Jobs.JobSuiteKinds.RequestAlbum, title, user.Id)
+                .Then(Jobs.JobKinds.RequestAlbum, title, new Jobs.AlbumRequestPayload(user.Id, artist, album));
+            await engine.EnqueueAsync(db, plan, ct);
+            return Results.Accepted();
         });
 
         mine.MapGet("/mine", async (int? offset, int? limit, HttpContext http, SonNuageDbContext db, CancellationToken ct) =>
@@ -248,6 +249,39 @@ public static class DownloadRequestEndpoints
 
     // Calculée à partir de l'identifiant : une adresse d'image fournie par le client ne s'affiche jamais chez l'admin.
     private static string Thumbnail(string videoId) => $"https://i.ytimg.com/vi/{videoId}/mqdefault.jpg";
+
+    internal enum CreateOutcome { Created, BadVideo, Quota, Known, Duplicate }
+
+    /// <summary>
+    /// Crée une demande pour <paramref name="user"/> : quota du jour, vidéo déjà connue ou déjà demandée, puis
+    /// acceptation d'office pour un admin ou un contributeur en approbation automatique.
+    /// </summary>
+    internal static async Task<(CreateOutcome Outcome, DownloadRequest? Request)> CreateAsync(SonNuageDbContext db, YoutubeImporter importer, User user,
+        CreateDownloadRequest req, DateTimeOffset now, CancellationToken ct)
+    {
+        if (VideoIdOf(req.Video) is not { } videoId) return (CreateOutcome.BadVideo, null);
+        if (user.Role != Roles.Admin && await UsedAsync(db, user.Id, now, ct) >= user.RequestsPerDay) return (CreateOutcome.Quota, null);
+        if (await db.YoutubeItems.AnyAsync(i => i.VideoId == videoId && i.Status != YoutubeItemStatus.Failed && i.Status != YoutubeItemStatus.Skipped, ct))
+            return (CreateOutcome.Known, null);
+        if (await db.DownloadRequests.AnyAsync(r => r.VideoId == videoId && r.Decision == DownloadRequestDecision.Requested, ct))
+            return (CreateOutcome.Duplicate, null);
+
+        var request = new DownloadRequest
+        {
+            UserId = user.Id,
+            User = user,
+            VideoId = videoId,
+            Title = Clean(req.Title, 500) ?? videoId,
+            Channel = Clean(req.Channel, 200),
+            DurationSeconds = req.DurationSeconds is > 0 and < 86_400 ? req.DurationSeconds : null,
+            Note = Clean(req.Note, 500),
+            CreatedAt = now,
+        };
+        db.DownloadRequests.Add(request);
+        if (user.Role == Roles.Admin || user.AutoApproveRequests) await AcceptAsync(db, importer, request, null, now, ct);
+        else await db.SaveChangesAsync(ct);
+        return (CreateOutcome.Created, request);
+    }
 
     private static string? Clean(string? s, int max)
     {

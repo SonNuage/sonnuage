@@ -200,7 +200,8 @@
       "duplicate": "This video has already been requested.",
       "notPending": "This request has already been handled.",
       "badQuota": "Quota: between 1 and {max} requests per day.",
-      "matchQuery": "Give the artist and the title (200 and 300 characters at most)."
+      "matchQuery": "Give the artist and the title (200 and 300 characters at most).",
+      "albumQuery": "Enter the artist and the album."
     },
     "preview": {
       "noFfmpeg": "ffmpeg is missing on the server: previews can't be prepared.",
@@ -887,7 +888,8 @@
       "reindex": "Elasticsearch reindex",
       "purge": "Transcode cache purge",
       "sync": "Sync: {title}",
-      "discovery": "Discovery refresh"
+      "discovery": "Discovery refresh",
+      "album": "Album “{album}” by {artist}"
     },
     "steps": {
       "download": "Download",
@@ -987,6 +989,11 @@
       "matched": "{found} songs found on YouTube out of {count} searched",
       "quotaReached": "Preview space is full: the other previews will wait",
       "prefetched": "{count} previews downloaded"
+    },
+    "requests": {
+      "albumNotFound": "Album “{album}” by {artist} not found on Deezer",
+      "albumTrackNotFound": "“{title}” not found on YouTube",
+      "albumDone": "{created} songs requested, {skipped} already on the server or requested, {missing} not found, out of {count}"
     }
   },
   "about": {
@@ -1217,6 +1224,10 @@
     "none": "Nothing to suggest yet. Discovery refreshes every week from the library artists.",
     "because": "Close to {artists}",
     "notFound": "Not found on YouTube automatically",
-    "search": "Search"
+    "search": "Search",
+    "album": "Album",
+    "albumHint": "Request the whole album “{album}”",
+    "albumSent": "Album “{album}” requested: its songs show up in your requests as they are found.",
+    "albumAsked": "Album requested"
   }
 }
