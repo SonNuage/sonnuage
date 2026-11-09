@@ -75,6 +75,9 @@ public sealed class SonNuageOptions
     /// <summary>Gestionnaire de tâches (imports, rescans).</summary>
     public JobOptions Jobs { get; set; } = new();
 
+    /// <summary>Analyse audio (Essentia) : humeur, énergie, tempo des morceaux, pour les radios thématiques.</summary>
+    public AnalysisOptions Analysis { get; set; } = new();
+
     public string DatabasePath => Path.Combine(DataPath, "sonnuage.db");
     public string TranscodeCachePath => Path.Combine(DataPath, "cache", "transcode");
     public string CoverCachePath => Path.Combine(DataPath, "cache", "covers");
@@ -102,6 +105,30 @@ public sealed class JobOptions
 
     /// <summary>Durée de conservation des suites terminées.</summary>
     public int RetentionDays { get; set; } = 14;
+}
+
+public sealed class AnalysisOptions
+{
+    /// <summary>Python de l'environnement où est installé essentia-tensorflow. Vide ou absent : analyse indisponible.</summary>
+    public string? PythonPath { get; set; }
+
+    /// <summary>Dossier des modèles Essentia (.pb). Vide ou absent : analyse indisponible.</summary>
+    public string? ModelsPath { get; set; }
+
+    /// <summary>Script d'analyse. Vide : celui livré avec le serveur (Analysis/essentia_analyzer.py).</summary>
+    public string? ScriptPath { get; set; }
+
+    /// <summary>Fils de calcul de TensorFlow.</summary>
+    public int Threads { get; set; } = 2;
+
+    /// <summary>Priorité abaissée du processus d'analyse (nice), pour ne pas gêner la lecture.</summary>
+    public int Niceness { get; set; } = 10;
+
+    /// <summary>Au-delà, l'analyse du fichier est abandonnée (le processus est relancé).</summary>
+    public int TimeoutSeconds { get; set; } = 300;
+
+    /// <summary>Le processus (modèles chargés en mémoire) s'arrête après ce temps sans fichier à analyser.</summary>
+    public int IdleMinutes { get; set; } = 2;
 }
 
 public sealed class SearchOptions

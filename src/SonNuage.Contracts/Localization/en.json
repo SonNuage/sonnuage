@@ -228,6 +228,10 @@
     },
     "discovery": {
       "settings": "Settings out of range: refresh every 1 to {hours} hours, 0 to {perRun} new artists, 0 to {shown} shown at least, 1 to {days} days, 1 to {tracks} songs per artist."
+    },
+    "analysis": {
+      "unavailable": "Audio analysis is not installed on this server (amd64 Docker image only).",
+      "disabled": "Audio analysis is disabled in the settings."
     }
   },
   "login": {
@@ -920,7 +924,8 @@
       "acoustid": "AcoustID",
       "metadata": "Metadata",
       "library": "Library",
-      "sync": "Subscriptions"
+      "sync": "Subscriptions",
+      "analysis": "Audio analysis"
     },
     "kind": {
       "youtube_download": "YouTube download",
@@ -931,7 +936,8 @@
       "library_scan": "Library scan",
       "search_reindex": "Search reindex",
       "transcode_purge": "Transcode cache purge",
-      "youtube_sync": "Subscription sync"
+      "youtube_sync": "Subscription sync",
+      "analysis_audio": "Audio analysis"
     },
     "suiteKind": {
       "youtube_import": "YouTube import",
@@ -939,7 +945,8 @@
       "library_scan": "Library scan",
       "search_reindex": "Search reindex",
       "transcode_purge": "Cache purge",
-      "youtube_sync": "Subscription sync"
+      "youtube_sync": "Subscription sync",
+      "analysis_audio": "Audio analysis"
     },
     "suites": {
       "rescanAll": "AcoustID rescan of the whole library",
@@ -949,13 +956,15 @@
       "purge": "Transcode cache purge",
       "sync": "Sync: {title}",
       "discovery": "Discovery refresh",
-      "album": "Album “{album}” by {artist}"
+      "album": "Album “{album}” by {artist}",
+      "analysis": "Audio analysis of the library"
     },
     "steps": {
       "download": "Download",
       "acoustid": "AcoustID fingerprint",
       "metadata": "Metadata, tags and filing",
-      "plan": "List the tracks to check"
+      "plan": "List the tracks to check",
+      "analysis": "Analyze a batch of tracks"
     },
     "create": {
       "title": "New task: AcoustID rescan",
@@ -1055,6 +1064,12 @@
       "albumNotFound": "Album “{album}” by {artist} not found on Deezer",
       "albumTrackNotFound": "“{title}” not found on YouTube",
       "albumDone": "{created} songs requested, {skipped} already on the server or requested, {missing} not found, out of {count}"
+    },
+    "analysis": {
+      "done": "{analyzed} track(s) analyzed, {failed} failure(s)",
+      "failed": "{track}: {error}",
+      "unavailable": "Audio analyzer not installed: nothing to do.",
+      "disabled": "Audio analysis disabled in the settings: stopped."
     }
   },
   "about": {
@@ -1391,5 +1406,21 @@
       "saved": "Radio settings saved: {place}.",
       "savedNoPlace": "Radio settings saved, without weather radio."
     }
+  },
+  "analysis": {
+    "title": "Audio analysis",
+    "enabled": "Analyze the tracks (mood, energy, tempo) for themed radios",
+    "unavailable": "Unavailable: the audio analyzer (Essentia) is only included in the amd64 Docker image.",
+    "progress": "{analyzed} / {total} tracks analyzed",
+    "errors": {
+      "one": "{count} unreadable file",
+      "other": "{count} unreadable files"
+    },
+    "pending": "{count} waiting",
+    "running": "Analysis in progress",
+    "hint": "New and replaced files are analyzed after each library scan, three minutes per track at most, at low priority. Unreadable files are not retried until they change.",
+    "run": "Analyze now",
+    "started": "Audio analysis started.",
+    "saved": "Audio analysis setting saved."
   }
 }

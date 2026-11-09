@@ -24,4 +24,9 @@
     <InternalsVisibleTo Include="SonNuage.Server.Tests" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Script d'analyse audio (Essentia), lancé par EssentiaAudioAnalyzer : livré avec le serveur, pas dans l'image de base. -->
+    <None Update="Analysis/essentia_analyzer.py" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

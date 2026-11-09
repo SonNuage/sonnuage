@@ -228,6 +228,10 @@
     },
     "discovery": {
       "settings": "Réglages hors limites : actualisation de 1 à {hours} heures, de 0 à {perRun} nouveaux artistes, minimum affiché de 0 à {shown}, durée de 1 à {days} jours, de 1 à {tracks} titres par artiste."
+    },
+    "analysis": {
+      "unavailable": "L'analyse audio n'est pas installée sur ce serveur (image Docker amd64 uniquement).",
+      "disabled": "L'analyse audio est désactivée dans les réglages."
     }
   },
   "login": {
@@ -920,7 +924,8 @@
       "acoustid": "AcoustID",
       "metadata": "Métadonnées",
       "library": "Bibliothèque",
-      "sync": "Abonnements"
+      "sync": "Abonnements",
+      "analysis": "Analyse audio"
     },
     "kind": {
       "youtube_download": "Téléchargement YouTube",
@@ -931,7 +936,8 @@
       "library_scan": "Scan de la bibliothèque",
       "search_reindex": "Réindexation de la recherche",
       "transcode_purge": "Purge du cache de transcodage",
-      "youtube_sync": "Synchronisation d'abonnement"
+      "youtube_sync": "Synchronisation d'abonnement",
+      "analysis_audio": "Analyse audio"
     },
     "suiteKind": {
       "youtube_import": "Import YouTube",
@@ -939,7 +945,8 @@
       "library_scan": "Scan de la bibliothèque",
       "search_reindex": "Réindexation de la recherche",
       "transcode_purge": "Purge du cache",
-      "youtube_sync": "Synchronisation d'abonnement"
+      "youtube_sync": "Synchronisation d'abonnement",
+      "analysis_audio": "Analyse audio"
     },
     "suites": {
       "rescanAll": "Rescan AcoustID de toute la bibliothèque",
@@ -949,13 +956,15 @@
       "purge": "Purge du cache de transcodage",
       "sync": "Synchronisation : {title}",
       "discovery": "Actualisation de la découverte",
-      "album": "Album « {album} » de {artist}"
+      "album": "Album « {album} » de {artist}",
+      "analysis": "Analyse audio de la bibliothèque"
     },
     "steps": {
       "download": "Téléchargement",
       "acoustid": "Empreinte AcoustID",
       "metadata": "Métadonnées, tags et rangement",
-      "plan": "Liste des morceaux à vérifier"
+      "plan": "Liste des morceaux à vérifier",
+      "analysis": "Analyse d'un lot de morceaux"
     },
     "create": {
       "title": "Nouvelle tâche : rescan AcoustID",
@@ -1055,6 +1064,12 @@
       "albumNotFound": "Album « {album} » de {artist} introuvable sur Deezer",
       "albumTrackNotFound": "« {title} » introuvable sur YouTube",
       "albumDone": "{created} titres demandés, {skipped} déjà sur le serveur ou déjà demandés, {missing} introuvables, sur {count}"
+    },
+    "analysis": {
+      "done": "{analyzed} morceau(x) analysé(s), {failed} échec(s)",
+      "failed": "{track} : {error}",
+      "unavailable": "Analyseur audio absent : rien à faire.",
+      "disabled": "Analyse audio désactivée dans les réglages : arrêt."
     }
   },
   "about": {
@@ -1391,5 +1406,21 @@
       "saved": "Réglages des radios enregistrés : {place}.",
       "savedNoPlace": "Réglages des radios enregistrés, sans radio météo."
     }
+  },
+  "analysis": {
+    "title": "Analyse audio",
+    "enabled": "Analyser les morceaux (humeur, énergie, tempo) pour les radios thématiques",
+    "unavailable": "Indisponible : l'analyseur audio (Essentia) n'est livré que dans l'image Docker amd64.",
+    "progress": "{analyzed} / {total} morceaux analysés",
+    "errors": {
+      "one": "{count} fichier illisible",
+      "other": "{count} fichiers illisibles"
+    },
+    "pending": "{count} en attente",
+    "running": "Analyse en cours",
+    "hint": "Les fichiers nouveaux ou remplacés sont analysés après chaque scan de la bibliothèque, trois minutes par morceau au plus, en basse priorité. Un fichier illisible n'est pas réessayé avant d'avoir changé.",
+    "run": "Analyser maintenant",
+    "started": "Analyse audio lancée.",
+    "saved": "Réglage de l'analyse audio enregistré."
   }
 }
