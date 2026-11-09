@@ -39,9 +39,13 @@ else
             <NavLink class="nav-item" href="" Match="NavLinkMatch.All"><Icon Name="home" /><span>@L["nav.home"]</span></NavLink>
             <NavLink class="nav-item" href="search"><Icon Name="search" /><span>@L["nav.search"]</span></NavLink>
             <NavLink class="nav-item" href="library"><Icon Name="library" /><span>@L["nav.library"]</span></NavLink>
+            @if (Auth.CanRequest)
+            {
+                <NavLink class="nav-item" href="discover"><Icon Name="explore" /><span>@L["discover.title"]</span></NavLink>
+            }
             @if (Auth.CanRequest && !Auth.IsAdmin)
             {
-                <NavLink class="nav-item" href="requests"><Icon Name="inbox" /><span>@L["requests.title"]</span></NavLink>
+                <NavLink class="nav-item desktop-only" href="requests"><Icon Name="inbox" /><span>@L["requests.title"]</span></NavLink>
             }
             <NavLink class="nav-item desktop-only" href="queue"><Icon Name="queue" /><span>@L["nav.queue"]</span></NavLink>
             @* Sur ordinateur, les réglages sont dans la pastille du compte. Sur mobile (sans pastille), dans la barre du bas. *@

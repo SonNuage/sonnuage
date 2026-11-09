@@ -1204,5 +1204,19 @@
     "minFreeHint": "Below this free space on the music disk, every download waits (YouTube imports, requests, previews). They resume on their own once space comes back.",
     "previewQuotaHint": "Beyond it, the oldest previews are deleted. They are made again the next time someone listens.",
     "saved": "Storage settings saved"
+  },
+  "discover": {
+    "title": "Discover",
+    "restricted": "Discovering artists beyond the library is for contributors.",
+    "hint": "Artists close to the ones you play most, according to ListenBrainz, with their top songs: listen to a preview, then request them.",
+    "updated": "Updated {date}.",
+    "refreshing": "Refreshing…",
+    "refresh": "Refresh",
+    "refreshStarted": "Refresh started: it can take several minutes (YouTube searches and previews).",
+    "firstRun": "First refresh in progress: come back in a few minutes.",
+    "none": "Nothing to suggest yet. Discovery refreshes every week from the library artists.",
+    "because": "Close to {artists}",
+    "notFound": "Not found on YouTube automatically",
+    "search": "Search"
   }
 }

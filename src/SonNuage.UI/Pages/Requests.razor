@@ -6,7 +6,10 @@
 <PageTitle>@L["requests.title"] · SonNuage</PageTitle>
 
 <div class="page">
-    <header class="page-header"><h1>@L["requests.title"]</h1></header>
+    <header class="page-header">
+        <h1>@L["requests.title"]</h1>
+        @if (Auth.CanRequest) { <a class="btn" href="discover"><Icon Name="explore" Size="18" /> @L["discover.title"]</a> }
+    </header>
     @if (!Auth.CanRequest)
     {
         <div class="empty"><p>@L["requests.restricted"]</p></div>
@@ -127,9 +130,23 @@
     private List<DownloadRequestDto> _mine = [];
     private int _total;
 
+    [SupplyParameterFromQuery(Name = "artist")] public string? ArtistQuery { get; set; }
+    [SupplyParameterFromQuery(Name = "title")] public string? TitleQuery { get; set; }
+
     protected override async Task OnInitializedAsync()
     {
         if (!Auth.CanRequest) return;
+        if (!string.IsNullOrWhiteSpace(ArtistQuery) && !string.IsNullOrWhiteSpace(TitleQuery))
+        {
+            _byMatch = true;
+            _artist = ArtistQuery;
+            _title = TitleQuery;
+            _ = InvokeAsync(async () =>
+            {
+                await MatchAsync();
+                StateHasChanged();
+            });
+        }
         await RunAsync(async () =>
         {
             _quota = await Api.RequestQuotaAsync();

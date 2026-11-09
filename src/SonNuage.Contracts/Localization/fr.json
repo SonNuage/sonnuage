@@ -1204,5 +1204,19 @@
     "minFreeHint": "Sous cet espace libre sur le disque de la musique, tout téléchargement attend (imports YouTube, demandes, extraits). Ils reprennent seuls quand la place revient.",
     "previewQuotaHint": "Au-delà, les extraits les plus anciens sont supprimés. Ils seront refaits à la prochaine écoute.",
     "saved": "Réglages de stockage enregistrés"
+  },
+  "discover": {
+    "title": "Découvrir",
+    "restricted": "La découverte d'artistes hors de la bibliothèque est réservée aux contributeurs.",
+    "hint": "Artistes proches de ceux que vous écoutez le plus, d'après ListenBrainz, avec leurs titres phares : écoutez un extrait, puis demandez-les.",
+    "updated": "Mise à jour : {date}.",
+    "refreshing": "Actualisation en cours…",
+    "refresh": "Actualiser",
+    "refreshStarted": "Actualisation lancée : elle peut prendre plusieurs minutes (recherches YouTube et extraits).",
+    "firstRun": "Première actualisation en cours : revenez dans quelques minutes.",
+    "none": "Rien à proposer pour l'instant. La découverte s'actualise chaque semaine à partir des artistes de la bibliothèque.",
+    "because": "Proche de {artists}",
+    "notFound": "Pas trouvé sur YouTube automatiquement",
+    "search": "Chercher"
   }
 }

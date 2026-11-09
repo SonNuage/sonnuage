@@ -79,6 +79,8 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     public Task AdminCancelUploadAsync(Guid id) => SendAsync(HttpMethod.Delete, $"api/admin/uploads/{id}");
     // ---- Demandes de téléchargement (contributeurs ; liste et décision : admin) ----
     public Task<YoutubeListingDto?> RequestSearchAsync(string q, bool music) => GetAsync<YoutubeListingDto>($"api/requests/search?music={music}&q={Uri.EscapeDataString(q)}");
+    public Task<DiscoveryPageDto?> DiscoveryAsync() => GetAsync<DiscoveryPageDto>("api/discovery/artists");
+    public Task RefreshDiscoveryAsync() => SendAsync(HttpMethod.Post, "api/admin/discovery/refresh");
     public Task<StorageStatusDto?> StorageAsync() => GetAsync<StorageStatusDto>("api/admin/storage");
     public Task<StorageStatusDto?> SaveStorageAsync(StorageSettingsDto s) => SendAsync<StorageStatusDto>(HttpMethod.Put, "api/admin/storage", s);
     public Task<MatchResultDto?> RequestMatchAsync(string artist, string title) =>
