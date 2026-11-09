@@ -116,6 +116,28 @@ terminées), leurs étapes et le journal de chaque étape en direct. On y annule
 
 Ce qui vient ensuite : [docs/ROADMAP.md](docs/ROADMAP.md).
 
+## Analyse audio
+
+Pour les radios thématiques (pop bonne humeur, calme, fête…), chaque morceau est analysé par
+[Essentia](https://essentia.upf.edu/) et ses modèles TensorFlow : humeurs (joyeux, triste, détendu, agressif,
+fête), acoustique / électronique, dansabilité, voix / instrumental, valence et énergie, tempo. Seules les trois
+minutes du milieu sont écoutées, sur deux fils de calcul en basse priorité : quelques secondes par morceau.
+
+- File « analysis » (une tâche à la fois), lancée au démarrage et après chaque scan : morceaux jamais analysés,
+  fichiers remplacés, ou version du calcul dépassée. Un fichier illisible garde son erreur et n'est pas réessayé
+  avant d'avoir changé.
+- **Réglages → Analyse audio** : avancement, activation, lancement immédiat.
+- Livrée dans l'image Docker **amd64** uniquement (Python, `essentia-tensorflow` et ses modèles : environ 800 Mo de
+  plus sur disque, dans la base d'exécution). Le processus d'analyse occupe près de 1 Go de mémoire pendant qu'il
+  travaille et s'arrête après deux minutes sans morceau à analyser. Ailleurs
+  (arm64, développement sous Windows), l'analyse se déclare indisponible. Hors Docker :
+  `SonNuage__Analysis__PythonPath` (Python où `essentia-tensorflow` est installé) et `SonNuage__Analysis__ModelsPath`
+  (dossier des modèles, liste et empreintes dans le [Dockerfile](Dockerfile)).
+
+Les modèles Essentia (discogs-effnet, msd-musicnn, emomusic, TempoCNN) sont © Music Technology Group, Universitat
+Pompeu Fabra, sous licence [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) : usage non
+commercial uniquement, avec attribution. Essentia est sous licence AGPL v3.
+
 ## Recherche
 
 Sans configuration, la recherche se fait en base : sous-chaînes, insensible à la casse et aux accents.
