@@ -24,6 +24,9 @@ public static class MaintenanceJobs
     public static JobPlan PurgeTranscodeCache() =>
         new JobPlan(JobSuiteKinds.TranscodePurge, Tx.Key("jobs.suites.purge")).Then(JobKinds.TranscodePurge, Tx.Key("jobs.suites.purge"));
 
+    public static JobPlan DiscoveryRefresh() =>
+        new JobPlan(JobSuiteKinds.DiscoveryRefresh, Tx.Key("jobs.suites.discovery")).Then(JobKinds.DiscoveryRefresh, Tx.Key("jobs.suites.discovery"));
+
     public static JobPlan Sync(Guid subscriptionId, string title) =>
         new JobPlan(JobSuiteKinds.SubscriptionSync, Tx.Key("jobs.suites.sync", ("title", title)))
             .Then(JobKinds.SubscriptionSync, Tx.Key("jobs.suites.sync", ("title", title)), subjectId: subscriptionId);
@@ -102,4 +105,12 @@ public sealed class SubscriptionSyncJob(TimeProvider time) : IJobHandler
         if (outcome.Error is { } error) throw new InvalidOperationException(error);
         ctx.Info(Tx.Key("jobs.maintenance.synced", ("queued", outcome.Queued), ("skipped", outcome.Skipped)));
     }
+}
+
+/// <summary>Actualisation de la découverte par artiste (voir <see cref="Discovery.DiscoveryService"/>).</summary>
+public sealed class DiscoveryRefreshJob(Discovery.DiscoveryService discovery) : IJobHandler
+{
+    public JobKind Kind => JobKinds.DiscoveryRefresh;
+
+    public Task RunAsync(JobContext ctx) => discovery.RefreshAsync(ctx);
 }

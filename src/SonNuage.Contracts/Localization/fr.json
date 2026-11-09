@@ -886,7 +886,8 @@
       "scan": "Scan complet de la bibliothèque",
       "reindex": "Réindexation Elasticsearch",
       "purge": "Purge du cache de transcodage",
-      "sync": "Synchronisation : {title}"
+      "sync": "Synchronisation : {title}",
+      "discovery": "Actualisation de la découverte"
     },
     "steps": {
       "download": "Téléchargement",
@@ -977,6 +978,15 @@
       "purged": "{count} fichiers supprimés ({mb} Mo).",
       "youtubeHold": "YouTube limite les requêtes : synchronisation remise à plus tard.",
       "synced": "{queued} vidéos mises en file, {skipped} ignorées."
+    },
+    "discovery": {
+      "artists": "{count} artistes à découvrir, à partir de {seeds} artistes de la bibliothèque",
+      "sourceFailed": "ListenBrainz ou MusicBrainz injoignable pour {artist} : {message}",
+      "throttled": "YouTube bride les recherches : la suite attendra la prochaine actualisation",
+      "matchFailed": "« {title} » introuvable sur YouTube : {message}",
+      "matched": "{found} titres retrouvés sur YouTube sur {count} cherchés",
+      "quotaReached": "Place allouée aux extraits atteinte : les autres extraits attendront",
+      "prefetched": "{count} extraits pré-téléchargés"
     }
   },
   "about": {

@@ -43,6 +43,10 @@ public sealed class SonNuageOptions
     public string FpcalcPath { get; set; } = "fpcalc";
     /// <summary>Contact transmis à MusicBrainz dans le User-Agent, comme l'exigent ses règles d'usage.</summary>
     public string MusicBrainzContact { get; set; } = "https://github.com/SonNuage/sonnuage";
+    /// <summary>Bases publiques de la découverte (remplacées dans les tests pour ne rien appeler).</summary>
+    public string MusicBrainzUrl { get; set; } = "https://musicbrainz.org";
+    public string ListenBrainzUrl { get; set; } = "https://api.listenbrainz.org";
+    public string ListenBrainzLabsUrl { get; set; } = "https://labs.api.listenbrainz.org";
 
     /// <summary>Compte admin créé au premier démarrage si la base ne contient aucun utilisateur.</summary>
     public string? InitialAdminUser { get; set; } = "admin";
@@ -65,6 +69,7 @@ public sealed class SonNuageOptions
     public string TranscodeCachePath => Path.Combine(DataPath, "cache", "transcode");
     public string CoverCachePath => Path.Combine(DataPath, "cache", "covers");
     public string PreviewCachePath => Path.Combine(DataPath, "cache", "previews");
+    public string DiscoveryPreviewPath => Path.Combine(DataPath, "discovery", "previews");
     public string UploadTempPath => Path.Combine(DataPath, "uploads-tmp");
     /// <summary>Où atterrissent les morceaux importés de YouTube (sous le dossier d'envoi : supprimables depuis l'admin).</summary>
     public string YoutubePath => Path.Combine(UploadPath, "YouTube");

@@ -886,7 +886,8 @@
       "scan": "Full library scan",
       "reindex": "Elasticsearch reindex",
       "purge": "Transcode cache purge",
-      "sync": "Sync: {title}"
+      "sync": "Sync: {title}",
+      "discovery": "Discovery refresh"
     },
     "steps": {
       "download": "Download",
@@ -977,6 +978,15 @@
       "purged": "{count} files deleted ({mb} MB).",
       "youtubeHold": "YouTube is rate-limiting: sync postponed.",
       "synced": "{queued} videos queued, {skipped} skipped."
+    },
+    "discovery": {
+      "artists": "{count} artists to discover, from {seeds} library artists",
+      "sourceFailed": "ListenBrainz or MusicBrainz unreachable for {artist}: {message}",
+      "throttled": "YouTube is throttling searches: the rest will wait for the next refresh",
+      "matchFailed": "“{title}” not found on YouTube: {message}",
+      "matched": "{found} songs found on YouTube out of {count} searched",
+      "quotaReached": "Preview space is full: the other previews will wait",
+      "prefetched": "{count} previews downloaded"
     }
   },
   "about": {

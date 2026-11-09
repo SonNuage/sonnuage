@@ -14,6 +14,8 @@ public sealed class SonNuageDbContext(DbContextOptions<SonNuageDbContext> option
     public DbSet<PlaylistEntry> PlaylistEntries => Set<PlaylistEntry>();
     public DbSet<Favorite> Favorites => Set<Favorite>();
     public DbSet<PlayEvent> PlayEvents => Set<PlayEvent>();
+    public DbSet<DiscoveryArtist> DiscoveryArtists => Set<DiscoveryArtist>();
+    public DbSet<DiscoveryTrack> DiscoveryTracks => Set<DiscoveryTrack>();
     public DbSet<YoutubeItem> YoutubeItems => Set<YoutubeItem>();
     public DbSet<YoutubeSubscription> YoutubeSubscriptions => Set<YoutubeSubscription>();
     public DbSet<DownloadRequest> DownloadRequests => Set<DownloadRequest>();
@@ -30,6 +32,8 @@ public sealed class SonNuageDbContext(DbContextOptions<SonNuageDbContext> option
             e.HasIndex(x => x.NormalizedName).IsUnique();
             e.Property(x => x.Name).HasMaxLength(512);
             e.Property(x => x.NormalizedName).HasMaxLength(512);
+            e.Property(x => x.MusicBrainzId).HasMaxLength(36);
+            e.HasIndex(x => x.MusicBrainzId);
         });
 
         b.Entity<Album>(e =>
@@ -117,6 +121,26 @@ public sealed class SonNuageDbContext(DbContextOptions<SonNuageDbContext> option
             e.HasOne(x => x.Track).WithMany().HasForeignKey(x => x.TrackId).OnDelete(DeleteBehavior.SetNull);
         });
 
+        b.Entity<DiscoveryArtist>(e =>
+        {
+            e.HasIndex(x => x.MusicBrainzId).IsUnique();
+            e.HasIndex(x => x.Score);
+            e.Property(x => x.MusicBrainzId).HasMaxLength(36);
+            e.Property(x => x.Name).HasMaxLength(512);
+            e.Property(x => x.Comment).HasMaxLength(512);
+            e.Property(x => x.BecauseOf).HasMaxLength(2000);
+            e.HasMany(x => x.Tracks).WithOne(t => t.Artist).HasForeignKey(t => t.ArtistId).OnDelete(DeleteBehavior.Cascade);
+        });
+        b.Entity<DiscoveryTrack>(e =>
+        {
+            e.HasIndex(x => x.VideoId);
+            e.Property(x => x.Title).HasMaxLength(500);
+            e.Property(x => x.RecordingMbid).HasMaxLength(36);
+            e.Property(x => x.ReleaseName).HasMaxLength(500);
+            e.Property(x => x.VideoId).HasMaxLength(11);
+            e.Property(x => x.VideoTitle).HasMaxLength(500);
+            e.Property(x => x.Channel).HasMaxLength(200);
+        });
         b.Entity<DownloadRequest>(e =>
         {
             e.HasIndex(x => x.CreatedAt);

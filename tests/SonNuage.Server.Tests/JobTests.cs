@@ -194,7 +194,7 @@ public sealed class JobTests(JobsFactory factory) : IClassFixture<JobsFactory>
     public async Task AcoustId_requests_are_sent_one_at_a_time_a_second_apart()
     {
         var handler = new RecordingHandler();
-        var client = new MusicBrainzClient(new SingleClientFactory(handler), factory.Services.GetRequiredService<YoutubeTools>(),
+        var client = new MusicBrainzClient(new SingleClientFactory(handler), factory.Services.GetRequiredService<YoutubeTools>(), factory.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<SonNuageOptions>>(),
             Microsoft.Extensions.Logging.Abstractions.NullLogger<MusicBrainzClient>.Instance);
         var fp = new AudioFingerprint(200, "AQAA");
         var results = await Task.WhenAll(Enumerable.Range(0, 3).Select(_ => client.AcoustIdLookupAsync(fp, "key", Ct)));

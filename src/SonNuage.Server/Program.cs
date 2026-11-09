@@ -70,6 +70,9 @@ builder.Services.AddSingleton<YoutubeSettingsStore>();
 builder.Services.AddSingleton<YtDlp>();
 builder.Services.AddSingleton<PreviewService>();
 builder.Services.AddSingleton<StorageGuard>();
+builder.Services.AddSingleton<SonNuage.Server.Discovery.ListenBrainzClient>();
+builder.Services.AddSingleton<SonNuage.Server.Discovery.DiscoveryService>();
+builder.Services.AddHostedService<SonNuage.Server.Discovery.DiscoveryScheduler>();
 builder.Services.AddSingleton<YoutubeListingTasks>();
 builder.Services.AddSingleton<MusicBrainzClient>();
 builder.Services.AddSingleton<MetadataResolver>();
@@ -91,6 +94,7 @@ builder.Services.AddSingleton<IJobHandler, LibraryScanJob>();
 builder.Services.AddSingleton<IJobHandler, SearchReindexJob>();
 builder.Services.AddSingleton<IJobHandler, TranscodePurgeJob>();
 builder.Services.AddSingleton<IJobHandler, SubscriptionSyncJob>();
+builder.Services.AddSingleton<IJobHandler, DiscoveryRefreshJob>();
 
 ConfigureAuthentication(builder.Services);
 
@@ -162,6 +166,7 @@ app.MapCrashReportEndpoints();
 app.MapDiscoveryEndpoints();
 app.MapDownloadRequestEndpoints();
 app.MapStorageEndpoints();
+app.MapArtistDiscoveryEndpoints();
 
 app.MapFallback("/api/{**path}", () => Results.NotFound());
 app.MapFallback(WebApp.Index);

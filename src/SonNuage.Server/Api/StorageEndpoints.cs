@@ -12,11 +12,11 @@ public static class StorageEndpoints
     {
         var group = app.MapGroup("/api/admin/storage").RequireAuthorization(AuthConstants.AdminPolicy).WithTags("Admin");
 
-        group.MapGet("", (StorageGuard storage, PreviewService previews) => storage.Status(previews.CachedBytes()));
+        group.MapGet("", (StorageGuard storage, PreviewService previews) => storage.Status(previews.TotalBytes()));
 
         group.MapPut("", (StorageSettingsDto settings, StorageGuard storage, PreviewService previews) =>
             storage.Save(settings) is { } error
                 ? Results.Problem(error, statusCode: StatusCodes.Status400BadRequest)
-                : Results.Ok(storage.Status(previews.CachedBytes())));
+                : Results.Ok(storage.Status(previews.TotalBytes())));
     }
 }

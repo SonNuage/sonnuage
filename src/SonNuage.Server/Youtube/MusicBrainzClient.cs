@@ -39,7 +39,7 @@ public sealed record MbRecording(
 /// Base MusicBrainz (recherche de titres), Cover Art Archive (pochettes) et AcoustID (empreinte acoustique).
 /// MusicBrainz impose au plus une requête par seconde et un User-Agent identifiable.
 /// </summary>
-public sealed class MusicBrainzClient(IHttpClientFactory httpFactory, YoutubeTools tools, ILogger<MusicBrainzClient> logger)
+public sealed class MusicBrainzClient(IHttpClientFactory httpFactory, YoutubeTools tools, IOptions<SonNuageOptions> options, ILogger<MusicBrainzClient> logger)
 {
     public const string HttpClientName = "musicbrainz";
     private static readonly SemaphoreSlim Gate = new(1, 1);
@@ -63,6 +63,18 @@ public sealed class MusicBrainzClient(IHttpClientFactory httpFactory, YoutubeToo
         var query = new StringBuilder($"recording:\"{Escape(title)}\"");
         if (!string.IsNullOrWhiteSpace(artist)) query.Append($" AND artist:\"{Escape(artist)}\"");
         return await SearchAsync(query.ToString(), 15, ct);
+    }
+
+    /// <summary>Identifiant MusicBrainz d'un artiste : le résultat de score 100 dont le nom est le même (accents et casse près).</summary>
+    public async Task<string?> ArtistIdAsync(string name, CancellationToken ct)
+    {
+        var url = $"{options.Value.MusicBrainzUrl.TrimEnd('/')}/ws/2/artist?fmt=json&limit=5&query={Uri.EscapeDataString($"artist:\"{Escape(name)}\"")}";
+        var json = await GetJsonAsync(url, ct);
+        var key = Library.NameNormalizer.Key(name);
+        return (json?["artists"]?.AsArray() ?? []).OfType<JsonObject>()
+            .Where(a => a["score"]?.GetValue<int>() == 100 && a["name"]?.GetValue<string>() is { } n && Library.NameNormalizer.Key(n) == key)
+            .Select(a => a["id"]?.GetValue<string>())
+            .FirstOrDefault();
     }
 
     public async Task<IReadOnlyList<MbRecording>> RecordingsByIdAsync(IReadOnlyList<string> ids, CancellationToken ct) =>

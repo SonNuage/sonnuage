@@ -43,6 +43,10 @@ public class SonNuageFactory : WebApplicationFactory<Program>
         builder.UseSetting("SonNuage:WatchFileSystem", "false");
         builder.UseSetting("SonNuage:BehindProxy", "false");
         builder.UseSetting("SonNuage:LoginAttemptsPerMinute", "1000");
+        // Bases publiques de la découverte : un port fermé, pour ne jamais rien appeler depuis les tests.
+        builder.UseSetting("SonNuage:MusicBrainzUrl", "http://127.0.0.1:9");
+        builder.UseSetting("SonNuage:ListenBrainzUrl", "http://127.0.0.1:9");
+        builder.UseSetting("SonNuage:ListenBrainzLabsUrl", "http://127.0.0.1:9");
         builder.UseSetting("SonNuage:FfmpegPath", Environment.GetEnvironmentVariable("SONNUAGE_TEST_FFMPEG") ?? "ffmpeg");
         ConfigureMore(builder);
     }

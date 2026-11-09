@@ -7,6 +7,10 @@ public sealed class Artist
     /// <summary>Clé de regroupement (minuscules, sans accents ni ponctuation).</summary>
     public required string NormalizedName { get; set; }
     public string SortName { get; set; } = "";
+    /// <summary>Identifiant MusicBrainz, cherché par la découverte (nom identique, score 100).</summary>
+    public string? MusicBrainzId { get; set; }
+    /// <summary>Dernière recherche de l'identifiant MusicBrainz (trouvé ou non) : on ne la refait pas à chaque actualisation.</summary>
+    public DateTimeOffset? MusicBrainzCheckedAt { get; set; }
     public List<Album> Albums { get; set; } = [];
     /// <summary>Morceaux dont il est l'artiste principal (y compris sur les albums d'autres artistes).</summary>
     public List<Track> Tracks { get; set; } = [];
@@ -360,4 +364,40 @@ public sealed class DownloadRequest
     public bool AutoApproved { get; set; }
     public Guid? YoutubeItemId { get; set; }
     public YoutubeItem? YoutubeItem { get; set; }
+}
+
+/// <summary>Artiste à découvrir, hors de la bibliothèque : proche d'artistes qu'on a (ListenBrainz). Voir Discovery/.</summary>
+public sealed class DiscoveryArtist
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public required string MusicBrainzId { get; set; }
+    public required string Name { get; set; }
+    public string? Comment { get; set; }
+    /// <summary>Proximité cumulée sur les artistes de la bibliothèque qui y mènent (pour l'ordre d'affichage).</summary>
+    public double Score { get; set; }
+    /// <summary>Artistes de la bibliothèque qui y mènent, un par ligne, du plus proche au moins proche.</summary>
+    public string BecauseOf { get; set; } = "";
+    public DateTimeOffset UpdatedAt { get; set; }
+    /// <summary>Titres phares lus (null : pas encore).</summary>
+    public DateTimeOffset? TracksFetchedAt { get; set; }
+    public List<DiscoveryTrack> Tracks { get; set; } = [];
+}
+
+/// <summary>Titre phare d'un artiste à découvrir, et la vidéo YouTube qui lui correspond (recherche par correspondance).</summary>
+public sealed class DiscoveryTrack
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid ArtistId { get; set; }
+    public DiscoveryArtist Artist { get; set; } = null!;
+    public int Rank { get; set; }
+    public required string Title { get; set; }
+    public string? RecordingMbid { get; set; }
+    public string? ReleaseName { get; set; }
+    public double? DurationSeconds { get; set; }
+    public string? VideoId { get; set; }
+    public string? VideoTitle { get; set; }
+    public string? Channel { get; set; }
+    public int? MatchScore { get; set; }
+    /// <summary>Recherche YouTube faite (trouvée ou non) : on ne la refait pas à chaque actualisation.</summary>
+    public DateTimeOffset? MatchedAt { get; set; }
 }

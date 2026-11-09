@@ -31,6 +31,8 @@ public sealed class PreviewService(YtDlp ytDlp, Storage.StorageGuard storage, IO
     /// </summary>
     public async Task<string> GetAsync(string videoId, double? duration, CancellationToken ct)
     {
+        var prefetched = Path.Combine(options.Value.DiscoveryPreviewPath, $"{videoId}.mp3");
+        if (File.Exists(prefetched)) return prefetched;
         var path = PathFor(videoId);
         if (File.Exists(path)) return path;
         storage.EnsureRoom();
@@ -65,10 +67,12 @@ public sealed class PreviewService(YtDlp ytDlp, Storage.StorageGuard storage, IO
         }
     }
 
-    /// <summary>Place occupée par les extraits en cache.</summary>
-    public long CachedBytes()
+    /// <summary>Place occupée par tous les extraits : ceux écoutés à la demande et ceux pré-téléchargés pour la découverte.</summary>
+    public long TotalBytes() => Size(Dir) + Size(options.Value.DiscoveryPreviewPath);
+
+    private static long Size(string path)
     {
-        var dir = new DirectoryInfo(Dir);
+        var dir = new DirectoryInfo(path);
         return dir.Exists ? dir.EnumerateFiles("*.mp3").Sum(f => f.Length) : 0;
     }
 
@@ -80,7 +84,8 @@ public sealed class PreviewService(YtDlp ytDlp, Storage.StorageGuard storage, IO
     {
         var files = new DirectoryInfo(Dir).EnumerateFiles("*.mp3").OrderByDescending(f => f.LastWriteTimeUtc).ToList();
         var limit = DateTime.UtcNow - MaxAge;
-        var quota = storage.PreviewQuotaBytes;
+        // Les extraits de la découverte comptent dans la place allouée : ceux écoutés à la demande partent d'abord.
+        var quota = storage.PreviewQuotaBytes - Size(options.Value.DiscoveryPreviewPath);
         long kept = 0;
         foreach (var file in files.Where((f, i) => i >= MaxCached || f.LastWriteTimeUtc < limit || (kept += f.Length) > quota))
         {

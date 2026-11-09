@@ -20,8 +20,10 @@ public static class JobLanes
     public const string Library = "library";
     /// <summary>Synchronisation des abonnements YouTube (lecture des playlists et chaînes) : une à la fois.</summary>
     public const string Sync = "sync";
+    /// <summary>Actualisation de la découverte par artiste (longue : recherches YouTube et extraits) : une à la fois.</summary>
+    public const string Discovery = "discovery";
 
-    public static readonly IReadOnlyList<string> All = [Download, AcoustId, Metadata, Library, Sync];
+    public static readonly IReadOnlyList<string> All = [Download, AcoustId, Metadata, Library, Sync, Discovery];
 }
 
 /// <summary>Type de tâche déclaré : nom, file, priorité par défaut, nombre de tentatives.</summary>
@@ -39,6 +41,7 @@ public static class JobKinds
     public static readonly JobKind SearchReindex = new("search.reindex", JobLanes.Library, MaxAttempts: 3);
     public static readonly JobKind TranscodePurge = new("transcode.purge", JobLanes.Library);
     public static readonly JobKind SubscriptionSync = new("youtube.sync", JobLanes.Sync);
+    public static readonly JobKind DiscoveryRefresh = new("discovery.refresh", JobLanes.Discovery);
 }
 
 /// <summary>Types de suites (création depuis l'admin, filtres).</summary>
@@ -50,6 +53,7 @@ public static class JobSuiteKinds
     public const string SearchReindex = "search.reindex";
     public const string TranscodePurge = "transcode.purge";
     public const string SubscriptionSync = "youtube.sync";
+    public const string DiscoveryRefresh = "discovery.refresh";
 }
 
 public interface IJobHandler

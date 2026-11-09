@@ -112,6 +112,13 @@ namespace SonNuage.Server.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<long?>("MusicBrainzCheckedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("MusicBrainzId")
+                        .HasMaxLength(36)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(512)
@@ -127,6 +134,8 @@ namespace SonNuage.Server.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("MusicBrainzId");
 
                     b.HasIndex("NormalizedName")
                         .IsUnique();
@@ -190,6 +199,105 @@ namespace SonNuage.Server.Data.Migrations
                     b.HasIndex("UserId", "ReceivedAt");
 
                     b.ToTable("CrashReports");
+                });
+
+            modelBuilder.Entity("SonNuage.Server.Data.DiscoveryArtist", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("BecauseOf")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MusicBrainzId")
+                        .IsRequired()
+                        .HasMaxLength(36)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("Score")
+                        .HasColumnType("REAL");
+
+                    b.Property<long?>("TracksFetchedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("UpdatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MusicBrainzId")
+                        .IsUnique();
+
+                    b.HasIndex("Score");
+
+                    b.ToTable("DiscoveryArtists");
+                });
+
+            modelBuilder.Entity("SonNuage.Server.Data.DiscoveryTrack", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("ArtistId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Channel")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<double?>("DurationSeconds")
+                        .HasColumnType("REAL");
+
+                    b.Property<int?>("MatchScore")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long?>("MatchedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Rank")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("RecordingMbid")
+                        .HasMaxLength(36)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ReleaseName")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("VideoId")
+                        .HasMaxLength(11)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("VideoTitle")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ArtistId");
+
+                    b.HasIndex("VideoId");
+
+                    b.ToTable("DiscoveryTracks");
                 });
 
             modelBuilder.Entity("SonNuage.Server.Data.DownloadRequest", b =>
@@ -878,6 +986,17 @@ namespace SonNuage.Server.Data.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SonNuage.Server.Data.DiscoveryTrack", b =>
+                {
+                    b.HasOne("SonNuage.Server.Data.DiscoveryArtist", "Artist")
+                        .WithMany("Tracks")
+                        .HasForeignKey("ArtistId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Artist");
+                });
+
             modelBuilder.Entity("SonNuage.Server.Data.DownloadRequest", b =>
                 {
                     b.HasOne("SonNuage.Server.Data.User", "User")
@@ -1055,6 +1174,11 @@ namespace SonNuage.Server.Data.Migrations
                 {
                     b.Navigation("Albums");
 
+                    b.Navigation("Tracks");
+                });
+
+            modelBuilder.Entity("SonNuage.Server.Data.DiscoveryArtist", b =>
+                {
                     b.Navigation("Tracks");
                 });
 
