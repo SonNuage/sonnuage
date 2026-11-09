@@ -14,6 +14,24 @@ public sealed class RadioCatalogTests
 
     private static bool Plays(string station, TrackProfile p) => Station(station).Score(p) >= Station(station).Threshold;
 
+    // Valeurs mesurées par Essentia (emoMusic) : l'éveil et la valence restent entre 0,35 et 0,75 environ.
+    [Theory]
+    [InlineData(0.71, 0.85, 1.0)]
+    [InlineData(0.34, 0.0, 0.1)]
+    [InlineData(0.55, 0.45, 0.55)]
+    [InlineData(0.1, 0.0, 0.0)]
+    [InlineData(0.95, 1.0, 1.0)]
+    public void Measured_energy_and_valence_are_stretched_to_the_whole_scale(double measured, double min, double max)
+    {
+        var feel = AudioFeel.FromAnalysis(Energy: measured, Valence: measured);
+        Assert.InRange(feel.Energy!.Value, min, max);
+        Assert.InRange(feel.Valence!.Value, min, max);
+    }
+
+    [Fact]
+    public void A_measured_dark_and_tense_song_reaches_halloween() =>
+        Assert.True(Plays("halloween", Track("Song", feel: AudioFeel.FromAnalysis(Valence: 0.33, Aggressive: 0.9, Energy: 0.72))));
+
     [Theory]
     [InlineData(10, 31, true)]
     [InlineData(11, 2, true)]

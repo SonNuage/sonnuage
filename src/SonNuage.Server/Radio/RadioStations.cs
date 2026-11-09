@@ -135,7 +135,7 @@ public sealed class RadioStations(IMemoryCache cache, IWeatherSource weather, Ti
         var feels = await db.AudioFeatures.AsNoTracking().Where(f => f.Error == null)
             .Select(f => new
             {
-                f.TrackId, Feel = new AudioFeel(f.Bpm, f.Danceability, f.Energy, f.Valence, f.Happy, f.Sad, f.Relaxed, f.Aggressive, f.Party,
+                f.TrackId, Feel = AudioFeel.FromAnalysis(f.Bpm, f.Danceability, f.Energy, f.Valence, f.Happy, f.Sad, f.Relaxed, f.Aggressive, f.Party,
                     f.Acoustic, f.Electronic, f.Instrumental),
             })
             .ToDictionaryAsync(f => f.TrackId, f => f.Feel, ct);

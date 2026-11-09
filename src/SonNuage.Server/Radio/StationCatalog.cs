@@ -9,7 +9,24 @@ namespace SonNuage.Server.Radio;
 public sealed record AudioFeel(
     double? Bpm = null, double? Danceability = null, double? Energy = null, double? Valence = null, double? Happy = null,
     double? Sad = null, double? Relaxed = null, double? Aggressive = null, double? Party = null, double? Acoustic = null,
-    double? Electronic = null, double? Instrumental = null);
+    double? Electronic = null, double? Instrumental = null)
+{
+    /// <summary>Bornes réelles de l'éveil et de la valence mesurés (emoMusic), ramenées à 0..1.</summary>
+    private const double MeasuredLow = 0.35, MeasuredHigh = 0.75;
+
+    /// <summary>
+    /// Depuis l'analyse audio : l'éveil (<see cref="Energy"/>) et la valence d'emoMusic ne couvrent qu'environ 0,35 à
+    /// 0,75 ; on les étire sur toute l'échelle pour qu'ils pèsent autant que les autres probabilités.
+    /// </summary>
+    public static AudioFeel FromAnalysis(
+        double? Bpm = null, double? Danceability = null, double? Energy = null, double? Valence = null, double? Happy = null,
+        double? Sad = null, double? Relaxed = null, double? Aggressive = null, double? Party = null, double? Acoustic = null,
+        double? Electronic = null, double? Instrumental = null) =>
+        new(Bpm, Danceability, Stretch(Energy), Stretch(Valence), Happy, Sad, Relaxed, Aggressive, Party, Acoustic, Electronic, Instrumental);
+
+    private static double? Stretch(double? v) =>
+        v is { } x ? Math.Clamp((x - MeasuredLow) / (MeasuredHigh - MeasuredLow), 0, 1) : null;
+}
 
 /// <summary>
 /// Morceau vu par les radios. <see cref="Text"/> : titre et album en minuscules sans accents, entourés d'espaces ;
