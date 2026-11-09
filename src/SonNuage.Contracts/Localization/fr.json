@@ -199,7 +199,8 @@
       "alreadyKnown": "Cette vidéo est déjà dans la bibliothèque ou dans la file d'import.",
       "duplicate": "Cette vidéo est déjà demandée.",
       "notPending": "Cette demande a déjà été traitée.",
-      "badQuota": "Quota : entre 1 et {max} demandes par jour."
+      "badQuota": "Quota : entre 1 et {max} demandes par jour.",
+      "matchQuery": "Indiquez l'artiste et le titre (200 et 300 caractères au plus)."
     },
     "preview": {
       "noFfmpeg": "ffmpeg manque sur le serveur : impossible de préparer un extrait.",

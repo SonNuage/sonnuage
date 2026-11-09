@@ -17,6 +17,7 @@ public static class DownloadRequestEndpoints
 {
     private const int DefaultPage = 50;
     private const int MaxPage = 200;
+    private const int MatchResults = 8;
 
     public static void MapDownloadRequestEndpoints(this IEndpointRouteBuilder app)
     {
@@ -28,6 +29,32 @@ public static class DownloadRequestEndpoints
             if (YoutubeSyncService.NormalizeUrl(q) is { } url) return await YoutubeEndpoints.ListingAsync(ytDlp, db, url, MaxPage, ct);
             return await YoutubeEndpoints.Run(async () =>
                 await YoutubeEndpoints.WithStatusAsync(db, await ytDlp.SearchAsync(q.Trim(), music == true, 20, ct), q, ct));
+        });
+
+        mine.MapGet("/match", async (string? artist, string? title, double? duration, YtDlp ytDlp, MusicBrainzClient musicBrainz,
+            SonNuageDbContext db, ILoggerFactory logs, CancellationToken ct) =>
+        {
+            artist = artist?.Trim();
+            title = title?.Trim();
+            if (string.IsNullOrEmpty(artist) || string.IsNullOrEmpty(title) || artist.Length > 200 || title.Length > 300)
+                return Results.Problem(Tx.Key("errors.requests.matchQuery"), statusCode: 400);
+            return await YoutubeEndpoints.Run(async () =>
+            {
+                // YouTube Music (titres propres, chaînes « - Topic ») et YouTube (clips officiels), en parallèle.
+                var text = $"{artist} {title}";
+                var searches = await Task.WhenAll(ytDlp.SearchAsync(text, true, MatchResults, ct), ytDlp.SearchAsync(text, false, MatchResults, ct));
+                var fromMusicBrainz = false;
+                if (duration is not (> 0 and < 86_400))
+                {
+                    duration = await ExpectedDurationAsync(musicBrainz, artist, title, logs.CreateLogger(nameof(DownloadRequestEndpoints)), ct);
+                    fromMusicBrainz = duration is not null;
+                }
+                var query = new MatchQuery(artist, title, duration);
+                var ranked = YoutubeMatcher.Rank(query, searches.SelectMany(s => s.Entries)).Take(MatchResults).ToList();
+                var listing = await YoutubeEndpoints.WithStatusAsync(db, new YtListing("search", text, null, ranked.Select(r => r.Entry).ToList()), text, ct);
+                return new MatchResultDto(artist, title, duration, fromMusicBrainz, YoutubeMatcher.IsSure(ranked),
+                    listing.Entries.Zip(ranked, (video, r) => new MatchCandidateDto(video, r.Score)).ToList());
+            });
         });
 
         mine.MapPost("", async (CreateDownloadRequest req, HttpContext http, SonNuageDbContext db, YoutubeImporter importer, TimeProvider time, CancellationToken ct) =>
@@ -222,5 +249,20 @@ public static class DownloadRequestEndpoints
     {
         s = s?.Trim();
         return string.IsNullOrEmpty(s) ? null : s.Length <= max ? s : s[..max];
+    }
+
+    /// <summary>Durée de l'enregistrement MusicBrainz le mieux noté, si MusicBrainz répond (sinon, pas de durée attendue).</summary>
+    private static async Task<double?> ExpectedDurationAsync(MusicBrainzClient musicBrainz, string artist, string title, ILogger logger, CancellationToken ct)
+    {
+        try
+        {
+            var recordings = await musicBrainz.SearchRecordingsAsync(title, artist, ct);
+            return recordings.Where(r => r.SearchScore >= 90 && r.LengthSeconds is > 0).Select(r => r.LengthSeconds).FirstOrDefault();
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+        {
+            logger.LogInformation("MusicBrainz injoignable pour la durée de {Artist} - {Title} : {Message}", artist, title, ex.Message);
+            return null;
+        }
     }
 }

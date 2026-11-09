@@ -154,4 +154,17 @@ public sealed class DownloadRequestTests(SonNuageFactory factory) : IClassFixtur
         var byTitle = await admin.GetFromJsonAsync<PagedResult<DownloadRequestDto>>("/api/admin/requests?q=filtrer", Ct);
         Assert.Equal([kept.Id], byTitle!.Items.Select(r => r.Id));
     }
+
+    [Fact]
+    public async Task Matching_by_artist_and_title_is_for_contributors_and_needs_both()
+    {
+        var (user, _) = await AccountAsync("match-regular", Roles.User);
+        var (contributor, _) = await AccountAsync("match-contrib", Roles.Contributor);
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await user.GetAsync("/api/requests/match?artist=Daft%20Punk&title=Get%20Lucky", Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await contributor.GetAsync("/api/requests/match?artist=Daft%20Punk&title=", Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await contributor.GetAsync("/api/requests/match?artist=&title=Get%20Lucky", Ct)).StatusCode);
+        // Sans yt-dlp (tests) : la recherche échoue proprement, sans appeler MusicBrainz pour rien.
+        Assert.Equal(HttpStatusCode.BadGateway, (await contributor.GetAsync("/api/requests/match?artist=Daft%20Punk&title=Get%20Lucky&duration=248", Ct)).StatusCode);
+    }
 }

@@ -48,3 +48,14 @@ public sealed record DownloadRequestDto(
 
 /// <summary>Limit : null pour un administrateur (pas de quota).</summary>
 public sealed record RequestQuotaDto(int Used, int? Limit, bool AutoApproved);
+
+/// <summary>Un résultat YouTube noté sur 100 pour « artiste + titre ».</summary>
+public sealed record MatchCandidateDto(YoutubeVideoDto Video, int Score);
+
+/// <summary>
+/// Recherche par correspondance. <paramref name="Sure"/> : le premier candidat est assez sûr pour être retenu
+/// d'office ; sinon, l'utilisateur choisit parmi les candidats. La durée attendue vient de la requête ou de
+/// MusicBrainz (<paramref name="DurationFromMusicBrainz"/>).
+/// </summary>
+public sealed record MatchResultDto(string Artist, string Title, double? DurationSeconds, bool DurationFromMusicBrainz, bool Sure,
+    IReadOnlyList<MatchCandidateDto> Candidates);
