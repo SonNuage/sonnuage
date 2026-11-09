@@ -190,7 +190,7 @@ public sealed class DiscoveryService(
                 var music = await ytDlp.SearchAsync(text, true, SearchResults, ct);
                 var videos = await ytDlp.SearchAsync(text, false, SearchResults, ct);
                 var best = YoutubeMatcher.Rank(new MatchQuery(track.Artist.Name, track.Title, track.DurationSeconds),
-                    music.Entries.Concat(videos.Entries)).FirstOrDefault();
+                    music.Entries.Concat(videos.Entries), options.Value.MatchOfficialMinScore).FirstOrDefault();
                 if (best is { Score: >= MinMatchScore })
                 {
                     track.VideoId = best.Entry.Id;

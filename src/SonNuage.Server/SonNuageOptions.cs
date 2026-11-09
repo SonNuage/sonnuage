@@ -48,6 +48,11 @@ public sealed class SonNuageOptions
     public string ListenBrainzUrl { get; set; } = "https://api.listenbrainz.org";
     public string ListenBrainzLabsUrl { get; set; } = "https://labs.api.listenbrainz.org";
     public string DeezerUrl { get; set; } = "https://api.deezer.com";
+    /// <summary>
+    /// Recherche par correspondance (demandes, découverte) : une vidéo de la chaîne officielle de l'artiste qui atteint
+    /// cette note (sur 100) passe devant toutes les autres. 101 pour ne plus favoriser la chaîne officielle.
+    /// </summary>
+    public int MatchOfficialMinScore { get; set; } = Youtube.YoutubeMatcher.DefaultOfficialMinScore;
     /// <summary>Jeton utilisateur ListenBrainz (facultatif) : certains points d'accès l'exigent, sinon Deezer prend le relais.</summary>
     public string? ListenBrainzToken { get; set; }
 

@@ -32,7 +32,7 @@ public static class DownloadRequestEndpoints
         });
 
         mine.MapGet("/match", async (string? artist, string? title, double? duration, YtDlp ytDlp, MusicBrainzClient musicBrainz,
-            SonNuageDbContext db, ILoggerFactory logs, CancellationToken ct) =>
+            SonNuageDbContext db, ILoggerFactory logs, Microsoft.Extensions.Options.IOptions<SonNuageOptions> options, CancellationToken ct) =>
         {
             artist = artist?.Trim();
             title = title?.Trim();
@@ -50,7 +50,7 @@ public static class DownloadRequestEndpoints
                     fromMusicBrainz = duration is not null;
                 }
                 var query = new MatchQuery(artist, title, duration);
-                var ranked = YoutubeMatcher.Rank(query, searches.SelectMany(s => s.Entries)).Take(MatchResults).ToList();
+                var ranked = YoutubeMatcher.Rank(query, searches.SelectMany(s => s.Entries), options.Value.MatchOfficialMinScore).Take(MatchResults).ToList();
                 var listing = await YoutubeEndpoints.WithStatusAsync(db, new YtListing("search", text, null, ranked.Select(r => r.Entry).ToList()), text, ct);
                 return new MatchResultDto(artist, title, duration, fromMusicBrainz, YoutubeMatcher.IsSure(ranked),
                     listing.Entries.Zip(ranked, (video, r) => new MatchCandidateDto(video, r.Score)).ToList());
@@ -261,7 +261,7 @@ public static class DownloadRequestEndpoints
         try
         {
             var recordings = await musicBrainz.SearchRecordingsAsync(title, artist, ct);
-            return recordings.Where(r => r.SearchScore >= 90 && r.LengthSeconds is > 0).Select(r => r.LengthSeconds).FirstOrDefault();
+            return YoutubeMatcher.TypicalDuration(recordings.Where(r => r.SearchScore >= 90 && r.LengthSeconds is > 0).Select(r => r.LengthSeconds!.Value));
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
         {

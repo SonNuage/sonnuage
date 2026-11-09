@@ -32,7 +32,11 @@ public sealed class YtDlpException(YtDlpFailure kind, string message) : Exceptio
 
 /// <summary>Entrée d'une recherche, d'une playlist ou d'une chaîne (sans téléchargement).</summary>
 /// <param name="Album">Titre de la playlist d'origine quand une chaîne est lue album par album.</param>
-public sealed record YtEntry(string Id, string Title, string? Channel, double? DurationSeconds, string? Thumbnail, string? Album = null);
+public sealed record YtEntry(string Id, string Title, string? Channel, double? DurationSeconds, string? Thumbnail, string? Album = null)
+{
+    /// <summary>Chaîne certifiée par YouTube (badge), quand la recherche le dit.</summary>
+    public bool ChannelVerified { get; init; }
+}
 
 public sealed record YtListing(string Kind, string Title, string? Channel, IReadOnlyList<YtEntry> Entries);
 
@@ -409,7 +413,10 @@ public sealed partial class YtDlp(YoutubeTools tools, FfmpegLocator ffmpeg, Yout
         Str(e, "channel") ?? Str(e, "uploader") ?? Str(e, "artist"),
         e["duration"]?.GetValueKind() is JsonValueKind.Number ? e["duration"]!.GetValue<double>() : null,
         // Les résultats YouTube Music « à plat » n'ont pas de miniature : celle de la vidéo existe toujours.
-        BestThumbnail(e) ?? $"https://i.ytimg.com/vi/{Str(e, "id")}/hqdefault.jpg");
+        BestThumbnail(e) ?? $"https://i.ytimg.com/vi/{Str(e, "id")}/hqdefault.jpg")
+    {
+        ChannelVerified = e["channel_is_verified"]?.GetValueKind() == JsonValueKind.True,
+    };
 
     internal static string? BestThumbnail(JsonObject e)
     {
