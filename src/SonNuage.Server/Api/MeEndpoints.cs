@@ -55,6 +55,69 @@ public static class MeEndpoints
             return Results.NoContent();
         });
 
+        g.MapGet("/favorites/albums", async (HttpContext http, SonNuageDbContext db, CancellationToken ct) =>
+        {
+            var userId = http.User.UserId();
+            return await db.FavoriteAlbums.Where(f => f.UserId == userId).OrderByDescending(f => f.CreatedAt)
+                .Select(f => f.Album).Select(Projections.Album).ToListAsync(ct);
+        });
+
+        g.MapPut("/favorites/albums/{albumId:guid}", async (Guid albumId, HttpContext http, SonNuageDbContext db, CancellationToken ct) =>
+        {
+            var userId = http.User.UserId();
+            if (!await db.Albums.AnyAsync(a => a.Id == albumId, ct)) return Results.NotFound();
+            if (!await db.FavoriteAlbums.AnyAsync(f => f.UserId == userId && f.AlbumId == albumId, ct))
+            {
+                db.FavoriteAlbums.Add(new FavoriteAlbum { UserId = userId, AlbumId = albumId });
+                await db.SaveChangesAsync(ct);
+            }
+            return Results.NoContent();
+        });
+
+        g.MapDelete("/favorites/albums/{albumId:guid}", async (Guid albumId, HttpContext http, SonNuageDbContext db, CancellationToken ct) =>
+        {
+            var userId = http.User.UserId();
+            await db.FavoriteAlbums.Where(f => f.UserId == userId && f.AlbumId == albumId).ExecuteDeleteAsync(ct);
+            return Results.NoContent();
+        });
+
+        g.MapGet("/favorites/artists", async (HttpContext http, SonNuageDbContext db, CancellationToken ct) =>
+        {
+            var userId = http.User.UserId();
+            return await db.FavoriteArtists.Where(f => f.UserId == userId).OrderByDescending(f => f.CreatedAt)
+                .Select(f => f.Artist).Select(Projections.Artist).ToListAsync(ct);
+        });
+
+        g.MapPut("/favorites/artists/{artistId:guid}", async (Guid artistId, HttpContext http, SonNuageDbContext db, CancellationToken ct) =>
+        {
+            var userId = http.User.UserId();
+            if (!await db.Artists.AnyAsync(a => a.Id == artistId, ct)) return Results.NotFound();
+            if (!await db.FavoriteArtists.AnyAsync(f => f.UserId == userId && f.ArtistId == artistId, ct))
+            {
+                db.FavoriteArtists.Add(new FavoriteArtist { UserId = userId, ArtistId = artistId });
+                await db.SaveChangesAsync(ct);
+            }
+            return Results.NoContent();
+        });
+
+        g.MapDelete("/favorites/artists/{artistId:guid}", async (Guid artistId, HttpContext http, SonNuageDbContext db, CancellationToken ct) =>
+        {
+            var userId = http.User.UserId();
+            await db.FavoriteArtists.Where(f => f.UserId == userId && f.ArtistId == artistId).ExecuteDeleteAsync(ct);
+            return Results.NoContent();
+        });
+
+        // Note d'un titre, d'un album ou d'un artiste (les mêmes que dans les applis Subsonic).
+        g.MapPut("/ratings/{itemId:guid}", async (Guid itemId, RatingRequest req, HttpContext http, SonNuageDbContext db, TimeProvider time, CancellationToken ct) =>
+        {
+            if (req.Value is < 0 or > UserRating.Max) return Results.BadRequest();
+            var exists = await db.Tracks.AnyAsync(t => t.Id == itemId, ct) || await db.Albums.AnyAsync(a => a.Id == itemId, ct)
+                || await db.Artists.AnyAsync(a => a.Id == itemId, ct);
+            if (!exists) return Results.NotFound();
+            await UserRatings.SetAsync(db, http.User.UserId(), itemId, req.Value, time.GetUtcNow(), ct);
+            return Results.NoContent();
+        });
+
         g.MapPost("/plays", async (PlayEventRequest req, HttpContext http, SonNuageDbContext db, CancellationToken ct) =>
         {
             if (!await db.Tracks.AnyAsync(t => t.Id == req.TrackId, ct)) return Results.NotFound();

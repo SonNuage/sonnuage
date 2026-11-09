@@ -27,11 +27,17 @@ public sealed record TrackDto(
     bool IsLossless,
     int? BitrateKbps,
     bool HasCover,
-    bool IsFavorite);
+    bool IsFavorite,
+    int? Rating = null);
 
-public sealed record AlbumDetailDto(AlbumDto Album, IReadOnlyList<TrackDto> Tracks);
+/// <param name="IsFavorite">Album dans les favoris du compte (absent d'un serveur antérieur à 1.20).</param>
+/// <param name="Rating">Note du compte, de 1 à 5 ; null sans note.</param>
+public sealed record AlbumDetailDto(AlbumDto Album, IReadOnlyList<TrackDto> Tracks, bool IsFavorite = false, int? Rating = null);
 
-public sealed record ArtistDetailDto(ArtistDto Artist, IReadOnlyList<AlbumDto> Albums);
+public sealed record ArtistDetailDto(ArtistDto Artist, IReadOnlyList<AlbumDto> Albums, bool IsFavorite = false, int? Rating = null);
+
+/// <summary>Note d'un titre, d'un album ou d'un artiste : de 1 à 5, 0 la retire.</summary>
+public sealed record RatingRequest(int Value);
 
 public sealed record SearchResultDto(
     IReadOnlyList<ArtistDto> Artists,

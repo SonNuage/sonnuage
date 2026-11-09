@@ -21,7 +21,8 @@ public static class Projections
         t.IsLossless,
         t.BitrateKbps,
         t.Album.CoverPath != null || t.Album.HasEmbeddedCover,
-        db.Favorites.Any(f => f.UserId == userId && f.TrackId == t.Id));
+        db.Favorites.Any(f => f.UserId == userId && f.TrackId == t.Id),
+        db.Ratings.Where(r => r.UserId == userId && r.ItemId == t.Id).Select(r => (int?)r.Value).FirstOrDefault());
 
     public static readonly Expression<Func<Album, AlbumDto>> Album = a => new AlbumDto(
         a.Id,

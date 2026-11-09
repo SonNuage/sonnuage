@@ -48,13 +48,7 @@ public static partial class SubsonicEndpoints
                 : null;
             if (id is not { } itemId) throw SubsonicException.NotFound("Item");
 
-            var uid = r.UserId;
-            await r.Db.Ratings.Where(x => x.UserId == uid && x.ItemId == itemId).ExecuteDeleteAsync(r.Ct);
-            if (rating > 0)
-            {
-                r.Db.Ratings.Add(new UserRating { UserId = uid, ItemId = itemId, Value = rating, UpdatedAt = r.Service<TimeProvider>().GetUtcNow() });
-                await r.Db.SaveChangesAsync(r.Ct);
-            }
+            await UserRatings.SetAsync(r.Db, r.UserId, itemId, rating, r.Service<TimeProvider>().GetUtcNow(), r.Ct);
             return r.Ok();
         });
 

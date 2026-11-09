@@ -58,13 +58,15 @@ public static class LibraryEndpoints
             return await PageAsync(query.OrderBy(a => a.SortName).ThenBy(a => a.Id).Select(Projections.Artist), offset, limit, ct);
         });
 
-        g.MapGet("/artists/{id:guid}", async (Guid id, SonNuageDbContext db, CancellationToken ct) =>
+        g.MapGet("/artists/{id:guid}", async (Guid id, HttpContext http, SonNuageDbContext db, CancellationToken ct) =>
         {
+            var userId = http.User.UserId();
             var artist = await db.Artists.Where(a => a.Id == id).Select(Projections.Artist).FirstOrDefaultAsync(ct);
             if (artist is null) return Results.NotFound();
             var albums = await db.Albums.Where(a => a.ArtistId == id).OrderBy(a => a.Year).ThenBy(a => a.Title)
                 .Select(Projections.Album).ToListAsync(ct);
-            return Results.Ok(new ArtistDetailDto(artist, albums));
+            var favorite = await db.FavoriteArtists.AnyAsync(f => f.UserId == userId && f.ArtistId == id, ct);
+            return Results.Ok(new ArtistDetailDto(artist, albums, favorite, await UserRatings.OfAsync(db, userId, id, ct)));
         });
 
         g.MapGet("/artists/{id:guid}/tracks", async (Guid id, HttpContext http, SonNuageDbContext db, CancellationToken ct) =>
@@ -100,10 +102,12 @@ public static class LibraryEndpoints
         {
             var album = await db.Albums.Where(a => a.Id == id).Select(Projections.Album).FirstOrDefaultAsync(ct);
             if (album is null) return Results.NotFound();
+            var userId = http.User.UserId();
             var tracks = await db.Tracks.Where(t => t.AlbumId == id)
                 .OrderBy(t => t.DiscNumber).ThenBy(t => t.TrackNumber).ThenBy(t => t.Title)
-                .Select(Projections.Track(db, http.User.UserId())).ToListAsync(ct);
-            return Results.Ok(new AlbumDetailDto(album, tracks));
+                .Select(Projections.Track(db, userId)).ToListAsync(ct);
+            var favorite = await db.FavoriteAlbums.AnyAsync(f => f.UserId == userId && f.AlbumId == id, ct);
+            return Results.Ok(new AlbumDetailDto(album, tracks, favorite, await UserRatings.OfAsync(db, userId, id, ct)));
         });
 
         g.MapGet("/tracks/{id:guid}", async (Guid id, HttpContext http, SonNuageDbContext db, CancellationToken ct) =>
