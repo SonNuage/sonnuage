@@ -97,4 +97,9 @@ window.sonnuage = {
   languages: () => (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language]).join(','),
   setLanguage: (code) => { document.documentElement.lang = code; },
   setTheme: applyTheme,
+  // Paroles : la ligne en cours au milieu de la liste, sans faire défiler le reste de la page.
+  scrollLyric: (list, index) => {
+    const line = list && list.children[index];
+    if (line) list.scrollTo({ top: line.offsetTop - (list.clientHeight - line.offsetHeight) / 2, behavior: 'smooth' });
+  },
 };

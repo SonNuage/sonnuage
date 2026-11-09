@@ -33,6 +33,23 @@ public sealed class UiState(ApiClient api, IPlayer player, Localizer L)
         Changed?.Invoke();
     }
 
+    /// <summary>Le plein écran montre les paroles à la place de la pochette.</summary>
+    public bool LyricsShown { get; private set; }
+
+    public void SetLyricsShown(bool shown)
+    {
+        LyricsShown = shown;
+        Changed?.Invoke();
+    }
+
+    /// <summary>Bouton « Paroles » de la barre du lecteur : le plein écran s'ouvre sur les paroles.</summary>
+    public void OpenLyrics()
+    {
+        LyricsShown = true;
+        NowPlayingOpen = true;
+        Changed?.Invoke();
+    }
+
     public async Task RefreshPlaylistsAsync()
     {
         try

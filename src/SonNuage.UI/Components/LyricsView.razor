@@ -1,0 +1,121 @@
+@implements IDisposable
+@inject ApiClient Api
+@inject IPlayer Player
+@inject IJSRuntime Js
+
+@* Paroles du morceau en cours. Synchronisées : la ligne chantée est mise en avant et reste au milieu, un appui y saute. *@
+<div class="lyrics" @ref="_list">
+    <Loader Loading="_loading">
+        @if (_lyrics is null)
+        {
+            <p class="lyrics-empty">@L["player.lyrics.none"]</p>
+        }
+        else if (_lyrics.Synced)
+        {
+            _shown = LyricsTiming.CurrentIndex(_lyrics.Lines, _clock.Position);
+            @for (var i = 0; i < _lyrics.Lines.Count; i++)
+            {
+                var line = _lyrics.Lines[i];
+                <button class="lyric @(i == _shown ? "current" : i < _shown ? "past" : "")" @onclick="() => SeekAsync(line)">
+                    @(line.Text.Length > 0 ? line.Text : "♪")
+                </button>
+            }
+        }
+        else
+        {
+            @foreach (var line in _lyrics.Lines)
+            {
+                <p class="lyric @(line.Text.Length == 0 ? "gap" : "")">@line.Text</p>
+            }
+        }
+        @if (_lyrics?.Source is { } source)
+        {
+            <p class="lyrics-source">@L[source == "local" ? "player.lyrics.sourceLocal" : "player.lyrics.sourceLrclib"]</p>
+        }
+    </Loader>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public TrackDto Track { get; set; } = null!;
+
+    private readonly LyricsClock _clock = new(TimeProvider.System);
+    private ElementReference _list;
+    private Guid? _loadedFor;
+    private LyricsDto? _lyrics;
+    private bool _loading;
+    private int _shown = -1;
+    private int _scrolledTo = -2;
+    private Timer? _timer;
+
+    protected override void OnInitialized()
+    {
+        _clock.Observe(Player.State);
+        Player.StateChanged += OnPlayerChanged;
+    }
+
+    // Le lecteur donne sa position une fois par seconde : l'horloge avance entre deux, sans minuterie rapide.
+    private void OnPlayerChanged()
+    {
+        _clock.Observe(Player.State);
+        InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loadedFor == Track.Id) return;
+        var id = Track.Id;
+        _loadedFor = id;
+        _lyrics = null;
+        _loading = true;
+        _scrolledTo = -2;
+        LyricsDto? lyrics = null;
+        try
+        {
+            lyrics = await Api.LyricsAsync(id);
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            // Serveur injoignable : même message que sans paroles.
+        }
+        if (_loadedFor != id) return;
+        _lyrics = lyrics;
+        _loading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_loading || _lyrics is not { Synced: true } lyrics) return;
+        ScheduleNextLine(lyrics);
+        if (_shown == _scrolledTo) return;
+        _scrolledTo = _shown;
+        try
+        {
+            await Js.InvokeVoidAsync("sonnuage.scrollLyric", _list, Math.Max(0, _shown));
+        }
+        catch (JSException)
+        {
+            // Hôte sans ui.js : les paroles défilent à la main.
+        }
+    }
+
+    // Un seul réveil, au début de la ligne suivante.
+    private void ScheduleNextLine(LyricsDto lyrics)
+    {
+        var wait = Player.State is { IsPlaying: true, IsBuffering: false } ? LyricsTiming.UntilNext(lyrics.Lines, _clock.Position) : null;
+        if (wait is not { } delay)
+        {
+            _timer?.Change(Timeout.Infinite, Timeout.Infinite);
+            return;
+        }
+        _timer ??= new Timer(_ => InvokeAsync(StateHasChanged));
+        _timer.Change(delay + TimeSpan.FromMilliseconds(20), Timeout.InfiniteTimeSpan);
+    }
+
+    private Task SeekAsync(LyricLineDto line) => line.StartSeconds is { } start ? Player.SeekAsync(start) : Task.CompletedTask;
+
+    public void Dispose()
+    {
+        Player.StateChanged -= OnPlayerChanged;
+        _timer?.Dispose();
+    }
+}

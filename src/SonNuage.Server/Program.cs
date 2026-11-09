@@ -80,6 +80,9 @@ builder.Services.AddSingleton<PreviewService>();
 builder.Services.AddSingleton<StorageGuard>();
 builder.Services.AddSingleton<SonNuage.Server.Discovery.ListenBrainzClient>();
 builder.Services.AddSingleton<SonNuage.Server.Discovery.DeezerClient>();
+builder.Services.AddHttpClient(SonNuage.Server.Lyrics.LrclibClient.HttpClientName, http => http.Timeout = TimeSpan.FromSeconds(15));
+builder.Services.AddSingleton<SonNuage.Server.Lyrics.LrclibClient>();
+builder.Services.AddSingleton<SonNuage.Server.Lyrics.LyricsService>();
 builder.Services.AddSingleton<SonNuage.Server.Discovery.DiscoverySettingsStore>();
 builder.Services.AddSingleton<SonNuage.Server.Discovery.DiscoveryService>();
 builder.Services.AddHostedService<SonNuage.Server.Discovery.DiscoveryScheduler>();
@@ -178,6 +181,7 @@ app.MapDiscoveryEndpoints();
 app.MapDownloadRequestEndpoints();
 app.MapStorageEndpoints();
 app.MapArtistDiscoveryEndpoints();
+app.MapLyricsEndpoints();
 SonNuage.Server.Subsonic.SubsonicEndpoints.MapSubsonicEndpoints(app);
 
 app.MapFallback("/api/{**path}", () => Results.NotFound());

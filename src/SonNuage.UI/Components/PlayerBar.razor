@@ -51,6 +51,7 @@
         </div>
 
         <div class="pb-right desktop-only">
+            <button class="icon-btn" title="@L["player.lyrics.show"]" @onclick="Ui.OpenLyrics"><Icon Name="lyrics" Size="20" /></button>
             <a class="icon-btn" href="queue" title="@L["nav.queue"]"><Icon Name="queue" Size="20" /></a>
             <button class="icon-btn" title="@L["player.mute"]" @onclick="ToggleMuteAsync">
                 <Icon Name="@(State.Volume == 0 ? "volume-off" : "volume")" Size="20" />
