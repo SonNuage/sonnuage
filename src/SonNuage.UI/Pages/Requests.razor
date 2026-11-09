@@ -212,7 +212,9 @@
         _sending = video.VideoId;
         await RunAsync(async () =>
         {
-            if (await Api.CreateRequestAsync(new CreateDownloadRequest(video.VideoId, video.Title, video.Channel, video.DurationSeconds, null)) is { } created)
+            // Résultats YouTube Music sans chaîne : en recherche par correspondance, l'artiste demandé la remplace.
+            var channel = video.Channel ?? (_byMatch && !string.IsNullOrWhiteSpace(_artist) ? _artist.Trim() : null);
+            if (await Api.CreateRequestAsync(new CreateDownloadRequest(video.VideoId, video.Title, channel, video.DurationSeconds, null)) is { } created)
             {
                 _asked.Add(video.VideoId);
                 _mine.Insert(0, created);

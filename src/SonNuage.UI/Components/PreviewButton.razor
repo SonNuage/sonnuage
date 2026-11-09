@@ -1,4 +1,5 @@
-@* Écoute d'un extrait de 30 s d'une vidéo YouTube avant de la demander. Un seul extrait à la fois (PreviewPlayer). *@
+@* Écoute d'un extrait de 30 s d'une vidéo YouTube avant de la demander. Un seul extrait à la fois (PreviewPlayer).
+   Overlay : bouton rond posé sur la miniature (la miniature entière est cliquable), avec barre de progression. *@
 @implements IDisposable
 @inject PreviewPlayer Preview
 @inject ApiClient Api
@@ -6,25 +7,53 @@
 @inject IJSRuntime JS
 
 @{ var state = Preview.StateOf(VideoId); }
-<button type="button" class="btn compact preview-btn @(state != PreviewState.Idle ? "on" : null)" aria-pressed="@(state != PreviewState.Idle ? "true" : "false")"
-        title="@L["requests.previewHint"]" @onclick="ToggleAsync">
-    @if (state == PreviewState.Loading)
+@if (Overlay)
+{
+    var label = state switch
     {
-        <Logo Size="16" Animated="true" /> @L["requests.previewLoading"]
-    }
-    else if (state == PreviewState.Playing)
-    {
-        <Icon Name="pause" Size="16" /> @L["requests.previewStop"]
-    }
-    else
-    {
-        <Icon Name="play" Size="16" /> @L["requests.preview"]
-    }
-</button>
+        PreviewState.Loading => L["requests.previewLoading"],
+        PreviewState.Playing => L["requests.previewStop"],
+        _ => L["requests.preview"],
+    };
+    <button type="button" class="preview-overlay @(state == PreviewState.Playing ? "on" : null) @(state == PreviewState.Loading ? "loading" : null)"
+            aria-pressed="@(state != PreviewState.Idle ? "true" : "false")" aria-label="@label" title="@L["requests.previewHint"]" @onclick="ToggleAsync">
+        <span class="po-btn">
+            @if (state == PreviewState.Loading)
+            {
+                <Logo Size="20" Animated="true" />
+            }
+            else
+            {
+                <Icon Name="@(state == PreviewState.Playing ? "pause" : "play")" Size="28" />
+            }
+        </span>
+        <span class="po-label">@label</span>
+    </button>
+}
+else
+{
+    <button type="button" class="btn compact preview-btn @(state != PreviewState.Idle ? "on" : null)" aria-pressed="@(state != PreviewState.Idle ? "true" : "false")"
+            title="@L["requests.previewHint"]" @onclick="ToggleAsync">
+        @if (state == PreviewState.Loading)
+        {
+            <Logo Size="16" Animated="true" /> @L["requests.previewLoading"]
+        }
+        else if (state == PreviewState.Playing)
+        {
+            <Icon Name="pause" Size="16" /> @L["requests.previewStop"]
+        }
+        else
+        {
+            <Icon Name="play" Size="16" /> @L["requests.preview"]
+        }
+    </button>
+}
 
 @code {
     [Parameter, EditorRequired] public string VideoId { get; set; } = "";
     [Parameter] public double? DurationSeconds { get; set; }
+    /// <summary>Bouton posé sur une miniature (position absolue, elle doit être en position relative).</summary>
+    [Parameter] public bool Overlay { get; set; }
 
     private JsPreviewAudio? _audio;
 

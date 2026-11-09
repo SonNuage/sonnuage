@@ -98,8 +98,45 @@ button { font: inherit; color: inherit; }
 .btn.compact { padding: .3rem .7rem; font-size: .85rem; }
 .preview-btn.on { border-color: var(--accent); color: var(--accent); }
 .request-mode { margin-bottom: .6rem; }
+.request-artist { display: flex; align-items: center; gap: .3rem; font-size: .9rem; color: var(--text); margin: .1rem 0; }
+.request-artist svg { color: var(--text-muted); flex: none; }
 .yt-thumb.placeholder { display: inline-flex; align-items: center; justify-content: center; background: var(--bg-hover); color: var(--text-muted); }
-.discover-artist h2 { margin-bottom: .2rem; }
+/* Découvrir : une rangée de cartes par artiste (défilement horizontal sur mobile, grille sur grand écran). */
+.discover-artist { margin: 1.6rem 0 0; }
+.discover-artist-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem .6rem; }
+.discover-artist-head h2 { margin: 0; font-size: 1.35rem; }
+.discover-because { margin: .25rem 0 .8rem; }
+.disc-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; max-width: 1100px; }
+.disc-card { display: flex; flex-direction: column; gap: .55rem; min-width: 0; background: var(--bg-elevated); border-radius: var(--radius); padding: .55rem .55rem .65rem; }
+.disc-card.known { opacity: .7; }
+.disc-thumb { position: relative; aspect-ratio: 16 / 9; border-radius: calc(var(--radius) - 2px); overflow: hidden; background: var(--bg-hover); }
+.disc-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.disc-placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--text-muted); }
+.disc-dur { position: absolute; right: .4rem; bottom: .4rem; background: rgba(0,0,0,.78); color: #fff; font-size: .72rem; font-weight: 600; padding: .1rem .35rem; border-radius: 4px; pointer-events: none; }
+.disc-badge { position: absolute; left: .4rem; top: .4rem; }
+.disc-body { display: flex; flex-direction: column; min-width: 0; padding: 0 .15rem; }
+.disc-title { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.disc-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.disc-actions { display: flex; align-items: center; gap: .4rem; margin-top: auto; }
+.disc-actions .btn { flex: 1; justify-content: center; }
+.disc-state { pointer-events: none; color: var(--text-muted); }
+@media (max-width: 640px) {
+  .disc-row { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: .75rem; margin: 0 -1rem; padding: 0 1rem .4rem; scrollbar-width: none; }
+  .disc-row::-webkit-scrollbar { display: none; }
+  .disc-card { flex: 0 0 78%; scroll-snap-align: start; }
+}
+/* Extrait posé sur la miniature : toute la miniature est cliquable, le bouton rond reste visible. */
+.preview-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border: 0; padding: 0; margin: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 45%, rgba(0,0,0,.55)); color: #fff; cursor: pointer; font: inherit; }
+.preview-overlay .po-btn { width: 54px; height: 54px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.62); color: #fff; box-shadow: 0 2px 12px rgba(0,0,0,.45); transition: transform .15s ease, background .15s ease; }
+.preview-overlay:hover .po-btn, .preview-overlay:focus-visible .po-btn { transform: scale(1.08); background: var(--accent); color: var(--on-accent); }
+.preview-overlay:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.preview-overlay.on .po-btn, .preview-overlay.loading .po-btn { background: var(--accent); color: var(--on-accent); }
+.preview-overlay .po-label { position: absolute; left: .5rem; bottom: .4rem; font-size: .75rem; font-weight: 700; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
+.preview-overlay.on::after { content: ""; position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: var(--accent); animation: po-progress 30s linear forwards; }
+@keyframes po-progress { to { width: 100%; } }
+@media (prefers-reduced-motion: reduce) { .preview-overlay .po-btn { transition: none; } }
 .match-summary { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin: .6rem 0 0; }
 .good-text { color: var(--ok-text); }
 .link { background: none; border: 0; padding: 0; color: var(--text-muted); cursor: pointer; text-decoration: underline; }

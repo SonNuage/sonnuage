@@ -6,9 +6,9 @@
             <img class="yt-thumb" src="@r.ThumbnailUrl" alt="" loading="lazy" />
             <span class="grow">
                 <span class="strong">@r.Title</span>
+                @if (!string.IsNullOrWhiteSpace(r.Channel)) { <span class="block request-artist"><Icon Name="artist" Size="14" /> @r.Channel</span> }
                 <span class="muted small block">
-                    @r.Channel@(r.DurationSeconds is { } dur ? $" · {Format.Duration(dur)}" : "")
-                    · @(ShowAuthor ? L["requests.byOn", ("name", r.Username), ("date", L.Date(r.CreatedAt))] : L.Date(r.CreatedAt))
+                    @(r.DurationSeconds is { } dur ? $"{Format.Duration(dur)} · " : "")@(ShowAuthor ? L["requests.byOn", ("name", r.Username), ("date", L.Date(r.CreatedAt))] : L.Date(r.CreatedAt))
                 </span>
                 @if (r.Note is { } note) { <span class="small block">« @note »</span> }
                 @if (r.Status == DownloadRequestStatus.Denied && r.DenyReason is { } reason) { <span class="small block danger-text">@L["requests.deniedBecause", ("reason", reason)]</span> }

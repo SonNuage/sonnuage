@@ -40,56 +40,66 @@
         }
         @foreach (var artist in _page.Artists)
         {
-            <section class="panel discover-artist" @key="artist.Id">
-                <h2>@artist.Name @if (artist.Comment is { } comment) { <span class="muted small">(@comment)</span> }</h2>
+            <section class="discover-artist" @key="artist.Id">
+                <header class="discover-artist-head">
+                    <h2>@artist.Name</h2>
+                    @if (artist.Comment is { } comment) { <span class="muted small">@comment</span> }
+                </header>
                 @if (artist.BecauseOf.Count > 0)
                 {
-                    <p class="muted small">@L["discover.because", ("artists", string.Join(", ", artist.BecauseOf))]</p>
+                    <p class="muted small discover-because">@L["discover.because", ("artists", string.Join(", ", artist.BecauseOf))]</p>
                 }
-                <ul class="yt-list requests">
+                <div class="disc-row">
                     @foreach (var t in artist.Tracks)
                     {
                         var known = t.ImportStatus is not null and not "Failed" and not "Skipped";
-                        <li @key="t.Id" class="@(known ? "known" : null)">
-                            @if (t.ThumbnailUrl is { } thumb)
-                            {
-                                <img class="yt-thumb" src="@thumb" alt="" loading="lazy" />
-                            }
-                            else
-                            {
-                                <span class="yt-thumb placeholder"><Icon Name="album" Size="24" /></span>
-                            }
-                            <span class="grow">
-                                <span class="strong">@t.Title</span>
-                                <span class="muted small block">@(t.ReleaseName)@(t.DurationSeconds is { } d ? $"{(t.ReleaseName is null ? "" : " · ")}{Format.Duration(d)}" : "")</span>
-                                @if (t.VideoId is null) { <span class="muted small block">@L["discover.notFound"]</span> }
-                            </span>
-                            <span class="row-actions">
+                        <article @key="t.Id" class="disc-card @(known ? "known" : null)">
+                            <div class="disc-thumb">
+                                @if (t.ThumbnailUrl is { } thumb)
+                                {
+                                    <img src="@thumb" alt="" loading="lazy" />
+                                }
+                                else
+                                {
+                                    <span class="disc-placeholder"><Icon Name="album" Size="40" /></span>
+                                }
+                                @if (t.VideoId is { } previewId && !known)
+                                {
+                                    <PreviewButton VideoId="@previewId" DurationSeconds="t.DurationSeconds" Overlay="true" />
+                                }
+                                @if (t.DurationSeconds is { } d) { <span class="disc-dur">@Format.Duration(d)</span> }
+                                @if (known) { <span class="badge good disc-badge">@L["requests.onServer"]</span> }
+                            </div>
+                            <div class="disc-body">
+                                <span class="disc-title" title="@t.Title">@t.Title</span>
+                                <span class="muted small disc-sub">@(t.VideoId is null ? L["discover.notFound"] : t.ReleaseName ?? t.Channel ?? "")</span>
+                            </div>
+                            <div class="disc-actions">
                                 @if (t.VideoId is { } videoId)
                                 {
-                                    @if (!known) { <PreviewButton VideoId="@videoId" DurationSeconds="t.DurationSeconds" /> }
-                                    <a class="icon-btn" href="https://www.youtube.com/watch?v=@videoId" target="_blank" rel="noopener noreferrer" title="@L["yt.explore.open"]"><Icon Name="open" Size="18" /></a>
                                     @if (known)
                                     {
-                                        <span class="badge good">@L["requests.onServer"]</span>
+                                        <span class="btn compact disc-state"><Icon Name="library" Size="16" /> @L["requests.onServer"]</span>
                                     }
                                     else if (_asked.Contains(videoId))
                                     {
-                                        <span class="badge info">@L["requests.asked"]</span>
+                                        <span class="btn compact disc-state"><Icon Name="inbox" Size="16" /> @L["requests.asked"]</span>
                                     }
                                     else
                                     {
                                         <button class="btn compact primary" disabled="@(_sending is not null)" @onclick="() => AskAsync(artist, t)"><Icon Name="add" Size="16" /> @L["requests.ask"]</button>
                                     }
+                                    <a class="icon-btn" href="https://www.youtube.com/watch?v=@videoId" target="_blank" rel="noopener noreferrer"
+                                       title="@L["yt.explore.open"]" aria-label="@L["yt.explore.open"]"><Icon Name="open" Size="18" /></a>
                                 }
                                 else
                                 {
                                     <a class="btn compact" href="@MatchLink(artist.Name, t.Title)"><Icon Name="search" Size="16" /> @L["discover.search"]</a>
                                 }
-                            </span>
-                        </li>
+                            </div>
+                        </article>
                     }
-                </ul>
+                </div>
             </section>
         }
     }
@@ -116,7 +126,8 @@
         await RunAsync(async () =>
         {
             var title = track.VideoTitle ?? $"{artist.Name} - {track.Title}";
-            if (await Api.CreateRequestAsync(new CreateDownloadRequest(track.VideoId!, title, track.Channel ?? artist.Name, track.DurationSeconds, null)) is { } created)
+            // L'artiste plutôt que la chaîne (souvent une chaîne de paroles) : c'est ce que l'admin doit voir.
+            if (await Api.CreateRequestAsync(new CreateDownloadRequest(track.VideoId!, title, artist.Name, track.DurationSeconds, null)) is { } created)
             {
                 _asked.Add(track.VideoId!);
                 Ui.Notify(created.AutoApproved ? L["requests.sentAuto"] : L["requests.sent"]);
