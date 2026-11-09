@@ -48,6 +48,8 @@ public sealed class SonNuageOptions
     public string ListenBrainzUrl { get; set; } = "https://api.listenbrainz.org";
     public string ListenBrainzLabsUrl { get; set; } = "https://labs.api.listenbrainz.org";
     public string DeezerUrl { get; set; } = "https://api.deezer.com";
+    /// <summary>Base de LRCLIB, d'où viennent les paroles (remplacée dans les tests pour ne rien appeler).</summary>
+    public string LrclibUrl { get; set; } = "https://lrclib.net";
     /// <summary>
     /// Recherche par correspondance (demandes, découverte) : une vidéo de la chaîne officielle de l'artiste qui atteint
     /// cette note (sur 100) passe devant toutes les autres. 101 pour ne plus favoriser la chaîne officielle.
@@ -82,6 +84,7 @@ public sealed class SonNuageOptions
     /// <summary>Où atterrissent les morceaux importés de YouTube (sous le dossier d'envoi : supprimables depuis l'admin).</summary>
     public string YoutubePath => Path.Combine(UploadPath, "YouTube");
     public string YoutubeDataPath => Path.Combine(DataPath, "youtube");
+    public string LyricsCachePath => Path.Combine(DataPath, "lyrics");
     /// <summary>yt-dlp et Deno téléchargés par la mise à jour depuis l'admin (prioritaires sur ceux de l'image).</summary>
     public string ToolsPath => Path.Combine(DataPath, "tools");
 }
