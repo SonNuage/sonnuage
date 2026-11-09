@@ -117,7 +117,9 @@ public sealed class ElasticsearchSearchTests(ElasticsearchFactory factory) : ICl
         for (var i = 0; i < 300; i++)
         {
             var stats = await admin.GetFromJsonAsync<LibraryStatsDto>("/api/admin/stats", Ct);
-            if (stats!.SearchEngine == "elasticsearch") return admin;
+            // Index prêt, et ses documents visibles (Elasticsearch les rend cherchables après un rafraîchissement).
+            if (stats!.SearchEngine == "elasticsearch"
+                && (await admin.GetFromJsonAsync<SearchResultDto>("/api/search?q=other%20band", Ct))!.Artists.Count > 0) return admin;
             await Task.Delay(100, Ct);
         }
         throw new TimeoutException("Index Elasticsearch jamais prêt");
