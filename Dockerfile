@@ -31,27 +31,8 @@ RUN apt-get update \
 # Paquets Python épinglés et vérifiés (--require-hashes), modèles téléchargés à des adresses fixes et vérifiés par
 # sha256. Les modèles Essentia sont sous licence CC BY-NC-SA 4.0 (voir le README). Le script d'analyse est livré avec le
 # serveur (Analysis/essentia_analyzer.py). Sans tout cela (arm64), l'analyse se désactive d'elle-même.
-COPY <<'EOF' /opt/analysis/requirements.txt
-essentia-tensorflow==2.1b6.dev1389 --hash=sha256:6812425191f47ac7a5c566484f86a67890d581977e4969d1af83dc2dbc1f56ee
-numpy==2.2.6 --hash=sha256:fd83c01228a688733f1ded5201c678f0c53ecc1006ffbc404db9f7a899ac6249
-pyyaml==6.0.2 --hash=sha256:80bab7bfc629882493af4aa31a4cfa43a4c57c83813253626916b8c7ada83476
-six==1.17.0 --hash=sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274
-EOF
-COPY <<'EOF' /opt/analysis/models.txt
-3ed9af50d5367c0b9c795b294b00e7599e4943244f4cbd376869f3bfc87721b1 feature-extractors/discogs-effnet/discogs-effnet-bs64-1.pb
-cdea0722bcee7f731286843f2233e3aa69887bb5c3e2dce011eff55f38d04f3e feature-extractors/musicnn/msd-musicnn-1.pb
-de322aee7f4da29ecbd149c86e7964bd6fabe41ca85698a0be40a39d49e88633 classification-heads/mood_happy/mood_happy-discogs-effnet-1.pb
-4865cba49968b6ec295db3e8af6b4a7bb506b1a646628b9f07ee9910d52df82c classification-heads/mood_sad/mood_sad-discogs-effnet-1.pb
-2c5aa6666b58fe80429a2dc677a135e9995922889b5a399af87d1c15f0ebb71d classification-heads/mood_relaxed/mood_relaxed-discogs-effnet-1.pb
-7705284e3a67f23f04d3f2fd75e18a82c0e70db8875b7b6f7061f2432de80858 classification-heads/mood_aggressive/mood_aggressive-discogs-effnet-1.pb
-bbd773a27002978179dd6fc5ffb75b7c41e6a7e412b5c5254d51a025e5b9373e classification-heads/mood_party/mood_party-discogs-effnet-1.pb
-96a48d403f52fe9047214437fe396dd2f46699da765c911cd6dfbd456a20f733 classification-heads/mood_acoustic/mood_acoustic-discogs-effnet-1.pb
-74cb244069c3803d86e6ee7c2817ecac46e37ac2759c457fa2f20d2132a8cb8b classification-heads/mood_electronic/mood_electronic-discogs-effnet-1.pb
-e1251f02cdc846445e2bc1fb3fe9963e32728c5c000e009188ae47c8963cb4c4 classification-heads/danceability/danceability-discogs-effnet-1.pb
-c8033548e17c292874265db62e82a051247768d10375a35a769e7bf695f16acf classification-heads/voice_instrumental/voice_instrumental-discogs-effnet-1.pb
-fcfb486510213b35e0a691975325f58170f648ad4a02d749bce790da13ded43b classification-heads/emomusic/emomusic-msd-musicnn-2.pb
-21c328332a221695dd6e8572728c617373064df882e8f81da6d88dc3a821e3b3 tempo/tempocnn/deeptemp-k16-3.pb
-EOF
+# Listes à part (pas de COPY <<EOF) : le constructeur classique de Docker, utilisé au déploiement, ne les connaît pas.
+COPY docker/analysis/requirements.txt docker/analysis/models.txt /opt/analysis/
 RUN if [ "${TARGETARCH:-amd64}" = "amd64" ]; then \
       apt-get update \
       && apt-get install -y --no-install-recommends python3 python3-venv \
