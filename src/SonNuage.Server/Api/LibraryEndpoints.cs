@@ -126,7 +126,13 @@ public static class LibraryEndpoints
         g.MapGet("/search", (string q, int? limit, HttpContext http, SearchService search, CancellationToken ct) =>
             search.SearchAsync(q, Math.Clamp(limit ?? 20, 1, 100), http.User.UserId(), ct));
 
-        g.MapGet("/search/suggest", (string q, int? limit, SearchService search, CancellationToken ct) =>
+        // Recherche par ambiance (« musique calme pour travailler ») : 204 quand la demande n'en est pas une.
+        g.MapGet("/search/ambiance", async (string q, int? limit, HttpContext http, SearchService search, CancellationToken ct) =>
+            await search.AmbianceAsync(q, Math.Clamp(limit ?? 20, 1, 100), http.User.UserId(), ct) is { } found
+                ? Results.Ok(found)
+                : Results.NoContent());
+
+        g.MapGet("/search/suggest",(string q, int? limit, SearchService search, CancellationToken ct) =>
             search.SuggestAsync(q, Math.Clamp(limit ?? 8, 1, 20), ct));
 
         app.MapMethods("/api/albums/{id:guid}/cover", ["GET", "HEAD"], async (Guid id, int? size, HttpContext http, SonNuageDbContext db, CoverService covers, CancellationToken ct) =>

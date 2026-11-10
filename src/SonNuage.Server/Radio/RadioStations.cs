@@ -3,6 +3,7 @@ using Microsoft.Extensions.Caching.Memory;
 using SonNuage.Contracts;
 using SonNuage.Contracts.Localization;
 using SonNuage.Server.Data;
+using SonNuage.Server.Search;
 
 namespace SonNuage.Server.Radio;
 
@@ -21,6 +22,9 @@ public sealed class RadioStations(IMemoryCache cache, IWeatherSource weather, Ti
     /// <summary>Plus court, ce n'est pas un morceau à passer à la radio (intro, interlude).</summary>
     public double MinDurationSeconds { get; init; } = 60;
     private const string ProfilesKey = "radio-profiles";
+    private const string GenresKey = "radio-genres";
+    /// <summary>Radio d'une ambiance demandée dans la recherche : « ambiance: » suivi de la demande (<see cref="AmbianceQuery.Key"/>).</summary>
+    public const string AmbiancePrefix = "ambiance:";
     private static readonly TimeSpan ProfilesFor = TimeSpan.FromMinutes(10);
 
     /// <summary>Stations du jour : saisons en cours, ambiances, météo (si un lieu est réglé).</summary>
@@ -60,11 +64,53 @@ public sealed class RadioStations(IMemoryCache cache, IWeatherSource weather, Ti
     /// <summary>Suite de la station ; null si elle n'est pas proposée aujourd'hui.</summary>
     public async Task<List<Guid>?> NextAsync(SonNuageDbContext db, Guid userId, string stationId, StationNextRequest req, CancellationToken ct)
     {
-        if ((await TodayAsync(ct)).FirstOrDefault(s => s.Id == stationId) is not { } station) return null;
+        var ambiance = stationId.StartsWith(AmbiancePrefix, StringComparison.Ordinal)
+            ? await ParseAmbianceAsync(db, stationId[AmbiancePrefix.Length..], ct)
+            : null;
+        var station = ambiance is not null ? AmbianceStation(ambiance) : (await TodayAsync(ct)).FirstOrDefault(s => s.Id == stationId);
+        if (station is null) return null;
         var candidates = Candidates(station, await ProfilesAsync(db, ct), await PersonalAsync(db, userId, ct), MinDurationSeconds);
-        if (candidates.Count < MinTracks) return null;
+        // Une ambiance demandée joue même avec peu de morceaux : la radio recommence quand tout est passé.
+        if (ambiance is null && candidates.Count < MinTracks) return null;
+        if (candidates.Count == 0) return [];
         var exclude = (req.ExcludeTrackIds ?? []).Take(MaxExclude).ToHashSet();
         return Pick(candidates, exclude, Math.Clamp(req.Count, 1, MaxCount), Random.Shared);
+    }
+
+    /// <summary>Lit une demande d'ambiance avec les genres de la bibliothèque ; null si ce n'en est pas une.</summary>
+    public async Task<AmbianceQuery?> ParseAmbianceAsync(SonNuageDbContext db, string query, CancellationToken ct) =>
+        AmbianceParser.Parse(query, await GenresAsync(db, ct));
+
+    /// <summary>Les <paramref name="count"/> morceaux qui répondent le mieux à l'ambiance (titres mal notés exclus).</summary>
+    public async Task<List<Guid>> AmbianceAsync(SonNuageDbContext db, Guid userId, AmbianceQuery query, int count, CancellationToken ct)
+    {
+        var candidates = Candidates(AmbianceStation(query), await ProfilesAsync(db, ct), await PersonalAsync(db, userId, ct), MinDurationSeconds);
+        return Rank(candidates, count, StableHash(query.Key));
+    }
+
+    public static StationDefinition AmbianceStation(AmbianceQuery query) =>
+        new(AmbiancePrefix + query.Key, RadioStationKinds.Ambiance, "#7950f2", null, query.Score, AmbianceQuery.Threshold);
+
+    /// <summary>
+    /// Classement stable : meilleure note d'abord, à égalité un ordre propre à la demande ; au plus deux titres d'un même
+    /// artiste tant que d'autres répondent.
+    /// </summary>
+    internal static List<Guid> Rank(IReadOnlyList<Candidate> candidates, int count, int seed)
+    {
+        var order = candidates.OrderByDescending(c => Math.Round(c.Score, 3)).ThenBy(c => HashCode.Combine(seed, c.Profile.Id)).ToList();
+        var picked = new List<Guid>();
+        var perArtist = new Dictionary<Guid, int>();
+        foreach (var limit in new[] { 2, int.MaxValue })
+        {
+            foreach (var c in order)
+            {
+                if (picked.Count >= count) break;
+                if (picked.Contains(c.Profile.Id) || perArtist.GetValueOrDefault(c.Profile.ArtistId) >= limit) continue;
+                picked.Add(c.Profile.Id);
+                perArtist[c.Profile.ArtistId] = perArtist.GetValueOrDefault(c.Profile.ArtistId) + 1;
+            }
+        }
+        return picked;
     }
 
     internal sealed record Candidate(TrackProfile Profile, double Score);
@@ -129,7 +175,7 @@ public sealed class RadioStations(IMemoryCache cache, IWeatherSource weather, Ti
             .Select(t => new
             {
                 t.Id, t.ArtistId, t.AlbumId, Cover = t.Album.CoverPath != null || t.Album.HasEmbeddedCover, t.DurationSeconds, t.Title,
-                Album = t.Album.Title, t.Genre,
+                Album = t.Album.Title, t.Genre, t.Year,
             })
             .ToListAsync(ct);
         var feels = await db.AudioFeatures.AsNoTracking().Where(f => f.Error == null)
@@ -143,14 +189,27 @@ public sealed class RadioStations(IMemoryCache cache, IWeatherSource weather, Ti
             .GroupBy(t => t.TrackId).ToDictionary(g => g.Key, g => g.Select(t => t.Name).ToList());
         IReadOnlyList<TrackProfile> profiles = tracks
             .Select(t => TrackProfile.Create(t.Id, t.ArtistId, t.AlbumId, t.Cover, t.DurationSeconds, t.Title, t.Album, t.Genre,
-                tags.GetValueOrDefault(t.Id), feels.GetValueOrDefault(t.Id)))
+                tags.GetValueOrDefault(t.Id), feels.GetValueOrDefault(t.Id), t.Year))
             .ToList();
         cache.Set(ProfilesKey, profiles, ProfilesFor);
         return profiles;
     }
 
     /// <summary>À appeler quand les morceaux, leurs tags ou leur analyse changent beaucoup.</summary>
-    public void Forget() => cache.Remove(ProfilesKey);
+    public void Forget()
+    {
+        cache.Remove(ProfilesKey);
+        cache.Remove(GenresKey);
+    }
+
+    /// <summary>Genres de la bibliothèque, tels qu'écrits dans les fichiers.</summary>
+    private async Task<IReadOnlyList<string>> GenresAsync(SonNuageDbContext db, CancellationToken ct)
+    {
+        if (cache.TryGetValue(GenresKey, out IReadOnlyList<string>? known) && known is not null) return known;
+        IReadOnlyList<string> genres = await db.Tracks.Where(t => t.Genre != null && t.Genre != "").Select(t => t.Genre!).Distinct().ToListAsync(ct);
+        cache.Set(GenresKey, genres, ProfilesFor);
+        return genres;
+    }
 
     private static async Task<Personal> PersonalAsync(SonNuageDbContext db, Guid userId, CancellationToken ct)
     {

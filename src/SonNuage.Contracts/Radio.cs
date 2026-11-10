@@ -20,6 +20,8 @@ public static class RadioStationKinds
     public const string Season = "season";
     public const string Mood = "mood";
     public const string Weather = "weather";
+    /// <summary>Ambiance demandée dans la recherche : identifiant « ambiance:… », jamais listée.</summary>
+    public const string Ambiance = "ambiance";
 }
 
 /// <summary>
