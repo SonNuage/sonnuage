@@ -139,7 +139,7 @@ public static class LibraryEndpoints
             http.Response.Headers.CacheControl = "private, max-age=604800";
             var etag = new Microsoft.Net.Http.Headers.EntityTagHeaderValue($"\"{album.Id:N}-{album.CoverVersion}-{size}\"");
             return Results.File(cover.Value.Path, cover.Value.ContentType, entityTag: etag, enableRangeProcessing: false);
-        }).RequireAuthorization(AuthConstants.MediaPolicy).WithTags("Media");
+        }).RequireAuthorization(AuthConstants.MediaPolicy).RequireCors(DesktopCors.Policy).WithTags("Media");
     }
 
     internal static async Task<List<Guid>> RecentTrackIdsAsync(SonNuageDbContext db, Guid userId, int count, CancellationToken ct)
