@@ -5,6 +5,7 @@
 @inject IServerEndpoint Endpoint
 @inject IPlayer Player
 @inject UiState Ui
+@inject IPlatformInfo Platform
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @inject ThemeSettings Theme
@@ -77,6 +78,7 @@ else
 }
 
 <UpdateNotice />
+<HostComponents Types="Platform.Notices" />
 
 <div class="toasts" aria-live="polite">
     @foreach (var t in Ui.Toasts)

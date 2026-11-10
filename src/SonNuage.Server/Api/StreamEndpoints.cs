@@ -18,6 +18,7 @@ public static class StreamEndpoints
     {
         app.MapMethods("/api/tracks/{id:guid}/stream", ["GET", "HEAD"], StreamAsync)
             .RequireAuthorization(AuthConstants.MediaPolicy)
+            .RequireCors(DesktopCors.Policy)
             .WithTags("Media");
     }
 

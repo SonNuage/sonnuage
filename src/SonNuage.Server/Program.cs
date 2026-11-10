@@ -147,6 +147,7 @@ builder.Services.AddHostedService(sp => sp.GetRequiredService<SonNuage.Server.An
 builder.Services.AddSingleton<IJobHandler, SonNuage.Server.Analysis.AudioAnalysisJob>();
 
 ConfigureAuthentication(builder.Services);
+builder.Services.AddDesktopCors();
 
 builder.Services.AddRateLimiter(o =>
 {
@@ -198,6 +199,9 @@ app.Use(SecurityHeaders);
 app.MapStaticAssets();
 
 app.UseRateLimiter();
+// Avant l'authentification : une requête préliminaire (OPTIONS) n'a pas de jeton. Seuls les points d'accès marqués
+// RequireCors s'ouvrent (DesktopCors).
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 

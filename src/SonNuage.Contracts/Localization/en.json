@@ -286,7 +286,28 @@
   },
   "desktop": {
     "show": "Show SonNuage",
-    "quit": "Quit"
+    "quit": "Quit",
+    "settings": {
+      "title": "Desktop app",
+      "startWithSession": "Start SonNuage when you log in",
+      "startHidden": "Start hidden",
+      "startHiddenHint": "When you log in, only the tray icon appears: it opens the window."
+    },
+    "update": {
+      "title": "Updates",
+      "upToDate": "SonNuage {version} is up to date.",
+      "available": "SonNuage {version} is available.",
+      "install": "Install",
+      "download": "Download",
+      "later": "Later",
+      "check": "Check now",
+      "checking": "Checking…",
+      "downloading": "Downloading…",
+      "failed": "Couldn't check for updates right now.",
+      "installFailed": "Couldn't install: the release page opens in your browser.",
+      "disabled": "This development build doesn't look for updates.",
+      "tray": "Install SonNuage {version}"
+    }
   },
   "nav": {
     "home": "Home",
