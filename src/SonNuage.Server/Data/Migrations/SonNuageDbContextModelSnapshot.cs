@@ -597,6 +597,13 @@ namespace SonNuage.Server.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Client")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("ClientEventId")
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("Completed")
                         .HasColumnType("INTEGER");
 
@@ -615,6 +622,9 @@ namespace SonNuage.Server.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("TrackId");
+
+                    b.HasIndex("UserId", "ClientEventId")
+                        .IsUnique();
 
                     b.HasIndex("UserId", "PlayedAt");
 
