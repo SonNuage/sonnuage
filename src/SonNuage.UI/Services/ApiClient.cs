@@ -205,6 +205,26 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     /// <summary>Reprend une file, ou toutes (lane null).</summary>
     public Task ResumeJobLaneAsync(string? lane) => SendAsync(HttpMethod.Post, lane is null ? $"{Jobs}/lanes/resume" : $"{Jobs}/lanes/{Uri.EscapeDataString(lane)}/resume");
 
+    // ---- Revue de la bibliothèque : propositions des rescans, doublons ----
+
+    private const string Proposals = "api/admin/proposals";
+    public Task<PagedResult<RescanProposalDto>?> ProposalsAsync(ProposalQuery query, int offset, int limit) =>
+        GetAsync<PagedResult<RescanProposalDto>>($"{Proposals}?offset={offset}&limit={limit}{query.ToQueryString()}");
+    /// <summary>Identifiants de toutes les propositions qui répondent aux filtres (« tout sélectionner »).</summary>
+    public Task<List<Guid>?> ProposalIdsAsync(ProposalQuery query) => GetAsync<List<Guid>>($"{Proposals}/ids?x=1{query.ToQueryString()}");
+    public Task<List<ProposalSuiteDto>?> ProposalSuitesAsync() => GetAsync<List<ProposalSuiteDto>>($"{Proposals}/suites");
+    public Task<DecideProposalsResultDto?> AcceptProposalsAsync(IReadOnlyList<Guid> ids) =>
+        SendAsync<DecideProposalsResultDto>(HttpMethod.Post, $"{Proposals}/accept", new DecideProposalsRequest(ids));
+    public Task<DecideProposalsResultDto?> RejectProposalsAsync(IReadOnlyList<Guid> ids) =>
+        SendAsync<DecideProposalsResultDto>(HttpMethod.Post, $"{Proposals}/reject", new DecideProposalsRequest(ids));
+
+    private const string Duplicates = "api/admin/duplicates";
+    public Task<DuplicatesDto?> DuplicatesAsync() => GetAsync<DuplicatesDto>(Duplicates);
+    /// <summary>Lance le calcul des empreintes manquantes ; null si une suite attend déjà.</summary>
+    public Task<Guid?> ComputeFingerprintsAsync() => SendAsync<Guid?>(HttpMethod.Post, $"{Duplicates}/fingerprints");
+    public Task<ResolveDuplicatesResultDto?> ResolveDuplicatesAsync(ResolveDuplicatesRequest req) =>
+        SendAsync<ResolveDuplicatesResultDto>(HttpMethod.Post, $"{Duplicates}/resolve", req);
+
     // ---- URL média (jeton en query) ----
 
     public string? CoverUrl(Guid? albumId, int size)

@@ -1479,5 +1479,77 @@
     "run": "Analyze now",
     "started": "Audio analysis started.",
     "saved": "Audio analysis setting saved."
+  },
+  "review": {
+    "title": "Suggestions",
+    "intro": "Fixes found by AcoustID rescans and not applied automatically (rescan without automatic fixes, or confidence below the threshold). Accepting applies the fix like a rescan: tags rewritten in uploads/, MusicBrainz ids, filing; hand-edited tracks are left alone. A rejection is remembered: the same result will not be suggested again.",
+    "status": {
+      "pending": "To review",
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "all": "All"
+    },
+    "suite": "Rescan",
+    "allSuites": "All rescans",
+    "artist": "Artist…",
+    "scoreFrom": "Score from",
+    "scoreTo": "to",
+    "selectAll": "Select all ({count})",
+    "selectFrom": "Select from",
+    "clear": "Clear selection",
+    "selected": {
+      "one": "{count} suggestion selected",
+      "other": "{count} suggestions selected"
+    },
+    "select": "Select",
+    "accept": "Accept",
+    "reject": "Reject",
+    "acceptTitle": "Accept the suggestions?",
+    "rejectTitle": "Reject the suggestions?",
+    "acceptHint": {
+      "one": "The fix for {count} track will be applied: database, tags of files in uploads/ and search.",
+      "other": "The fixes for {count} tracks will be applied: database, tags of files in uploads/ and search."
+    },
+    "rejectHint": {
+      "one": "{count} suggestion will be rejected: later rescans will not suggest it again.",
+      "other": "{count} suggestions will be rejected: later rescans will not suggest them again."
+    },
+    "accepted": "{count} accepted, {skipped} left alone (track changed since).",
+    "rejected": "{count} rejected.",
+    "none": "No suggestions here.",
+    "score": "Score",
+    "current": "Current tags",
+    "changes": "Suggested changes",
+    "noChange": "Nothing left to change.",
+    "readOnly": "Read-only library: only the database changes.",
+    "decided": "{by}, {date}",
+    "fromSuite": "Suggestions"
+  },
+  "duplicates": {
+    "title": "Duplicates",
+    "intro": "Tracks stored in several files: same MusicBrainz recording, or nearly identical acoustic fingerprints. The kept copy receives the favorites, ratings, plays and playlist entries of the others. A removed copy in uploads/ is deleted; in the read-only library it is only hidden.",
+    "fingerprint": "Compute fingerprints",
+    "fingerprintStarted": "Fingerprinting started (Tasks pane, AcoustID lane).",
+    "progress": "Fingerprints computed: {done} / {total} tracks.",
+    "noFpcalc": "fpcalc (Chromaprint) not found: only MusicBrainz ids are used.",
+    "none": "No duplicates found.",
+    "reason": {
+      "recording": "Same MusicBrainz recording",
+      "fingerprint": "Same acoustic fingerprint"
+    },
+    "keep": "Keep",
+    "quality": "Quality",
+    "usage": "Usage",
+    "uploads": "uploads/ (deletable)",
+    "readOnly": "read-only (hidden, never deleted)",
+    "counts": "{plays} plays · {favorites} favorites · {playlists} playlists · {ratings} ratings",
+    "mergeHint": "Favorites, ratings, plays and playlists move to the kept copy.",
+    "resolve": "Keep the chosen copy",
+    "confirmTitle": "Remove the other copies?",
+    "confirmKeep": "Kept copy: {path}",
+    "confirmDelete": "These files will be permanently deleted from disk:",
+    "confirmHide": "These read-only files will be hidden from the library, not deleted:",
+    "confirm": "Delete and hide",
+    "resolved": "{deleted} files deleted, {hidden} hidden."
   }
 }

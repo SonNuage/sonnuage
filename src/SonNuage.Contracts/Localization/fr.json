@@ -1479,5 +1479,77 @@
     "run": "Analyser maintenant",
     "started": "Analyse audio lancée.",
     "saved": "Réglage de l'analyse audio enregistré."
+  },
+  "review": {
+    "title": "Propositions",
+    "intro": "Corrections trouvées par les rescans AcoustID et non appliquées d'office (rescan sans correction automatique, ou confiance sous le seuil). Accepter applique la correction comme un rescan : tags réécrits dans uploads/, identifiants MusicBrainz, rangement ; les morceaux modifiés à la main sont laissés tels quels. Un refus est retenu : le même résultat ne sera plus proposé.",
+    "status": {
+      "pending": "À trancher",
+      "accepted": "Acceptées",
+      "rejected": "Refusées",
+      "all": "Toutes"
+    },
+    "suite": "Rescan",
+    "allSuites": "Tous les rescans",
+    "artist": "Artiste…",
+    "scoreFrom": "Score de",
+    "scoreTo": "à",
+    "selectAll": "Tout sélectionner ({count})",
+    "selectFrom": "Sélectionner à partir de",
+    "clear": "Désélectionner",
+    "selected": {
+      "one": "{count} proposition sélectionnée",
+      "other": "{count} propositions sélectionnées"
+    },
+    "select": "Sélectionner",
+    "accept": "Accepter",
+    "reject": "Refuser",
+    "acceptTitle": "Accepter les propositions ?",
+    "rejectTitle": "Refuser les propositions ?",
+    "acceptHint": {
+      "one": "La correction de {count} morceau sera appliquée : base, tags des fichiers d'uploads/ et recherche.",
+      "other": "Les corrections de {count} morceaux seront appliquées : base, tags des fichiers d'uploads/ et recherche."
+    },
+    "rejectHint": {
+      "one": "{count} proposition sera refusée : les prochains rescans ne la proposeront plus.",
+      "other": "{count} propositions seront refusées : les prochains rescans ne les proposeront plus."
+    },
+    "accepted": "{count} acceptées, {skipped} laissées (morceau modifié depuis).",
+    "rejected": "{count} refusées.",
+    "none": "Aucune proposition ici.",
+    "score": "Score",
+    "current": "Tags actuels",
+    "changes": "Changements proposés",
+    "noChange": "Plus rien à changer.",
+    "readOnly": "Bibliothèque en lecture seule : seule la base change.",
+    "decided": "{by}, {date}",
+    "fromSuite": "Propositions"
+  },
+  "duplicates": {
+    "title": "Doublons",
+    "intro": "Morceaux présents en plusieurs fichiers : même enregistrement MusicBrainz, ou empreintes acoustiques presque identiques. La copie gardée reçoit les favoris, notes, écoutes et entrées de playlist des autres. Une copie écartée dans uploads/ est supprimée ; dans la bibliothèque en lecture seule, elle est seulement masquée.",
+    "fingerprint": "Calculer les empreintes",
+    "fingerprintStarted": "Calcul des empreintes lancé (volet Tâches, file AcoustID).",
+    "progress": "Empreintes calculées : {done} / {total} morceaux.",
+    "noFpcalc": "fpcalc (Chromaprint) introuvable : seuls les identifiants MusicBrainz servent.",
+    "none": "Aucun doublon trouvé.",
+    "reason": {
+      "recording": "Même enregistrement MusicBrainz",
+      "fingerprint": "Même empreinte acoustique"
+    },
+    "keep": "Garder",
+    "quality": "Qualité",
+    "usage": "Utilisation",
+    "uploads": "uploads/ (supprimable)",
+    "readOnly": "lecture seule (masqué, jamais supprimé)",
+    "counts": "{plays} écoutes · {favorites} favoris · {playlists} playlists · {ratings} notes",
+    "mergeHint": "Favoris, notes, écoutes et playlists passent sur la copie gardée.",
+    "resolve": "Garder la copie choisie",
+    "confirmTitle": "Écarter les autres copies ?",
+    "confirmKeep": "Copie gardée : {path}",
+    "confirmDelete": "Ces fichiers seront supprimés définitivement du disque :",
+    "confirmHide": "Ces fichiers (lecture seule) seront masqués de la bibliothèque, sans être supprimés :",
+    "confirm": "Supprimer et masquer",
+    "resolved": "{deleted} fichiers supprimés, {hidden} masqués."
   }
 }
