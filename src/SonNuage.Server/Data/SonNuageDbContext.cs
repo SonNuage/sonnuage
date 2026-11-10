@@ -27,6 +27,7 @@ public sealed class SonNuageDbContext(DbContextOptions<SonNuageDbContext> option
     public DbSet<Job> Jobs => Set<Job>();
     public DbSet<JobLog> JobLogs => Set<JobLog>();
     public DbSet<JobLanePause> JobLanePauses => Set<JobLanePause>();
+    public DbSet<JobSchedule> JobSchedules => Set<JobSchedule>();
     public DbSet<CrashReport> CrashReports => Set<CrashReport>();
     public DbSet<SavedQueue> SavedQueues => Set<SavedQueue>();
     public DbSet<SavedQueueEntry> SavedQueueEntries => Set<SavedQueueEntry>();
@@ -257,6 +258,13 @@ public sealed class SonNuageDbContext(DbContextOptions<SonNuageDbContext> option
         {
             e.HasKey(x => x.Lane);
             e.Property(x => x.Lane).HasMaxLength(32);
+        });
+
+        b.Entity<JobSchedule>(e =>
+        {
+            e.Property(x => x.Kind).HasMaxLength(64);
+            e.Property(x => x.TimeZone).HasMaxLength(64);
+            e.Property(x => x.Options).HasMaxLength(1000);
         });
 
         b.Entity<JobLog>(e =>
