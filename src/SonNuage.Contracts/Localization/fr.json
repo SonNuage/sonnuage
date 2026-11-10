@@ -235,6 +235,9 @@
     "analysis": {
       "unavailable": "L'analyse audio n'est pas installée sur ce serveur (image Docker amd64 uniquement).",
       "disabled": "L'analyse audio est désactivée dans les réglages."
+    },
+    "duplicates": {
+      "notDuplicates": "Ces morceaux ne sont pas des copies du même enregistrement."
     }
   },
   "login": {
@@ -964,7 +967,9 @@
       "youtube_sync": "Synchronisation d'abonnement",
       "analysis_audio": "Analyse audio",
       "db_backup": "Sauvegarde de la base",
-      "discovery_releases": "Nouveautés des artistes"
+      "discovery_releases": "Nouveautés des artistes",
+      "library_fingerprint": "Empreintes acoustiques",
+      "library_dedupe": "Doublons écartés"
     },
     "suiteKind": {
       "youtube_import": "Import YouTube",
@@ -975,7 +980,9 @@
       "youtube_sync": "Synchronisation d'abonnement",
       "analysis_audio": "Analyse audio",
       "db_backup": "Sauvegarde de la base",
-      "discovery_releases": "Nouveautés des artistes"
+      "discovery_releases": "Nouveautés des artistes",
+      "library_fingerprints": "Empreintes des doublons",
+      "library_duplicates": "Doublons"
     },
     "suites": {
       "rescanAll": "Rescan AcoustID de toute la bibliothèque",
@@ -988,14 +995,17 @@
       "album": "Album « {album} » de {artist}",
       "analysis": "Analyse audio de la bibliothèque",
       "backup": "Sauvegarde de la base de données",
-      "releases": "Nouveautés des artistes de la bibliothèque"
+      "releases": "Nouveautés des artistes de la bibliothèque",
+      "fingerprints": "Empreintes acoustiques de la bibliothèque",
+      "duplicates": "Doublons de {title}"
     },
     "steps": {
       "download": "Téléchargement",
       "acoustid": "Empreinte AcoustID",
       "metadata": "Métadonnées, tags et rangement",
       "plan": "Liste des morceaux à vérifier",
-      "analysis": "Analyse d'un lot de morceaux"
+      "analysis": "Analyse d'un lot de morceaux",
+      "fingerprints": "Empreintes d'un lot de morceaux"
     },
     "create": {
       "title": "Nouvelle tâche : rescan AcoustID",
@@ -1004,11 +1014,11 @@
       "artist": "Un artiste",
       "artistPlaceholder": "Nom de l’artiste…",
       "otherArtist": "Changer",
-      "apply": "Corriger automatiquement les correspondances sûres au-dessus du seuil choisi ci-dessous. Les morceaux modifiés à la main ne sont pas touchés. Sinon, propositions dans le journal seulement.",
+      "apply": "Corriger automatiquement les correspondances sûres au-dessus du seuil choisi ci-dessous. Les morceaux modifiés à la main ne sont pas touchés. Le reste est gardé dans la revue des propositions.",
       "start": "Lancer",
       "started": "Tâche créée.",
       "button": "Nouvelle tâche",
-      "thresholdHint": "Pour cette tâche seulement. En dessous, la correction est seulement proposée dans le journal.",
+      "thresholdHint": "Pour cette tâche seulement. En dessous, la correction est gardée dans la revue des propositions.",
       "includeIdentified": "Vérifier aussi les morceaux déjà identifiés (fiche MusicBrainz connue)"
     },
     "log": {
@@ -1057,10 +1067,11 @@
       "unchanged": "Les tags concordent : rien à changer.",
       "change": "{field} : « {from} » → « {to} »",
       "result": {
-        "proposed": "Proposition seulement (correction automatique désactivée).",
+        "proposed": "Proposition gardée pour la revue (correction automatique désactivée).",
         "locked": "Morceau modifié à la main : laissé tel quel.",
-        "low": "Confiance {score} % sous le seuil de {threshold} % : laissé tel quel.",
-        "applied": "Corrigé (confiance {score} %)."
+        "low": "Confiance {score} % sous le seuil de {threshold} % : proposition gardée pour la revue.",
+        "applied": "Corrigé (confiance {score} %).",
+        "rejected": "Résultat déjà refusé dans la revue : laissé tel quel."
       }
     },
     "fields": {
@@ -1108,6 +1119,17 @@
       "failed": "{track} : {error}",
       "unavailable": "Analyseur audio absent : rien à faire.",
       "disabled": "Analyse audio désactivée dans les réglages : arrêt."
+    },
+    "fingerprints": {
+      "failed": "{track} : empreinte impossible ({error}).",
+      "done": "{computed} empreintes calculées, {failed} échecs."
+    },
+    "duplicates": {
+      "kept": "Gardé : {path}",
+      "moved": "{path} : {favorites} favoris, {ratings} notes, {plays} écoutes et {playlists} entrées de playlist passés sur la copie gardée.",
+      "deleted": "Fichier supprimé : {path}",
+      "hidden": "Masqué (bibliothèque en lecture seule, fichier conservé) : {path}",
+      "deleteFailed": "Fichier non supprimé : {path} ({error})"
     }
   },
   "about": {
@@ -1545,5 +1567,77 @@
     "run": "Analyser maintenant",
     "started": "Analyse audio lancée.",
     "saved": "Réglage de l'analyse audio enregistré."
+  },
+  "review": {
+    "title": "Propositions",
+    "intro": "Corrections trouvées par les rescans AcoustID et non appliquées d'office (rescan sans correction automatique, ou confiance sous le seuil). Accepter applique la correction comme un rescan : tags réécrits dans uploads/, identifiants MusicBrainz, rangement ; les morceaux modifiés à la main sont laissés tels quels. Un refus est retenu : le même résultat ne sera plus proposé.",
+    "status": {
+      "pending": "À trancher",
+      "accepted": "Acceptées",
+      "rejected": "Refusées",
+      "all": "Toutes"
+    },
+    "suite": "Rescan",
+    "allSuites": "Tous les rescans",
+    "artist": "Artiste…",
+    "scoreFrom": "Score de",
+    "scoreTo": "à",
+    "selectAll": "Tout sélectionner ({count})",
+    "selectFrom": "Sélectionner à partir de",
+    "clear": "Désélectionner",
+    "selected": {
+      "one": "{count} proposition sélectionnée",
+      "other": "{count} propositions sélectionnées"
+    },
+    "select": "Sélectionner",
+    "accept": "Accepter",
+    "reject": "Refuser",
+    "acceptTitle": "Accepter les propositions ?",
+    "rejectTitle": "Refuser les propositions ?",
+    "acceptHint": {
+      "one": "La correction de {count} morceau sera appliquée : base, tags des fichiers d'uploads/ et recherche.",
+      "other": "Les corrections de {count} morceaux seront appliquées : base, tags des fichiers d'uploads/ et recherche."
+    },
+    "rejectHint": {
+      "one": "{count} proposition sera refusée : les prochains rescans ne la proposeront plus.",
+      "other": "{count} propositions seront refusées : les prochains rescans ne les proposeront plus."
+    },
+    "accepted": "{count} acceptées, {skipped} laissées (morceau modifié depuis).",
+    "rejected": "{count} refusées.",
+    "none": "Aucune proposition ici.",
+    "score": "Score",
+    "current": "Tags actuels",
+    "changes": "Changements proposés",
+    "noChange": "Plus rien à changer.",
+    "readOnly": "Bibliothèque en lecture seule : seule la base change.",
+    "decided": "{by}, {date}",
+    "fromSuite": "Propositions"
+  },
+  "duplicates": {
+    "title": "Doublons",
+    "intro": "Morceaux présents en plusieurs fichiers : même enregistrement MusicBrainz, ou empreintes acoustiques presque identiques. La copie gardée reçoit les favoris, notes, écoutes et entrées de playlist des autres. Une copie écartée dans uploads/ est supprimée ; dans la bibliothèque en lecture seule, elle est seulement masquée.",
+    "fingerprint": "Calculer les empreintes",
+    "fingerprintStarted": "Calcul des empreintes lancé (volet Tâches, file AcoustID).",
+    "progress": "Empreintes calculées : {done} / {total} morceaux.",
+    "noFpcalc": "fpcalc (Chromaprint) introuvable : seuls les identifiants MusicBrainz servent.",
+    "none": "Aucun doublon trouvé.",
+    "reason": {
+      "recording": "Même enregistrement MusicBrainz",
+      "fingerprint": "Même empreinte acoustique"
+    },
+    "keep": "Garder",
+    "quality": "Qualité",
+    "usage": "Utilisation",
+    "uploads": "uploads/ (supprimable)",
+    "readOnly": "lecture seule (masqué, jamais supprimé)",
+    "counts": "{plays} écoutes · {favorites} favoris · {playlists} playlists · {ratings} notes",
+    "mergeHint": "Favoris, notes, écoutes et playlists passent sur la copie gardée.",
+    "resolve": "Garder la copie choisie",
+    "confirmTitle": "Écarter les autres copies ?",
+    "confirmKeep": "Copie gardée : {path}",
+    "confirmDelete": "Ces fichiers seront supprimés définitivement du disque :",
+    "confirmHide": "Ces fichiers (lecture seule) seront masqués de la bibliothèque, sans être supprimés :",
+    "confirm": "Supprimer et masquer",
+    "resolved": "{deleted} fichiers supprimés, {hidden} masqués."
   }
 }

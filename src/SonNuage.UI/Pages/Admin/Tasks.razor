@@ -105,6 +105,10 @@
                     <div class="panel">
                         <div class="row">
                             <h2 class="grow" style="margin: 0">@L["jobs.stepsTitle"]</h2>
+                            @if (_overview?.Suites.Items.FirstOrDefault(s => s.Id == _suiteId)?.Kind == "library.acoustid-rescan")
+                            {
+                                <a class="btn" href="admin/proposals?suite=@_suiteId">@L["review.fromSuite"]</a>
+                            }
                             @if (jobs.Items.Any(j => j.Status is "Pending" or "Queued" or "Running"))
                             {
                                 <button class="btn danger" @onclick="CancelSuiteAsync">@L["jobs.cancelSuite"]</button>

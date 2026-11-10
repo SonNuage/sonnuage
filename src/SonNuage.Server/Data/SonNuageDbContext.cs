@@ -35,6 +35,9 @@ public sealed class SonNuageDbContext(DbContextOptions<SonNuageDbContext> option
     public DbSet<TrackTag> TrackTags => Set<TrackTag>();
     public DbSet<ExternalFetch> ExternalFetches => Set<ExternalFetch>();
     public DbSet<ArtistRelease> ArtistReleases => Set<ArtistRelease>();
+    public DbSet<RescanProposal> RescanProposals => Set<RescanProposal>();
+    public DbSet<TrackFingerprint> Fingerprints => Set<TrackFingerprint>();
+    public DbSet<HiddenFile> HiddenFiles => Set<HiddenFile>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -168,6 +171,36 @@ public sealed class SonNuageDbContext(DbContextOptions<SonNuageDbContext> option
             e.Property(x => x.Name).HasMaxLength(TrackTag.MaxNameLength);
             e.HasIndex(x => x.Name);
             e.HasOne<Track>().WithMany().HasForeignKey(x => x.TrackId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<RescanProposal>(e =>
+        {
+            e.HasIndex(x => new { x.Status, x.Score });
+            e.HasIndex(x => new { x.TrackId, x.Signature });
+            e.HasIndex(x => x.SuiteId);
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
+            e.Property(x => x.Signature).HasMaxLength(64);
+            e.Property(x => x.Title).HasMaxLength(RescanProposal.MaxTextLength);
+            e.Property(x => x.ArtistName).HasMaxLength(RescanProposal.MaxTextLength);
+            e.Property(x => x.AlbumTitle).HasMaxLength(RescanProposal.MaxTextLength);
+            e.Property(x => x.DecidedBy).HasMaxLength(RescanProposal.MaxDecidedByLength);
+            e.HasOne(x => x.Track).WithMany().HasForeignKey(x => x.TrackId).OnDelete(DeleteBehavior.Cascade);
+            // Les refus survivent à la suppression de la suite qui les a produits.
+            e.HasOne(x => x.Suite).WithMany().HasForeignKey(x => x.SuiteId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        b.Entity<TrackFingerprint>(e =>
+        {
+            e.HasKey(x => x.TrackId);
+            e.Property(x => x.Error).HasMaxLength(TrackFingerprint.MaxErrorLength);
+            e.HasOne(x => x.Track).WithOne().HasForeignKey<TrackFingerprint>(x => x.TrackId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<HiddenFile>(e =>
+        {
+            e.HasKey(x => x.Path);
+            e.Property(x => x.Path).HasMaxLength(HiddenFile.MaxPathLength);
+            e.Property(x => x.HiddenBy).HasMaxLength(RescanProposal.MaxDecidedByLength);
         });
 
         b.Entity<UserRating>(e =>

@@ -11,10 +11,8 @@ namespace SonNuage.Server.Library;
 /// </summary>
 public sealed class TagWriter(IOptions<SonNuageOptions> options, ILogger<TagWriter> logger)
 {
-    private string UploadRoot => Path.GetFullPath(options.Value.UploadPath);
-
     /// <summary>Le fichier peut-il recevoir des tags ? (seuls les envois, jamais la bibliothèque en lecture seule)</summary>
-    public bool IsWritable(string path) => LibraryScanner.IsUnder(path, UploadRoot);
+    public bool IsWritable(string path) => UploadArea.Contains(options.Value, path);
 
     /// <summary>Réécrit les tags des morceaux d'<c>uploads/</c> et met à jour leur taille et leur date en base (à enregistrer).</summary>
     public void Write(IEnumerable<Track> tracks)

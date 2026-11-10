@@ -1,0 +1,258 @@
+@page "/admin/proposals"
+@* Revue groupée des propositions des rescans AcoustID : filtres, sélection (tout, par score), acceptation ou refus en lot. *@
+@inject ApiClient Api
+@inject UiState Ui
+@using System.Globalization
+
+<PageTitle>@L["review.title"] · SonNuage</PageTitle>
+
+<div class="page">
+    <AdminNav Title="@L["review.title"]">
+        <Actions>
+            <a class="btn" href="admin/tasks">@L["dash.jobsLink"]</a>
+        </Actions>
+        <ChildContent>
+        <p class="muted small">@L["review.intro"]</p>
+
+        <div class="toolbar" style="flex-wrap: wrap">
+            <div class="tabs sub" style="margin: 0">
+                @foreach (var s in Statuses)
+                {
+                    <button class="tab @(_status == s ? "active" : null)" @onclick="() => SetStatusAsync(s)">@L["review.status." + s]</button>
+                }
+            </div>
+            <select class="input compact" value="@(Suite?.ToString() ?? "")" @onchange="e => SetSuiteAsync(e.Value?.ToString())" aria-label="@L["review.suite"]">
+                <option value="">@L["review.allSuites"]</option>
+                @foreach (var s in _suites)
+                {
+                    <option value="@s.SuiteId">@L.Server(s.Title) · @L.DateTime(s.CreatedAt) (@L.Number(s.Pending))</option>
+                }
+            </select>
+            <input class="input compact" type="search" placeholder="@L["review.artist"]" @bind="_artist" @bind:event="oninput" @bind:after="ReloadAsync" />
+            <label class="row small">
+                @L["review.scoreFrom"]
+                <input class="input compact" type="number" min="0" max="100" style="width: 5rem" @bind="_minPercent" @bind:after="ReloadAsync" />
+                @L["review.scoreTo"]
+                <input class="input compact" type="number" min="0" max="100" style="width: 5rem" @bind="_maxPercent" @bind:after="ReloadAsync" />
+                %
+            </label>
+        </div>
+
+        @if (_status == "pending")
+        {
+            <div class="row" style="margin: .6rem 0; flex-wrap: wrap">
+                <button class="btn" disabled="@(_total == 0)" @onclick="SelectAllAsync">@L["review.selectAll", ("count", L.Number(_total))]</button>
+                <label class="row small">
+                    <button class="btn" disabled="@(_items.Count == 0)" @onclick="SelectByScore">@L["review.selectFrom"]</button>
+                    <input class="input compact" type="number" min="0" max="100" style="width: 5rem" @bind="_selectPercent" /> %
+                </label>
+                @if (_selected.Count > 0)
+                {
+                    <button class="btn" @onclick="() => _selected.Clear()">@L["review.clear"]</button>
+                    <span class="grow small strong">@L["review.selected", ("count", L.Number(_selected.Count))]</span>
+                    <button class="btn primary" disabled="@_busy" @onclick='() => _confirm = "accept"'><Icon Name="refresh" Size="18" /> @L["review.accept"]</button>
+                    <button class="btn danger" disabled="@_busy" @onclick='() => _confirm = "reject"'><Icon Name="close" Size="18" /> @L["review.reject"]</button>
+                }
+            </div>
+        }
+
+        <Loader Loading="_loading && _items.Count == 0" Error="@_error" OnRetry="ReloadAsync">
+            @if (_items.Count == 0)
+            {
+                <div class="empty">@L["review.none"]</div>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                @if (_status == "pending") { <th></th> }
+                                <th>@L["review.score"]</th><th>@L["review.current"]</th><th>@L["review.changes"]</th><th>@L["review.suite"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var p in _items)
+                            {
+                                <tr @key="p.Id">
+                                    @if (_status == "pending")
+                                    {
+                                        <td><input type="checkbox" checked="@_selected.Contains(p.Id)" @onchange="e => Toggle(p.Id, e.Value is true)" aria-label="@L["review.select"]" /></td>
+                                    }
+                                    <td><span class="badge @(p.Score >= 0.9 ? "good" : p.Score >= 0.7 ? "info" : "warn")">@L["format.percent", ("value", L.Number(Math.Round(p.Score * 100)))]</span></td>
+                                    <td>
+                                        <span class="strong">@p.Title</span>
+                                        <span class="muted small block">@p.ArtistName · @p.AlbumTitle</span>
+                                        @if (p.Locked) { <span class="badge" title="@L["editor.editedHint"]">@L["editor.edited"]</span> }
+                                        @if (!p.Writable) { <span class="muted small block">@L["review.readOnly"]</span> }
+                                    </td>
+                                    <td>
+                                        @if (p.Changes.Count == 0)
+                                        {
+                                            <span class="muted small">@L["review.noChange"]</span>
+                                        }
+                                        @foreach (var c in p.Changes)
+                                        {
+                                            <span class="small block">@L["jobs.fields." + c.Field] : <span class="muted">@(c.From ?? "∅")</span> → <span class="strong">@c.To</span></span>
+                                        }
+                                    </td>
+                                    <td class="small">
+                                        @(p.SuiteTitle is { } st ? L.Server(st) : "—")
+                                        <span class="muted block">@L.DateTime(p.CreatedAt)</span>
+                                        @if (p.DecidedBy is { } by && p.DecidedAt is { } at) { <span class="muted block">@L["review.decided", ("by", by), ("date", L.DateTime(at))]</span> }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <p class="muted small">@L["editor.count", ("shown", _items.Count), ("total", _total)]</p>
+                @if (_items.Count < _total)
+                {
+                    <div class="more"><button class="btn" @onclick="LoadMoreAsync" disabled="@_loading">@L["common.showMore"]</button></div>
+                }
+            }
+        </Loader>
+        </ChildContent>
+    </AdminNav>
+</div>
+
+<Modal Open="_confirm is not null" OpenChanged="v => { if (!v) _confirm = null; }" Title="@(_confirm == "accept" ? L["review.acceptTitle"] : L["review.rejectTitle"])">
+    <ChildContent>
+        <p>@(_confirm == "accept" ? L["review.acceptHint", ("count", L.Number(_selected.Count))] : L["review.rejectHint", ("count", L.Number(_selected.Count))])</p>
+    </ChildContent>
+    <Footer>
+        <button class="btn" @onclick="() => _confirm = null">@L["common.cancel"]</button>
+        <button class="btn @(_confirm == "accept" ? "primary" : "danger")" disabled="@_busy" @onclick="DecideAsync">
+            @(_confirm == "accept" ? L["review.accept"] : L["review.reject"])
+        </button>
+    </Footer>
+</Modal>
+
+@code {
+    private static readonly string[] Statuses = ["pending", "accepted", "rejected", "all"];
+    private const int PageSize = 100;
+
+    [SupplyParameterFromQuery(Name = "suite")] public Guid? Suite { get; set; }
+
+    private string _status = "pending";
+    private string _artist = "";
+    private int? _minPercent;
+    private int? _maxPercent;
+    private int _selectPercent = 90;
+    private readonly List<RescanProposalDto> _items = [];
+    private readonly HashSet<Guid> _selected = [];
+    private List<ProposalSuiteDto> _suites = [];
+    private int _total;
+    private bool _loading;
+    private string? _error;
+    private string? _confirm;
+    private bool _busy;
+    private readonly LoadGeneration _generation = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        try
+        {
+            _suites = await Api.ProposalSuitesAsync() ?? [];
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+        await ReloadAsync();
+    }
+
+    private ProposalQuery Query => new(_status, Suite, _artist, _minPercent / 100.0, _maxPercent / 100.0);
+
+    private async Task ReloadAsync()
+    {
+        _items.Clear();
+        _selected.Clear();
+        _total = 0;
+        await LoadMoreAsync();
+    }
+
+    private async Task LoadMoreAsync()
+    {
+        var generation = _generation.Start();
+        _loading = true;
+        _error = null;
+        try
+        {
+            var page = await Api.ProposalsAsync(Query, _items.Count, PageSize);
+            if (!_generation.IsCurrent(generation) || page is null) return;
+            Paging.AppendNew(_items, page.Items, p => p.Id);
+            _total = page.Total;
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            _error = L.Server(ex.Message);
+        }
+        finally
+        {
+            if (_generation.IsCurrent(generation)) _loading = false;
+        }
+    }
+
+    private async Task SetStatusAsync(string status)
+    {
+        _status = status;
+        await ReloadAsync();
+    }
+
+    private async Task SetSuiteAsync(string? value)
+    {
+        Suite = Guid.TryParse(value, out var id) ? id : null;
+        await ReloadAsync();
+    }
+
+    private void Toggle(Guid id, bool on)
+    {
+        if (on) _selected.Add(id);
+        else _selected.Remove(id);
+    }
+
+    /// <summary>Toutes les propositions des filtres, y compris celles des pages pas encore affichées.</summary>
+    private async Task SelectAllAsync()
+    {
+        try
+        {
+            _selected.UnionWith(await Api.ProposalIdsAsync(Query) ?? []);
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+    }
+
+    private void SelectByScore() => _selected.UnionWith(ReviewSelection.AtLeast(_items, Math.Clamp(_selectPercent, 0, 100) / 100.0));
+
+    private async Task DecideAsync()
+    {
+        var accept = _confirm == "accept";
+        _busy = true;
+        int done = 0, skipped = 0;
+        try
+        {
+            foreach (var batch in ReviewSelection.Batches(_selected.ToList()))
+            {
+                var result = accept ? await Api.AcceptProposalsAsync(batch) : await Api.RejectProposalsAsync(batch);
+                done += result?.Done ?? 0;
+                skipped += result?.Skipped ?? 0;
+            }
+            Ui.Notify(accept ? L["review.accepted", ("count", L.Number(done)), ("skipped", L.Number(skipped))] : L["review.rejected", ("count", L.Number(done))]);
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+        finally
+        {
+            _busy = false;
+            _confirm = null;
+        }
+        _suites = await Api.ProposalSuitesAsync() ?? _suites;
+        await ReloadAsync();
+    }
+}

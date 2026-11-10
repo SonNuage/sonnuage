@@ -110,11 +110,8 @@ public static class AdminEndpoints
             var track = await db.Tracks.FirstOrDefaultAsync(t => t.Id == id, ct);
             if (track is null) return Results.NotFound();
             // Seuls les fichiers envoyés via l'admin sont supprimables : la bibliothèque principale reste en lecture seule.
-            var uploadRoot = Path.GetFullPath(options.Value.UploadPath);
-            if (!LibraryScanner.IsUnder(track.FilePath, uploadRoot))
+            if (!UploadArea.TryDelete(options.Value, track.FilePath))
                 return Results.Problem(Tx.Key("errors.admin.readOnlyFile"), statusCode: 409);
-
-            if (File.Exists(track.FilePath)) File.Delete(track.FilePath);
             db.Tracks.Remove(track);
             await db.SaveChangesAsync(ct);
             await LibraryIndexer.PruneAsync(db, ct);
@@ -311,12 +308,15 @@ public static class AdminEndpoints
 
     private static string? Clean(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 
-    private static TrackMetadataDto ToMetadataDto(Track t, List<string> roots, SonNuageOptions options)
+    private static TrackMetadataDto ToMetadataDto(Track t, IReadOnlyList<string> roots, SonNuageOptions options) =>
+        new(t.Id, RelativePath(t.FilePath, roots), t.Title, t.ArtistName, t.AlbumTitle, t.AlbumArtistName,
+            t.TrackNumber, t.DiscNumber, t.Year, t.Genre, t.MetadataLocked, UploadArea.Contains(options, t.FilePath));
+
+    /// <summary>Chemin affiché dans l'admin : nom du dossier racine (music, uploads…) puis chemin relatif, avec des « / ».</summary>
+    internal static string RelativePath(string path, IReadOnlyList<string> roots)
     {
-        var root = roots.FirstOrDefault(r => LibraryScanner.IsUnder(t.FilePath, r));
-        var relative = root is null ? Path.GetFileName(t.FilePath) : Path.Combine(Path.GetFileName(root), Path.GetRelativePath(root, t.FilePath));
-        return new TrackMetadataDto(t.Id, relative.Replace('\\', '/'), t.Title, t.ArtistName, t.AlbumTitle, t.AlbumArtistName,
-            t.TrackNumber, t.DiscNumber, t.Year, t.Genre, t.MetadataLocked,
-            LibraryScanner.IsUnder(t.FilePath, Path.GetFullPath(options.UploadPath)));
+        var root = roots.FirstOrDefault(r => LibraryScanner.IsUnder(path, r));
+        var relative = root is null ? Path.GetFileName(path) : Path.Combine(Path.GetFileName(root), Path.GetRelativePath(root, path));
+        return relative.Replace('\\', '/');
     }
 }

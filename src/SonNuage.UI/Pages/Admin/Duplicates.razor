@@ -1,0 +1,163 @@
+@page "/admin/duplicates"
+@* Doublons de la bibliothèque (même enregistrement, plusieurs fichiers) : choisir la copie à garder, après confirmation. *@
+@inject ApiClient Api
+@inject UiState Ui
+
+<PageTitle>@L["duplicates.title"] · SonNuage</PageTitle>
+
+<div class="page">
+    <AdminNav Title="@L["duplicates.title"]">
+        <Actions>
+            <button class="btn" disabled="@(_data is not { FingerprintAvailable: true })" @onclick="FingerprintAsync"><Icon Name="refresh" Size="18" /> @L["duplicates.fingerprint"]</button>
+            <a class="btn" href="admin/tasks">@L["dash.jobsLink"]</a>
+        </Actions>
+        <ChildContent>
+        <p class="muted small">@L["duplicates.intro"]</p>
+        <Loader Loading="_data is null && _error is null" Error="@_error" OnRetry="LoadAsync">
+            @if (_data is { } data)
+            {
+                <p class="small">
+                    @L["duplicates.progress", ("done", L.Number(data.Fingerprinted)), ("total", L.Number(data.Tracks))]
+                    @if (!data.FingerprintAvailable) { <span class="form-error block">@L["duplicates.noFpcalc"]</span> }
+                </p>
+                @if (data.Groups.Count == 0)
+                {
+                    <div class="empty">@L["duplicates.none"]</div>
+                }
+                @foreach (var group in data.Groups)
+                {
+                    var keep = KeepOf(group);
+                    <section class="panel" @key="group.Copies[0].TrackId">
+                        <div class="row">
+                            <h2 class="grow" style="margin: 0">@group.Copies[0].ArtistName - @group.Copies[0].Title</h2>
+                            <span class="badge info">@L["duplicates.reason." + group.Reason]</span>
+                        </div>
+                        <div class="table-wrap">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>@L["duplicates.keep"]</th><th>@L["editor.file"]</th><th>@L["duplicates.quality"]</th>
+                                        <th>@L["duplicates.usage"]</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var c in group.Copies)
+                                    {
+                                        <tr @key="c.TrackId">
+                                            <td><input type="radio" name="keep-@group.Copies[0].TrackId" checked="@(c.TrackId == keep)" @onchange="() => _keep[GroupKey(group)] = c.TrackId" aria-label="@L["duplicates.keep"]" /></td>
+                                            <td class="path" title="@c.RelativePath">
+                                                @c.RelativePath
+                                                <span class="muted small block">@c.AlbumTitle · @(c.InUploads ? L["duplicates.uploads"] : L["duplicates.readOnly"])</span>
+                                            </td>
+                                            <td class="small">
+                                                @c.Format.ToUpperInvariant()@(c.BitrateKbps is { } kbps ? $" · {kbps} kbit/s" : "")@(c.SampleRate is { } hz ? $" · {L.Number(hz / 1000.0, 1)} kHz" : "")
+                                                <span class="muted block">@Format.Duration(c.DurationSeconds) · @Format.Bytes(c.FileSize)</span>
+                                            </td>
+                                            <td class="small">@L["duplicates.counts", ("plays", L.Number(c.Plays)), ("favorites", L.Number(c.Favorites)), ("playlists", L.Number(c.Playlists)), ("ratings", L.Number(c.Ratings))]</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="row">
+                            <span class="grow muted small">@L["duplicates.mergeHint"]</span>
+                            <button class="btn danger" @onclick="() => _confirm = group"><Icon Name="delete" Size="18" /> @L["duplicates.resolve"]</button>
+                        </div>
+                    </section>
+                }
+            }
+        </Loader>
+        </ChildContent>
+    </AdminNav>
+</div>
+
+<Modal Open="_confirm is not null" OpenChanged="v => { if (!v) _confirm = null; }" Title="@L["duplicates.confirmTitle"]">
+    <ChildContent>
+        @if (_confirm is { } g)
+        {
+            var keepId = KeepOf(g);
+            var plan = ReviewSelection.Removal(g.Copies, keepId);
+            <p>@L["duplicates.confirmKeep", ("path", g.Copies.First(c => c.TrackId == keepId).RelativePath)]</p>
+            @if (plan.Deleted.Count > 0)
+            {
+                <p class="form-error">@L["duplicates.confirmDelete"]</p>
+                <ul class="small">@foreach (var c in plan.Deleted) { <li class="mono">@c.RelativePath</li> }</ul>
+            }
+            @if (plan.Hidden.Count > 0)
+            {
+                <p>@L["duplicates.confirmHide"]</p>
+                <ul class="small">@foreach (var c in plan.Hidden) { <li class="mono">@c.RelativePath</li> }</ul>
+            }
+            <p class="muted small">@L["duplicates.mergeHint"]</p>
+        }
+    </ChildContent>
+    <Footer>
+        <button class="btn" @onclick="() => _confirm = null">@L["common.cancel"]</button>
+        <button class="btn danger" disabled="@_busy" @onclick="ResolveAsync">@L["duplicates.confirm"]</button>
+    </Footer>
+</Modal>
+
+@code {
+    private DuplicatesDto? _data;
+    private string? _error;
+    private DuplicateGroupDto? _confirm;
+    private bool _busy;
+    /// <summary>Copie choisie par groupe (sinon celle que suggère le serveur).</summary>
+    private readonly Dictionary<Guid, Guid> _keep = [];
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private static Guid GroupKey(DuplicateGroupDto g) => g.Copies.Min(c => c.TrackId);
+
+    private Guid KeepOf(DuplicateGroupDto g) =>
+        _keep.TryGetValue(GroupKey(g), out var id) && g.Copies.Any(c => c.TrackId == id) ? id : g.SuggestedKeepId;
+
+    private async Task LoadAsync()
+    {
+        _error = null;
+        try
+        {
+            _data = await Api.DuplicatesAsync();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            _error = L.Server(ex.Message);
+        }
+    }
+
+    private async Task FingerprintAsync()
+    {
+        try
+        {
+            await Api.ComputeFingerprintsAsync();
+            Ui.Notify(L["duplicates.fingerprintStarted"]);
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+    }
+
+    private async Task ResolveAsync()
+    {
+        if (_confirm is not { } group) return;
+        _busy = true;
+        try
+        {
+            var keep = KeepOf(group);
+            var result = await Api.ResolveDuplicatesAsync(new ResolveDuplicatesRequest(keep, ReviewSelection.Removal(group.Copies, keep).RemoveIds));
+            Ui.Notify(L["duplicates.resolved", ("deleted", L.Number(result?.Deleted.Count ?? 0)), ("hidden", L.Number(result?.Hidden.Count ?? 0))]);
+            _keep.Remove(GroupKey(group));
+            await LoadAsync();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+        finally
+        {
+            _busy = false;
+            _confirm = null;
+        }
+    }
+}

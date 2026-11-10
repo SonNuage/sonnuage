@@ -1,10 +1,8 @@
 using System.Text.Json;
 using SonNuage.Contracts;
 using SonNuage.Contracts.Localization;
-using SonNuage.Server.Api;
 using SonNuage.Server.Data;
 using SonNuage.Server.Library;
-using SonNuage.Server.Search;
 using SonNuage.Server.Youtube;
 using Microsoft.EntityFrameworkCore;
 
@@ -70,9 +68,11 @@ public sealed class AcoustIdRescanJob(YoutubeSettingsStore settings) : IJobHandl
 /// Prudence : titre et artiste sont corrigés si la correspondance dépasse le seuil d'acceptation (celui de la tâche,
 /// sinon le réglage YouTube).
 /// Album, édition MusicBrainz, numéros et année seulement si l'édition trouvée est le même album. Le genre seulement s'il manque.
-/// Les morceaux modifiés à la main (verrouillés) ne sont jamais touchés. Sans « appliquer », tout est seulement journalisé.
+/// Les morceaux modifiés à la main (verrouillés) ne sont jamais touchés. Sans « appliquer » ou sous le seuil, la
+/// correction est gardée pour la revue groupée de l'admin (voir <see cref="RescanReview"/>) ; un résultat déjà refusé
+/// n'est ni proposé ni appliqué.
 /// </summary>
-public sealed class LibraryMatchJob(MetadataResolver resolver, YoutubeSettingsStore settings, CoverLocator covers, TagWriter tags, SearchIndexer search) : IJobHandler
+public sealed class LibraryMatchJob(MetadataResolver resolver, YoutubeSettingsStore settings, RescanReview review) : IJobHandler
 {
     private const double SameAlbum = 0.8;
 
@@ -106,7 +106,7 @@ public sealed class LibraryMatchJob(MetadataResolver resolver, YoutubeSettingsSt
         ctx.Info(Tx.Key("jobs.rescan.best", ("artist", best.Artist), ("title", best.Title), ("album", best.Album ?? "?"), ("score", Math.Round(best.Score * 100))));
 
         var threshold = ctx.Get<double?>("threshold") ?? settings.Settings.AutoAcceptThreshold;
-        var outcome = Evaluate(track, best, apply, threshold);
+        var outcome = await review.ConcludeAsync(db, track, best, apply, threshold, ctx.SuiteId, ct);
         if (outcome.Changes.Count == 0)
         {
             ctx.Info(Tx.Key("jobs.rescan.unchanged"));
@@ -115,20 +115,16 @@ public sealed class LibraryMatchJob(MetadataResolver resolver, YoutubeSettingsSt
         }
         foreach (var (field, from, to, _) in outcome.Changes)
             ctx.Info(Tx.Key("jobs.rescan.change", ("field", Tx.Key("jobs.fields." + field)), ("from", Tx.Literal(from ?? "∅")), ("to", Tx.Literal(to))));
-
-        if (outcome.Result == "applied")
-        {
-            outcome.Apply(track);
-            await AdminEndpoints.ReassignAsync(db, covers, tags, [track], ct);
-            search.RequestReindex();
-        }
         ctx.Set("result", outcome.Result);
         ctx.Info(Tx.Key("jobs.rescan.result." + outcome.Result, ("score", Math.Round(best.Score * 100)), ("threshold", Math.Round(threshold * 100))));
     }
 
     internal sealed record Change(string Field, string? From, string To, Action<Track> Apply);
 
-    /// <summary>Ce que la correspondance changerait, et si elle est appliquée (« applied ») ou non (« same », « proposed », « locked », « low »).</summary>
+    /// <summary>
+    /// Ce que la correspondance changerait, et si elle est appliquée (« applied ») ou non (« same », « rejected » : déjà
+    /// refusée par l'admin, « proposed », « locked », « low »).
+    /// </summary>
     internal sealed record MatchOutcome(string Result, IReadOnlyList<Change> Changes)
     {
         public void Apply(Track track)
@@ -138,10 +134,11 @@ public sealed class LibraryMatchJob(MetadataResolver resolver, YoutubeSettingsSt
         }
     }
 
-    internal static MatchOutcome Evaluate(Track track, MetadataCandidateDto best, bool apply, double threshold)
+    internal static MatchOutcome Evaluate(Track track, MetadataCandidateDto best, bool apply, double threshold, bool rejected = false)
     {
         var changes = Changes(track, best);
         var result = changes.Count == 0 ? "same"
+            : rejected ? "rejected"
             : !apply ? "proposed"
             : track.MetadataLocked ? "locked"
             : best.Score < threshold ? "low"
