@@ -1,0 +1,79 @@
+@* ListenBrainz (facultatif, par compte) : jeton saisi ici, jamais réaffiché ; envoi des écoutes désactivé par défaut. *@
+@inject ApiClient Api
+@inject UiState Ui
+
+<section class="panel">
+    <h2>@L["listenbrainz.title"]</h2>
+    <p class="muted">@L["listenbrainz.intro"]</p>
+
+    @if (_account is { Connected: true } account)
+    {
+        <p><Icon Name="key" Size="16" /> @L["listenbrainz.saved", ("user", account.UserName)]</p>
+        <div class="field">
+            <label class="field check">
+                <input type="checkbox" checked="@account.Submit" disabled="@_busy" @onchange="e => SetSubmitAsync(e.Value is true)" />
+                <span>@L["listenbrainz.submit"]</span>
+            </label>
+            <small class="muted">@L["listenbrainz.submitHint"]</small>
+            @if (account.Sent > 0)
+            {
+                <small class="muted">@L["listenbrainz.sent", ("count", account.Sent)]</small>
+            }
+        </div>
+        <button class="btn danger" disabled="@_busy" @onclick="RemoveAsync">@L["listenbrainz.remove"]</button>
+    }
+    else if (_account is not null)
+    {
+        <form class="stack" @onsubmit="SaveAsync" @onsubmit:preventDefault="true">
+            <label class="field">
+                <span>@L["listenbrainz.token"]</span>
+                <input class="input mono" type="password" autocomplete="off" spellcheck="false" maxlength="@ListenBrainzTokenRequest.MaxLength"
+                       @bind="_token" required />
+                <small class="muted">@L["listenbrainz.tokenHint"]
+                    <a href="https://listenbrainz.org/settings/" target="_blank" rel="noopener noreferrer">listenbrainz.org/settings</a></small>
+            </label>
+            <button class="btn primary" type="submit" disabled="@(_busy || string.IsNullOrWhiteSpace(_token))">@L["listenbrainz.save"]</button>
+        </form>
+    }
+</section>
+
+@code {
+    private ListenBrainzAccountDto? _account;
+    private string _token = "";
+    private bool _busy;
+
+    protected override Task OnInitializedAsync() => Run(async () => _account = await Api.ListenBrainzAccountAsync());
+
+    private Task SaveAsync() => Run(async () =>
+    {
+        _account = await Api.SaveListenBrainzTokenAsync(_token.Trim());
+        _token = "";
+        Ui.Notify(L["listenbrainz.connected"]);
+    });
+
+    private Task RemoveAsync() => Run(async () =>
+    {
+        await Api.RemoveListenBrainzTokenAsync();
+        _account = new ListenBrainzAccountDto(false, null, false, 0);
+        Ui.Notify(L["listenbrainz.removed"]);
+    });
+
+    private Task SetSubmitAsync(bool enabled) => Run(async () => _account = await Api.SetListenBrainzSubmitAsync(enabled));
+
+    private async Task Run(Func<Task> action)
+    {
+        _busy = true;
+        try
+        {
+            await action();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}
