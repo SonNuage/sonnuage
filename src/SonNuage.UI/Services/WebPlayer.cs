@@ -11,14 +11,13 @@ public sealed class WebPlayer : IPlayer, IRestorablePlayer, IAdoptablePlayer, IA
 {
     private const string QueueStorageKey = "sonnuage.queue";
     private const string ResumeStorageKey = "sonnuage.resume";
-    /// <summary>Une écoute compte dans l'historique au-delà de 30 s (ou à la fin d'une piste plus courte).</summary>
-    private const double PlayThresholdSeconds = 30;
 
     private readonly IJSRuntime js;
     private readonly ApiClient api;
     private readonly PlaybackSettings settings;
     private readonly IKeyValueStore store;
     private readonly AccountStore accounts;
+    private readonly PlayHistory history;
     private readonly PlayQueue _queue = new();
     // Clé de la file du compte qui joue, gardée pour la sauver sous ce compte quand on en change (appli de bureau).
     private string? _queueKey;
@@ -29,7 +28,8 @@ public sealed class WebPlayer : IPlayer, IRestorablePlayer, IAdoptablePlayer, IA
     private double _position;
     private double _volume = 1;
     private string? _error;
-    private bool _reported;
+    /// <summary>Écoute du morceau en cours, jusqu'à ce qu'elle parte dans l'historique.</summary>
+    private ListenTracker? _listen;
     // Un seul appel de lecture infinie à la fois (deux changements de piste rapprochés ne doivent pas doubler l'ajout).
     private bool _extending;
     /// <summary>Radio thématique en cours : la file se complète avec ses morceaux.</summary>
@@ -41,8 +41,9 @@ public sealed class WebPlayer : IPlayer, IRestorablePlayer, IAdoptablePlayer, IA
 
     public bool SupportsCrossfade => true;
 
-    public WebPlayer(IJSRuntime js, ApiClient api, PlaybackSettings settings, IKeyValueStore store, AccountStore accounts)
+    public WebPlayer(IJSRuntime js, ApiClient api, PlaybackSettings settings, IKeyValueStore store, AccountStore accounts, PlayHistory history)
     {
+        this.history = history;
         this.js = js;
         this.api = api;
         this.settings = settings;
@@ -255,7 +256,7 @@ public sealed class WebPlayer : IPlayer, IRestorablePlayer, IAdoptablePlayer, IA
         var track = _queue.Current;
         if (track is null) return;
         _error = null;
-        _reported = false;
+        _listen = new ListenTracker(DateTimeOffset.UtcNow, startAt);
         _position = startAt;
         _buffering = autoplay;
         Changed();
@@ -350,19 +351,16 @@ public sealed class WebPlayer : IPlayer, IRestorablePlayer, IAdoptablePlayer, IA
 
     private string Key(TrackDto t) => $"{t.Id:N}-{settings.Quality.ToWire()}";
 
-    private async Task ReportCurrentAsync(bool completed)
+    /// <summary>
+    /// Fin de l'écoute en cours : elle part dans l'historique (ou dans la file hors ligne) sans faire attendre le
+    /// lecteur. Une seule fois par morceau chargé.
+    /// </summary>
+    private Task ReportCurrentAsync(bool completed)
     {
-        var track = _queue.Current;
-        if (track is null || _reported) return;
-        if (!completed && _position < Math.Min(PlayThresholdSeconds, track.DurationSeconds * 0.5)) return;
-        _reported = true;
-        try
-        {
-            await api.ReportPlayAsync(new PlayEventRequest(track.Id, completed ? track.DurationSeconds : _position, completed));
-        }
-        catch (Exception ex) when (ex is ApiException or HttpRequestException)
-        {
-        }
+        var (track, listen) = (_queue.Current, _listen);
+        _listen = null;
+        if (track is not null && listen is not null) _ = history.ReportAsync(track, listen.StartedAt, listen.Seconds, completed);
+        return Task.CompletedTask;
     }
 
     public async Task PrepareReloadAsync()
@@ -431,6 +429,7 @@ public sealed class WebPlayer : IPlayer, IRestorablePlayer, IAdoptablePlayer, IA
     public void OnTime(double seconds)
     {
         _position = seconds;
+        _listen?.At(seconds);
         Changed();
     }
 

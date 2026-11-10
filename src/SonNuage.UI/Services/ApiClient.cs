@@ -11,7 +11,7 @@ public sealed class ApiException(HttpStatusCode status, string message) : Except
 }
 
 /// <summary>Client typé de l'API. Ajoute le jeton, réessaie une fois après renouvellement sur 401.</summary>
-public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint endpoint, AuthSession auth) : IPlaybackPreferencesApi
+public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint endpoint, AuthSession auth) : IPlaybackPreferencesApi, IPlayReportApi
 {
     // ---- Bibliothèque ----
     // Route publique : lue sans session (écran de connexion, démarrage avant la reprise de session, message de mise à jour).
