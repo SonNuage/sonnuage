@@ -560,3 +560,31 @@ public sealed class DiscoveryTrack
     /// <summary>Recherche YouTube faite (trouvée ou non) : on ne la refait pas à chaque actualisation.</summary>
     public DateTimeOffset? MatchedAt { get; set; }
 }
+
+/// <summary>
+/// Cache des données externes : quand une donnée a été lue (clé : source et identifiant MusicBrainz, par exemple
+/// « mb-release-groups:{mbid} ») et jusqu'à quand elle vaut. Passé l'échéance, une tâche la relit.
+/// </summary>
+public sealed class ExternalFetch
+{
+    public const int MaxKeyLength = 100;
+    public required string Key { get; set; }
+    public DateTimeOffset FetchedAt { get; set; }
+    public DateTimeOffset ExpiresAt { get; set; }
+}
+
+/// <summary>Groupe de parutions MusicBrainz (album, EP, single…) d'un artiste de la bibliothèque, lu par la tâche des nouveautés.</summary>
+public sealed class ArtistRelease
+{
+    public required string ArtistMbid { get; set; }
+    public Guid ReleaseGroupId { get; set; }
+    public required string Title { get; set; }
+    public string? PrimaryType { get; set; }
+    /// <summary>Types secondaires MusicBrainz (« Live », « Compilation »…), séparés par des virgules.</summary>
+    public string SecondaryTypes { get; set; } = "";
+    /// <summary>Première sortie telle que donnée (« 2026 », « 2026-11-20 »).</summary>
+    public string? FirstReleaseDate { get; set; }
+    /// <summary>Premier jour de <see cref="FirstReleaseDate"/>, pour trier et filtrer.</summary>
+    public DateOnly? ReleaseDate { get; set; }
+    public DateTimeOffset FetchedAt { get; set; }
+}

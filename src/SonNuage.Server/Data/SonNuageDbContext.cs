@@ -32,6 +32,8 @@ public sealed class SonNuageDbContext(DbContextOptions<SonNuageDbContext> option
     public DbSet<SavedQueueEntry> SavedQueueEntries => Set<SavedQueueEntry>();
     public DbSet<TrackAudioFeatures> AudioFeatures => Set<TrackAudioFeatures>();
     public DbSet<TrackTag> TrackTags => Set<TrackTag>();
+    public DbSet<ExternalFetch> ExternalFetches => Set<ExternalFetch>();
+    public DbSet<ArtistRelease> ArtistReleases => Set<ArtistRelease>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -140,6 +142,23 @@ public sealed class SonNuageDbContext(DbContextOptions<SonNuageDbContext> option
             e.HasKey(x => x.TrackId);
             e.Property(x => x.Error).HasMaxLength(TrackAudioFeatures.MaxErrorLength);
             e.HasOne(x => x.Track).WithOne().HasForeignKey<TrackAudioFeatures>(x => x.TrackId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<ExternalFetch>(e =>
+        {
+            e.HasKey(x => x.Key);
+            e.Property(x => x.Key).HasMaxLength(ExternalFetch.MaxKeyLength);
+        });
+
+        b.Entity<ArtistRelease>(e =>
+        {
+            e.HasKey(x => new { x.ArtistMbid, x.ReleaseGroupId });
+            e.Property(x => x.ArtistMbid).HasMaxLength(36);
+            e.Property(x => x.Title).HasMaxLength(500);
+            e.Property(x => x.PrimaryType).HasMaxLength(32);
+            e.Property(x => x.SecondaryTypes).HasMaxLength(200);
+            e.Property(x => x.FirstReleaseDate).HasMaxLength(10);
+            e.HasIndex(x => x.ReleaseDate);
         });
 
         b.Entity<TrackTag>(e =>
