@@ -204,7 +204,9 @@
       "unknownArtist": "Artiste introuvable.",
       "notCancelable": "Cette tâche est déjà terminée.",
       "notRetryable": "Seule une tâche en échec ou annulée, dont l'étape précédente a réussi, peut être relancée.",
-      "suiteActive": "Cette suite a encore des tâches en cours ou en attente : annulez-la d’abord."
+      "suiteActive": "Cette suite a encore des tâches en cours ou en attente : annulez-la d’abord.",
+      "scheduleDays": "Choisissez au moins un jour de la semaine.",
+      "scheduleZone": "Fuseau horaire inconnu."
     },
     "requests": {
       "badVideo": "Vidéo YouTube attendue (identifiant ou lien youtube.com, youtu.be).",

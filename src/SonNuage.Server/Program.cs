@@ -127,6 +127,8 @@ builder.Services.AddSingleton<SonNuage.Server.Storage.BackupSettingsStore>();
 builder.Services.AddSingleton<SonNuage.Server.Storage.DatabaseBackups>();
 builder.Services.AddSingleton<IJobHandler, SonNuage.Server.Storage.DatabaseBackupJob>();
 builder.Services.AddHostedService<SonNuage.Server.Storage.BackupScheduler>();
+builder.Services.AddSingleton<JobScheduler>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<JobScheduler>());
 
 // Analyse audio (Essentia) : caractéristiques des morceaux pour les radios thématiques.
 builder.Services.AddSingleton<SonNuage.Server.Analysis.IAudioAnalyzer, SonNuage.Server.Analysis.EssentiaAudioAnalyzer>();
@@ -199,6 +201,7 @@ app.MapPlaylistEndpoints();
 app.MapAdminEndpoints();
 app.MapYoutubeEndpoints();
 app.MapJobEndpoints();
+app.MapJobScheduleEndpoints();
 app.MapExtensionEndpoints();
 app.MapDashboardEndpoints();
 app.MapCrashReportEndpoints();

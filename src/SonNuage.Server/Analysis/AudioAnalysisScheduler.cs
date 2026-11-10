@@ -27,18 +27,17 @@ public sealed class AudioAnalysisScheduler(
     /// <summary>Demande une vérification en arrière-plan.</summary>
     public void Request() => _requests.Writer.TryWrite(true);
 
-    /// <summary>Crée la suite d'analyse s'il y a des morceaux en attente et qu'aucune ne tourne déjà. Renvoie vrai si elle est créée.</summary>
-    public async Task<bool> RunNowAsync(CancellationToken ct)
+    /// <summary>Crée la suite d'analyse s'il y a des morceaux en attente et qu'aucune ne tourne déjà. Renvoie la suite créée, ou null.</summary>
+    public async Task<JobSuite?> RunNowAsync(CancellationToken ct)
     {
-        if (!Enabled) return false;
+        if (!Enabled) return null;
         await _gate.WaitAsync(ct);
         try
         {
             using var scope = scopes.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<SonNuageDbContext>();
-            if (await AudioAnalysis.ActiveJobs(db).AnyAsync(ct) || !await AudioAnalysis.Pending(db).AnyAsync(ct)) return false;
-            await scope.ServiceProvider.GetRequiredService<JobEngine>().EnqueueAsync(db, AudioAnalysisJob.Plan(), ct);
-            return true;
+            if (await AudioAnalysis.ActiveJobs(db).AnyAsync(ct) || !await AudioAnalysis.Pending(db).AnyAsync(ct)) return null;
+            return await scope.ServiceProvider.GetRequiredService<JobEngine>().EnqueueAsync(db, AudioAnalysisJob.Plan(), ct);
         }
         finally
         {

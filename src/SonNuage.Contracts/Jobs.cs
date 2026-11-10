@@ -64,3 +64,45 @@ public sealed record JobLogDto(long Id, DateTimeOffset At, string Level, string 
 /// <param name="Threshold">Seuil de correction automatique (0,5 à 1). Null = celui des réglages YouTube.</param>
 /// <param name="IncludeIdentified">Rescan : vérifier aussi les morceaux déjà identifiés (identifiant MusicBrainz connu).</param>
 public sealed record CreateJobRequest(string Kind, Guid? ArtistId, bool Apply, double? Threshold = null, bool IncludeIdentified = false);
+
+/// <summary>Types de tâches planifiables (voir <see cref="JobScheduleRequest"/>).</summary>
+public static class ScheduledJobKinds
+{
+    /// <summary>Rescan AcoustID de toute la bibliothèque (options : <see cref="JobScheduleOptions"/>).</summary>
+    public const string AcoustIdRescan = "acoustid-rescan";
+    public const string LibraryScan = "library-scan";
+    public const string SearchReindex = "search-reindex";
+    public const string TranscodePurge = "transcode-purge";
+    /// <summary>Analyse audio des morceaux en attente (si l'analyse est activée).</summary>
+    public const string AudioAnalysis = "audio-analysis";
+    public const string DiscoveryRefresh = "discovery-refresh";
+    public const string DatabaseBackup = "db-backup";
+
+    public static readonly IReadOnlyList<string> All =
+        [AcoustIdRescan, LibraryScan, SearchReindex, TranscodePurge, AudioAnalysis, DiscoveryRefresh, DatabaseBackup];
+}
+
+/// <summary>Options du rescan AcoustID planifié, comme à la création d'une tâche depuis l'admin.</summary>
+/// <param name="Threshold">Seuil de correction automatique (0,5 à 1). Null = celui des réglages YouTube.</param>
+public sealed record JobScheduleOptions(bool Apply = false, double? Threshold = null, bool IncludeIdentified = false);
+
+/// <summary>
+/// Création ou modification d'une tâche planifiée : chaque jour de <paramref name="Days"/> (0 = dimanche … 6 = samedi,
+/// comme <see cref="DayOfWeek"/>) à l'heure <paramref name="At"/> du fuseau <paramref name="TimeZone"/> (identifiant IANA).
+/// </summary>
+public sealed record JobScheduleRequest(string Kind, IReadOnlyList<int> Days, TimeOnly At, string TimeZone, bool Enabled = true,
+    JobScheduleOptions? Options = null);
+
+/// <summary>Tâche planifiée. NextRunAt : prochain passage (null si elle est désactivée).</summary>
+public sealed record JobScheduleDto(
+    Guid Id,
+    string Kind,
+    IReadOnlyList<int> Days,
+    TimeOnly At,
+    string TimeZone,
+    bool Enabled,
+    JobScheduleOptions? Options,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? LastRunAt,
+    Guid? LastSuiteId,
+    DateTimeOffset? NextRunAt);

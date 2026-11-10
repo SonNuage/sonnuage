@@ -204,7 +204,9 @@
       "unknownArtist": "Artist not found.",
       "notCancelable": "This task has already finished.",
       "notRetryable": "Only a failed or canceled task whose previous step succeeded can be retried.",
-      "suiteActive": "This suite still has running or waiting tasks: cancel it first."
+      "suiteActive": "This suite still has running or waiting tasks: cancel it first.",
+      "scheduleDays": "Pick at least one day of the week.",
+      "scheduleZone": "Unknown time zone."
     },
     "requests": {
       "badVideo": "A YouTube video is expected (id or youtube.com, youtu.be link).",
