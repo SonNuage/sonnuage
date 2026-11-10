@@ -239,8 +239,13 @@ plus simple (données locales) à la plus ouverte (bases publiques), sur un mêm
 
 **Socle (préalable à tout le reste)**
 
-- 💡 **Historique d'écoute par utilisateur** : titre, début, durée écoutée, écoute complète ou passée, appareil.
-  Envoyé par chaque appli (web, Android, ordinateur), mis en file hors ligne comme les réglages de lecture.
+- ✅ **Historique d'écoute par utilisateur** : titre, début, durée réellement écoutée (les sauts ne comptent pas),
+  écoute complète ou passée, appli (web, android, desktop, ios, ou le nom de l'appli Subsonic). Une écoute compte
+  au-delà de 30 s ou de la moitié du morceau (`ListenRules`, commun aux applis et au serveur). Chaque appli passe par
+  `PlayHistory` (SonNuage.UI) : envoi immédiat, ou file locale par compte hors ligne, renvoyée au démarrage, au
+  changement de compte et à chaque écoute ; un identifiant par écoute évite les doublons. Page **Historique**
+  (barre latérale, et Bibliothèque → Playlists sur mobile) : temps d'écoute sur 7 et 30 jours, artistes et titres
+  les plus écoutés (7 jours, 30 jours, 1 an, depuis le début), écoutes par jour, effacement d'une écoute ou de tout.
 - ✅ Identifiants MusicBrainz sur les morceaux et les albums (étape 3 ci-dessus) : la clé commune avec les bases
   publiques. Reste à poser l'identifiant MusicBrainz de l'**artiste**.
 - 💡 **Cache des données externes** par identifiant MusicBrainz, avec date d'expiration, et appels passés par le
@@ -269,8 +274,14 @@ plus simple (données locales) à la plus ouverte (bases publiques), sur un mêm
 - 💡 ListenBrainz sur deux niveaux (validés le 8 novembre 2026) :
   1. sans rien envoyer : artistes proches et nouveautés demandés à partir de la bibliothèque ; aucune écoute ne
      quitte le serveur ;
-  2. facultatif, par compte : l'utilisateur saisit son jeton ListenBrainz dans Réglages et ses écoutes y sont
-     envoyées (désactivé par défaut), en échange de recommandations personnelles.
+  2. ✅ facultatif, par compte : l'utilisateur saisit son jeton ListenBrainz dans Réglages (vérifié par
+     `validate-token`, chiffré comme le mot de passe Subsonic, jamais réaffiché) et coche « Envoyer mes écoutes »
+     (désactivé par défaut). Seules les écoutes faites depuis, et qui comptent pour ListenBrainz (moitié du morceau
+     ou 4 minutes), partent par la tâche « listenbrainz.submit » (file « Écoutes »), toutes les 5 minutes s'il y en a,
+     avec l'identifiant MusicBrainz de l'enregistrement ; bridage et pannes respectés (la tâche revient plus tard),
+     jeton révoqué = compte délié. En échange, rubrique « Recommandé pour vous » sur l'accueil (recommandations
+     personnelles de ListenBrainz retrouvées dans la bibliothèque) ; celles absentes du serveur, avec « Demander »,
+     pour les contributeurs et administrateurs. Reste : « en cours d'écoute » (playing_now), non envoyé.
 
 **Découverte par artiste** (demandé le 9 novembre 2026)
 
