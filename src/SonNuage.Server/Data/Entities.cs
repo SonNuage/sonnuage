@@ -527,3 +527,82 @@ public sealed class DiscoveryTrack
     /// <summary>Recherche YouTube faite (trouvée ou non) : on ne la refait pas à chaque actualisation.</summary>
     public DateTimeOffset? MatchedAt { get; set; }
 }
+
+public enum RescanProposalStatus
+{
+    Pending,
+    Accepted,
+    Rejected,
+    /// <summary>Plus d'actualité : remplacée par un résultat plus récent, ou morceau corrigé autrement entre-temps.</summary>
+    Superseded,
+}
+
+/// <summary>
+/// Correction proposée par un rescan AcoustID et non appliquée d'office (rescan sans « appliquer », score sous le
+/// seuil) : l'admin l'accepte ou la refuse dans la revue groupée. Un refus est retenu : le même résultat n'est plus
+/// proposé, ni appliqué, pour ce morceau.
+/// </summary>
+public sealed class RescanProposal
+{
+    public const int MaxTextLength = 512;
+    public const int MaxDecidedByLength = 100;
+
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid TrackId { get; set; }
+    public Track Track { get; set; } = null!;
+    /// <summary>Suite du rescan qui l'a produite (null une fois la suite supprimée).</summary>
+    public Guid? SuiteId { get; set; }
+    public JobSuite? Suite { get; set; }
+    public RescanProposalStatus Status { get; set; }
+    public double Score { get; set; }
+    /// <summary>Empreinte du résultat proposé (titre, artiste, album, identifiants MusicBrainz), pour reconnaître un refus.</summary>
+    public required string Signature { get; set; }
+    /// <summary>Résultat MusicBrainz retenu (<see cref="Contracts.MetadataCandidateDto"/> en JSON), rejoué tel quel à l'acceptation.</summary>
+    public required string Candidate { get; set; }
+    /// <summary>Titre, artiste et album proposés (affichage, filtres).</summary>
+    public required string Title { get; set; }
+    public required string ArtistName { get; set; }
+    public string? AlbumTitle { get; set; }
+    public Guid? RecordingId { get; set; }
+    public Guid? ReleaseId { get; set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? DecidedAt { get; set; }
+    /// <summary>Admin qui a tranché (nom gardé même s'il est supprimé).</summary>
+    public string? DecidedBy { get; set; }
+}
+
+/// <summary>
+/// Empreinte Chromaprint brute d'un morceau (fpcalc), calculée en local : deux fichiers du même enregistrement ont des
+/// empreintes très proches, quel que soit leur format. Recalculée quand le fichier change.
+/// </summary>
+public sealed class TrackFingerprint
+{
+    public const int MaxErrorLength = 500;
+
+    public Guid TrackId { get; set; }
+    public Track Track { get; set; } = null!;
+    /// <summary>Début de l'empreinte : entiers 32 bits petit-boutistes (environ 8 par seconde). Null si le calcul a échoué.</summary>
+    public byte[]? Data { get; set; }
+    public double DurationSeconds { get; set; }
+    /// <summary>Date du fichier au calcul : un fichier remplacé est recalculé.</summary>
+    public DateTime FileModifiedUtc { get; set; }
+    public DateTimeOffset ComputedAt { get; set; }
+    /// <summary>Échec du calcul (fichier illisible…) : pas de nouvel essai avant un changement du fichier.</summary>
+    public string? Error { get; set; }
+}
+
+/// <summary>
+/// Fichier de la bibliothèque en lecture seule (<c>music/</c>) écarté comme doublon d'un autre morceau : le scan ne
+/// l'indexe plus. Le fichier, lui, reste sur le disque.
+/// </summary>
+public sealed class HiddenFile
+{
+    public const int MaxPathLength = 2048;
+
+    /// <summary>Chemin absolu, tel que le scan le voit.</summary>
+    public required string Path { get; set; }
+    /// <summary>Morceau gardé à sa place (information : il peut avoir disparu depuis).</summary>
+    public Guid? KeptTrackId { get; set; }
+    public DateTimeOffset HiddenAt { get; set; }
+    public string? HiddenBy { get; set; }
+}
