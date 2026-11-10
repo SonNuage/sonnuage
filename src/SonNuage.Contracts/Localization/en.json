@@ -906,6 +906,7 @@
     "notBefore": "not before {date}",
     "laneLoad": "{running}/{capacity} running · {queued} waiting",
     "lanePaused": "Paused · {queued} waiting",
+    "laneQuiet": "Quiet hours until {until} · {queued} waiting",
     "pause": "Pause",
     "resume": "Resume",
     "pauseAll": "Pause all",
@@ -995,7 +996,8 @@
       "dependencyFailed": "Previous step failed or was canceled.",
       "lost": "Abandoned: interrupted too many times (server stopped while it ran).",
       "resumed": "Resumed after a server interruption.",
-      "paused": "Lane paused: the task will start again when the lane resumes."
+      "paused": "Lane paused: the task will start again when the lane resumes.",
+      "quietHours": "Quiet hours: the task will start again when they end."
     },
     "yt": {
       "notQueued": "Import deleted or already handled: nothing to do.",

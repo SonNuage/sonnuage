@@ -23,6 +23,7 @@ public sealed class JobEngine(
     IServiceScopeFactory scopes,
     IEnumerable<IJobHandler> handlers,
     YoutubeSettingsStore youtubeSettings,
+    QuietHoursStore quietHours,
     IOptions<SonNuageOptions> options,
     TimeProvider time,
     ILogger<JobEngine> logger) : BackgroundService
@@ -188,16 +189,25 @@ public sealed class JobEngine(
         foreach (var lane in lanes) Wake(lane);
     }
 
-    /// <summary>Tâche en cours sur cette instance. <see cref="Paused"/> distingue une pause d'une annulation.</summary>
+    /// <summary>Fin des heures calmes si elles retiennent la file en ce moment, sinon null.</summary>
+    public DateTimeOffset? QuietUntil(string lane) => quietHours.Until(lane, time.GetUtcNow());
+
+    /// <summary>
+    /// Tâche en cours sur cette instance. <see cref="Paused"/> distingue une pause (de la file ou des heures calmes,
+    /// <see cref="PauseLog"/> dit laquelle) d'une annulation.
+    /// </summary>
     private sealed class RunningJob(CancellationTokenSource cts, string lane)
     {
         private volatile bool _paused;
+        private volatile string _pauseLog = "jobs.log.paused";
         public CancellationTokenSource Cts => cts;
         public string Lane => lane;
         public bool Paused => _paused;
+        public string PauseLog => _pauseLog;
 
-        public async Task PauseAsync()
+        public async Task PauseAsync(string log = "jobs.log.paused")
         {
+            if (!_paused) _pauseLog = log;
             _paused = true;
             await cts.CancelAsync();
         }
@@ -281,7 +291,8 @@ public sealed class JobEngine(
             try
             {
                 var capacity = Capacity(lane);
-                while (running.Count < capacity && await TryClaimAsync(lane, capacity, ct) is { } id)
+                // Heures calmes : rien ne démarre ; la relève périodique reprend la file à la fin de la plage.
+                while (running.Count < capacity && QuietUntil(lane) is null && await TryClaimAsync(lane, capacity, ct) is { } id)
                     running.Add(Task.Run(() => RunAsync(id, ct), CancellationToken.None));
             }
             catch (Exception ex) when (ex is DbException or InvalidOperationException && !ct.IsCancellationRequested)
@@ -374,8 +385,8 @@ public sealed class JobEngine(
         }
         catch (OperationCanceledException) when (run.Paused)
         {
-            // File en pause : la tâche attend la reprise, sans compter cette tentative.
-            Log(id, "info", Tx.Key("jobs.log.paused"));
+            // File en pause ou heures calmes : la tâche attend la reprise, sans compter cette tentative.
+            Log(id, "info", Tx.Key(run.PauseLog));
             outcome = new Outcome(JobStatus.Queued, Deferred: true);
         }
         catch (OperationCanceledException) when (cts.IsCancellationRequested)
@@ -488,6 +499,7 @@ public sealed class JobEngine(
                 lastProgress = progress;
                 if (await db.Jobs.AnyAsync(j => j.Id == id && j.CancelRequested, stop)) await job.Cts.CancelAsync();
                 else if (await db.JobLanePauses.AnyAsync(p => p.Lane == job.Lane, stop)) await job.PauseAsync();
+                else if (QuietUntil(job.Lane) is not null) await job.PauseAsync("jobs.log.quietHours");
             }
         }
         catch (OperationCanceledException)

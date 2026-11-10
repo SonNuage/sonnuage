@@ -27,7 +27,7 @@ public static class JobEndpoints
             var laneDtos = JobLanes.All.Select(l => new JobLaneDto(l, engine.Capacity(l),
                 lanes.Where(x => x.Lane == l && x.Status == JobStatus.Running).Sum(x => x.Count),
                 lanes.Where(x => x.Lane == l && x.Status == JobStatus.Queued).Sum(x => x.Count),
-                paused.Contains(l))).ToList();
+                paused.Contains(l), engine.QuietUntil(l))).ToList();
 
             var query = db.JobSuites.Select(s => new SuiteRow
             {
@@ -60,6 +60,17 @@ public static class JobEndpoints
                 .ThenByDescending(r => r.Suite.CreatedAt)
                 .Skip(o).Take(l).ToListAsync(ct);
             return new JobsOverviewDto(laneDtos, new PagedResult<JobSuiteDto>(rows.Select(ToDto).ToList(), total, o, l));
+        });
+
+        g.MapGet("/quiet-hours", (QuietHoursStore store) => store.Settings);
+        g.MapPut("/quiet-hours", (QuietHoursDto q, QuietHoursStore store, JobEngine engine) =>
+        {
+            if (q.Lanes.Any(l => !JobLanes.All.Contains(l)) || QuietHours.Zone(q.TimeZone) is null) return Results.BadRequest();
+            var saved = q with { Lanes = q.Lanes.Distinct().ToList() };
+            store.Save(saved);
+            // Fin de plage avancée : les files repartent sans attendre la relève.
+            engine.WakeAll();
+            return Results.Ok(saved);
         });
 
         g.MapGet("/suites/{id:guid}", async (Guid id, int? offset, int? limit, SonNuageDbContext db, CancellationToken ct) =>

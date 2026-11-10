@@ -201,6 +201,49 @@ public sealed class JobTests(JobsFactory factory) : IClassFixture<JobsFactory>
     }
 
     [Fact]
+    public async Task Quiet_hours_hold_their_lanes_and_release_them_when_turned_off()
+    {
+        var admin = await factory.AdminClientAsync();
+        var plan = new JobPlan("test", "heures calmes").Then(ProbeJob.Definition, "bloquée", new { block = true });
+        await EnqueueAsync(plan);
+        var running = await WaitAsync(admin, plan.Last.Id, "Running");
+        var now = TimeOnly.FromDateTime(DateTime.UtcNow);
+        var quiet = new QuietHoursDto(true, now.AddHours(-1), now.AddHours(1), [JobLanes.AcoustId], "UTC");
+        try
+        {
+            var saved = await admin.PutAsJsonAsync("/api/admin/jobs/quiet-hours", quiet, Ct);
+            saved.EnsureSuccessStatusCode();
+            Assert.Equal([JobLanes.AcoustId], (await saved.Content.ReadFromJsonAsync<QuietHoursDto>(Ct))!.Lanes);
+            // Plage en cours : la tâche est interrompue et attend, sans compter de tentative.
+            var held = await WaitAsync(admin, running.Id, "Queued");
+            Assert.Equal(0, held.Attempts);
+            await Task.Delay(JobEngine.PollInterval * 4, Ct);
+            Assert.Equal("Queued", (await WaitAsync(admin, running.Id, "Queued", "Running")).Status);
+            var overview = await admin.GetFromJsonAsync<JobsOverviewDto>("/api/admin/jobs", Ct);
+            Assert.NotNull(Assert.Single(overview!.Lanes, l => l.Lane == JobLanes.AcoustId).QuietUntil);
+            Assert.Null(Assert.Single(overview.Lanes, l => l.Lane == JobLanes.Download).QuietUntil);
+            Assert.Equal(quiet.Start, (await admin.GetFromJsonAsync<QuietHoursDto>("/api/admin/jobs/quiet-hours", Ct))!.Start);
+        }
+        finally
+        {
+            (await admin.PutAsJsonAsync("/api/admin/jobs/quiet-hours", quiet with { Enabled = false }, Ct)).EnsureSuccessStatusCode();
+        }
+        await WaitAsync(admin, running.Id, "Running");
+        (await admin.PostAsync($"/api/admin/jobs/{running.Id}/cancel", null, Ct)).EnsureSuccessStatusCode();
+        await WaitAsync(admin, running.Id, "Canceled");
+    }
+
+    [Fact]
+    public async Task Quiet_hours_reject_unknown_lanes_and_time_zones()
+    {
+        var admin = await factory.AdminClientAsync();
+        var ok = QuietHoursDto.Defaults with { TimeZone = "UTC" };
+        Assert.Equal(HttpStatusCode.BadRequest, (await admin.PutAsJsonAsync("/api/admin/jobs/quiet-hours", ok with { Lanes = ["nope"] }, Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await admin.PutAsJsonAsync("/api/admin/jobs/quiet-hours", ok with { TimeZone = "Mars/Olympus" }, Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await factory.CreateClient().GetAsync("/api/admin/jobs/quiet-hours", Ct)).StatusCode);
+    }
+
+    [Fact]
     public async Task Every_lane_can_be_paused_and_resumed_at_once()
     {
         var admin = await factory.AdminClientAsync();

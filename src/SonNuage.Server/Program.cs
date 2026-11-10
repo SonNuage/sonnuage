@@ -75,6 +75,7 @@ builder.Services.AddHttpClient(YoutubeTools.HttpClientName, http =>
 MusicBrainzClient.ConfigureHttp(builder.Services.AddHttpClient(MusicBrainzClient.HttpClientName));
 builder.Services.AddSingleton<YoutubeTools>();
 builder.Services.AddSingleton<YoutubeSettingsStore>();
+builder.Services.AddSingleton<SonNuage.Server.Jobs.QuietHoursStore>();
 builder.Services.AddSingleton<YtDlp>();
 builder.Services.AddSingleton<PreviewService>();
 builder.Services.AddSingleton<StorageGuard>();

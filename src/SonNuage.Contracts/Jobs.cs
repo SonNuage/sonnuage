@@ -2,9 +2,19 @@ namespace SonNuage.Contracts;
 
 /// <summary>
 /// État d'une file d'exécution : capacité (tâches simultanées), en cours, en attente, et pause demandée depuis l'admin
-/// (ses tâches attendent la reprise ; celle qui tournait a été interrompue et reprendra).
+/// (ses tâches attendent la reprise ; celle qui tournait a été interrompue et reprendra). QuietUntil : file retenue par
+/// les heures calmes jusqu'à cette heure.
 /// </summary>
-public sealed record JobLaneDto(string Lane, int Capacity, int Running, int Queued, bool Paused = false);
+public sealed record JobLaneDto(string Lane, int Capacity, int Running, int Queued, bool Paused = false, DateTimeOffset? QuietUntil = null);
+
+/// <summary>
+/// Heures calmes : de Start à End (heure locale du fuseau TimeZone, identifiant IANA ; la plage peut passer minuit),
+/// les files listées ne démarrent rien et leurs tâches en cours sont interrompues, puis reprennent à la fin de la plage.
+/// </summary>
+public sealed record QuietHoursDto(bool Enabled, TimeOnly Start, TimeOnly End, IReadOnlyList<string> Lanes, string TimeZone)
+{
+    public static readonly QuietHoursDto Defaults = new(false, new TimeOnly(8, 0), new TimeOnly(23, 0), ["analysis"], "Europe/Paris");
+}
 
 /// <summary>
 /// Suite de tâches. Status : « Running », « Queued » (rien ne tourne encore), « Failed », « Canceled » ou « Succeeded ».

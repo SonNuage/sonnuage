@@ -906,6 +906,7 @@
     "notBefore": "pas avant le {date}",
     "laneLoad": "{running}/{capacity} en cours · {queued} en attente",
     "lanePaused": "En pause · {queued} en attente",
+    "laneQuiet": "Heures calmes jusqu'à {until} · {queued} en attente",
     "pause": "Mettre en pause",
     "resume": "Reprendre",
     "pauseAll": "Tout mettre en pause",
@@ -995,7 +996,8 @@
       "dependencyFailed": "Étape précédente en échec ou annulée.",
       "lost": "Abandonnée : interrompue trop de fois (arrêt du serveur pendant son exécution).",
       "resumed": "Reprise après une interruption du serveur.",
-      "paused": "File mise en pause : la tâche repartira quand la file reprendra."
+      "paused": "File mise en pause : la tâche repartira quand la file reprendra.",
+      "quietHours": "Heures calmes : la tâche reprendra à la fin de la plage."
     },
     "yt": {
       "notQueued": "Import supprimé ou déjà traité : rien à faire.",
