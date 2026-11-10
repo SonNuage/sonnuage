@@ -195,6 +195,10 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     public Task RetryJobAsync(Guid id) => SendAsync(HttpMethod.Post, $"{Jobs}/{id}/retry");
     public Task CancelJobSuiteAsync(Guid id) => SendAsync(HttpMethod.Post, $"{Jobs}/suites/{id}/cancel");
     public Task DeleteJobSuiteAsync(Guid id) => SendAsync(HttpMethod.Delete, $"{Jobs}/suites/{id}");
+    /// <summary>Met en pause une file, ou toutes (lane null).</summary>
+    public Task PauseJobLaneAsync(string? lane) => SendAsync(HttpMethod.Post, lane is null ? $"{Jobs}/lanes/pause" : $"{Jobs}/lanes/{Uri.EscapeDataString(lane)}/pause");
+    /// <summary>Reprend une file, ou toutes (lane null).</summary>
+    public Task ResumeJobLaneAsync(string? lane) => SendAsync(HttpMethod.Post, lane is null ? $"{Jobs}/lanes/resume" : $"{Jobs}/lanes/{Uri.EscapeDataString(lane)}/resume");
 
     // ---- URL média (jeton en query) ----
 

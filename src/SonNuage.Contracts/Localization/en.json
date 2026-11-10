@@ -930,6 +930,7 @@
       "metadata": "Metadata",
       "library": "Library",
       "sync": "Subscriptions",
+      "discovery": "Discovery",
       "analysis": "Audio analysis"
     },
     "kind": {

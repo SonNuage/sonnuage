@@ -10,6 +10,14 @@
 <div class="page">
     <AdminNav Title="@L["admin.nav.tasks"]">
         <Actions>
+            @* Une file encore active : tout mettre en pause. Toutes en pause : tout reprendre (sinon, file par file). *@
+            @if (_overview?.Lanes is { Count: > 0 } all)
+            {
+                var pauseAll = all.Any(l => !l.Paused);
+                <button class="btn" @onclick="() => SetPausedAsync(null, pauseAll)">
+                    <Icon Name="@(pauseAll ? "pause" : "play")" Size="18" /> @(pauseAll ? L["jobs.pauseAll"] : L["jobs.resumeAll"])
+                </button>
+            }
             <button class="btn primary" @onclick="OpenNewTaskAsync"><Icon Name="add" Size="18" /> @L["jobs.create.button"]</button>
         </Actions>
         <ChildContent>
@@ -18,9 +26,17 @@
             <div class="lanes">
                 @foreach (var lane in ov.Lanes)
                 {
-                    <div class="lane @(lane.Running > 0 ? "busy" : null)">
-                        <span class="strong">@Label("jobs.lane." + lane.Lane, lane.Lane)</span>
-                        <span class="muted small">@L["jobs.laneLoad", ("running", lane.Running), ("capacity", lane.Capacity), ("queued", L.Number(lane.Queued))]</span>
+                    var action = lane.Paused ? L["jobs.resume"] : L["jobs.pause"];
+                    <div class="lane @(lane.Paused ? "paused" : lane.Running > 0 ? "busy" : null)">
+                        <div class="lane-head">
+                            <span class="strong">@Label("jobs.lane." + lane.Lane, lane.Lane)</span>
+                            <button class="icon-btn" title="@action" aria-label="@action" @onclick="() => SetPausedAsync(lane.Lane, !lane.Paused)">
+                                <Icon Name="@(lane.Paused ? "play" : "pause")" Size="18" />
+                            </button>
+                        </div>
+                        <span class="muted small">@(lane.Paused
+                            ? L["jobs.lanePaused", ("queued", L.Number(lane.Queued))]
+                            : L["jobs.laneLoad", ("running", lane.Running), ("capacity", lane.Capacity), ("queued", L.Number(lane.Queued))])</span>
                     </div>
                 }
             </div>
@@ -412,6 +428,14 @@
         await Api.RetryJobAsync(id);
         await LoadAsync();
         await LoadJobAsync(appendOnly: false);
+    });
+
+    /// <summary>Pause ou reprise d'une file, ou de toutes (lane null).</summary>
+    private async Task SetPausedAsync(string? lane, bool paused) => await TryAsync(async () =>
+    {
+        if (paused) await Api.PauseJobLaneAsync(lane);
+        else await Api.ResumeJobLaneAsync(lane);
+        await LoadAsync();
     });
 
     private async Task TryAsync(Func<Task> action)

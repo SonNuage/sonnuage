@@ -889,6 +889,9 @@ button.tab { border: 0; cursor: pointer; color: inherit; display: inline-flex; a
 .lanes { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: .6rem; margin-bottom: 1.25rem; }
 .lane { display: flex; flex-direction: column; gap: .15rem; background: var(--bg-elevated); border-radius: var(--radius); border-left: 3px solid var(--border); padding: .6rem .9rem; }
 .lane.busy { border-left-color: var(--accent); }
+.lane.paused { border-left-color: var(--warn-text); }
+.lane-head { display: flex; align-items: center; justify-content: space-between; gap: .4rem; }
+.lane-head .icon-btn { margin: -.3rem -.4rem -.3rem 0; }
 .jobs-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; }
 @media (min-width: 1100px) { .jobs-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); } }
 .yt-list li.clickable { cursor: pointer; border-radius: 4px; }
