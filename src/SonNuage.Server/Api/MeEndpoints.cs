@@ -118,20 +118,6 @@ public static class MeEndpoints
             return Results.NoContent();
         });
 
-        g.MapPost("/plays", async (PlayEventRequest req, HttpContext http, SonNuageDbContext db, CancellationToken ct) =>
-        {
-            if (!await db.Tracks.AnyAsync(t => t.Id == req.TrackId, ct)) return Results.NotFound();
-            db.PlayEvents.Add(new PlayEvent
-            {
-                UserId = http.User.UserId(),
-                TrackId = req.TrackId,
-                SecondsPlayed = Math.Max(0, req.SecondsPlayed),
-                Completed = req.Completed,
-            });
-            await db.SaveChangesAsync(ct);
-            return Results.NoContent();
-        });
-
         g.MapGet("/playback", async (HttpContext http, SonNuageDbContext db, CancellationToken ct) =>
         {
             var userId = http.User.UserId();

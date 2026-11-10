@@ -195,6 +195,7 @@ app.MapAuthEndpoints();
 app.MapLibraryEndpoints();
 app.MapStreamEndpoints();
 app.MapMeEndpoints();
+app.MapHistoryEndpoints();
 app.MapPlaylistEndpoints();
 app.MapAdminEndpoints();
 app.MapYoutubeEndpoints();

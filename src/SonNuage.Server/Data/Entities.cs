@@ -272,15 +272,23 @@ public sealed class TrackTag
     public int Count { get; set; }
 }
 
+/// <summary>Une écoute de l'historique d'un compte (voir <see cref="Contracts.ListenRules"/>).</summary>
 public sealed class PlayEvent
 {
+    public const int MaxClientLength = 64;
     public long Id { get; set; }
     public Guid UserId { get; set; }
     public Guid TrackId { get; set; }
     public Track Track { get; set; } = null!;
+    /// <summary>Début de l'écoute (avant l'historique détaillé : l'heure à laquelle elle a été signalée).</summary>
     public DateTimeOffset PlayedAt { get; set; } = DateTimeOffset.UtcNow;
     public double SecondsPlayed { get; set; }
+    /// <summary>Écoutée jusqu'au bout ; sinon passée avant la fin.</summary>
     public bool Completed { get; set; }
+    /// <summary>Appli qui l'a envoyée : « web », « android », « desktop », « ios », ou le nom de l'appli Subsonic.</summary>
+    public string? Client { get; set; }
+    /// <summary>Identifiant choisi par l'appareil : une écoute renvoyée (réponse perdue, file hors ligne) n'est comptée qu'une fois.</summary>
+    public Guid? ClientEventId { get; set; }
 }
 
 public enum YoutubeItemStatus
