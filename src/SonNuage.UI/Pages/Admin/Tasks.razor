@@ -18,6 +18,7 @@
                     <Icon Name="@(pauseAll ? "pause" : "play")" Size="18" /> @(pauseAll ? L["jobs.pauseAll"] : L["jobs.resumeAll"])
                 </button>
             }
+            <a class="btn" href="admin/tasks/schedules"><Icon Name="schedule" Size="18" /> @L["schedules.title"]</a>
             <button class="btn primary" @onclick="OpenNewTaskAsync"><Icon Name="add" Size="18" /> @L["jobs.create.button"]</button>
         </Actions>
         <ChildContent>

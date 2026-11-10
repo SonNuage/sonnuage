@@ -200,6 +200,11 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     public Task RetryJobAsync(Guid id) => SendAsync(HttpMethod.Post, $"{Jobs}/{id}/retry");
     public Task CancelJobSuiteAsync(Guid id) => SendAsync(HttpMethod.Post, $"{Jobs}/suites/{id}/cancel");
     public Task DeleteJobSuiteAsync(Guid id) => SendAsync(HttpMethod.Delete, $"{Jobs}/suites/{id}");
+    public Task<List<JobScheduleDto>?> JobSchedulesAsync() => GetAsync<List<JobScheduleDto>>($"{Jobs}/schedules");
+    public Task<JobScheduleDto?> CreateJobScheduleAsync(JobScheduleRequest req) => SendAsync<JobScheduleDto>(HttpMethod.Post, $"{Jobs}/schedules", req);
+    public Task<JobScheduleDto?> UpdateJobScheduleAsync(Guid id, JobScheduleRequest req) => SendAsync<JobScheduleDto>(HttpMethod.Put, $"{Jobs}/schedules/{id}", req);
+    public Task DeleteJobScheduleAsync(Guid id) => SendAsync(HttpMethod.Delete, $"{Jobs}/schedules/{id}");
+    public Task<JobScheduleDto?> RunJobScheduleAsync(Guid id) => SendAsync<JobScheduleDto>(HttpMethod.Post, $"{Jobs}/schedules/{id}/run");
     /// <summary>Met en pause une file, ou toutes (lane null).</summary>
     public Task PauseJobLaneAsync(string? lane) => SendAsync(HttpMethod.Post, lane is null ? $"{Jobs}/lanes/pause" : $"{Jobs}/lanes/{Uri.EscapeDataString(lane)}/pause");
     /// <summary>Reprend une file, ou toutes (lane null).</summary>
