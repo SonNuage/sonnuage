@@ -152,6 +152,46 @@ namespace SonNuage.Server.Data.Migrations
                     b.ToTable("Artists");
                 });
 
+            modelBuilder.Entity("SonNuage.Server.Data.ArtistRelease", b =>
+                {
+                    b.Property<string>("ArtistMbid")
+                        .HasMaxLength(36)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("ReleaseGroupId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("FetchedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("FirstReleaseDate")
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PrimaryType")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly?>("ReleaseDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SecondaryTypes")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ArtistMbid", "ReleaseGroupId");
+
+                    b.HasIndex("ReleaseDate");
+
+                    b.ToTable("ArtistReleases");
+                });
+
             modelBuilder.Entity("SonNuage.Server.Data.CrashReport", b =>
                 {
                     b.Property<Guid>("Id")
@@ -378,6 +418,23 @@ namespace SonNuage.Server.Data.Migrations
                     b.HasIndex("UserId", "CreatedAt");
 
                     b.ToTable("DownloadRequests");
+                });
+
+            modelBuilder.Entity("SonNuage.Server.Data.ExternalFetch", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("ExpiresAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("FetchedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("ExternalFetches");
                 });
 
             modelBuilder.Entity("SonNuage.Server.Data.Favorite", b =>
