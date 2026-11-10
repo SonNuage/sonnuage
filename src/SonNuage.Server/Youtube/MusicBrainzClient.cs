@@ -21,6 +21,9 @@ public sealed record MbRelease(
 
 public sealed record AcoustIdMatch(string RecordingId, double Score);
 
+/// <summary>Artiste d'un crédit MusicBrainz : son identifiant, son nom MusicBrainz et le nom sous lequel il est crédité.</summary>
+public sealed record MbArtistCredit(Guid Id, string ArtistName, string CreditedName);
+
 /// <summary>
 /// Tags MusicBrainz d'une édition : ceux de l'édition et de son groupe (<see cref="Release"/>), et ceux de chaque
 /// enregistrement (<see cref="ByRecording"/>, clé : identifiant de l'enregistrement). Noms en minuscules → votes.
