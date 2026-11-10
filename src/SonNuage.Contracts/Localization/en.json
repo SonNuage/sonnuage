@@ -348,7 +348,10 @@
     "rediscover": "Listen again",
     "rediscoverHint": "Your liked and go-to tracks, not played for a month.",
     "notYetPlayed": "Not played yet",
-    "notYetPlayedHint": "Albums in the library you have never started."
+    "notYetPlayedHint": "Albums in the library you have never started.",
+    "newReleases": "New from your artists",
+    "newReleasesHint": "Releases from the last three months and upcoming ones by the library's artists, from MusicBrainz.",
+    "newReleasesHintUser": "Releases from the last three months by the library's artists, already on the server."
   },
   "favorites": {
     "empty": "Tap the heart on a track, an album or an artist to find it here.",
@@ -379,7 +382,9 @@
     "allTracks": "All tracks",
     "showAll": "Show all ({count})",
     "showLess": "Show less",
-    "appearsOn": "Appears on"
+    "appearsOn": "Appears on",
+    "missingReleases": "Not in the library",
+    "missingReleasesHint": "The artist's albums, EPs and singles according to MusicBrainz, not on the server yet."
   },
   "search": {
     "placeholder": "Artists, albums, tracks…",
@@ -1331,7 +1336,30 @@
     "albumHint": "Request the whole album “{album}”",
     "albumSent": "Album “{album}” requested: its songs show up in your requests as they are found.",
     "albumAsked": "Album requested",
-    "new": "New"
+    "new": "New",
+    "artistsTitle": "Artists to discover"
+  },
+  "releases": {
+    "title": "New releases",
+    "hint": "Releases from the last three months and upcoming ones by the library's artists (MusicBrainz, ListenBrainz), without compilations, live albums or remixes.",
+    "hintUser": "Releases from the last three months by the library's artists, already on the server.",
+    "all": "All",
+    "recent": "Recent releases",
+    "upcomingFilter": "Upcoming",
+    "allTypes": "All types",
+    "none": "No new releases yet. They are read for artists whose MusicBrainz ID is known.",
+    "refresh": "Refresh new releases",
+    "refreshStarted": "Reading new releases: MusicBrainz is queried slowly (one request per second).",
+    "inLibrary": "In the library",
+    "upcoming": "Upcoming",
+    "open": "Open",
+    "import": "Import",
+    "askHint": "Request the whole album “{album}”",
+    "type": {
+      "album": "Album",
+      "ep": "EP",
+      "single": "Single"
+    }
   },
   "quietHours": {
     "title": "Quiet hours",

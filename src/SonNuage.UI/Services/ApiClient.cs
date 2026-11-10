@@ -105,6 +105,12 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     public Task<YoutubeListingDto?> RequestSearchAsync(string q, bool music) => GetAsync<YoutubeListingDto>($"api/requests/search?music={music}&q={Uri.EscapeDataString(q)}");
     public Task<DiscoveryPageDto?> DiscoveryAsync() => GetAsync<DiscoveryPageDto>("api/discovery/artists");
     public Task RefreshDiscoveryAsync() => SendAsync(HttpMethod.Post, "api/admin/discovery/refresh");
+    /// <summary>Nouveautés des artistes : <paramref name="when"/> « recent » ou « upcoming », <paramref name="type"/> « album », « ep » ou « single » (null : tout).</summary>
+    public Task<List<ArtistReleaseDto>?> ReleasesAsync(string? when = null, string? type = null) =>
+        GetAsync<List<ArtistReleaseDto>>($"api/releases?when={Uri.EscapeDataString(when ?? "")}&type={Uri.EscapeDataString(type ?? "")}");
+    /// <summary>Parutions de l'artiste absentes de la bibliothèque (contributeurs et admins).</summary>
+    public Task<List<ArtistReleaseDto>?> ArtistReleasesAsync(Guid artistId) => GetAsync<List<ArtistReleaseDto>>($"api/artists/{artistId}/releases");
+    public Task RefreshReleasesAsync() => SendAsync(HttpMethod.Post, "api/admin/releases/refresh");
     public Task<StorageStatusDto?> StorageAsync() => GetAsync<StorageStatusDto>("api/admin/storage");
     public Task<StorageStatusDto?> SaveStorageAsync(StorageSettingsDto s) => SendAsync<StorageStatusDto>(HttpMethod.Put, "api/admin/storage", s);
     public Task<List<RadioStationDto>?> RadioStationsAsync() => GetAsync<List<RadioStationDto>>("api/radio/stations");
@@ -207,6 +213,13 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     public Task ResumeJobLaneAsync(string? lane) => SendAsync(HttpMethod.Post, lane is null ? $"{Jobs}/lanes/resume" : $"{Jobs}/lanes/{Uri.EscapeDataString(lane)}/resume");
 
     // ---- URL média (jeton en query) ----
+
+    /// <summary>Pochette d'une parution, relayée et gardée par le serveur.</summary>
+    public string? ReleaseCoverUrl(Guid releaseGroupId)
+    {
+        if (endpoint.BaseAddress is null || auth.MediaToken is null) return null;
+        return new Uri(endpoint.BaseAddress, $"api/releases/{releaseGroupId}/cover?t={auth.MediaToken}").ToString();
+    }
 
     public string? CoverUrl(Guid? albumId, int size)
     {

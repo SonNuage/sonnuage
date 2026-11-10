@@ -122,10 +122,16 @@ button { font: inherit; color: inherit; }
 .disc-state { pointer-events: none; color: var(--text-muted); }
 .disc-actions .disc-album { flex: 0 0 auto; }
 .disc-album.on { border-color: var(--accent); color: var(--accent); }
+/* Nouveautés des artistes : cartes carrées, plus petites que celles de la découverte. */
+.disc-thumb.square { aspect-ratio: 1; }
+.release-row { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); max-width: none; }
+.release-filters { margin: .4rem 0 1rem; flex-wrap: wrap; }
+.discover-section { margin-top: 2rem; }
 @media (max-width: 640px) {
   .disc-row { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: .75rem; margin: 0 -1rem; padding: 0 1rem .4rem; scrollbar-width: none; }
   .disc-row::-webkit-scrollbar { display: none; }
   .disc-card { flex: 0 0 78%; scroll-snap-align: start; }
+  .release-card { flex-basis: 46%; }
 }
 /* Extrait posé sur la miniature : toute la miniature est cliquable, le bouton rond reste visible. */
 .preview-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border: 0; padding: 0; margin: 0;

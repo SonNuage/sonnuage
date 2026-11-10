@@ -2,6 +2,7 @@
 @inject ApiClient Api
 @inject IPlayer Player
 @inject UiState Ui
+@inject AuthSession Auth
 
 <PageTitle>@(_artist?.Artist.Name ?? L["common.artist"]) · SonNuage</PageTitle>
 
@@ -47,6 +48,15 @@
                 </section>
             }
 
+            @if (_missing is { Count: > 0 } missing)
+            {
+                <section>
+                    <h2>@L["artist.missingReleases"]</h2>
+                    <p class="muted section-hint">@L["artist.missingReleasesHint"]</p>
+                    <ReleaseRow Releases="missing" ShowArtist="false" />
+                </section>
+            }
+
             @if (_appearances is { Count: > 0 } appearances)
             {
                 <section>
@@ -67,6 +77,7 @@
     private ArtistDetailDto? _artist;
     private List<TrackDto>? _tracks;
     private List<TrackDto>? _appearances;
+    private List<ArtistReleaseDto>? _missing;
     private bool _all;
     private bool _favorite;
     private int? _rating;
@@ -80,6 +91,7 @@
         _artist = null;
         _tracks = null;
         _appearances = null;
+        _missing = null;
         _all = false;
         await LoadAsync();
     }
@@ -100,6 +112,8 @@
             {
                 _favorite = _artist.IsFavorite;
                 _rating = _artist.Rating;
+                // Hors de la bibliothèque : réservé aux contributeurs et aux admins.
+                if (Auth.CanRequest && _artist.Artist.MusicBrainzId is not null) _missing = await Api.ArtistReleasesAsync(Id);
             }
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)

@@ -63,6 +63,18 @@
                 <AlbumGrid Albums="home.RecentlyAdded" />
             </section>
 
+            @if (home.NewReleases is { Count: > 0 } newReleases)
+            {
+                <section>
+                    <div class="section-head">
+                        <h2>@L["home.newReleases"]</h2>
+                        <a href="discover" class="link">@L["common.showAll"]</a>
+                    </div>
+                    <p class="muted section-hint">@(Auth.CanRequest ? L["home.newReleasesHint"] : L["home.newReleasesHintUser"])</p>
+                    <ReleaseRow Releases="newReleases" />
+                </section>
+            }
+
             @if (home.NotYetPlayed is { Count: > 0 } notYetPlayed)
             {
                 <section>
