@@ -280,7 +280,28 @@
   },
   "desktop": {
     "show": "Afficher SonNuage",
-    "quit": "Quitter"
+    "quit": "Quitter",
+    "settings": {
+      "title": "Appli de bureau",
+      "startWithSession": "Lancer SonNuage à l'ouverture de session",
+      "startHidden": "Démarrer caché",
+      "startHiddenHint": "À l'ouverture de session, seule l'icône de la barre système apparaît : elle ouvre la fenêtre."
+    },
+    "update": {
+      "title": "Mises à jour",
+      "upToDate": "SonNuage {version} est à jour.",
+      "available": "SonNuage {version} est disponible.",
+      "install": "Installer",
+      "download": "Télécharger",
+      "later": "Plus tard",
+      "check": "Vérifier maintenant",
+      "checking": "Vérification…",
+      "downloading": "Téléchargement…",
+      "failed": "Vérification impossible pour le moment.",
+      "installFailed": "Installation impossible : la page de la version s'ouvre dans le navigateur.",
+      "disabled": "Cette version de développement ne cherche pas de mises à jour.",
+      "tray": "Installer SonNuage {version}"
+    }
   },
   "nav": {
     "home": "Accueil",

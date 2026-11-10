@@ -85,6 +85,13 @@ public interface IPlatformInfo
     string? AppVersion => null;
     /// <summary>Interface chargée depuis le serveur (web) : un déploiement la rend obsolète, il faut recharger la page.</summary>
     bool ServedByServer => false;
+    /// <summary>
+    /// Panneaux de réglages propres à l'hôte (composants Blazor), affichés dans Réglages : l'appli de bureau y met le
+    /// lancement avec la session et ses mises à jour. Aucun sur le web et Android.
+    /// </summary>
+    IReadOnlyList<Type> SettingsSections => [];
+    /// <summary>Bandeaux propres à l'hôte (composants Blazor), là où le web annonce une nouvelle version.</summary>
+    IReadOnlyList<Type> Notices => [];
 }
 
 /// <summary>Lecteur capable de restaurer la file de la session précédente après connexion.</summary>
