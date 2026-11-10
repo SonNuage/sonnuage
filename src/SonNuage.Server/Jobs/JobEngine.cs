@@ -24,6 +24,7 @@ public sealed class JobEngine(
     IEnumerable<IJobHandler> handlers,
     YoutubeSettingsStore youtubeSettings,
     QuietHoursStore quietHours,
+    JobChanges changes,
     IOptions<SonNuageOptions> options,
     TimeProvider time,
     ILogger<JobEngine> logger) : BackgroundService
@@ -50,9 +51,11 @@ public sealed class JobEngine(
         _ => 1,
     };
 
+    /// <summary>Réveille la file (nouvelle tâche, place libre) et prévient les abonnés en direct.</summary>
     public void Wake(string lane)
     {
         if (_signals.TryGetValue(lane, out var signal)) signal.Writer.TryWrite(true);
+        changes.Notify();
     }
 
     public void WakeAll()
@@ -150,12 +153,14 @@ public sealed class JobEngine(
         {
             Log(jobId, "info", Tx.Key("jobs.log.canceled"));
             await CancelDependentsAsync(db, jobId, ct);
+            changes.Notify();
             await NotifyCanceledAsync([(info.Kind, info.SubjectId)], ct);
             return true;
         }
         var running = await db.Jobs.Where(j => j.Id == jobId && j.Status == JobStatus.Running)
             .ExecuteUpdateAsync(s => s.SetProperty(j => j.CancelRequested, true), ct);
         if (_running.TryGetValue(jobId, out var run)) await run.Cts.CancelAsync();
+        changes.Notify();
         return running > 0;
     }
 
@@ -180,6 +185,7 @@ public sealed class JobEngine(
             // Mise en pause au même moment ailleurs : le résultat est le même.
         }
         foreach (var run in _running.Values.Where(r => lanes.Contains(r.Lane))) await run.PauseAsync();
+        changes.Notify();
     }
 
     /// <summary>Reprend des files en pause : leurs tâches repartent dans l'ordre habituel.</summary>
@@ -219,6 +225,7 @@ public sealed class JobEngine(
         var waiting = db.Jobs.Where(j => j.SuiteId == suiteId && (j.Status == JobStatus.Pending || j.Status == JobStatus.Queued));
         var subjects = (await waiting.Select(j => new { j.Kind, j.SubjectId }).Distinct().ToListAsync(ct)).Select(j => (j.Kind, j.SubjectId)).ToList();
         await waiting.ExecuteUpdateAsync(s => s.SetProperty(j => j.Status, JobStatus.Canceled).SetProperty(j => j.FinishedAt, now), ct);
+        changes.Notify();
         await NotifyCanceledAsync(subjects, ct);
         foreach (var id in await db.Jobs.Where(j => j.SuiteId == suiteId && j.Status == JobStatus.Running).Select(j => j.Id).ToListAsync(ct))
             await CancelAsync(db, id, ct);
@@ -293,7 +300,10 @@ public sealed class JobEngine(
                 var capacity = Capacity(lane);
                 // Heures calmes : rien ne démarre ; la relève périodique reprend la file à la fin de la plage.
                 while (running.Count < capacity && QuietUntil(lane) is null && await TryClaimAsync(lane, capacity, ct) is { } id)
+                {
                     running.Add(Task.Run(() => RunAsync(id, ct), CancellationToken.None));
+                    changes.Notify();
+                }
             }
             catch (Exception ex) when (ex is DbException or InvalidOperationException && !ct.IsCancellationRequested)
             {
@@ -496,6 +506,7 @@ public sealed class JobEngine(
                 var lease = time.GetUtcNow() + Lease;
                 await db.Jobs.Where(j => j.Id == id && j.WorkerId == _workerId)
                     .ExecuteUpdateAsync(s => s.SetProperty(j => j.LeaseUntil, lease).SetProperty(j => j.Progress, progress), stop);
+                if (progress != lastProgress) changes.Notify();
                 lastProgress = progress;
                 if (await db.Jobs.AnyAsync(j => j.Id == id && j.CancelRequested, stop)) await job.Cts.CancelAsync();
                 else if (await db.JobLanePauses.AnyAsync(p => p.Lane == job.Lane, stop)) await job.PauseAsync();
@@ -543,7 +554,11 @@ public sealed class JobEngine(
                     var removed = await db.JobSuites
                         .Where(s => s.CreatedAt < cutoff && !s.Jobs.Any(j => j.Status == JobStatus.Pending || j.Status == JobStatus.Queued || j.Status == JobStatus.Running || j.FinishedAt >= cutoff))
                         .ExecuteDeleteAsync(ct);
-                    if (removed > 0) logger.LogInformation("{Count} suite(s) de tâches terminées supprimée(s)", removed);
+                    if (removed > 0)
+                    {
+                        logger.LogInformation("{Count} suite(s) de tâches terminées supprimée(s)", removed);
+                        changes.Notify();
+                    }
                 }
             }
             catch (Exception ex) when (ex is DbException or InvalidOperationException && !ct.IsCancellationRequested)
@@ -586,6 +601,7 @@ public sealed class JobEngine(
                     var known = (await db.Jobs.Where(j => ids.Contains(j.Id)).Select(j => j.Id).ToListAsync(CancellationToken.None)).ToHashSet();
                     db.JobLogs.AddRange(batch.Where(l => known.Contains(l.JobId)));
                     await db.SaveChangesAsync(CancellationToken.None);
+                    changes.Notify();
                 }
                 catch (Exception ex) when (ex is DbException or DbUpdateException or InvalidOperationException)
                 {

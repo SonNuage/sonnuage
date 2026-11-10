@@ -460,6 +460,31 @@ public sealed class JobLanePause
     public DateTimeOffset PausedAt { get; set; }
 }
 
+/// <summary>
+/// Tâche planifiée : demandée chaque semaine aux jours et à l'heure choisis (heure locale du fuseau <see cref="TimeZone"/>).
+/// Un passage manqué (serveur éteint) est rattrapé une fois au retour.
+/// </summary>
+public sealed class JobSchedule
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    /// <summary>Type planifiable (voir <c>ScheduledJobKinds</c>).</summary>
+    public required string Kind { get; set; }
+    /// <summary>Jours de la semaine : bit n = <see cref="DayOfWeek"/> n (1 = dimanche, 2 = lundi…).</summary>
+    public int Days { get; set; }
+    public TimeOnly At { get; set; }
+    /// <summary>Fuseau IANA de l'heure <see cref="At"/>.</summary>
+    public required string TimeZone { get; set; }
+    public bool Enabled { get; set; } = true;
+    /// <summary>Options propres au type (JSON), pour le rescan AcoustID.</summary>
+    public string? Options { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    /// <summary>Dernière modification : les passages antérieurs ne comptent pas.</summary>
+    public DateTimeOffset UpdatedAt { get; set; }
+    public DateTimeOffset? LastRunAt { get; set; }
+    /// <summary>Suite créée au dernier lancement (null si une tâche identique attendait déjà).</summary>
+    public Guid? LastSuiteId { get; set; }
+}
+
 public sealed class JobLog
 {
     public long Id { get; set; }

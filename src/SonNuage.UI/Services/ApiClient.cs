@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Runtime.CompilerServices;
 using SonNuage.Contracts;
 
 namespace SonNuage.UI.Services;
@@ -209,6 +210,35 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     public Task RetryJobAsync(Guid id) => SendAsync(HttpMethod.Post, $"{Jobs}/{id}/retry");
     public Task CancelJobSuiteAsync(Guid id) => SendAsync(HttpMethod.Post, $"{Jobs}/suites/{id}/cancel");
     public Task DeleteJobSuiteAsync(Guid id) => SendAsync(HttpMethod.Delete, $"{Jobs}/suites/{id}");
+
+    /// <summary>
+    /// Volet Tâches en direct (Server-Sent Events, voir <see cref="JobStreamEvents"/>). Lu avec HttpClient, pas
+    /// EventSource, qui ne sait pas envoyer le jeton. Se termine (ou lève) quand le flux se ferme ou reste muet.
+    /// </summary>
+    public async IAsyncEnumerable<ServerSentEvent> JobEventsAsync(string? status, string? q, int limit, Guid? suite, int suiteLimit, Guid? job, long after,
+        [EnumeratorCancellation] CancellationToken ct)
+    {
+        var url = $"{Jobs}/events?limit={limit}&suiteLimit={suiteLimit}&after={after}{(status is null ? "" : $"&status={status}")}{Q(q)}"
+                  + (suite is { } s ? $"&suite={s}" : "") + (job is { } j ? $"&job={j}" : "");
+        using var response = await SendCoreAsync(() =>
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Accept.ParseAdd("text/event-stream");
+            // Navigateur (WebAssembly) : lire la réponse au fil de l'eau plutôt qu'en entier.
+            request.Options.Set(new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse"), true);
+            return request;
+        }, completion: HttpCompletionOption.ResponseHeadersRead, ct: ct);
+        await EnsureSuccessAsync(response);
+        await using var stream = await response.Content.ReadAsStreamAsync(ct);
+        // Battement de cœur du serveur toutes les 15 s : 45 s sans rien, la connexion est perdue.
+        await foreach (var e in ServerSentEvents.ReadAsync(stream, TimeSpan.FromSeconds(45), ct)) yield return e;
+    }
+
+    public Task<List<JobScheduleDto>?> JobSchedulesAsync() => GetAsync<List<JobScheduleDto>>($"{Jobs}/schedules");
+    public Task<JobScheduleDto?> CreateJobScheduleAsync(JobScheduleRequest req) => SendAsync<JobScheduleDto>(HttpMethod.Post, $"{Jobs}/schedules", req);
+    public Task<JobScheduleDto?> UpdateJobScheduleAsync(Guid id, JobScheduleRequest req) => SendAsync<JobScheduleDto>(HttpMethod.Put, $"{Jobs}/schedules/{id}", req);
+    public Task DeleteJobScheduleAsync(Guid id) => SendAsync(HttpMethod.Delete, $"{Jobs}/schedules/{id}");
+    public Task<JobScheduleDto?> RunJobScheduleAsync(Guid id) => SendAsync<JobScheduleDto>(HttpMethod.Post, $"{Jobs}/schedules/{id}/run");
     /// <summary>Met en pause une file, ou toutes (lane null).</summary>
     public Task PauseJobLaneAsync(string? lane) => SendAsync(HttpMethod.Post, lane is null ? $"{Jobs}/lanes/pause" : $"{Jobs}/lanes/{Uri.EscapeDataString(lane)}/pause");
     /// <summary>Reprend une file, ou toutes (lane null).</summary>
@@ -302,7 +332,8 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
         return request;
     }
 
-    private async Task<HttpResponseMessage> SendCoreAsync(Func<HttpRequestMessage> build, bool retry = true)
+    private async Task<HttpResponseMessage> SendCoreAsync(Func<HttpRequestMessage> build, bool retry = true,
+        HttpCompletionOption completion = HttpCompletionOption.ResponseContentRead, CancellationToken ct = default)
     {
         var http = httpFactory.CreateClient("sonnuage");
         http.BaseAddress = endpoint.BaseAddress ?? throw new ApiException(0, Text("errors.serverNotConfigured"));
@@ -311,7 +342,7 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
         var request = build();
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         Localize(request);
-        var response = await http.SendAsync(request);
+        var response = await http.SendAsync(request, completion, ct);
 
         if (response.StatusCode == HttpStatusCode.Unauthorized && retry)
         {
@@ -320,7 +351,7 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
             request = build();
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             Localize(request);
-            response = await http.SendAsync(request);
+            response = await http.SendAsync(request, completion, ct);
         }
         return response;
     }

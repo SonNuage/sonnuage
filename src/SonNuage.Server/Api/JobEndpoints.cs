@@ -19,48 +19,11 @@ public static class JobEndpoints
         var g = app.MapGroup("/api/admin/jobs").RequireAuthorization(AuthConstants.AdminPolicy).WithTags("Jobs");
 
         // status : active (en cours ou en attente), failed, finished, ou rien pour tout.
-        g.MapGet("", async (string? status, string? kind, string? q, int? offset, int? limit, SonNuageDbContext db, JobEngine engine, CancellationToken ct) =>
-        {
-            var lanes = await db.Jobs.Where(j => j.Status == JobStatus.Running || j.Status == JobStatus.Queued)
-                .GroupBy(j => new { j.Lane, j.Status }).Select(x => new { x.Key.Lane, x.Key.Status, Count = x.Count() }).ToListAsync(ct);
-            var paused = await engine.PausedLanesAsync(db, ct);
-            var laneDtos = JobLanes.All.Select(l => new JobLaneDto(l, engine.Capacity(l),
-                lanes.Where(x => x.Lane == l && x.Status == JobStatus.Running).Sum(x => x.Count),
-                lanes.Where(x => x.Lane == l && x.Status == JobStatus.Queued).Sum(x => x.Count),
-                paused.Contains(l), engine.QuietUntil(l))).ToList();
+        g.MapGet("", (string? status, string? kind, string? q, int? offset, int? limit, SonNuageDbContext db, JobEngine engine, CancellationToken ct) =>
+            OverviewAsync(db, engine, status, kind, q, offset, limit, ct));
 
-            var query = db.JobSuites.Select(s => new SuiteRow
-            {
-                Suite = s,
-                Total = s.Jobs.Count(),
-                Waiting = s.Jobs.Count(j => j.Status == JobStatus.Pending || j.Status == JobStatus.Queued),
-                Running = s.Jobs.Count(j => j.Status == JobStatus.Running),
-                Succeeded = s.Jobs.Count(j => j.Status == JobStatus.Succeeded),
-                Failed = s.Jobs.Count(j => j.Status == JobStatus.Failed),
-                Canceled = s.Jobs.Count(j => j.Status == JobStatus.Canceled),
-                FinishedAt = s.Jobs.Max(j => j.FinishedAt),
-            });
-            query = status switch
-            {
-                "active" => query.Where(r => r.Running > 0 || r.Waiting > 0),
-                "failed" => query.Where(r => r.Running == 0 && r.Waiting == 0 && r.Failed > 0),
-                "finished" => query.Where(r => r.Running == 0 && r.Waiting == 0),
-                _ => query,
-            };
-            if (!string.IsNullOrWhiteSpace(kind)) query = query.Where(r => r.Suite.Kind == kind);
-            if (!string.IsNullOrWhiteSpace(q)) query = query.Where(r => EF.Functions.Like(r.Suite.Title, $"%{q.Trim()}%"));
-
-            var o = Math.Max(0, offset ?? 0);
-            var l = Math.Clamp(limit ?? 50, 1, 200);
-            var total = await query.CountAsync(ct);
-            // En cours d'abord, puis en attente (la plus ancienne en tête, comme la file), puis les plus récentes.
-            var rows = await query
-                .OrderBy(r => r.Running > 0 ? 0 : r.Waiting > 0 ? 1 : 2)
-                .ThenBy(r => r.Running > 0 || r.Waiting > 0 ? r.Suite.CreatedAt : DateTimeOffset.MinValue)
-                .ThenByDescending(r => r.Suite.CreatedAt)
-                .Skip(o).Take(l).ToListAsync(ct);
-            return new JobsOverviewDto(laneDtos, new PagedResult<JobSuiteDto>(rows.Select(ToDto).ToList(), total, o, l));
-        });
+        // Flux en direct (Server-Sent Events) : mêmes paramètres que la liste, plus la suite et la tâche ouvertes.
+        g.MapGet("/events", JobEventStream.StreamAsync);
 
         g.MapGet("/quiet-hours", (QuietHoursStore store) => store.Settings);
         g.MapPut("/quiet-hours", (QuietHoursDto q, QuietHoursStore store, JobEngine engine) =>
@@ -73,29 +36,13 @@ public static class JobEndpoints
             return Results.Ok(saved);
         });
 
-        g.MapGet("/suites/{id:guid}", async (Guid id, int? offset, int? limit, SonNuageDbContext db, CancellationToken ct) =>
-        {
-            var o = Math.Max(0, offset ?? 0);
-            var l = Math.Clamp(limit ?? 100, 1, 500);
-            var jobs = db.Jobs.Where(j => j.SuiteId == id);
-            var total = await jobs.CountAsync(ct);
-            var rows = await jobs
-                .OrderBy(j => j.Status == JobStatus.Running ? 0 : j.Status == JobStatus.Failed ? 1 : 2)
-                .ThenBy(j => j.CreatedAt)
-                .Skip(o).Take(l).Select(AsDto).ToListAsync(ct);
-            return new PagedResult<JobDto>(rows, total, o, l);
-        });
+        g.MapGet("/suites/{id:guid}", (Guid id, int? offset, int? limit, SonNuageDbContext db, CancellationToken ct) => SuiteJobsAsync(db, id, offset, limit, ct));
 
         g.MapGet("/{id:guid}", async (Guid id, SonNuageDbContext db, CancellationToken ct) =>
-        {
-            var job = await db.Jobs.AsNoTracking().FirstOrDefaultAsync(j => j.Id == id, ct);
-            return job is null ? Results.NotFound() : Results.Ok(new JobDetailDto(AsDto.Compile()(job), job.Payload, job.Output));
-        });
+            await DetailAsync(db, id, ct) is { } detail ? Results.Ok(detail) : Results.NotFound());
 
         // Journal en direct : l'interface redemande les lignes après la dernière reçue.
-        g.MapGet("/{id:guid}/logs", async (Guid id, long? after, SonNuageDbContext db, CancellationToken ct) =>
-            await db.JobLogs.Where(x => x.JobId == id && x.Id > (after ?? 0)).OrderBy(x => x.Id).Take(500)
-                .Select(x => new JobLogDto(x.Id, x.At, x.Level, x.Message)).ToListAsync(ct));
+        g.MapGet("/{id:guid}/logs", (Guid id, long? after, SonNuageDbContext db, CancellationToken ct) => LogsAsync(db, id, after, ct));
 
         g.MapPost("", async (CreateJobRequest req, HttpContext http, SonNuageDbContext db, JobEngine engine, YoutubeSettingsStore settings, YoutubeTools tools, CancellationToken ct) =>
         {
@@ -157,13 +104,85 @@ public static class JobEndpoints
             return Results.NoContent();
         });
 
-        g.MapDelete("/suites/{id:guid}", async (Guid id, SonNuageDbContext db, CancellationToken ct) =>
+        g.MapDelete("/suites/{id:guid}", async (Guid id, SonNuageDbContext db, JobChanges changes, CancellationToken ct) =>
         {
             if (await db.Jobs.AnyAsync(j => j.SuiteId == id && (j.Status == JobStatus.Pending || j.Status == JobStatus.Queued || j.Status == JobStatus.Running), ct))
                 return Results.Problem(Tx.Key("errors.jobs.suiteActive"), statusCode: 409);
-            return await db.JobSuites.Where(s => s.Id == id).ExecuteDeleteAsync(ct) > 0 ? Results.NoContent() : Results.NotFound();
+            if (await db.JobSuites.Where(s => s.Id == id).ExecuteDeleteAsync(ct) == 0) return Results.NotFound();
+            changes.Notify();
+            return Results.NoContent();
         });
     }
+
+    /// <summary>Files et page de suites. status : active (en cours ou en attente), failed, finished, ou rien pour tout.</summary>
+    internal static async Task<JobsOverviewDto> OverviewAsync(SonNuageDbContext db, JobEngine engine, string? status, string? kind, string? q,
+        int? offset, int? limit, CancellationToken ct)
+    {
+        var lanes = await db.Jobs.Where(j => j.Status == JobStatus.Running || j.Status == JobStatus.Queued)
+            .GroupBy(j => new { j.Lane, j.Status }).Select(x => new { x.Key.Lane, x.Key.Status, Count = x.Count() }).ToListAsync(ct);
+        var paused = await engine.PausedLanesAsync(db, ct);
+        var laneDtos = JobLanes.All.Select(l => new JobLaneDto(l, engine.Capacity(l),
+            lanes.Where(x => x.Lane == l && x.Status == JobStatus.Running).Sum(x => x.Count),
+            lanes.Where(x => x.Lane == l && x.Status == JobStatus.Queued).Sum(x => x.Count),
+            paused.Contains(l), engine.QuietUntil(l))).ToList();
+
+        var query = db.JobSuites.Select(s => new SuiteRow
+        {
+            Suite = s,
+            Total = s.Jobs.Count(),
+            Waiting = s.Jobs.Count(j => j.Status == JobStatus.Pending || j.Status == JobStatus.Queued),
+            Running = s.Jobs.Count(j => j.Status == JobStatus.Running),
+            Succeeded = s.Jobs.Count(j => j.Status == JobStatus.Succeeded),
+            Failed = s.Jobs.Count(j => j.Status == JobStatus.Failed),
+            Canceled = s.Jobs.Count(j => j.Status == JobStatus.Canceled),
+            FinishedAt = s.Jobs.Max(j => j.FinishedAt),
+        });
+        query = status switch
+        {
+            "active" => query.Where(r => r.Running > 0 || r.Waiting > 0),
+            "failed" => query.Where(r => r.Running == 0 && r.Waiting == 0 && r.Failed > 0),
+            "finished" => query.Where(r => r.Running == 0 && r.Waiting == 0),
+            _ => query,
+        };
+        if (!string.IsNullOrWhiteSpace(kind)) query = query.Where(r => r.Suite.Kind == kind);
+        if (!string.IsNullOrWhiteSpace(q)) query = query.Where(r => EF.Functions.Like(r.Suite.Title, $"%{q.Trim()}%"));
+
+        var o = Math.Max(0, offset ?? 0);
+        var l = Math.Clamp(limit ?? 50, 1, 200);
+        var total = await query.CountAsync(ct);
+        // En cours d'abord, puis en attente (la plus ancienne en tête, comme la file), puis les plus récentes.
+        var rows = await query
+            .OrderBy(r => r.Running > 0 ? 0 : r.Waiting > 0 ? 1 : 2)
+            .ThenBy(r => r.Running > 0 || r.Waiting > 0 ? r.Suite.CreatedAt : DateTimeOffset.MinValue)
+            .ThenByDescending(r => r.Suite.CreatedAt)
+            .Skip(o).Take(l).ToListAsync(ct);
+        return new JobsOverviewDto(laneDtos, new PagedResult<JobSuiteDto>(rows.Select(ToDto).ToList(), total, o, l));
+    }
+
+    /// <summary>Tâches d'une suite : en cours, puis en échec, puis dans l'ordre de création.</summary>
+    internal static async Task<PagedResult<JobDto>> SuiteJobsAsync(SonNuageDbContext db, Guid id, int? offset, int? limit, CancellationToken ct)
+    {
+        var o = Math.Max(0, offset ?? 0);
+        var l = Math.Clamp(limit ?? 100, 1, 500);
+        var jobs = db.Jobs.Where(j => j.SuiteId == id);
+        var total = await jobs.CountAsync(ct);
+        var rows = await jobs
+            .OrderBy(j => j.Status == JobStatus.Running ? 0 : j.Status == JobStatus.Failed ? 1 : 2)
+            .ThenBy(j => j.CreatedAt)
+            .Skip(o).Take(l).Select(AsDto).ToListAsync(ct);
+        return new PagedResult<JobDto>(rows, total, o, l);
+    }
+
+    internal static async Task<JobDetailDto?> DetailAsync(SonNuageDbContext db, Guid id, CancellationToken ct)
+    {
+        var job = await db.Jobs.AsNoTracking().FirstOrDefaultAsync(j => j.Id == id, ct);
+        return job is null ? null : new JobDetailDto(AsDtoCompiled(job), job.Payload, job.Output);
+    }
+
+    /// <summary>Lignes du journal après <paramref name="after"/> (500 au plus).</summary>
+    internal static Task<List<JobLogDto>> LogsAsync(SonNuageDbContext db, Guid id, long? after, CancellationToken ct) =>
+        db.JobLogs.Where(x => x.JobId == id && x.Id > (after ?? 0)).OrderBy(x => x.Id).Take(500)
+            .Select(x => new JobLogDto(x.Id, x.At, x.Level, x.Message)).ToListAsync(ct);
 
     private sealed class SuiteRow
     {
@@ -186,4 +205,6 @@ public static class JobEndpoints
 
     private static readonly Expression<Func<Job, JobDto>> AsDto = j => new JobDto(j.Id, j.SuiteId, j.DependsOnId, j.Kind, j.Lane, j.Status.ToString(),
         j.Title, j.Error, j.Attempts, j.MaxAttempts, j.Progress, j.CreatedAt, j.StartedAt, j.FinishedAt, j.NotBefore);
+
+    private static readonly Func<Job, JobDto> AsDtoCompiled = AsDto.Compile();
 }

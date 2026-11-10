@@ -1,0 +1,253 @@
+@page "/admin/tasks/schedules"
+@* Tâches planifiées : rescan AcoustID, scan, sauvegarde… relancés chaque semaine aux jours et à l'heure choisis. *@
+@inject ApiClient Api
+@inject UiState Ui
+@inject IJSRuntime JS
+@using System.Globalization
+
+<PageTitle>@L["schedules.title"] · SonNuage</PageTitle>
+
+<div class="page">
+    <AdminNav Title="@L["schedules.title"]">
+        <Actions>
+            <a class="btn" href="admin/tasks"><Icon Name="arrow-back" Size="18" /> @L["schedules.back"]</a>
+            <button class="btn primary" @onclick="() => Edit(null)"><Icon Name="add" Size="18" /> @L["schedules.new"]</button>
+        </Actions>
+        <ChildContent>
+        <p class="muted small">@L["schedules.intro"]</p>
+        @if (_schedules is null)
+        {
+            <Loader />
+        }
+        else if (_schedules.Count == 0)
+        {
+            <div class="empty">@L["schedules.none"]</div>
+        }
+        else
+        {
+            <div class="table-wrap">
+                <table class="table">
+                    <thead><tr><th>@L["schedules.colTask"]</th><th>@L["schedules.colWhen"]</th><th>@L["schedules.colLast"]</th><th>@L["schedules.colNext"]</th><th>@L["schedules.colEnabled"]</th><th></th></tr></thead>
+                    <tbody>
+                        @foreach (var s in _schedules)
+                        {
+                            <tr @key="s.Id">
+                                <td>
+                                    @KindLabel(s.Kind)
+                                    @if (s.Options is { } o)
+                                    {
+                                        <div class="muted small">@OptionsText(o)</div>
+                                    }
+                                </td>
+                                <td>
+                                    @DaysText(s.Days) · @s.At.ToString("HH:mm", CultureInfo.InvariantCulture)
+                                    <div class="muted small">@s.TimeZone</div>
+                                </td>
+                                <td>@(s.LastRunAt is { } last ? L.DateTime(last) : L["schedules.never"])</td>
+                                <td>@(s.NextRunAt is { } next ? L.DateTime(next) : "–")</td>
+                                <td><input type="checkbox" checked="@s.Enabled" aria-label="@L["schedules.colEnabled"]" @onchange="e => ToggleAsync(s, e.Value is true)" /></td>
+                                <td class="row-actions">
+                                    <button class="icon-btn" title="@L["schedules.runNow"]" aria-label="@L["schedules.runNow"]" @onclick="() => RunAsync(s)"><Icon Name="play" Size="18" /></button>
+                                    <button class="icon-btn" title="@L["schedules.edit"]" aria-label="@L["schedules.edit"]" @onclick="() => Edit(s)"><Icon Name="edit" Size="18" /></button>
+                                    <button class="icon-btn danger" title="@L["common.delete"]" aria-label="@L["common.delete"]" @onclick="() => _deleting = s"><Icon Name="delete" Size="18" /></button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        </ChildContent>
+    </AdminNav>
+</div>
+
+<Modal Open="_editing" OpenChanged="v => _editing = v" Title="@(_editId is null ? L["schedules.new"] : L["schedules.edit"])">
+    <ChildContent>
+        <div class="stack">
+            <label class="field">
+                <span>@L["schedules.kindLabel"]</span>
+                <select class="input" @bind="_kind">
+                    @foreach (var k in ScheduledJobKinds.All)
+                    {
+                        <option value="@k">@KindLabel(k)</option>
+                    }
+                </select>
+            </label>
+            <div>
+                <p class="small" style="margin: .2rem 0 .3rem">@L["schedules.days"]</p>
+                <div class="row small" style="gap: .4rem 1rem">
+                    @foreach (var d in Week)
+                    {
+                        <label class="row" style="gap: .35rem">
+                            <input type="checkbox" checked="@_days.Contains(d)" @onchange="e => Toggle(d, e.Value is true)" />
+                            <span>@L.Format.Day((DayOfWeek)d)</span>
+                        </label>
+                    }
+                </div>
+            </div>
+            <label class="field">
+                <span>@L["schedules.at"]</span>
+                <input class="input" type="time" @bind="_at" />
+                <small class="muted">@L["schedules.zone", ("zone", _zone)]</small>
+            </label>
+            @if (_kind == ScheduledJobKinds.AcoustIdRescan)
+            {
+                <label class="row small" style="margin: 0; flex-wrap: nowrap; align-items: flex-start">
+                    <input type="checkbox" @bind="_includeIdentified" />
+                    <span>@L["jobs.create.includeIdentified"]</span>
+                </label>
+                <label class="row small" style="margin: 0; flex-wrap: nowrap; align-items: flex-start">
+                    <input type="checkbox" @bind="_apply" />
+                    <span>@L["jobs.create.apply"]</span>
+                </label>
+                @if (_apply)
+                {
+                    <label class="field">
+                        <span>@L["yt.settings.threshold", ("value", L["format.percent", ("value", L.Number(Math.Round(_threshold * 100)))])]</span>
+                        <input class="slider" type="range" min="0.5" max="1" step="0.01" value="@_threshold.ToString(CultureInfo.InvariantCulture)"
+                               style="--pct: @(((_threshold - 0.5) * 200).ToString("0", CultureInfo.InvariantCulture))%"
+                               @oninput="e => _threshold = double.Parse(e.Value!.ToString()!, CultureInfo.InvariantCulture)" />
+                    </label>
+                }
+            }
+            @if (_kind == ScheduledJobKinds.AudioAnalysis)
+            {
+                <p class="muted small" style="margin: 0">@L["schedules.analysisHint"]</p>
+            }
+            <label class="row small" style="margin: 0">
+                <input type="checkbox" @bind="_enabled" />
+                <span>@L["schedules.enabled"]</span>
+            </label>
+        </div>
+    </ChildContent>
+    <Footer>
+        <button class="btn" @onclick="() => _editing = false">@L["common.cancel"]</button>
+        <button class="btn primary" disabled="@(_saving || _days.Count == 0)" @onclick="SaveAsync">@L["common.save"]</button>
+    </Footer>
+</Modal>
+
+<Modal Open="_deleting is not null" OpenChanged="v => { if (!v) _deleting = null; }" Title="@L["schedules.deleteConfirm"]">
+    <ChildContent><p>@L["schedules.deleteHint", ("task", _deleting is null ? "" : KindLabel(_deleting.Kind))]</p></ChildContent>
+    <Footer>
+        <button class="btn" @onclick="() => _deleting = null">@L["common.cancel"]</button>
+        <button class="btn danger" @onclick="DeleteAsync">@L["common.delete"]</button>
+    </Footer>
+</Modal>
+@code {
+    // Semaine du lundi au dimanche (numéros de DayOfWeek : 0 = dimanche).
+    private static readonly int[] Week = [1, 2, 3, 4, 5, 6, 0];
+
+    private List<JobScheduleDto>? _schedules;
+    private JobScheduleDto? _deleting;
+    private string _zone = "UTC";
+
+    private bool _editing, _saving;
+    private Guid? _editId;
+    private string _kind = ScheduledJobKinds.AcoustIdRescan;
+    private HashSet<int> _days = [];
+    private TimeOnly _at = new(3, 0);
+    private bool _enabled = true;
+    private bool _apply = true;
+    private bool _includeIdentified;
+    private double _threshold = 0.9;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _zone = await JS.InvokeAsync<string>("sonnuage.timeZone");
+        }
+        catch (JSException)
+        {
+            // Fuseau introuvable : UTC.
+        }
+        await LoadAsync();
+    }
+
+    private Task LoadAsync() => TryAsync(async () => _schedules = await Api.JobSchedulesAsync() ?? []);
+
+    private void Edit(JobScheduleDto? s)
+    {
+        _editId = s?.Id;
+        _kind = s?.Kind ?? ScheduledJobKinds.AcoustIdRescan;
+        _days = s?.Days.ToHashSet() ?? [0];
+        _at = s?.At ?? new TimeOnly(3, 0);
+        _enabled = s?.Enabled ?? true;
+        _apply = s?.Options?.Apply ?? true;
+        _includeIdentified = s?.Options?.IncludeIdentified ?? false;
+        _threshold = s?.Options?.Threshold ?? 0.9;
+        _editing = true;
+    }
+
+    private void Toggle(int day, bool on)
+    {
+        if (on) _days.Add(day);
+        else _days.Remove(day);
+    }
+
+    // Heure de l'appareil : la planification suit le fuseau de celui qui l'enregistre, comme les heures calmes.
+    private JobScheduleRequest Request(string kind, IEnumerable<int> days, TimeOnly at, bool enabled, JobScheduleOptions? options) =>
+        new(kind, days.Order().ToList(), at, _zone, enabled, kind == ScheduledJobKinds.AcoustIdRescan ? options : null);
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        var req = Request(_kind, _days, _at, _enabled, new JobScheduleOptions(_apply, _apply ? _threshold : null, _includeIdentified));
+        await TryAsync(async () =>
+        {
+            if (_editId is { } id) await Api.UpdateJobScheduleAsync(id, req);
+            else await Api.CreateJobScheduleAsync(req);
+            _editing = false;
+            Ui.Notify(L["schedules.saved"]);
+            await LoadAsync();
+        });
+        _saving = false;
+    }
+
+    private Task ToggleAsync(JobScheduleDto s, bool enabled) => TryAsync(async () =>
+    {
+        await Api.UpdateJobScheduleAsync(s.Id, Request(s.Kind, s.Days, s.At, enabled, s.Options) with { TimeZone = s.TimeZone });
+        await LoadAsync();
+    });
+
+    private Task RunAsync(JobScheduleDto s) => TryAsync(async () =>
+    {
+        var ran = await Api.RunJobScheduleAsync(s.Id);
+        Ui.Notify(ran?.LastSuiteId is not null && ran.LastSuiteId != s.LastSuiteId ? L["schedules.started"] : L["schedules.notStarted"]);
+        await LoadAsync();
+    });
+
+    private Task DeleteAsync() => TryAsync(async () =>
+    {
+        if (_deleting is { } s) await Api.DeleteJobScheduleAsync(s.Id);
+        _deleting = null;
+        await LoadAsync();
+    });
+
+    private async Task TryAsync(Func<Task> action)
+    {
+        try
+        {
+            await action();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+    }
+
+    private string KindLabel(string kind) => L["schedules.kind." + kind.Replace('-', '_')];
+
+    private string DaysText(IReadOnlyList<int> days) =>
+        days.Count == 7 ? L["schedules.everyDay"] : string.Join(", ", Week.Where(days.Contains).Select(d => L.Format.ShortDay((DayOfWeek)d)));
+
+    private string OptionsText(JobScheduleOptions o)
+    {
+        var parts = new List<string>();
+        parts.Add(o.Apply
+            ? L["schedules.optApply", ("threshold", o.Threshold is { } t ? L["format.percent", ("value", L.Number(Math.Round(t * 100)))] : L["schedules.optDefaultThreshold"])]
+            : L["schedules.optPropose"]);
+        if (o.IncludeIdentified) parts.Add(L["schedules.optIncludeIdentified"]);
+        return string.Join(" · ", parts);
+    }
+}

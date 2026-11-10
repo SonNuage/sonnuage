@@ -205,7 +205,9 @@
       "unknownArtist": "Artiste introuvable.",
       "notCancelable": "Cette tâche est déjà terminée.",
       "notRetryable": "Seule une tâche en échec ou annulée, dont l'étape précédente a réussi, peut être relancée.",
-      "suiteActive": "Cette suite a encore des tâches en cours ou en attente : annulez-la d’abord."
+      "suiteActive": "Cette suite a encore des tâches en cours ou en attente : annulez-la d’abord.",
+      "scheduleDays": "Choisissez au moins un jour de la semaine.",
+      "scheduleZone": "Fuseau horaire inconnu."
     },
     "requests": {
       "badVideo": "Vidéo YouTube attendue (identifiant ou lien youtube.com, youtu.be).",
@@ -1364,6 +1366,46 @@
       "album": "Album",
       "ep": "EP",
       "single": "Single"
+    }
+  },
+  "schedules": {
+    "title": "Tâches planifiées",
+    "back": "Tâches",
+    "new": "Nouvelle planification",
+    "edit": "Modifier la planification",
+    "intro": "Ces tâches sont lancées chaque semaine aux jours et à l'heure choisis. Une tâche manquée pendant que le serveur était arrêté est lancée une fois à son retour. Une tâche identique qui attend déjà son tour n'est pas dédoublée.",
+    "none": "Aucune tâche planifiée.",
+    "colTask": "Tâche",
+    "colWhen": "Quand",
+    "colLast": "Dernier lancement",
+    "colNext": "Prochain lancement",
+    "colEnabled": "Active",
+    "never": "Jamais",
+    "everyDay": "Tous les jours",
+    "runNow": "Lancer maintenant",
+    "kindLabel": "Tâche",
+    "days": "Jours",
+    "at": "Heure",
+    "zone": "Heure de {zone}.",
+    "enabled": "Active",
+    "analysisHint": "L'analyse audio ne démarre que si elle est activée dans les réglages et qu'il reste des morceaux à analyser.",
+    "saved": "Planification enregistrée.",
+    "started": "Tâche lancée.",
+    "notStarted": "Rien de lancé : une tâche identique attend déjà son tour, ou il n'y a rien à faire.",
+    "deleteConfirm": "Supprimer la planification ?",
+    "deleteHint": "« {task} » ne sera plus lancée automatiquement. Les tâches déjà créées restent.",
+    "optApply": "Correction automatique au-dessus de {threshold}",
+    "optDefaultThreshold": "du seuil des réglages",
+    "optPropose": "Propositions seulement",
+    "optIncludeIdentified": "morceaux déjà identifiés compris",
+    "kind": {
+      "acoustid_rescan": "Rescan AcoustID de toute la bibliothèque",
+      "library_scan": "Scan de la bibliothèque",
+      "search_reindex": "Réindexation de la recherche",
+      "transcode_purge": "Purge du cache de transcodage",
+      "audio_analysis": "Analyse audio",
+      "discovery_refresh": "Actualisation de la découverte",
+      "db_backup": "Sauvegarde de la base"
     }
   },
   "quietHours": {

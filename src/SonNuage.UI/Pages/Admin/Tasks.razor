@@ -4,6 +4,7 @@
 @inject ApiClient Api
 @inject UiState Ui
 @using System.Globalization
+@using System.Text.Json
 
 <PageTitle>@L["admin.tabs.tasks"] · SonNuage</PageTitle>
 
@@ -18,6 +19,7 @@
                     <Icon Name="@(pauseAll ? "pause" : "play")" Size="18" /> @(pauseAll ? L["jobs.pauseAll"] : L["jobs.resumeAll"])
                 </button>
             }
+            <a class="btn" href="admin/tasks/schedules"><Icon Name="schedule" Size="18" /> @L["schedules.title"]</a>
             <button class="btn primary" @onclick="OpenNewTaskAsync"><Icon Name="add" Size="18" /> @L["jobs.create.button"]</button>
         </Actions>
         <ChildContent>
@@ -264,32 +266,129 @@
     private double _threshold = 0.9;
     private bool _creating;
 
+    // Secondes d'interrogation avant de retenter le flux en direct, quand il est tombé ou n'a pas pu s'ouvrir.
+    private const int StreamRetry = 30;
+
     private Timer? _timer;
     private int _tick;
     private bool _busy;
+    // Flux en direct (Server-Sent Events) en cours ou en cours d'ouverture ; _live : il a déjà parlé.
+    private CancellationTokenSource? _stream;
+    private bool _live;
+    private int _retryIn;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadAsync();
-        // Journal de la tâche ouverte : chaque seconde. Listes : toutes les trois secondes.
-        _timer = new Timer(_ => InvokeAsync(async () =>
-        {
-            if (_busy) return;
-            _busy = true;
-            try
-            {
-                if (_jobId is not null) await LoadJobAsync(appendOnly: true);
-                if (++_tick % 3 == 0) await LoadAsync();
-                StateHasChanged();
-            }
-            finally
-            {
-                _busy = false;
-            }
-        }), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+        Listen();
+        _timer = new Timer(_ => InvokeAsync(TickAsync), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
     }
 
-    public void Dispose() => _timer?.Dispose();
+    /// <summary>
+    /// Sans flux en direct : journal de la tâche ouverte chaque seconde, listes toutes les trois secondes, et nouvel
+    /// essai du flux de temps en temps. Avec le flux : rien, il pousse tout.
+    /// </summary>
+    private async Task TickAsync()
+    {
+        if (_busy || _live) return;
+        _busy = true;
+        try
+        {
+            if (_jobId is not null) await LoadJobAsync(appendOnly: true);
+            if (++_tick % 3 == 0) await LoadAsync();
+            if (_stream is null && --_retryIn <= 0) Listen();
+            StateHasChanged();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+        var stream = _stream;
+        _stream = null;
+        stream?.Cancel();
+    }
+
+    /// <summary>(Ré)ouvre le flux en direct pour ce qui est affiché : filtre, suite et tâche ouvertes.</summary>
+    private void Listen()
+    {
+        _stream?.Cancel();
+        var cts = new CancellationTokenSource();
+        _stream = cts;
+        _ = ListenAsync(cts);
+    }
+
+    /// <summary>Après un changement de ce qui est affiché : le flux ouvert suit (sinon l'interrogation s'en charge).</summary>
+    private void Relisten()
+    {
+        if (_stream is not null) Listen();
+    }
+
+    private async Task ListenAsync(CancellationTokenSource cts)
+    {
+        var ct = cts.Token;
+        try
+        {
+            var lastLog = _logs.Count == 0 ? 0 : _logs[^1].Id;
+            await foreach (var e in Api.JobEventsAsync(_filter == "all" ? null : _filter, _q, _suiteLimit, _suiteId, _jobLimit, _jobId, lastLog, ct))
+            {
+                if (ct.IsCancellationRequested) break;
+                await InvokeAsync(() =>
+                {
+                    _live = true;
+                    Apply(e);
+                    StateHasChanged();
+                });
+            }
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException or IOException or TimeoutException or JsonException
+                                       or OperationCanceledException or NotSupportedException)
+        {
+            // Flux impossible (proxy, plateforme) ou coupé : l'interrogation reprend.
+        }
+        finally
+        {
+            // Remplacé par un nouveau flux : celui-ci se tait. Sinon, retour à l'interrogation jusqu'au prochain essai.
+            if (_stream == cts)
+            {
+                _stream = null;
+                _retryIn = StreamRetry;
+                await InvokeAsync(() =>
+                {
+                    _live = false;
+                    StateHasChanged();
+                });
+            }
+            cts.Dispose();
+        }
+    }
+
+    private void Apply(ServerSentEvent e)
+    {
+        switch (e.Event)
+        {
+            case JobStreamEvents.Overview:
+                _overview = JsonSerializer.Deserialize<JobsOverviewDto>(e.Data, JsonDefaults.Options) ?? _overview;
+                break;
+            case JobStreamEvents.Suite:
+                _jobs = JsonSerializer.Deserialize<PagedResult<JobDto>>(e.Data, JsonDefaults.Options) ?? _jobs;
+                break;
+            case JobStreamEvents.Job:
+                _job = JsonSerializer.Deserialize<JobDetailDto>(e.Data, JsonDefaults.Options) ?? _job;
+                break;
+            case JobStreamEvents.Logs:
+                var last = _logs.Count == 0 ? 0 : _logs[^1].Id;
+                _logs.AddRange((JsonSerializer.Deserialize<List<JobLogDto>>(e.Data, JsonDefaults.Options) ?? []).Where(l => l.Id > last));
+                break;
+        }
+    }
 
     private async Task LoadAsync()
     {
@@ -305,18 +404,21 @@
         _filter = filter;
         _suiteLimit = SuitePage;
         await LoadAsync();
+        Relisten();
     }
 
     private async Task MoreSuitesAsync()
     {
         _suiteLimit += SuitePage;
         await LoadAsync();
+        Relisten();
     }
 
     private async Task MoreJobsAsync()
     {
         _jobLimit += JobPage;
         await LoadAsync();
+        Relisten();
     }
 
     private async Task OpenSuiteAsync(Guid id)
@@ -330,16 +432,18 @@
         {
             _jobs = await Api.JobSuiteAsync(id, 0, _jobLimit);
             // La tâche en cours (ou la première) s'ouvre d'office.
-            if ((_jobs?.Items.FirstOrDefault(j => j.Status == "Running") ?? _jobs?.Items.FirstOrDefault()) is { } first) await OpenJobAsync(first.Id);
+            if ((_jobs?.Items.FirstOrDefault(j => j.Status == "Running") ?? _jobs?.Items.FirstOrDefault()) is { } first) await OpenJobAsync(first.Id, relisten: false);
         });
+        Relisten();
     }
 
-    private async Task OpenJobAsync(Guid id)
+    private async Task OpenJobAsync(Guid id, bool relisten = true)
     {
         _jobId = id;
         _job = null;
         _logs.Clear();
         await LoadJobAsync(appendOnly: false);
+        if (relisten) Relisten();
     }
 
     private async Task LoadJobAsync(bool appendOnly)
@@ -422,6 +526,7 @@
             _jobId = null;
             _job = null;
             await LoadAsync();
+            Relisten();
         });
     }
 
