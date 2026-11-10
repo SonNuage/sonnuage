@@ -379,8 +379,14 @@ depuis la découverte (couches 2 et 3).
 
 ## Idées
 
-- 💡 Tâches planifiées (« rescan AcoustID chaque dimanche à 3 h »).
-- 💡 Rafraîchissement du volet Tâches en push (Server-Sent Events) au lieu d'une interrogation chaque seconde.
+- ✅ Tâches planifiées (« rescan AcoustID chaque dimanche à 3 h ») : page Tâches → Tâches planifiées. Rescan AcoustID
+  (avec ses options), scan, réindexation, purge du cache, analyse audio, découverte ou sauvegarde, aux jours et à
+  l'heure choisis (fuseau de l'appareil) ; activer, modifier, supprimer, lancer maintenant. Un passage manqué pendant
+  que le serveur était arrêté est lancé une fois au retour ; pas de doublon si la même tâche attend déjà.
+- ✅ Volet Tâches en push (Server-Sent Events, `GET /api/admin/jobs/events`) : files, suites, tâche ouverte et
+  nouvelles lignes du journal arrivent dès que le moteur change d'état ; battement de cœur toutes les 15 s pour les
+  proxys (Cloudflare). Si le flux ne s'ouvre pas ou tombe, la page revient à l'interrogation chaque seconde et
+  retente le flux 30 s plus tard.
 - 💡 Détection des doublons de la bibliothèque grâce aux empreintes AcoustID (même enregistrement, deux fichiers).
 - 💡 Revue groupée des propositions d'un rescan (accepter ou refuser en lot au lieu de lire le journal).
 - ✅ Sauvegarde automatique de la base SQLite : copie à chaud quotidienne (`VACUUM INTO`), rotation, sauvegarde immédiate depuis Réglages ; dossier `SonNuage__BackupPath` (par défaut `backups` du dossier de données). Restaurer : arrêter le serveur, remplacer `sonnuage.db` par la copie, supprimer `-wal`/`-shm`.
