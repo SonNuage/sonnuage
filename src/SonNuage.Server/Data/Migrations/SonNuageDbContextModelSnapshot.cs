@@ -607,6 +607,9 @@ namespace SonNuage.Server.Data.Migrations
                     b.Property<bool>("Completed")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("ListenBrainz")
+                        .HasColumnType("INTEGER");
+
                     b.Property<long>("PlayedAt")
                         .HasColumnType("INTEGER");
 
@@ -991,6 +994,16 @@ namespace SonNuage.Server.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("LastSeenDevice")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("ListenBrainzSubmitSince")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ListenBrainzToken")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ListenBrainzUserName")
+                        .HasMaxLength(64)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("NormalizedUsername")
