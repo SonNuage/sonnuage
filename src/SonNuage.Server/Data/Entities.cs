@@ -124,6 +124,12 @@ public sealed class User
     /// <summary>Empreinte du mot de passe Subsonic, pour la clé d'API OpenSubsonic (<c>apiKey</c>) qui ne donne pas le nom.</summary>
     public string? SubsonicKeyHash { get; set; }
     public DateTimeOffset? SubsonicPasswordCreatedAt { get; set; }
+    /// <summary>Jeton ListenBrainz du compte, chiffré (voir <see cref="ListenBrainz.ListenBrainzTokens"/>). Null = pas relié.</summary>
+    public string? ListenBrainzToken { get; set; }
+    /// <summary>Nom ListenBrainz désigné par le jeton (pour les recommandations).</summary>
+    public string? ListenBrainzUserName { get; set; }
+    /// <summary>Envoi des écoutes activé depuis cette date (seules les écoutes commencées depuis partent). Null = désactivé.</summary>
+    public DateTimeOffset? ListenBrainzSubmitSince { get; set; }
 }
 
 public sealed class RefreshToken
@@ -289,6 +295,18 @@ public sealed class PlayEvent
     public string? Client { get; set; }
     /// <summary>Identifiant choisi par l'appareil : une écoute renvoyée (réponse perdue, file hors ligne) n'est comptée qu'une fois.</summary>
     public Guid? ClientEventId { get; set; }
+    /// <summary>Où en est son envoi à ListenBrainz (seulement pour un compte qui l'a activé).</summary>
+    public ListenBrainzSubmission ListenBrainz { get; set; }
+}
+
+/// <summary>Envoi d'une écoute à ListenBrainz.</summary>
+public enum ListenBrainzSubmission
+{
+    /// <summary>Pas encore traitée (ou faite quand l'envoi était désactivé : elle ne partira jamais).</summary>
+    Pending = 0,
+    Sent = 1,
+    /// <summary>Trop courte pour compter (voir <see cref="Contracts.ListenRules.CountsForListenBrainz"/>), ou refusée par ListenBrainz.</summary>
+    Ignored = 2,
 }
 
 public enum YoutubeItemStatus

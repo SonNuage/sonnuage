@@ -232,6 +232,11 @@
     "analysis": {
       "unavailable": "L'analyse audio n'est pas installée sur ce serveur (image Docker amd64 uniquement).",
       "disabled": "L'analyse audio est désactivée dans les réglages."
+    },
+    "listenbrainz": {
+      "invalidToken": "ListenBrainz ne reconnaît pas ce jeton.",
+      "unreachable": "ListenBrainz ne répond pas. Réessayez plus tard.",
+      "noToken": "Enregistrez d'abord votre jeton ListenBrainz."
     }
   },
   "login": {
@@ -348,7 +353,10 @@
     "rediscover": "À réécouter",
     "rediscoverHint": "Vos titres favoris et habituels, pas joués depuis un mois.",
     "notYetPlayed": "Pas encore écouté",
-    "notYetPlayedHint": "Des albums de la bibliothèque que vous n'avez jamais lancés."
+    "notYetPlayedHint": "Des albums de la bibliothèque que vous n'avez jamais lancés.",
+    "recommended": "Recommandé pour vous",
+    "recommendedHint": "D'après vos écoutes sur ListenBrainz.",
+    "recommendedOutside": "Pas encore sur le serveur"
   },
   "favorites": {
     "empty": "Touchez le cœur d'un titre, d'un album ou d'un artiste pour le retrouver ici.",
@@ -933,7 +941,8 @@
       "library": "Bibliothèque",
       "sync": "Abonnements",
       "discovery": "Découverte",
-      "analysis": "Analyse audio"
+      "analysis": "Analyse audio",
+      "listens": "Écoutes (ListenBrainz)"
     },
     "kind": {
       "youtube_download": "Téléchargement YouTube",
@@ -946,7 +955,8 @@
       "transcode_purge": "Purge du cache de transcodage",
       "youtube_sync": "Synchronisation d'abonnement",
       "analysis_audio": "Analyse audio",
-      "db_backup": "Sauvegarde de la base"
+      "db_backup": "Sauvegarde de la base",
+      "listenbrainz_submit": "Envoi des écoutes à ListenBrainz"
     },
     "suiteKind": {
       "youtube_import": "Import YouTube",
@@ -968,7 +978,8 @@
       "discovery": "Actualisation de la découverte",
       "album": "Album « {album} » de {artist}",
       "analysis": "Analyse audio de la bibliothèque",
-      "backup": "Sauvegarde de la base de données"
+      "backup": "Sauvegarde de la base de données",
+      "listenbrainz": "Envoi des écoutes à ListenBrainz"
     },
     "steps": {
       "download": "Téléchargement",
@@ -1084,6 +1095,10 @@
       "failed": "{track} : {error}",
       "unavailable": "Analyseur audio absent : rien à faire.",
       "disabled": "Analyse audio désactivée dans les réglages : arrêt."
+    },
+    "listenbrainz": {
+      "sent": "{sent} écoute(s) envoyée(s), {ignored} écartée(s) (trop courtes).",
+      "later": "ListenBrainz bride les envois ou ne répond pas : la suite partira plus tard."
     }
   },
   "about": {
@@ -1493,5 +1508,22 @@
       "ios": "iPhone"
     },
     "hint": "Vos écoutes récentes et vos statistiques"
+  },
+  "listenbrainz": {
+    "title": "ListenBrainz",
+    "intro": "Facultatif : reliez votre compte ListenBrainz pour y envoyer vos écoutes et recevoir des recommandations personnelles sur l'accueil. Rien ne part vers ListenBrainz sans votre accord.",
+    "token": "Jeton utilisateur ListenBrainz",
+    "tokenHint": "À copier depuis vos réglages ListenBrainz :",
+    "save": "Enregistrer le jeton",
+    "saved": "Jeton enregistré (compte ListenBrainz « {user} »).",
+    "connected": "Compte ListenBrainz relié.",
+    "remove": "Supprimer le jeton",
+    "removed": "Jeton ListenBrainz supprimé.",
+    "submit": "Envoyer mes écoutes à ListenBrainz",
+    "submitHint": "Seulement les écoutes faites à partir de maintenant, et qui comptent selon ListenBrainz (la moitié du morceau ou 4 minutes). Elles partent en arrière-plan, quelques minutes après.",
+    "sent": {
+      "one": "{count} écoute envoyée.",
+      "other": "{count} écoutes envoyées."
+    }
   }
 }

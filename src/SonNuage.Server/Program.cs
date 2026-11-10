@@ -127,6 +127,13 @@ builder.Services.AddSingleton<SonNuage.Server.Storage.BackupSettingsStore>();
 builder.Services.AddSingleton<SonNuage.Server.Storage.DatabaseBackups>();
 builder.Services.AddSingleton<IJobHandler, SonNuage.Server.Storage.DatabaseBackupJob>();
 builder.Services.AddHostedService<SonNuage.Server.Storage.BackupScheduler>();
+SonNuage.Server.ListenBrainz.ListenBrainzApi.ConfigureHttp(builder.Services.AddHttpClient(SonNuage.Server.ListenBrainz.ListenBrainzApi.HttpClientName));
+builder.Services.AddSingleton<SonNuage.Server.ListenBrainz.ListenBrainzApi>();
+builder.Services.AddSingleton<SonNuage.Server.ListenBrainz.ListenBrainzTokens>();
+builder.Services.AddSingleton<SonNuage.Server.ListenBrainz.ListenBrainzRecommendations>();
+builder.Services.AddSingleton<SonNuage.Server.ListenBrainz.ListenBrainzSubmitter>();
+builder.Services.AddSingleton<IJobHandler, SonNuage.Server.ListenBrainz.ListenBrainzSubmitJob>();
+builder.Services.AddHostedService<SonNuage.Server.ListenBrainz.ListenBrainzScheduler>();
 
 // Analyse audio (Essentia) : caractéristiques des morceaux pour les radios thématiques.
 builder.Services.AddSingleton<SonNuage.Server.Analysis.IAudioAnalyzer, SonNuage.Server.Analysis.EssentiaAudioAnalyzer>();
@@ -196,6 +203,7 @@ app.MapLibraryEndpoints();
 app.MapStreamEndpoints();
 app.MapMeEndpoints();
 app.MapHistoryEndpoints();
+app.MapListenBrainzEndpoints();
 app.MapPlaylistEndpoints();
 app.MapAdminEndpoints();
 app.MapYoutubeEndpoints();

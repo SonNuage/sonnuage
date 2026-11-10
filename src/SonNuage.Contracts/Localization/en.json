@@ -232,6 +232,11 @@
     "analysis": {
       "unavailable": "Audio analysis is not installed on this server (amd64 Docker image only).",
       "disabled": "Audio analysis is disabled in the settings."
+    },
+    "listenbrainz": {
+      "invalidToken": "ListenBrainz does not recognise this token.",
+      "unreachable": "ListenBrainz is not responding. Try again later.",
+      "noToken": "Save your ListenBrainz token first."
     }
   },
   "login": {
@@ -348,7 +353,10 @@
     "rediscover": "Listen again",
     "rediscoverHint": "Your liked and go-to tracks, not played for a month.",
     "notYetPlayed": "Not played yet",
-    "notYetPlayedHint": "Albums in the library you have never started."
+    "notYetPlayedHint": "Albums in the library you have never started.",
+    "recommended": "Recommended for you",
+    "recommendedHint": "Based on your listens on ListenBrainz.",
+    "recommendedOutside": "Not on the server yet"
   },
   "favorites": {
     "empty": "Tap the heart on a track, an album or an artist to find it here.",
@@ -933,7 +941,8 @@
       "library": "Library",
       "sync": "Subscriptions",
       "discovery": "Discovery",
-      "analysis": "Audio analysis"
+      "analysis": "Audio analysis",
+      "listens": "Listens (ListenBrainz)"
     },
     "kind": {
       "youtube_download": "YouTube download",
@@ -946,7 +955,8 @@
       "transcode_purge": "Transcode cache purge",
       "youtube_sync": "Subscription sync",
       "analysis_audio": "Audio analysis",
-      "db_backup": "Database backup"
+      "db_backup": "Database backup",
+      "listenbrainz_submit": "Sending listens to ListenBrainz"
     },
     "suiteKind": {
       "youtube_import": "YouTube import",
@@ -968,7 +978,8 @@
       "discovery": "Discovery refresh",
       "album": "Album “{album}” by {artist}",
       "analysis": "Audio analysis of the library",
-      "backup": "Database backup"
+      "backup": "Database backup",
+      "listenbrainz": "Sending listens to ListenBrainz"
     },
     "steps": {
       "download": "Download",
@@ -1084,6 +1095,10 @@
       "failed": "{track}: {error}",
       "unavailable": "Audio analyzer not installed: nothing to do.",
       "disabled": "Audio analysis disabled in the settings: stopped."
+    },
+    "listenbrainz": {
+      "sent": "{sent} listen(s) sent, {ignored} skipped (too short).",
+      "later": "ListenBrainz is rate limiting or not responding: the rest will be sent later."
     }
   },
   "about": {
@@ -1493,5 +1508,22 @@
       "ios": "iPhone"
     },
     "hint": "Your recent listens and stats"
+  },
+  "listenbrainz": {
+    "title": "ListenBrainz",
+    "intro": "Optional: link your ListenBrainz account to send it your listens and get personal recommendations on the home page. Nothing goes to ListenBrainz without your consent.",
+    "token": "ListenBrainz user token",
+    "tokenHint": "Copy it from your ListenBrainz settings:",
+    "save": "Save token",
+    "saved": "Token saved (ListenBrainz account \"{user}\").",
+    "connected": "ListenBrainz account linked.",
+    "remove": "Remove token",
+    "removed": "ListenBrainz token removed.",
+    "submit": "Send my listens to ListenBrainz",
+    "submitHint": "Only listens made from now on that count for ListenBrainz (half the track or 4 minutes). They are sent in the background a few minutes later.",
+    "sent": {
+      "one": "{count} listen sent.",
+      "other": "{count} listens sent."
+    }
   }
 }

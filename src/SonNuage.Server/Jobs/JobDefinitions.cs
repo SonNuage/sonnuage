@@ -24,8 +24,10 @@ public static class JobLanes
     public const string Discovery = "discovery";
     /// <summary>Analyse audio (Essentia, gourmande en calcul) : un lot à la fois.</summary>
     public const string Analysis = "analysis";
+    /// <summary>Envoi des écoutes à ListenBrainz (comptes qui l'ont activé) : un envoi à la fois, à part pour ne rien retarder.</summary>
+    public const string Listens = "listens";
 
-    public static readonly IReadOnlyList<string> All = [Download, AcoustId, Metadata, Library, Sync, Discovery, Analysis];
+    public static readonly IReadOnlyList<string> All = [Download, AcoustId, Metadata, Library, Sync, Discovery, Analysis, Listens];
 }
 
 /// <summary>Type de tâche déclaré : nom, file, priorité par défaut, nombre de tentatives.</summary>
@@ -51,6 +53,8 @@ public static class JobKinds
     public static readonly JobKind AudioAnalysis = new("analysis.audio", JobLanes.Analysis);
     /// <summary>Sauvegarde de la base : passe devant les autres traitements de la bibliothèque.</summary>
     public static readonly JobKind DatabaseBackup = new("db.backup", JobLanes.Library, Priority: 20, MaxAttempts: 2);
+    /// <summary>Écoutes en attente vers ListenBrainz ; bridé ou en panne, la tâche revient plus tard sans compter d'essai.</summary>
+    public static readonly JobKind ListenBrainzSubmit = new("listenbrainz.submit", JobLanes.Listens);
 }
 
 /// <summary>Types de suites (création depuis l'admin, filtres).</summary>
@@ -67,6 +71,7 @@ public static class JobSuiteKinds
     public const string RadioTags = "radio.tags";
     public const string AudioAnalysis = "analysis.audio";
     public const string DatabaseBackup = "db.backup";
+    public const string ListenBrainzSubmit = "listenbrainz.submit";
 }
 
 public interface IJobHandler
