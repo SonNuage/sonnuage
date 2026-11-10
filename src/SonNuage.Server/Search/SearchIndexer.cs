@@ -95,12 +95,13 @@ public sealed class SearchIndexer(
         var started = DateTime.UtcNow;
         try
         {
+            // D'abord l'index : il dit si l'option sémantique est permise, donc s'il faut décrire les morceaux.
+            await es.EnsureIndexAsync(ct);
             List<SearchDocument> documents;
             using (var scope = scopes.CreateScope())
             {
-                documents = await BuildDocumentsAsync(scope.ServiceProvider.GetRequiredService<SonNuageDbContext>(), ct);
+                documents = await BuildDocumentsAsync(scope.ServiceProvider.GetRequiredService<SonNuageDbContext>(), ct, describe: es.Semantic);
             }
-            await es.EnsureIndexAsync(ct);
             await es.ReplaceAllAsync(documents, ct);
             gateway.IndexReady = true;
             await es.DeleteOldIndexesAsync(ct);
@@ -115,8 +116,12 @@ public sealed class SearchIndexer(
         }
     }
 
-    internal static async Task<List<SearchDocument>> BuildDocumentsAsync(SonNuageDbContext db, CancellationToken ct)
+    /// <param name="describe">Ajoute aux titres leur description d'ambiance (<see cref="AmbianceVocabulary.Describe"/>), lue par l'option sémantique.</param>
+    internal static async Task<List<SearchDocument>> BuildDocumentsAsync(SonNuageDbContext db, CancellationToken ct, bool describe = false)
     {
+        var descriptions = describe
+            ? (await Radio.RadioStations.LoadProfilesAsync(db, ct)).ToDictionary(p => p.Id, AmbianceVocabulary.Describe)
+            : new Dictionary<Guid, string>();
         var plays = await db.PlayEvents.GroupBy(p => p.TrackId).Select(g => new { g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.Key, x => x.Count, ct);
         var tracks = await db.Tracks.AsNoTracking()
@@ -135,10 +140,14 @@ public sealed class SearchIndexer(
             "artist", a.Id, a.Name, null, null, null, null, artistPlays.GetValueOrDefault(a.Id), a.Name, [a.Name])));
         documents.AddRange(albums.Select(a => new SearchDocument(
             "album", a.Id, a.Title, a.Artist, null, null, a.Year, albumPlays.GetValueOrDefault(a.Id), $"{a.Title} {a.Artist}", [a.Title])));
-        documents.AddRange(tracks.Select(t => new SearchDocument(
-            "track", t.Id, t.Title, t.ArtistName, t.AlbumTitle, t.Genre, t.Year, plays.GetValueOrDefault(t.Id),
-            string.Join(' ', new[] { t.Title, t.ArtistName, t.AlbumArtistName == t.ArtistName ? null : t.AlbumArtistName, t.AlbumTitle, t.Genre }.Where(s => !string.IsNullOrWhiteSpace(s))),
-            [t.Title])));
+        foreach (var t in tracks)
+        {
+            var all = string.Join(' ', new[] { t.Title, t.ArtistName, t.AlbumArtistName == t.ArtistName ? null : t.AlbumArtistName, t.AlbumTitle, t.Genre }
+                .Where(s => !string.IsNullOrWhiteSpace(s)));
+            var description = descriptions.GetValueOrDefault(t.Id) is { Length: > 0 } d ? $"{all} {d}" : null;
+            documents.Add(new SearchDocument("track", t.Id, t.Title, t.ArtistName, t.AlbumTitle, t.Genre, t.Year, plays.GetValueOrDefault(t.Id),
+                all, [t.Title], description));
+        }
         return documents;
     }
 }

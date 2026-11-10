@@ -12,7 +12,10 @@ namespace SonNuage.Server.Search;
 /// <summary>Résultat d'une recherche : identifiants dans l'ordre de pertinence, et éventuelle correction proposée.</summary>
 public sealed record SearchHits(IReadOnlyList<Guid> Artists, IReadOnlyList<Guid> Albums, IReadOnlyList<Guid> Tracks, string? Correction);
 
-/// <summary>Document indexé : un par artiste, album et piste.</summary>
+/// <summary>
+/// Document indexé : un par artiste, album et piste. <see cref="Description"/> : texte donné au modèle d'inférence de
+/// l'option sémantique (noms, genre, décennie, tags, ambiances entendues) ; <see cref="All"/> à défaut.
+/// </summary>
 public sealed record SearchDocument(
     string Type,
     Guid EntityId,
@@ -23,7 +26,8 @@ public sealed record SearchDocument(
     int? Year,
     int Plays,
     string All,
-    IReadOnlyList<string> Suggest)
+    IReadOnlyList<string> Suggest,
+    string? Description = null)
 {
     public string Id => $"{Type}-{EntityId:N}";
 }
@@ -52,9 +56,20 @@ public sealed class ElasticsearchClient(IHttpClientFactory httpFactory, IOptions
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
+    /// <summary>Licences qui permettent l'API d'inférence, donc l'indexation d'un champ semantic_text.</summary>
+    private static readonly string[] InferenceLicenses = ["enterprise", "trial"];
+
     private SearchOptions Options => options.Value.Search;
+    private volatile bool _semanticRefused;
+
     public bool Configured => !string.IsNullOrWhiteSpace(Options.Url);
-    private bool Semantic => !string.IsNullOrWhiteSpace(Options.SemanticInferenceId);
+
+    /// <summary>
+    /// Option sémantique active : un endpoint d'inférence est configuré et la licence du cluster le permet. Depuis
+    /// 8.18/9.0, toute l'API d'inférence (modèles ELSER/E5 comme services externes) exige une licence enterprise ou
+    /// d'essai : avec une licence basic, un champ semantic_text ferait échouer toute l'indexation.
+    /// </summary>
+    public bool Semantic => !string.IsNullOrWhiteSpace(Options.SemanticInferenceId) && !_semanticRefused;
     public string Index => $"{Options.Index}-v{MappingVersion}{(Semantic ? "-semantic" : "")}";
 
     /// <summary>Configuration du client HTTP nommé (adresse, authentification, certificat épinglé).</summary>
@@ -109,6 +124,7 @@ public sealed class ElasticsearchClient(IHttpClientFactory httpFactory, IOptions
 
     public async Task EnsureIndexAsync(CancellationToken ct)
     {
+        if (!string.IsNullOrWhiteSpace(Options.SemanticInferenceId)) await CheckSemanticLicenseAsync(ct);
         using (var head = await Http().SendAsync(new HttpRequestMessage(HttpMethod.Head, Index), ct))
         {
             if (head.IsSuccessStatusCode) return;
@@ -118,6 +134,23 @@ public sealed class ElasticsearchClient(IHttpClientFactory httpFactory, IOptions
         // Deux instances qui démarrent ensemble : la seconde reçoit « resource_already_exists ».
         if (response.StatusCode == HttpStatusCode.BadRequest && (await response.Content.ReadAsStringAsync(ct)).Contains("resource_already_exists")) return;
         await EnsureAsync(response, ct);
+    }
+
+    /// <summary>Relue à chaque reconstruction : un passage en licence enterprise (ou son expiration) est pris en compte.</summary>
+    private async Task CheckSemanticLicenseAsync(CancellationToken ct)
+    {
+        using var response = await Http().GetAsync("_license", ct);
+        // Licence illisible (droits « monitor » absents) : on s'en tient à la configuration.
+        if (!response.IsSuccessStatusCode) return;
+        var license = (await response.Content.ReadFromJsonAsync<JsonObject>(ct))?["license"];
+        var type = license?["type"]?.GetValue<string>();
+        var allowed = InferenceLicenses.Contains(type) && license?["status"]?.GetValue<string>() == "active";
+        if (!allowed && !_semanticRefused)
+        {
+            logger.LogWarning("Recherche sémantique ignorée : l'endpoint d'inférence {Inference} demande une licence Elasticsearch enterprise ou d'essai (licence actuelle : {License})",
+                Options.SemanticInferenceId, type ?? "inconnue");
+        }
+        _semanticRefused = !allowed;
     }
 
     /// <summary>Indexe tous les documents avec une génération, puis supprime ceux des générations précédentes.</summary>
@@ -220,7 +253,7 @@ public sealed class ElasticsearchClient(IHttpClientFactory httpFactory, IOptions
 
     private JsonObject TypedQuery(string type, string query)
     {
-        var should = new JsonArray
+        var lexical = new JsonArray
         {
             // Préfixe sur chaque mot du nom : « hig to h » trouve « Highway to Hell ».
             new JsonObject { ["multi_match"] = new JsonObject { ["query"] = query, ["type"] = "bool_prefix", ["fields"] = SaytFields("name"), ["boost"] = 4 } },
@@ -238,24 +271,23 @@ public sealed class ElasticsearchClient(IHttpClientFactory httpFactory, IOptions
                 },
             },
         };
+        var match = new JsonObject
+        {
+            ["filter"] = new JsonArray(Term("type", type)),
+            // Il faut une correspondance textuelle : la similarité sémantique trouve toujours un « plus proche »,
+            // même pour un nom qui n'existe pas. Elle ne fait que réordonner (les demandes d'ambiance ont leur section).
+            ["must"] = new JsonObject { ["bool"] = new JsonObject { ["should"] = lexical, ["minimum_should_match"] = 1 } },
+        };
         if (Semantic)
         {
-            should.Add(new JsonObject { ["semantic"] = new JsonObject { ["field"] = "semantic", ["query"] = query } });
+            match["should"] = new JsonArray(new JsonObject { ["semantic"] = new JsonObject { ["field"] = "semantic", ["query"] = query } });
         }
 
         return new JsonObject
         {
             ["function_score"] = new JsonObject
             {
-                ["query"] = new JsonObject
-                {
-                    ["bool"] = new JsonObject
-                    {
-                        ["filter"] = new JsonArray(Term("type", type)),
-                        ["should"] = should,
-                        ["minimum_should_match"] = 1,
-                    },
-                },
+                ["query"] = new JsonObject { ["bool"] = match },
                 // Les titres souvent écoutés remontent, sans écraser la pertinence textuelle.
                 ["field_value_factor"] = new JsonObject { ["field"] = "plays", ["modifier"] = "log2p", ["missing"] = 0 },
                 ["boost_mode"] = "sum",
@@ -304,7 +336,7 @@ public sealed class ElasticsearchClient(IHttpClientFactory httpFactory, IOptions
         d.Plays,
         d.All,
         Suggest = new { Input = CompletionInputs(d.Suggest), Weight = Math.Min(d.Plays + 1, 1000) },
-        Semantic = Semantic ? d.All : null,
+        Semantic = Semantic ? d.Description ?? d.All : null,
         Gen = generation,
     };
 

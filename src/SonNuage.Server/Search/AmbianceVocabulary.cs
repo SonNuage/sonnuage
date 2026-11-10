@@ -15,82 +15,82 @@ namespace SonNuage.Server.Search;
 /// </summary>
 public static class AmbianceVocabulary
 {
-    public static readonly AmbianceMood Calm = new("calm",
+    public static readonly AmbianceMood Calm = new("calm", "calme calm",
         f => 0.4 * V(f.Relaxed) + 0.3 * Inv(f.Energy) + 0.15 * V(f.Acoustic) + 0.15 * Inv(f.Aggressive),
         ["chill", "chillout", "chill out", "calm", "relaxing", "relax", "mellow", "ambient", "downtempo", "lounge", "easy listening", "soft"],
         ["ambient", "lounge", "chill", "downtempo", "new age", "easy listening"]);
 
-    public static readonly AmbianceMood Focus = new("focus",
+    public static readonly AmbianceMood Focus = new("focus", "concentration focus",
         f => 0.5 * V(f.Instrumental) + 0.2 * V(f.Relaxed) + 0.15 * Inv(f.Energy) + 0.15 * Inv(f.Aggressive),
         ["instrumental", "ambient", "focus", "study", "lo fi", "lofi", "post rock", "minimal"],
         ["ambient", "lo fi", "lofi", "post rock", "classical", "classique", "minimal"]);
 
-    public static readonly AmbianceMood Sleep = new("sleep",
+    public static readonly AmbianceMood Sleep = new("sleep", "sommeil sleep",
         f => 0.35 * V(f.Relaxed) + 0.35 * Inv(f.Energy) + 0.15 * V(f.Instrumental) + 0.15 * Slow(f.Bpm),
         ["sleep", "lullaby", "ambient", "relaxing"],
         ["ambient", "new age", "lullaby"]);
 
-    public static readonly AmbianceMood Energetic = new("energetic",
+    public static readonly AmbianceMood Energetic = new("energetic", "énergique energetic",
         f => 0.5 * V(f.Energy) + 0.2 * V(f.Danceability) + 0.1 * V(f.Aggressive) + 0.2 * Fast(f.Bpm, 115),
         ["energetic", "upbeat", "high energy", "powerful"],
         []);
 
-    public static readonly AmbianceMood Workout = new("workout",
+    public static readonly AmbianceMood Workout = new("workout", "sport workout",
         f => 0.45 * V(f.Energy) + 0.2 * V(f.Danceability) + 0.35 * (f.Bpm is >= 120 and <= 185 ? 1 : 0),
         ["workout", "running", "gym", "training", "motivation"],
         []);
 
-    public static readonly AmbianceMood Happy = new("happy",
+    public static readonly AmbianceMood Happy = new("happy", "joyeux happy",
         f => 0.5 * V(f.Happy) + 0.3 * V(f.Valence) + 0.2 * V(f.Danceability),
         ["happy", "feel good", "feelgood", "uplifting", "cheerful", "fun", "summer"],
         []);
 
-    public static readonly AmbianceMood Sad = new("sad",
+    public static readonly AmbianceMood Sad = new("sad", "triste sad",
         f => 0.5 * V(f.Sad) + 0.3 * Inv(f.Valence) + 0.2 * Inv(f.Energy),
         ["sad", "melancholic", "melancholy", "melancolie", "depressing", "sorrow", "heartbreak", "breakup"],
         []);
 
-    public static readonly AmbianceMood Party = new("party",
+    public static readonly AmbianceMood Party = new("party", "fête party",
         f => 0.45 * V(f.Party) + 0.35 * V(f.Danceability) + 0.1 * V(f.Electronic) + 0.1 * V(f.Happy),
         ["party", "club", "dance", "dancefloor"],
         ["dance", "house", "disco", "edm", "club"]);
 
-    public static readonly AmbianceMood Dance = new("dance",
+    public static readonly AmbianceMood Dance = new("dance", "dansant dance",
         f => 0.6 * V(f.Danceability) + 0.2 * V(f.Party) + 0.2 * V(f.Energy),
         ["dance", "danceable", "groovy", "dancefloor"],
         ["dance", "disco", "funk", "house"]);
 
-    public static readonly AmbianceMood Aggressive = new("aggressive",
+    public static readonly AmbianceMood Aggressive = new("aggressive", "agressif aggressive",
         f => 0.6 * V(f.Aggressive) + 0.4 * V(f.Energy),
         ["aggressive", "angry", "brutal"],
         ["metal", "hardcore", "thrash", "grindcore"]);
 
-    public static readonly AmbianceMood Romantic = new("romantic",
+    public static readonly AmbianceMood Romantic = new("romantic", "romantique romantic",
         f => 0.3 * V(f.Relaxed) + 0.25 * V(f.Happy) + 0.25 * V(f.Acoustic) + 0.2 * Inv(f.Aggressive),
         ["love", "romantic", "love songs", "romance", "sensual"],
         []);
 
-    public static readonly AmbianceMood Acoustic = new("acoustic",
+    public static readonly AmbianceMood Acoustic = new("acoustic", "acoustique acoustic",
         f => 0.8 * V(f.Acoustic) + 0.2 * Inv(f.Electronic),
         ["acoustic", "unplugged"],
         ["acoustic", "folk", "unplugged"]);
 
-    public static readonly AmbianceMood Instrumental = new("instrumental",
+    public static readonly AmbianceMood Instrumental = new("instrumental", "instrumental",
         f => V(f.Instrumental),
         ["instrumental"],
         ["instrumental", "classical", "classique", "soundtrack"]);
 
-    public static readonly AmbianceMood Electronic = new("electronic",
+    public static readonly AmbianceMood Electronic = new("electronic", "électronique electronic",
         f => 0.8 * V(f.Electronic) + 0.2 * Inv(f.Acoustic),
         ["electronic", "electronica", "electro"],
         ["electro", "electronic", "electronica", "techno", "house", "edm", "synth"]);
 
-    public static readonly AmbianceMood SlowTempo = new("slow",
+    public static readonly AmbianceMood SlowTempo = new("slow", "lent slow",
         f => 0.6 * Slow(f.Bpm) + 0.4 * Inv(f.Energy),
         ["slow"],
         ["downtempo"]);
 
-    public static readonly AmbianceMood FastTempo = new("fast",
+    public static readonly AmbianceMood FastTempo = new("fast", "rapide fast",
         f => 0.6 * Fast(f.Bpm, 130) + 0.4 * V(f.Energy),
         ["fast", "uptempo"],
         []);
@@ -177,6 +177,30 @@ public static class AmbianceVocabulary
     {
         ["fifties"] = 1950, ["sixties"] = 1960, ["seventies"] = 1970, ["eighties"] = 1980, ["nineties"] = 1990,
     };
+
+    /// <summary>Toutes les ambiances du vocabulaire (après <see cref="Words"/> : initialisées dans l'ordre du fichier).</summary>
+    public static readonly IReadOnlyList<AmbianceMood> All = Words.SelectMany(w => w.Moods).Distinct().ToList();
+
+    /// <summary>Note d'analyse audio à partir de laquelle une ambiance décrit le morceau.</summary>
+    public const double DescribedFrom = 0.6;
+
+    /// <summary>
+    /// Ce qu'on sait de l'ambiance d'un morceau, en mots (genre, décennie, tags MusicBrainz, ambiances entendues par
+    /// l'analyse audio) : le texte que l'option sémantique fait lire au modèle d'inférence, avec les noms.
+    /// </summary>
+    public static string Describe(TrackProfile p)
+    {
+        var parts = new List<string>();
+        if (p.Genre.Length > 0) parts.Add(p.Genre);
+        if (p.Year is { } year)
+        {
+            var decade = year / 10 * 10;
+            parts.Add($"années {decade % 100:00} {decade}s");
+        }
+        parts.AddRange(p.Tags);
+        if (p.Feel is { } f) parts.AddRange(All.Where(m => m.Feel(f) >= DescribedFrom).Select(m => m.Label));
+        return string.Join(' ', parts);
+    }
 
     private static double V(double? x) => x ?? 0;
     private static double Inv(double? x) => x is { } v ? 1 - v : 0;

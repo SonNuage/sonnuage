@@ -171,6 +171,14 @@ public sealed class RadioStations(IMemoryCache cache, IWeatherSource weather, Ti
     private async Task<IReadOnlyList<TrackProfile>> ProfilesAsync(SonNuageDbContext db, CancellationToken ct)
     {
         if (cache.TryGetValue(ProfilesKey, out IReadOnlyList<TrackProfile>? known) && known is not null) return known;
+        var profiles = await LoadProfilesAsync(db, ct);
+        cache.Set(ProfilesKey, profiles, ProfilesFor);
+        return profiles;
+    }
+
+    /// <summary>Profils de tous les morceaux, lus en base (sans cache).</summary>
+    public static async Task<IReadOnlyList<TrackProfile>> LoadProfilesAsync(SonNuageDbContext db, CancellationToken ct)
+    {
         var tracks = await db.Tracks.AsNoTracking()
             .Select(t => new
             {
@@ -187,12 +195,10 @@ public sealed class RadioStations(IMemoryCache cache, IWeatherSource weather, Ti
             .ToDictionaryAsync(f => f.TrackId, f => f.Feel, ct);
         var tags = (await db.TrackTags.AsNoTracking().Select(t => new { t.TrackId, t.Name }).ToListAsync(ct))
             .GroupBy(t => t.TrackId).ToDictionary(g => g.Key, g => g.Select(t => t.Name).ToList());
-        IReadOnlyList<TrackProfile> profiles = tracks
+        return tracks
             .Select(t => TrackProfile.Create(t.Id, t.ArtistId, t.AlbumId, t.Cover, t.DurationSeconds, t.Title, t.Album, t.Genre,
                 tags.GetValueOrDefault(t.Id), feels.GetValueOrDefault(t.Id), t.Year))
             .ToList();
-        cache.Set(ProfilesKey, profiles, ProfilesFor);
-        return profiles;
     }
 
     /// <summary>À appeler quand les morceaux, leurs tags ou leur analyse changent beaucoup.</summary>

@@ -6,9 +6,10 @@ namespace SonNuage.Server.Search;
 
 /// <summary>
 /// Ambiance (humeur, énergie, tempo, activité) : sa note d'après l'analyse audio, et les tags MusicBrainz ou genres qui la
-/// signalent pour un morceau sans analyse (en minuscules, sans accents).
+/// signalent pour un morceau sans analyse (en minuscules, sans accents). <see cref="Label"/> : ses mots en français et
+/// en anglais, pour décrire un morceau au modèle d'inférence de l'option sémantique.
 /// </summary>
-public sealed record AmbianceMood(string Id, Func<AudioFeel, double> Feel, IReadOnlyList<string> Tags, IReadOnlyList<string> Genres)
+public sealed record AmbianceMood(string Id, string Label, Func<AudioFeel, double> Feel, IReadOnlyList<string> Tags, IReadOnlyList<string> Genres)
 {
     /// <summary>Note d'un morceau sans analyse mais dont un tag ou le genre signale l'ambiance.</summary>
     public const double Signaled = 0.75;
