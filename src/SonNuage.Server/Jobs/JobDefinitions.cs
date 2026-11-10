@@ -51,6 +51,13 @@ public static class JobKinds
     public static readonly JobKind AudioAnalysis = new("analysis.audio", JobLanes.Analysis);
     /// <summary>Sauvegarde de la base : passe devant les autres traitements de la bibliothèque.</summary>
     public static readonly JobKind DatabaseBackup = new("db.backup", JobLanes.Library, Priority: 20, MaxAttempts: 2);
+    /// <summary>
+    /// Empreintes acoustiques d'un lot de morceaux (fpcalc, en local) pour la détection des doublons. File « acoustid »,
+    /// après les imports et les rescans ; la suite enchaîne les lots tant qu'il en reste.
+    /// </summary>
+    public static readonly JobKind Fingerprint = new("library.fingerprint", JobLanes.AcoustId, Priority: -10);
+    /// <summary>Doublons écartés depuis l'admin : traité sur le moment, enregistré comme tâche terminée pour son journal.</summary>
+    public static readonly JobKind DuplicatesResolve = new("library.dedupe", JobLanes.Library);
 }
 
 /// <summary>Types de suites (création depuis l'admin, filtres).</summary>
@@ -67,6 +74,8 @@ public static class JobSuiteKinds
     public const string RadioTags = "radio.tags";
     public const string AudioAnalysis = "analysis.audio";
     public const string DatabaseBackup = "db.backup";
+    public const string Fingerprints = "library.fingerprints";
+    public const string Duplicates = "library.duplicates";
 }
 
 public interface IJobHandler

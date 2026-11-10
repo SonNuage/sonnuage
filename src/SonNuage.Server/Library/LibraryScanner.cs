@@ -38,6 +38,7 @@ public sealed class LibraryScanner(
         var known = await db.Tracks.AsNoTracking()
             .Select(t => new { t.Id, t.FilePath, t.FileSize, t.FileModifiedUtc })
             .ToDictionaryAsync(t => t.FilePath, ct);
+        var hidden = await HiddenAsync(ct);
 
         int seen = 0, added = 0, updated = 0, pending = 0;
         var unchanged = new List<Guid>();
@@ -54,6 +55,8 @@ public sealed class LibraryScanner(
             foreach (var file in EnumerateAudio(root))
             {
                 ct.ThrowIfCancellationRequested();
+                // Doublon masqué depuis l'admin (fichier en lecture seule) : plus indexé.
+                if (hidden.Contains(file)) continue;
                 seen++;
                 FileInfo info;
                 try { info = new FileInfo(file); }
@@ -121,11 +124,12 @@ public sealed class LibraryScanner(
         await indexer.LoadAsync(ct);
         var result = new List<Track>();
         var removedAny = false;
+        var hidden = await HiddenAsync(ct);
 
         foreach (var file in files.Select(Path.GetFullPath).Distinct())
         {
             var root = Roots.FirstOrDefault(r => IsUnder(file, r));
-            if (root is null) continue;
+            if (root is null || hidden.Contains(file)) continue;
 
             if (!File.Exists(file))
             {
@@ -181,6 +185,9 @@ public sealed class LibraryScanner(
         indexer.Assign(track);
         return track;
     }
+
+    private async Task<HashSet<string>> HiddenAsync(CancellationToken ct) =>
+        (await db.HiddenFiles.Select(h => h.Path).ToListAsync(ct)).ToHashSet(StringComparer.Ordinal);
 
     private IEnumerable<string> EnumerateAudio(string root)
     {

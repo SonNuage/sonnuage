@@ -232,6 +232,9 @@
     "analysis": {
       "unavailable": "L'analyse audio n'est pas installée sur ce serveur (image Docker amd64 uniquement).",
       "disabled": "L'analyse audio est désactivée dans les réglages."
+    },
+    "duplicates": {
+      "notDuplicates": "Ces morceaux ne sont pas des copies du même enregistrement."
     }
   },
   "login": {
@@ -945,7 +948,9 @@
       "transcode_purge": "Purge du cache de transcodage",
       "youtube_sync": "Synchronisation d'abonnement",
       "analysis_audio": "Analyse audio",
-      "db_backup": "Sauvegarde de la base"
+      "db_backup": "Sauvegarde de la base",
+      "library_fingerprint": "Empreintes acoustiques",
+      "library_dedupe": "Doublons écartés"
     },
     "suiteKind": {
       "youtube_import": "Import YouTube",
@@ -955,7 +960,9 @@
       "transcode_purge": "Purge du cache",
       "youtube_sync": "Synchronisation d'abonnement",
       "analysis_audio": "Analyse audio",
-      "db_backup": "Sauvegarde de la base"
+      "db_backup": "Sauvegarde de la base",
+      "library_fingerprints": "Empreintes des doublons",
+      "library_duplicates": "Doublons"
     },
     "suites": {
       "rescanAll": "Rescan AcoustID de toute la bibliothèque",
@@ -967,14 +974,17 @@
       "discovery": "Actualisation de la découverte",
       "album": "Album « {album} » de {artist}",
       "analysis": "Analyse audio de la bibliothèque",
-      "backup": "Sauvegarde de la base de données"
+      "backup": "Sauvegarde de la base de données",
+      "fingerprints": "Empreintes acoustiques de la bibliothèque",
+      "duplicates": "Doublons de {title}"
     },
     "steps": {
       "download": "Téléchargement",
       "acoustid": "Empreinte AcoustID",
       "metadata": "Métadonnées, tags et rangement",
       "plan": "Liste des morceaux à vérifier",
-      "analysis": "Analyse d'un lot de morceaux"
+      "analysis": "Analyse d'un lot de morceaux",
+      "fingerprints": "Empreintes d'un lot de morceaux"
     },
     "create": {
       "title": "Nouvelle tâche : rescan AcoustID",
@@ -1084,6 +1094,17 @@
       "failed": "{track} : {error}",
       "unavailable": "Analyseur audio absent : rien à faire.",
       "disabled": "Analyse audio désactivée dans les réglages : arrêt."
+    },
+    "fingerprints": {
+      "failed": "{track} : empreinte impossible ({error}).",
+      "done": "{computed} empreintes calculées, {failed} échecs."
+    },
+    "duplicates": {
+      "kept": "Gardé : {path}",
+      "moved": "{path} : {favorites} favoris, {ratings} notes, {plays} écoutes et {playlists} entrées de playlist passés sur la copie gardée.",
+      "deleted": "Fichier supprimé : {path}",
+      "hidden": "Masqué (bibliothèque en lecture seule, fichier conservé) : {path}",
+      "deleteFailed": "Fichier non supprimé : {path} ({error})"
     }
   },
   "about": {

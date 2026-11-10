@@ -117,6 +117,10 @@ builder.Services.AddSingleton<IJobHandler, AcoustIdIdentifyJob>();
 builder.Services.AddSingleton<IJobHandler, YoutubeMetadataJob>();
 builder.Services.AddSingleton<IJobHandler, AcoustIdRescanJob>();
 builder.Services.AddSingleton<RescanReview>();
+// Doublons : empreintes locales (fpcalc) calculées par lots dans la file « acoustid ».
+builder.Services.AddSingleton<IFingerprinter, FpcalcFingerprinter>();
+builder.Services.AddSingleton<DuplicateResolver>();
+builder.Services.AddSingleton<IJobHandler, FingerprintJob>();
 builder.Services.AddSingleton<IJobHandler, LibraryMatchJob>();
 builder.Services.AddSingleton<IJobHandler, LibraryScanJob>();
 builder.Services.AddSingleton<IJobHandler, SearchReindexJob>();

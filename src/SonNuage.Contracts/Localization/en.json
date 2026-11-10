@@ -232,6 +232,9 @@
     "analysis": {
       "unavailable": "Audio analysis is not installed on this server (amd64 Docker image only).",
       "disabled": "Audio analysis is disabled in the settings."
+    },
+    "duplicates": {
+      "notDuplicates": "These tracks are not copies of the same recording."
     }
   },
   "login": {
@@ -945,7 +948,9 @@
       "transcode_purge": "Transcode cache purge",
       "youtube_sync": "Subscription sync",
       "analysis_audio": "Audio analysis",
-      "db_backup": "Database backup"
+      "db_backup": "Database backup",
+      "library_fingerprint": "Acoustic fingerprints",
+      "library_dedupe": "Duplicates removed"
     },
     "suiteKind": {
       "youtube_import": "YouTube import",
@@ -955,7 +960,9 @@
       "transcode_purge": "Cache purge",
       "youtube_sync": "Subscription sync",
       "analysis_audio": "Audio analysis",
-      "db_backup": "Database backup"
+      "db_backup": "Database backup",
+      "library_fingerprints": "Duplicate fingerprints",
+      "library_duplicates": "Duplicates"
     },
     "suites": {
       "rescanAll": "AcoustID rescan of the whole library",
@@ -967,14 +974,17 @@
       "discovery": "Discovery refresh",
       "album": "Album “{album}” by {artist}",
       "analysis": "Audio analysis of the library",
-      "backup": "Database backup"
+      "backup": "Database backup",
+      "fingerprints": "Acoustic fingerprints of the library",
+      "duplicates": "Duplicates of {title}"
     },
     "steps": {
       "download": "Download",
       "acoustid": "AcoustID fingerprint",
       "metadata": "Metadata, tags and filing",
       "plan": "List the tracks to check",
-      "analysis": "Analyze a batch of tracks"
+      "analysis": "Analyze a batch of tracks",
+      "fingerprints": "Fingerprints of a batch of tracks"
     },
     "create": {
       "title": "New task: AcoustID rescan",
@@ -1084,6 +1094,17 @@
       "failed": "{track}: {error}",
       "unavailable": "Audio analyzer not installed: nothing to do.",
       "disabled": "Audio analysis disabled in the settings: stopped."
+    },
+    "fingerprints": {
+      "failed": "{track}: no fingerprint ({error}).",
+      "done": "{computed} fingerprints computed, {failed} failed."
+    },
+    "duplicates": {
+      "kept": "Kept: {path}",
+      "moved": "{path}: {favorites} favorites, {ratings} ratings, {plays} plays and {playlists} playlist entries moved to the kept copy.",
+      "deleted": "File deleted: {path}",
+      "hidden": "Hidden (read-only library, file kept): {path}",
+      "deleteFailed": "File not deleted: {path} ({error})"
     }
   },
   "about": {

@@ -1,14 +1,16 @@
 using System.Text.Json;
 using SonNuage.Contracts;
+using SonNuage.Contracts.Localization;
 using SonNuage.Server.Auth;
 using SonNuage.Server.Data;
 using SonNuage.Server.Jobs;
 using SonNuage.Server.Library;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace SonNuage.Server.Api;
 
-/// <summary>Revue de la bibliothèque dans l'admin : propositions des rescans AcoustID.</summary>
+/// <summary>Revue de la bibliothèque dans l'admin : propositions des rescans AcoustID, doublons.</summary>
 public static class LibraryReviewEndpoints
 {
     /// <summary>Identifiants rendus d'un coup pour « tout sélectionner » (filtres compris).</summary>
@@ -48,7 +50,66 @@ public static class LibraryReviewEndpoints
 
         g.MapPost("/reject", async (DecideProposalsRequest req, HttpContext http, SonNuageDbContext db, RescanReview review, CancellationToken ct) =>
             Invalid(req) ?? Results.Ok(await review.RejectAsync(db, req.Ids.Distinct().ToList(), await NameAsync(db, http, ct), ct)));
+
+        MapDuplicates(app.MapGroup("/api/admin/duplicates").RequireAuthorization(AuthConstants.AdminPolicy).WithTags("Admin"));
     }
+
+    private static void MapDuplicates(RouteGroupBuilder g)
+    {
+        g.MapGet("", async (SonNuageDbContext db, IFingerprinter fingerprinter, IOptions<SonNuageOptions> options, CancellationToken ct) =>
+        {
+            var groups = DuplicateFinder.Find(await DuplicateResolver.CandidatesAsync(db, null, ct));
+            var ids = groups.SelectMany(g => g.Ids).ToList();
+            var tracks = await db.Tracks.AsNoTracking().Where(t => ids.Contains(t.Id)).ToDictionaryAsync(t => t.Id, ct);
+            var plays = await CountsAsync(db.PlayEvents.Where(p => ids.Contains(p.TrackId)).GroupBy(p => p.TrackId), ct);
+            var favorites = await CountsAsync(db.Favorites.Where(f => ids.Contains(f.TrackId)).GroupBy(f => f.TrackId), ct);
+            var ratings = await CountsAsync(db.Ratings.Where(r => ids.Contains(r.ItemId)).GroupBy(r => r.ItemId), ct);
+            var playlists = await db.PlaylistEntries.Where(e => ids.Contains(e.TrackId)).GroupBy(e => e.TrackId)
+                .Select(x => new { x.Key, Count = x.Select(e => e.PlaylistId).Distinct().Count() }).ToDictionaryAsync(x => x.Key, x => x.Count, ct);
+            var roots = LibraryScanner.RootsOf(options.Value);
+
+            DuplicateCopyDto Copy(Track t) => new(t.Id, t.Title, t.ArtistName, t.AlbumTitle, AdminEndpoints.RelativePath(t.FilePath, roots), t.Format,
+                t.BitrateKbps, t.SampleRate, t.IsLossless, t.DurationSeconds, t.FileSize, UploadArea.Contains(options.Value, t.FilePath),
+                plays.GetValueOrDefault(t.Id), favorites.GetValueOrDefault(t.Id), playlists.GetValueOrDefault(t.Id), ratings.GetValueOrDefault(t.Id));
+
+            var dtos = groups.Where(g => g.Ids.All(tracks.ContainsKey)).Select(g =>
+            {
+                // Meilleure qualité d'abord, puis la copie la plus écoutée, puis la plus ancienne.
+                var copies = g.Ids.Select(id => Copy(tracks[id]))
+                    .OrderByDescending(c => c.IsLossless).ThenByDescending(c => c.BitrateKbps ?? 0).ThenByDescending(c => c.SampleRate ?? 0)
+                    .ThenByDescending(c => c.Plays).ThenBy(c => tracks[c.TrackId].CreatedAt).ToList();
+                return new DuplicateGroupDto(g.Reason, g.RecordingId, copies[0].TrackId, copies);
+            }).OrderBy(g => g.Copies[0].ArtistName, StringComparer.CurrentCultureIgnoreCase).ThenBy(g => g.Copies[0].Title, StringComparer.CurrentCultureIgnoreCase).ToList();
+
+            var total = await db.Tracks.CountAsync(ct);
+            return new DuplicatesDto(total, total - await FingerprintJob.Pending(db).CountAsync(ct), fingerprinter.Available, dtos);
+        });
+
+        // Empreintes manquantes : une suite dans la file « acoustid » (pause, heures calmes), sans doublon tant qu'elle attend.
+        g.MapPost("/fingerprints", async (HttpContext http, SonNuageDbContext db, JobEngine engine, IFingerprinter fingerprinter, CancellationToken ct) =>
+        {
+            if (!fingerprinter.Available) return Results.Problem(Tx.Key("errors.jobs.noFpcalc"), statusCode: 409);
+            var suite = await engine.EnqueueOnceAsync(db, FingerprintJob.Plan(http.User.UserId()), ct);
+            return Results.Ok(suite?.Id);
+        });
+
+        // Garde une copie, écarte les autres : action destructrice, confirmée dans l'interface et tracée dans le volet Tâches.
+        g.MapPost("/resolve", async (ResolveDuplicatesRequest req, HttpContext http, SonNuageDbContext db, DuplicateResolver resolver, CancellationToken ct) =>
+        {
+            var removeIds = req.RemoveIds?.Distinct().ToList() ?? [];
+            if (removeIds.Count is 0 or > DuplicateResolver.MaxCopies || removeIds.Contains(req.KeepId)) return Results.BadRequest();
+            var all = removeIds.Append(req.KeepId).ToList();
+            var tracks = await db.Tracks.AsNoTracking().Where(t => all.Contains(t.Id)).ToListAsync(ct);
+            if (tracks.Count != all.Count) return Results.NotFound();
+            if (!await DuplicateResolver.AreDuplicatesAsync(db, all, ct)) return Results.Problem(Tx.Key("errors.duplicates.notDuplicates"), statusCode: 409);
+            var keep = tracks.Single(t => t.Id == req.KeepId);
+            var removed = tracks.Where(t => t.Id != req.KeepId).ToList();
+            return Results.Ok(await resolver.ResolveAsync(db, keep, removed, http.User.UserId(), await NameAsync(db, http, ct), ct));
+        });
+    }
+
+    private static Task<Dictionary<Guid, int>> CountsAsync<T>(IQueryable<IGrouping<Guid, T>> groups, CancellationToken ct) =>
+        groups.Select(x => new { x.Key, Count = x.Count() }).ToDictionaryAsync(x => x.Key, x => x.Count, ct);
 
     /// <summary>Filtres de la liste des propositions (lus dans la requête).</summary>
     public sealed record ProposalFilter(string? Status, Guid? SuiteId, string? Artist, double? MinScore, double? MaxScore)
