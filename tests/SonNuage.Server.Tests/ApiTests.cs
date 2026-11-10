@@ -48,6 +48,7 @@ public class SonNuageFactory : WebApplicationFactory<Program>
         builder.UseSetting("SonNuage:ListenBrainzUrl", "http://127.0.0.1:9");
         builder.UseSetting("SonNuage:ListenBrainzLabsUrl", "http://127.0.0.1:9");
         builder.UseSetting("SonNuage:DeezerUrl", "http://127.0.0.1:9");
+        builder.UseSetting("SonNuage:CoverArtArchiveUrl", "http://127.0.0.1:9");
         builder.UseSetting("SonNuage:LrclibUrl", "http://127.0.0.1:9");
         builder.UseSetting("SonNuage:FfmpegPath", Environment.GetEnvironmentVariable("SONNUAGE_TEST_FFMPEG") ?? "ffmpeg");
         ConfigureMore(builder);

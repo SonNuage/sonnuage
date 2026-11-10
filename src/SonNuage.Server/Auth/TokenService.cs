@@ -172,4 +172,7 @@ public static class ClaimsPrincipalExtensions
         Guid.Parse(principal.FindFirstValue(JwtRegisteredClaimNames.Sub) ?? throw new InvalidOperationException("Jeton sans sub"));
 
     public static bool IsAdmin(this ClaimsPrincipal principal) => principal.HasClaim("role", Roles.Admin);
+
+    /// <summary>Contributeur ou admin : voit et demande ce qui n'est pas encore dans la bibliothèque.</summary>
+    public static bool CanRequest(this ClaimsPrincipal principal) => principal.IsAdmin() || principal.HasClaim("role", Roles.Contributor);
 }

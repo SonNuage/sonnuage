@@ -47,6 +47,8 @@ public static class JobKinds
     public static readonly JobKind RequestAlbum = new("requests.album", JobLanes.Discovery, Priority: 5);
     /// <summary>Tags MusicBrainz des albums identifiés, pour les radios de saison et d'ambiance.</summary>
     public static readonly JobKind RadioTags = new("radio.tags", JobLanes.Metadata, MaxAttempts: 2);
+    /// <summary>Identifiants MusicBrainz des artistes et leurs parutions récentes et à venir (nouveautés).</summary>
+    public static readonly JobKind ArtistReleases = new("discovery.releases", JobLanes.Metadata);
     /// <summary>Analyse audio d'un lot de morceaux ; la suite enchaîne les lots tant qu'il en reste.</summary>
     public static readonly JobKind AudioAnalysis = new("analysis.audio", JobLanes.Analysis);
     /// <summary>Sauvegarde de la base : passe devant les autres traitements de la bibliothèque.</summary>
@@ -65,6 +67,7 @@ public static class JobSuiteKinds
     public const string DiscoveryRefresh = "discovery.refresh";
     public const string RequestAlbum = "requests.album";
     public const string RadioTags = "radio.tags";
+    public const string ArtistReleases = "discovery.releases";
     public const string AudioAnalysis = "analysis.audio";
     public const string DatabaseBackup = "db.backup";
 }

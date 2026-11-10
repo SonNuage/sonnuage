@@ -1,5 +1,13 @@
 namespace SonNuage.Contracts;
 
+/// <summary>Parution (groupe de parutions MusicBrainz) d'un artiste de la bibliothèque : sortie récente, à venir, ou absente.</summary>
+/// <param name="Type">« album », « ep » ou « single ».</param>
+/// <param name="Date">Première sortie, éventuellement partielle (« 2026-11-20 », « 2026 »).</param>
+/// <param name="Upcoming">Pas encore sortie.</param>
+/// <param name="AlbumId">Album de la bibliothèque qui lui correspond ; null si elle n'y est pas.</param>
+public sealed record ArtistReleaseDto(Guid ReleaseGroupId, string Title, Guid ArtistId, string ArtistName, string Type, string? Date, bool Upcoming,
+    Guid? AlbumId = null);
+
 /// <summary>Titre phare d'un artiste à découvrir, retrouvé sur YouTube quand c'est possible (sinon <paramref name="VideoId"/> nul).</summary>
 /// <param name="PreviewReady">Extrait déjà téléchargé : il se lit tout de suite.</param>
 /// <param name="ImportStatus">État de l'import YouTube de cette vidéo, si elle est déjà connue du serveur.</param>

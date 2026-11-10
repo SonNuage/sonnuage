@@ -951,7 +951,8 @@
       "transcode_purge": "Transcode cache purge",
       "youtube_sync": "Subscription sync",
       "analysis_audio": "Audio analysis",
-      "db_backup": "Database backup"
+      "db_backup": "Database backup",
+      "discovery_releases": "Artists' new releases"
     },
     "suiteKind": {
       "youtube_import": "YouTube import",
@@ -961,7 +962,8 @@
       "transcode_purge": "Cache purge",
       "youtube_sync": "Subscription sync",
       "analysis_audio": "Audio analysis",
-      "db_backup": "Database backup"
+      "db_backup": "Database backup",
+      "discovery_releases": "Artists' new releases"
     },
     "suites": {
       "rescanAll": "AcoustID rescan of the whole library",
@@ -973,7 +975,8 @@
       "discovery": "Discovery refresh",
       "album": "Album “{album}” by {artist}",
       "analysis": "Audio analysis of the library",
-      "backup": "Database backup"
+      "backup": "Database backup",
+      "releases": "New releases of the library's artists"
     },
     "steps": {
       "download": "Download",
@@ -1083,6 +1086,10 @@
       "albumNotFound": "Album “{album}” by {artist} not found on Deezer",
       "albumTrackNotFound": "“{title}” not found on YouTube",
       "albumDone": "{created} songs requested, {skipped} already on the server or requested, {missing} not found, out of {count}"
+    },
+    "releases": {
+      "done": "{derived} artist(s) identified, releases read for {artists} artist(s), {fresh} new release(s) added from ListenBrainz",
+      "unreachable": "MusicBrainz unreachable, the rest will wait for the next run: {message}"
     },
     "analysis": {
       "done": "{analyzed} track(s) analyzed, {failed} failure(s)",

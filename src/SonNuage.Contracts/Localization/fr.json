@@ -951,7 +951,8 @@
       "transcode_purge": "Purge du cache de transcodage",
       "youtube_sync": "Synchronisation d'abonnement",
       "analysis_audio": "Analyse audio",
-      "db_backup": "Sauvegarde de la base"
+      "db_backup": "Sauvegarde de la base",
+      "discovery_releases": "Nouveautés des artistes"
     },
     "suiteKind": {
       "youtube_import": "Import YouTube",
@@ -961,7 +962,8 @@
       "transcode_purge": "Purge du cache",
       "youtube_sync": "Synchronisation d'abonnement",
       "analysis_audio": "Analyse audio",
-      "db_backup": "Sauvegarde de la base"
+      "db_backup": "Sauvegarde de la base",
+      "discovery_releases": "Nouveautés des artistes"
     },
     "suites": {
       "rescanAll": "Rescan AcoustID de toute la bibliothèque",
@@ -973,7 +975,8 @@
       "discovery": "Actualisation de la découverte",
       "album": "Album « {album} » de {artist}",
       "analysis": "Analyse audio de la bibliothèque",
-      "backup": "Sauvegarde de la base de données"
+      "backup": "Sauvegarde de la base de données",
+      "releases": "Nouveautés des artistes de la bibliothèque"
     },
     "steps": {
       "download": "Téléchargement",
@@ -1083,6 +1086,10 @@
       "albumNotFound": "Album « {album} » de {artist} introuvable sur Deezer",
       "albumTrackNotFound": "« {title} » introuvable sur YouTube",
       "albumDone": "{created} titres demandés, {skipped} déjà sur le serveur ou déjà demandés, {missing} introuvables, sur {count}"
+    },
+    "releases": {
+      "done": "{derived} artiste(s) identifié(s), parutions lues pour {artists} artiste(s), {fresh} nouveauté(s) ajoutée(s) depuis ListenBrainz",
+      "unreachable": "MusicBrainz injoignable, la suite attendra le prochain passage : {message}"
     },
     "analysis": {
       "done": "{analyzed} morceau(x) analysé(s), {failed} échec(s)",
