@@ -78,7 +78,11 @@ public sealed class SonNuageOptions
     /// <summary>Analyse audio (Essentia) : humeur, énergie, tempo des morceaux, pour les radios thématiques.</summary>
     public AnalysisOptions Analysis { get; set; } = new();
 
+    /// <summary>Dossier des sauvegardes de la base. Vide : « backups » du dossier de données (de préférence un autre disque).</summary>
+    public string? BackupPath { get; set; }
+
     public string DatabasePath => Path.Combine(DataPath, "sonnuage.db");
+    public string BackupFolder => string.IsNullOrWhiteSpace(BackupPath) ? Path.Combine(DataPath, "backups") : Path.GetFullPath(BackupPath);
     public string TranscodeCachePath => Path.Combine(DataPath, "cache", "transcode");
     public string CoverCachePath => Path.Combine(DataPath, "cache", "covers");
     public string PreviewCachePath => Path.Combine(DataPath, "cache", "previews");

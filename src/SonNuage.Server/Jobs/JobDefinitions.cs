@@ -49,6 +49,8 @@ public static class JobKinds
     public static readonly JobKind RadioTags = new("radio.tags", JobLanes.Metadata, MaxAttempts: 2);
     /// <summary>Analyse audio d'un lot de morceaux ; la suite enchaîne les lots tant qu'il en reste.</summary>
     public static readonly JobKind AudioAnalysis = new("analysis.audio", JobLanes.Analysis);
+    /// <summary>Sauvegarde de la base : passe devant les autres traitements de la bibliothèque.</summary>
+    public static readonly JobKind DatabaseBackup = new("db.backup", JobLanes.Library, Priority: 20, MaxAttempts: 2);
 }
 
 /// <summary>Types de suites (création depuis l'admin, filtres).</summary>
@@ -64,6 +66,7 @@ public static class JobSuiteKinds
     public const string RequestAlbum = "requests.album";
     public const string RadioTags = "radio.tags";
     public const string AudioAnalysis = "analysis.audio";
+    public const string DatabaseBackup = "db.backup";
 }
 
 public interface IJobHandler

@@ -24,6 +24,9 @@ public static class MaintenanceJobs
     public static JobPlan PurgeTranscodeCache() =>
         new JobPlan(JobSuiteKinds.TranscodePurge, Tx.Key("jobs.suites.purge")).Then(JobKinds.TranscodePurge, Tx.Key("jobs.suites.purge"));
 
+    public static JobPlan DatabaseBackup() =>
+        new JobPlan(JobSuiteKinds.DatabaseBackup, Tx.Key("jobs.suites.backup")).Then(JobKinds.DatabaseBackup, Tx.Key("jobs.suites.backup"));
+
     public static JobPlan DiscoveryRefresh() =>
         new JobPlan(JobSuiteKinds.DiscoveryRefresh, Tx.Key("jobs.suites.discovery")).Then(JobKinds.DiscoveryRefresh, Tx.Key("jobs.suites.discovery"));
 
