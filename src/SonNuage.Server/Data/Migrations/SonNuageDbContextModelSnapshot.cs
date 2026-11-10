@@ -425,6 +425,27 @@ namespace SonNuage.Server.Data.Migrations
                     b.ToTable("FavoriteArtists");
                 });
 
+            modelBuilder.Entity("SonNuage.Server.Data.HiddenFile", b =>
+                {
+                    b.Property<string>("Path")
+                        .HasMaxLength(2048)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("HiddenAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("HiddenBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("KeptTrackId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Path");
+
+                    b.ToTable("HiddenFiles");
+                });
+
             modelBuilder.Entity("SonNuage.Server.Data.Job", b =>
                 {
                     b.Property<Guid>("Id")
@@ -716,6 +737,76 @@ namespace SonNuage.Server.Data.Migrations
                     b.ToTable("RefreshTokens");
                 });
 
+            modelBuilder.Entity("SonNuage.Server.Data.RescanProposal", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AlbumTitle")
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ArtistName")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Candidate")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long?>("DecidedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("DecidedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("RecordingId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("ReleaseId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("Score")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("Signature")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("SuiteId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("TrackId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SuiteId");
+
+                    b.HasIndex("Status", "Score");
+
+                    b.HasIndex("TrackId", "Signature");
+
+                    b.ToTable("RescanProposals");
+                });
+
             modelBuilder.Entity("SonNuage.Server.Data.SavedQueue", b =>
                 {
                     b.Property<Guid>("UserId")
@@ -916,6 +1007,32 @@ namespace SonNuage.Server.Data.Migrations
                     b.HasKey("TrackId");
 
                     b.ToTable("AudioFeatures");
+                });
+
+            modelBuilder.Entity("SonNuage.Server.Data.TrackFingerprint", b =>
+                {
+                    b.Property<Guid>("TrackId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("ComputedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<byte[]>("Data")
+                        .HasColumnType("BLOB");
+
+                    b.Property<double>("DurationSeconds")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("Error")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("FileModifiedUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("TrackId");
+
+                    b.ToTable("Fingerprints");
                 });
 
             modelBuilder.Entity("SonNuage.Server.Data.TrackGuest", b =>
@@ -1353,6 +1470,24 @@ namespace SonNuage.Server.Data.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SonNuage.Server.Data.RescanProposal", b =>
+                {
+                    b.HasOne("SonNuage.Server.Data.JobSuite", "Suite")
+                        .WithMany()
+                        .HasForeignKey("SuiteId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("SonNuage.Server.Data.Track", "Track")
+                        .WithMany()
+                        .HasForeignKey("TrackId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Suite");
+
+                    b.Navigation("Track");
+                });
+
             modelBuilder.Entity("SonNuage.Server.Data.SavedQueue", b =>
                 {
                     b.HasOne("SonNuage.Server.Data.User", "User")
@@ -1405,6 +1540,17 @@ namespace SonNuage.Server.Data.Migrations
                     b.HasOne("SonNuage.Server.Data.Track", "Track")
                         .WithOne()
                         .HasForeignKey("SonNuage.Server.Data.TrackAudioFeatures", "TrackId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Track");
+                });
+
+            modelBuilder.Entity("SonNuage.Server.Data.TrackFingerprint", b =>
+                {
+                    b.HasOne("SonNuage.Server.Data.Track", "Track")
+                        .WithOne()
+                        .HasForeignKey("SonNuage.Server.Data.TrackFingerprint", "TrackId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
