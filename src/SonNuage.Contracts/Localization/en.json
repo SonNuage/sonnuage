@@ -387,7 +387,12 @@
     "tracks": "Tracks",
     "artists": "Artists",
     "albums": "Albums",
-    "shortcut": "Search (shortcut: /)"
+    "shortcut": "Search (shortcut: /)",
+    "ambiance": {
+      "title": "Mood",
+      "understood": "Understood: {terms}",
+      "play": "Play as radio"
+    }
   },
   "library": {
     "playlists": "Playlists",
@@ -1155,7 +1160,7 @@
       },
       "search": {
         "q": "Search",
-        "a": "Search covers artists, albums and tracks, and tolerates typos. On desktop, the / key jumps to the search box."
+        "a": "Search covers artists, albums and tracks, and tolerates typos. It also understands moods: “calm music for working”, “energetic 90s rock” or “chill sunday” suggest tracks picked from the audio analysis, tags and genres, to play as an endless radio. On desktop, the / key jumps to the search box."
       },
       "shuffle": {
         "q": "Shuffle everything",

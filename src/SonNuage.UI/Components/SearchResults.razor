@@ -1,7 +1,10 @@
 @implements IDisposable
 @inject ApiClient Api
+@inject IPlayer Player
+@inject UiState Ui
 
-@* Résultats d'une recherche (titres, artistes, albums), partagés par la page Recherche et le volet de l'en-tête. *@
+@* Résultats d'une recherche (titres, artistes, albums), partagés par la page Recherche et le volet de l'en-tête.
+   Une demande d'ambiance (« musique calme pour travailler ») ajoute en tête la section Ambiance, chargée à part. *@
 @if (_error is not null)
 {
     <p class="form-error">@_error</p>
@@ -12,7 +15,20 @@ else if (_result is { } r)
     {
         <p class="muted">@L["search.didYouMean"] <a href="search?q=@Uri.EscapeDataString(fix)" @onclick="() => OnCorrection.InvokeAsync(fix)" @onclick:preventDefault="true"><strong>@fix</strong></a> ?</p>
     }
-    @if (r.Artists.Count + r.Albums.Count + r.Tracks.Count == 0)
+    @if (_ambiance is { Tracks.Count: > 0 } ambiance)
+    {
+        <section class="search-ambiance">
+            <div class="section-head">
+                <h2>@L["search.ambiance.title"]</h2>
+                <button class="btn compact primary" disabled="@_starting" @onclick="() => PlayAmbianceAsync(ambiance)">
+                    <Icon Name="play" Size="16" /> @L["search.ambiance.play"]
+                </button>
+            </div>
+            <p class="muted section-hint">@L["search.ambiance.understood", ("terms", string.Join(", ", ambiance.Terms))]</p>
+            <TrackList Tracks="ambiance.Tracks" ShowCover="true" />
+        </section>
+    }
+    @if (r.Artists.Count + r.Albums.Count + r.Tracks.Count == 0 && _ambiance is not { Tracks.Count: > 0 })
     {
         <p class="empty">@L["search.noResults", ("query", _shown)]</p>
     }
@@ -60,6 +76,9 @@ else if (_result is { } r)
     private string _shown = "";
     private SearchResultDto? _result;
     private string? _error;
+    private AmbianceResultDto? _ambiance;
+    private string? _ambianceFor;
+    private bool _starting;
     private CancellationTokenSource? _debounce;
 
     protected override async Task OnParametersSetAsync()
@@ -89,18 +108,58 @@ else if (_result is { } r)
         await OnSearched.InvokeAsync(q);
         if (string.IsNullOrWhiteSpace(q))
         {
-            (_result, _error) = (null, null);
+            (_result, _error, _ambiance) = (null, null, null);
             return;
         }
+        // Les deux recherches partent ensemble ; l'ambiance ne retarde jamais les résultats ordinaires.
+        var ambiance = AmbianceAsync(q);
         try
         {
             var result = await Api.SearchAsync(q);
             if (token.IsCancellationRequested) return;
             (_result, _error, _shown) = (result, null, q);
+            if (_ambianceFor != q) _ambiance = null;
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
             if (!token.IsCancellationRequested) _error = L.Server(ex.Message);
+        }
+        StateHasChanged();
+        var found = await ambiance;
+        if (token.IsCancellationRequested) return;
+        (_ambiance, _ambianceFor) = (found, q);
+    }
+
+    /// <summary>Section Ambiance : rien en cas d'erreur (serveur plus ancien, panne), la recherche ordinaire suffit.</summary>
+    private async Task<AmbianceResultDto?> AmbianceAsync(string q)
+    {
+        try
+        {
+            return await Api.AmbianceAsync(q);
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>« Lancer en radio » : joue l'ambiance sans fin, comme une radio thématique.</summary>
+    private async Task PlayAmbianceAsync(AmbianceResultDto ambiance)
+    {
+        _starting = true;
+        try
+        {
+            var tracks = await Api.RadioStationNextAsync(ambiance.StationId, new StationNextRequest([], 25));
+            if (tracks is { Count: > 0 }) await Player.PlayStationAsync(ambiance.StationId, tracks);
+            else Ui.Notify(L["radio.empty"], true);
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+        finally
+        {
+            _starting = false;
         }
     }
 

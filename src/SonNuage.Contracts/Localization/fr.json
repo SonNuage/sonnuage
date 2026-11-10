@@ -387,7 +387,12 @@
     "tracks": "Titres",
     "artists": "Artistes",
     "albums": "Albums",
-    "shortcut": "Rechercher (raccourci : /)"
+    "shortcut": "Rechercher (raccourci : /)",
+    "ambiance": {
+      "title": "Ambiance",
+      "understood": "Compris : {terms}",
+      "play": "Lancer en radio"
+    }
   },
   "library": {
     "playlists": "Playlists",
@@ -1155,7 +1160,7 @@
       },
       "search": {
         "q": "Rechercher",
-        "a": "La recherche porte sur les artistes, les albums et les titres, et tolère les fautes de frappe. Sur ordinateur, la touche / place le curseur dans la recherche."
+        "a": "La recherche porte sur les artistes, les albums et les titres, et tolère les fautes de frappe. Elle comprend aussi les ambiances : « musique calme pour travailler », « rock énergique années 90 » ou « chill du dimanche » proposent des titres choisis d'après l'analyse audio, les tags et les genres, à écouter en radio sans fin. Sur ordinateur, la touche / place le curseur dans la recherche."
       },
       "shuffle": {
         "q": "Tout mélanger",

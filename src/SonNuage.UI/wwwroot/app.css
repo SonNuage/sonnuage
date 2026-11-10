@@ -339,6 +339,7 @@ select.input { cursor: pointer; }
 .page.narrow { max-width: 720px; }
 .page-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
 .section-head { display: flex; align-items: baseline; justify-content: space-between; }
+.search-ambiance .section-head { align-items: center; gap: 1rem; }
 .empty { text-align: center; color: var(--text-muted); padding: 3rem 1rem; }
 .empty.error { color: var(--danger); }
 .more { display: flex; justify-content: center; margin: 1.5rem 0; }
