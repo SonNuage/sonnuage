@@ -145,7 +145,8 @@
       "lastAdmin": "Il faut garder au moins un administrateur.",
       "deleteSelf": "Impossible de supprimer son propre compte.",
       "emptyTitle": "Le titre ne peut pas être vide.",
-      "badRelease": "Identifiant ou lien d'édition MusicBrainz attendu (musicbrainz.org/release/…)."
+      "badRelease": "Identifiant ou lien d'édition MusicBrainz attendu (musicbrainz.org/release/…).",
+      "badArtist": "Identifiant ou lien d'artiste MusicBrainz attendu (musicbrainz.org/artist/…)."
     },
     "unknownRole": "Rôle inconnu.",
     "passwordMin": "Mot de passe : {min} caractères minimum.",
@@ -575,7 +576,12 @@
     "openRelease": "Voir sur MusicBrainz",
     "releaseHint": "Laisser vide pour délier. Le lien s'applique à tous les morceaux de l'album.",
     "releaseLinked": "Album lié à sa fiche MusicBrainz",
-    "releaseUnlinked": "Lien MusicBrainz retiré"
+    "releaseUnlinked": "Lien MusicBrainz retiré",
+    "artistMbid": "Fiche MusicBrainz de l'artiste ({artist})",
+    "artistMbidPlaceholder": "Identifiant ou lien musicbrainz.org/artist/…",
+    "artistMbidHint": "Lu dans les tags ou déduit des albums identifiés ; saisi ici, il n'est plus remplacé. Laisser vide pour l'effacer.",
+    "artistLinked": "Artiste lié à sa fiche MusicBrainz",
+    "artistUnlinked": "Identifiant MusicBrainz de l'artiste effacé"
   },
   "dash": {
     "stat": {

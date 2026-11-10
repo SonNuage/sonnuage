@@ -127,6 +127,36 @@ public sealed class MusicBrainzIdTests(TaggedLibraryFactory factory) : IClassFix
             (await admin.PutAsJsonAsync($"/api/admin/albums/{Guid.NewGuid()}/musicbrainz", new LinkAlbumReleaseRequest(release), Ct)).StatusCode);
     }
 
+    [Fact]
+    public async Task The_admin_sets_the_musicbrainz_id_of_an_artist_and_can_clear_it()
+    {
+        var admin = await factory.AdminClientAsync();
+        await factory.WaitForScanAsync(admin);
+        var artistId = await WithDbAsync(db => db.Artists.Where(a => a.Name == "Other Band").Select(a => a.Id).SingleAsync(Ct));
+        const string mbid = "a74b1b7f-71a5-4011-9441-d0b5e4122711";
+
+        var linked = await admin.PutAsJsonAsync($"/api/admin/artists/{artistId}/musicbrainz",
+            new LinkArtistRequest($"https://musicbrainz.org/artist/{mbid}"), Ct);
+        linked.EnsureSuccessStatusCode();
+        Assert.Equal(mbid, (await linked.Content.ReadFromJsonAsync<ArtistDto>(Ct))!.MusicBrainzId);
+        Assert.Equal(ArtistMbidSource.Manual, await WithDbAsync(db => db.Artists.Where(a => a.Id == artistId).Select(a => a.MusicBrainzIdSource).SingleAsync(Ct)));
+
+        var bad = await admin.PutAsJsonAsync($"/api/admin/artists/{artistId}/musicbrainz", new LinkArtistRequest("pas un identifiant"), Ct);
+        Assert.Equal(HttpStatusCode.BadRequest, bad.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await admin.PutAsJsonAsync($"/api/admin/artists/{Guid.NewGuid()}/musicbrainz", new LinkArtistRequest(mbid), Ct)).StatusCode);
+
+        // Effacé : les tags ou la déduction pourront en poser un autre.
+        var cleared = await admin.PutAsJsonAsync($"/api/admin/artists/{artistId}/musicbrainz", new LinkArtistRequest(""), Ct);
+        Assert.Null((await cleared.Content.ReadFromJsonAsync<ArtistDto>(Ct))!.MusicBrainzId);
+        Assert.Equal(ArtistMbidSource.None, await WithDbAsync(db => db.Artists.Where(a => a.Id == artistId).Select(a => a.MusicBrainzIdSource).SingleAsync(Ct)));
+
+        (await admin.PostAsJsonAsync("/api/admin/users", new CreateUserRequest("mbid-user", "password-1234", Roles.User), Ct)).EnsureSuccessStatusCode();
+        var user = await factory.ClientAsync("mbid-user", "password-1234");
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await user.PutAsJsonAsync($"/api/admin/artists/{artistId}/musicbrainz", new LinkArtistRequest(mbid), Ct)).StatusCode);
+    }
+
     [Theory]
     [InlineData("8f3471b5-7e6a-48da-86a9-c1c07a0f47ae", "8f3471b5-7e6a-48da-86a9-c1c07a0f47ae")]
     [InlineData(" 8F3471B5-7E6A-48DA-86A9-C1C07A0F47AE ", "8f3471b5-7e6a-48da-86a9-c1c07a0f47ae")]

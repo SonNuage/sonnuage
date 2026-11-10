@@ -42,6 +42,20 @@
                     </div>
                     <p class="muted small">@L["editor.releaseHint"]</p>
                 </form>
+                <form class="stack" @onsubmit="LinkArtistAsync" @onsubmit:preventDefault="true">
+                    <label class="field">
+                        <span>@L["editor.artistMbid", ("artist", album.Album.ArtistName)]</span>
+                        <input class="input" @bind="_artistMbid" placeholder="@L["editor.artistMbidPlaceholder"]" />
+                    </label>
+                    <div class="row">
+                        <button class="btn" type="submit">@L["editor.linkRelease"]</button>
+                        @if (_artist?.MusicBrainzId is { } artistMbid)
+                        {
+                            <a class="btn" href="https://musicbrainz.org/artist/@artistMbid" target="_blank" rel="noopener">@L["editor.openRelease"]</a>
+                        }
+                    </div>
+                    <p class="muted small">@L["editor.artistMbidHint"]</p>
+                </form>
             </section>
         }
 
@@ -137,6 +151,8 @@
     private string _albumArtist = "";
     private int? _albumYear;
     private string _release = "";
+    private ArtistDto? _artist;
+    private string _artistMbid = "";
     private TrackMetadataDto? _editing;
     private TrackMetadataDto? _deleting;
     private TrackForm _form = new();
@@ -171,6 +187,8 @@
             _albumArtist = _album.Album.ArtistName;
             _albumYear = _album.Album.Year;
             _release = _album.Album.MusicBrainzReleaseId?.ToString() ?? "";
+            _artist = (await Api.ArtistAsync(_album.Album.ArtistId))?.Artist;
+            _artistMbid = _artist?.MusicBrainzId ?? "";
         }
     }
 
@@ -248,6 +266,21 @@
             await Api.AdminLinkAlbumReleaseAsync(_album.Album.Id, new LinkAlbumReleaseRequest(_release));
             Ui.Notify(L[string.IsNullOrWhiteSpace(_release) ? "editor.releaseUnlinked" : "editor.releaseLinked"]);
             await LoadAlbumAsync();
+        }
+        catch (ApiException ex)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+    }
+
+    private async Task LinkArtistAsync()
+    {
+        if (_album is null) return;
+        try
+        {
+            _artist = await Api.AdminLinkArtistAsync(_album.Album.ArtistId, new LinkArtistRequest(_artistMbid));
+            _artistMbid = _artist?.MusicBrainzId ?? "";
+            Ui.Notify(L[string.IsNullOrWhiteSpace(_artistMbid) ? "editor.artistUnlinked" : "editor.artistLinked"]);
         }
         catch (ApiException ex)
         {

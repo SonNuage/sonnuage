@@ -145,7 +145,8 @@
       "lastAdmin": "At least one administrator must remain.",
       "deleteSelf": "You can’t delete your own account.",
       "emptyTitle": "The title can’t be empty.",
-      "badRelease": "A MusicBrainz release ID or link is expected (musicbrainz.org/release/…)."
+      "badRelease": "A MusicBrainz release ID or link is expected (musicbrainz.org/release/…).",
+      "badArtist": "A MusicBrainz artist ID or link is expected (musicbrainz.org/artist/…)."
     },
     "unknownRole": "Unknown role.",
     "passwordMin": "Password: {min} characters minimum.",
@@ -575,7 +576,12 @@
     "openRelease": "Open on MusicBrainz",
     "releaseHint": "Leave empty to unlink. The link applies to every track of the album.",
     "releaseLinked": "Album linked to its MusicBrainz release",
-    "releaseUnlinked": "MusicBrainz link removed"
+    "releaseUnlinked": "MusicBrainz link removed",
+    "artistMbid": "Artist's MusicBrainz page ({artist})",
+    "artistMbidPlaceholder": "ID or link musicbrainz.org/artist/…",
+    "artistMbidHint": "Read from tags or derived from identified albums; once set here, it is never replaced. Leave empty to clear it.",
+    "artistLinked": "Artist linked to its MusicBrainz page",
+    "artistUnlinked": "Artist's MusicBrainz ID cleared"
   },
   "dash": {
     "stat": {
