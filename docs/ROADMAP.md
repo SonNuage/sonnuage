@@ -242,9 +242,15 @@ plus simple (données locales) à la plus ouverte (bases publiques), sur un mêm
 - 💡 **Historique d'écoute par utilisateur** : titre, début, durée écoutée, écoute complète ou passée, appareil.
   Envoyé par chaque appli (web, Android, ordinateur), mis en file hors ligne comme les réglages de lecture.
 - ✅ Identifiants MusicBrainz sur les morceaux et les albums (étape 3 ci-dessus) : la clé commune avec les bases
-  publiques. Reste à poser l'identifiant MusicBrainz de l'**artiste**.
-- 💡 **Cache des données externes** par identifiant MusicBrainz, avec date d'expiration, et appels passés par le
-  gestionnaire de tâches (file « Métadonnées », une requête par seconde pour MusicBrainz).
+  publiques.
+- ✅ **Identifiant MusicBrainz de l'artiste** : lu dans les tags au scan (« MusicBrainz Artist Id », « Album Artist
+  Id », avec le groupe d'éditions de l'album), déduit des crédits des albums ou morceaux identifiés quand ils
+  s'accordent (tâche « discovery.releases », file « Métadonnées »), saisi dans l'éditeur de bibliothèque
+  (`PUT /api/admin/artists/{id}/musicbrainz`). Chaque identifiant garde sa source : recherche par nom < déduit <
+  tags < saisi à la main, une source moins sûre ne remplace jamais une plus sûre.
+- ✅ (amorcé) **Cache des données externes** par identifiant MusicBrainz, avec date d'expiration (table `ExternalFetches`),
+  appels passés par le gestionnaire de tâches (file « Métadonnées », une requête par seconde pour MusicBrainz).
+  Sert aux parutions des artistes ; reste à y passer les autres données externes (tags des albums, découverte).
 
 **Couche 1 : dans la bibliothèque (aucune donnée externe)**
 
@@ -256,11 +262,19 @@ plus simple (données locales) à la plus ouverte (bases publiques), sur un mêm
 
 **Couche 2 : nouveautés des artistes suivis**
 
-- 💡 Sorties récentes et à venir des artistes de la bibliothèque, via MusicBrainz (groupes de parutions par
-  artiste et date) ou l'API « fresh releases » de ListenBrainz, filtrée sur nos artistes.
+- ✅ Sorties récentes et à venir des artistes de la bibliothèque, via MusicBrainz (groupes de parutions par
+  artiste, albums, EP et singles, sans compilations, live ni remix) et l'API « fresh releases » de ListenBrainz
+  (une fois par jour), filtrée sur nos artistes. Tâche « discovery.releases » toutes les 2 heures s'il y a à faire :
+  40 artistes au plus par passage, les plus écoutés d'abord, chacun relu tous les 3 jours (écouté ces 90 derniers
+  jours) ou 7 jours, échéances étalées ; « Actualiser les nouveautés » (admin) sur la page Découvrir. Rubrique
+  « Nouveautés de vos artistes » sur l'accueil (sorties des 90 derniers jours absentes de la bibliothèque, et à
+  venir avec leur date), section « Nouveautés » de la page Découvrir (filtres sorties récentes / à venir et
+  album / EP / single), parutions absentes de la bibliothèque sur la page d'un artiste. Déjà dans la bibliothèque
+  (même groupe d'éditions ou même titre) : lien vers l'album. Pochettes du Cover Art Archive relayées et gardées
+  par le serveur. Un utilisateur simple ne voit que les sorties récentes déjà sur le serveur.
 - 💡 Les nouvelles vidéos des chaînes YouTube synchronisées, déjà disponibles côté serveur.
-- Action proposée : « Importer » (administrateur, via l'import YouTube existant) ou « Demander à l'admin »
-  pour les autres comptes.
+- ✅ Action proposée : « Importer » (administrateur) ou « Demander » (contributeur), par la demande d'album
+  existante (titres Deezer retrouvés sur YouTube, quota et approbation habituels).
 
 **Couche 3 : artistes et titres à découvrir hors de la bibliothèque**
 

@@ -15,12 +15,41 @@
                 @if (Auth.IsAdmin)
                 {
                     <button class="btn" disabled="@(_page?.Refreshing == true || _refreshing)" @onclick="RefreshAsync"><Icon Name="refresh" Size="18" /> @L["discover.refresh"]</button>
+                    <button class="btn" disabled="@_refreshingReleases" @onclick="RefreshReleasesAsync"><Icon Name="refresh" Size="18" /> @L["releases.refresh"]</button>
                 }
             </div>
         }
     </header>
     <RadioRow ShowHint="true" />
 
+    <section id="releases">
+        <h2>@L["releases.title"]</h2>
+        <p class="muted small">@(Auth.CanRequest ? L["releases.hint"] : L["releases.hintUser"])</p>
+        <div class="tabs sub release-filters">
+            @foreach (var (when, label) in Windows)
+            {
+                <button class="tab @(_when == when ? "active" : null)" @onclick="() => FilterAsync(when, _type)">@L[label]</button>
+            }
+            @foreach (var (type, label) in Types)
+            {
+                <button class="tab @(_type == type ? "active" : null)" @onclick="() => FilterAsync(_when, type)">@L[label]</button>
+            }
+        </div>
+        @if (_releases is null)
+        {
+            <div class="empty"><Logo Size="16" Animated="true" /></div>
+        }
+        else if (_releases.Count == 0)
+        {
+            <div class="empty"><p>@L["releases.none"]</p></div>
+        }
+        else
+        {
+            <ReleaseRow Releases="_releases" />
+        }
+    </section>
+
+    <h2 class="discover-section">@L["discover.artistsTitle"]</h2>
     @if (!Auth.CanRequest)
     {
         <div class="empty"><p>@L["discover.restricted"]</p></div>
@@ -124,10 +153,44 @@
     private string? _sending;
     private bool _refreshing;
 
+    private List<ArtistReleaseDto>? _releases;
+    private string? _when;
+    private string? _type;
+    private bool _refreshingReleases;
+
+    // Un utilisateur simple ne voit que ce qui est déjà sur le serveur : rien « à venir ».
+    private IEnumerable<(string? When, string Label)> Windows => Auth.CanRequest
+        ? [(null, "releases.all"), ("recent", "releases.recent"), ("upcoming", "releases.upcomingFilter")]
+        : [];
+
+    private static readonly (string? Type, string Label)[] Types =
+        [(null, "releases.allTypes"), ("album", "releases.type.album"), ("ep", "releases.type.ep"), ("single", "releases.type.single")];
+
     protected override async Task OnInitializedAsync()
     {
+        await LoadReleasesAsync();
         if (!Auth.CanRequest) return;
         await RunAsync(async () => _page = await Api.DiscoveryAsync());
+    }
+
+    private async Task LoadReleasesAsync() => await RunAsync(async () => _releases = await Api.ReleasesAsync(_when, _type) ?? []);
+
+    private async Task FilterAsync(string? when, string? type)
+    {
+        (_when, _type) = (when, type);
+        _releases = null;
+        await LoadReleasesAsync();
+    }
+
+    private async Task RefreshReleasesAsync()
+    {
+        _refreshingReleases = true;
+        await RunAsync(async () =>
+        {
+            await Api.RefreshReleasesAsync();
+            Ui.Notify(L["releases.refreshStarted"]);
+        });
+        _refreshingReleases = false;
     }
 
     private static string MatchLink(string artist, string title) =>

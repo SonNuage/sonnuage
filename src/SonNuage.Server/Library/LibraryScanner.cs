@@ -178,7 +178,7 @@ public sealed class LibraryScanner(
         track.Format = LibraryFiles.Format(file);
         track.IsLossless = LibraryFiles.IsLossless(file);
         indexer.ApplyMetadata(track, meta);
-        indexer.Assign(track);
+        indexer.Assign(track, meta);
         return track;
     }
 

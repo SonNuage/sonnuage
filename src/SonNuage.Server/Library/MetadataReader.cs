@@ -14,7 +14,10 @@ public sealed record AudioMetadata(
     int? SampleRate,
     bool HasEmbeddedPicture,
     Guid? RecordingId = null,
-    Guid? ReleaseId = null);
+    Guid? ReleaseId = null,
+    Guid? ArtistMbid = null,
+    Guid? AlbumArtistMbid = null,
+    Guid? ReleaseGroupId = null);
 
 /// <summary>
 /// Lit les tags avec TagLib#. Ce qui manque est déduit de l'arborescence
@@ -59,7 +62,7 @@ public sealed class MetadataReader(ILogger<MetadataReader> logger)
         int? track = null, disc = null, year = null, bitrate = null, sampleRate = null;
         double duration = 0;
         var hasPicture = false;
-        Guid? recordingId = null, releaseId = null;
+        Guid? recordingId = null, releaseId = null, artistMbid = null, albumArtistMbid = null, releaseGroupId = null;
 
         try
         {
@@ -77,6 +80,10 @@ public sealed class MetadataReader(ILogger<MetadataReader> logger)
             // « MusicBrainz Track Id » de Picard est l'identifiant de l'enregistrement.
             recordingId = MusicBrainzId.Parse(tag.MusicBrainzTrackId);
             releaseId = MusicBrainzId.Parse(tag.MusicBrainzReleaseId);
+            releaseGroupId = MusicBrainzId.Parse(tag.MusicBrainzReleaseGroupId);
+            // Plusieurs artistes crédités : le premier identifiant est celui de l'artiste principal.
+            artistMbid = MusicBrainzId.Parse(tag.MusicBrainzArtistId);
+            albumArtistMbid = MusicBrainzId.Parse(tag.MusicBrainzReleaseArtistId);
 
             if (file.Properties is { } props)
             {
@@ -98,7 +105,8 @@ public sealed class MetadataReader(ILogger<MetadataReader> logger)
         title ??= NameNormalizer.CleanTitle(Path.GetFileName(path), $"{artist} - {album} - ", $"{albumArtist} - {album} - ", $"{artist} - ");
         track ??= NameNormalizer.TrackNumberFromFileName(path);
 
-        return new AudioMetadata(title, artist, albumArtist, album, track, disc, year, genre, duration, bitrate, sampleRate, hasPicture, recordingId, releaseId);
+        return new AudioMetadata(title, artist, albumArtist, album, track, disc, year, genre, duration, bitrate, sampleRate, hasPicture, recordingId, releaseId,
+            artistMbid, albumArtistMbid, releaseGroupId);
     }
 
     public byte[]? ReadEmbeddedPicture(string path)

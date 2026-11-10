@@ -50,6 +50,9 @@ public sealed record UpdateAlbumRequest(string? Title, string? ArtistName, int? 
 /// <summary>Lie un album à son édition MusicBrainz : identifiant ou lien musicbrainz.org/release/…, vide pour délier.</summary>
 public sealed record LinkAlbumReleaseRequest(string? Release);
 
+/// <summary>Identifiant MusicBrainz d'un artiste : identifiant ou lien musicbrainz.org/artist/…, vide pour l'effacer.</summary>
+public sealed record LinkArtistRequest(string? Artist);
+
 public sealed record StartUploadRequest(string FileName, long Size, string? ArtistHint, string? AlbumHint);
 
 public sealed record UploadSessionDto(Guid Id, string FileName, long Size, long Received, int ChunkSize);

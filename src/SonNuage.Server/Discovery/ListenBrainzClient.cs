@@ -15,6 +15,9 @@ public interface ISimilarArtistSource
 
 public sealed record TopRecording(string Title, string? RecordingMbid, double? LengthSeconds, string? ReleaseName);
 
+/// <summary>Parution récente ou à venir selon ListenBrainz (« fresh releases »), avec les artistes MusicBrainz crédités.</summary>
+public sealed record FreshRelease(Guid ReleaseGroupId, string Title, IReadOnlyList<string> ArtistMbids, string? PrimaryType, string? SecondaryType, string? Date);
+
 /// <summary>
 /// ListenBrainz (libre, identifiants MusicBrainz) : artistes proches d'un artiste, et ses titres les plus écoutés.
 /// Rien n'est envoyé d'autre que l'identifiant MusicBrainz de l'artiste. Une requête par seconde au plus.
@@ -37,6 +40,21 @@ public sealed class ListenBrainzClient(IHttpClientFactory httpFactory, IOptions<
         var url = $"{options.Value.ListenBrainzUrl.TrimEnd('/')}/1/popularity/top-recordings-for-artist/{Uri.EscapeDataString(artistMbid)}";
         return ParseTopRecordings(await GetAsync(url, ct));
     }
+
+    /// <summary>Parutions des 90 derniers jours et à venir, tous artistes confondus (une requête ; rien n'est envoyé).</summary>
+    public async Task<IReadOnlyList<FreshRelease>> FreshReleasesAsync(CancellationToken ct) =>
+        ParseFreshReleases(await GetAsync($"{options.Value.ListenBrainzUrl.TrimEnd('/')}/1/explore/fresh-releases/?days=90&past=true&future=true", ct));
+
+    internal static IReadOnlyList<FreshRelease> ParseFreshReleases(string json) =>
+        ((JsonNode.Parse(json) as JsonObject)?["payload"]?["releases"] as JsonArray ?? []).OfType<JsonObject>()
+            .Select(r => Library.MusicBrainzId.Parse(Str(r, "release_group_mbid")) is { } group && Str(r, "release_name") is { } name
+                ? new FreshRelease(group, name,
+                    (r["artist_mbids"] as JsonArray ?? []).Select(a => a is JsonValue v && v.GetValueKind() == JsonValueKind.String ? v.GetValue<string>() : null)
+                        .OfType<string>().ToList(),
+                    Str(r, "release_group_primary_type"), Str(r, "release_group_secondary_type"), Str(r, "release_date"))
+                : null)
+            .OfType<FreshRelease>()
+            .ToList();
 
     internal static IReadOnlyList<SimilarArtist> ParseSimilar(string json) =>
         (JsonNode.Parse(json) as JsonArray ?? []).OfType<JsonObject>()

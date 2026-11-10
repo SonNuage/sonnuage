@@ -48,6 +48,8 @@ public sealed class SonNuageOptions
     public string ListenBrainzUrl { get; set; } = "https://api.listenbrainz.org";
     public string ListenBrainzLabsUrl { get; set; } = "https://labs.api.listenbrainz.org";
     public string DeezerUrl { get; set; } = "https://api.deezer.com";
+    /// <summary>Cover Art Archive (pochettes des fiches MusicBrainz), lu par le serveur seulement.</summary>
+    public string CoverArtArchiveUrl { get; set; } = "https://coverartarchive.org";
     /// <summary>Base de LRCLIB, d'où viennent les paroles (remplacée dans les tests pour ne rien appeler).</summary>
     public string LrclibUrl { get; set; } = "https://lrclib.net";
     /// <summary>

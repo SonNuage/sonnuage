@@ -45,8 +45,12 @@ public sealed class LibraryIndexer(SonNuageDbContext db)
         track.Genre = meta.Genre;
     }
 
-    /// <summary>Place la piste dans le bon album (créé au besoin) selon AlbumArtistName + AlbumTitle.</summary>
-    public void Assign(Track track)
+    /// <summary>
+    /// Place la piste dans le bon album (créé au besoin) selon AlbumArtistName + AlbumTitle. Les identifiants MusicBrainz
+    /// d'artiste et de groupe d'éditions lus dans les tags (<paramref name="meta"/>) sont reportés sur l'artiste et l'album,
+    /// sauf si les métadonnées ont été corrigées à la main (les tags peuvent alors désigner un autre artiste).
+    /// </summary>
+    public void Assign(Track track, AudioMetadata? meta = null)
     {
         var albumArtist = GetOrCreateArtist(track.AlbumArtistName);
         var album = GetOrCreateAlbum(albumArtist, track.AlbumTitle);
@@ -54,7 +58,13 @@ public sealed class LibraryIndexer(SonNuageDbContext db)
         if (track.AlbumId != album.Id && track.AlbumId != Guid.Empty) TouchedAlbums.Add(track.AlbumId);
         track.Album = album;
         track.AlbumId = album.Id;
-        LinkCredits(track);
+        var main = LinkCredits(track);
+        if (meta is not null && !track.MetadataLocked)
+        {
+            if (meta.AlbumArtistMbid is { } albumArtistMbid) albumArtist.OfferMusicBrainzId(albumArtistMbid, ArtistMbidSource.Tags);
+            if (meta.ArtistMbid is { } artistMbid) main.OfferMusicBrainzId(artistMbid, ArtistMbidSource.Tags);
+            album.MusicBrainzReleaseGroupId ??= meta.ReleaseGroupId;
+        }
         track.SearchKey = $"{NameNormalizer.Key(track.Title)} {NameNormalizer.Key(track.ArtistName)} {album.NormalizedTitle} {albumArtist.NormalizedName}";
         if (album.Year is null && track.Year is not null) album.Year = track.Year;
         album.MusicBrainzReleaseId ??= track.MusicBrainzReleaseId;
@@ -63,9 +73,9 @@ public sealed class LibraryIndexer(SonNuageDbContext db)
 
     /// <summary>
     /// Rattache le morceau à l'artiste principal de son crédit et enregistre ses invités (voir <see cref="ArtistCredit"/>).
-    /// Ne change rien si c'est déjà fait : rejouable sur toute la bibliothèque.
+    /// Ne change rien si c'est déjà fait : rejouable sur toute la bibliothèque. Renvoie l'artiste principal.
     /// </summary>
-    public void LinkCredits(Track track)
+    public Artist LinkCredits(Track track)
     {
         var credit = ArtistCredit.Parse(track.ArtistName, track.AlbumArtistName, track.Title);
         var main = GetOrCreateArtist(credit.Main);
@@ -90,6 +100,7 @@ public sealed class LibraryIndexer(SonNuageDbContext db)
             db.TrackGuests.Add(new TrackGuest { TrackId = track.Id, ArtistId = added });
             current.Add(added);
         }
+        return main;
     }
 
     /// <summary>Rattache aux bons artistes les morceaux indexés avant (scan incrémental : leur fichier n'est pas relu).</summary>

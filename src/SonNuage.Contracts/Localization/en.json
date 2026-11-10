@@ -145,7 +145,8 @@
       "lastAdmin": "At least one administrator must remain.",
       "deleteSelf": "You can’t delete your own account.",
       "emptyTitle": "The title can’t be empty.",
-      "badRelease": "A MusicBrainz release ID or link is expected (musicbrainz.org/release/…)."
+      "badRelease": "A MusicBrainz release ID or link is expected (musicbrainz.org/release/…).",
+      "badArtist": "A MusicBrainz artist ID or link is expected (musicbrainz.org/artist/…)."
     },
     "unknownRole": "Unknown role.",
     "passwordMin": "Password: {min} characters minimum.",
@@ -347,7 +348,10 @@
     "rediscover": "Listen again",
     "rediscoverHint": "Your liked and go-to tracks, not played for a month.",
     "notYetPlayed": "Not played yet",
-    "notYetPlayedHint": "Albums in the library you have never started."
+    "notYetPlayedHint": "Albums in the library you have never started.",
+    "newReleases": "New from your artists",
+    "newReleasesHint": "Releases from the last three months and upcoming ones by the library's artists, from MusicBrainz.",
+    "newReleasesHintUser": "Releases from the last three months by the library's artists, already on the server."
   },
   "favorites": {
     "empty": "Tap the heart on a track, an album or an artist to find it here.",
@@ -378,7 +382,9 @@
     "allTracks": "All tracks",
     "showAll": "Show all ({count})",
     "showLess": "Show less",
-    "appearsOn": "Appears on"
+    "appearsOn": "Appears on",
+    "missingReleases": "Not in the library",
+    "missingReleasesHint": "The artist's albums, EPs and singles according to MusicBrainz, not on the server yet."
   },
   "search": {
     "placeholder": "Artists, albums, tracks…",
@@ -580,7 +586,12 @@
     "openRelease": "Open on MusicBrainz",
     "releaseHint": "Leave empty to unlink. The link applies to every track of the album.",
     "releaseLinked": "Album linked to its MusicBrainz release",
-    "releaseUnlinked": "MusicBrainz link removed"
+    "releaseUnlinked": "MusicBrainz link removed",
+    "artistMbid": "Artist's MusicBrainz page ({artist})",
+    "artistMbidPlaceholder": "ID or link musicbrainz.org/artist/…",
+    "artistMbidHint": "Read from tags or derived from identified albums; once set here, it is never replaced. Leave empty to clear it.",
+    "artistLinked": "Artist linked to its MusicBrainz page",
+    "artistUnlinked": "Artist's MusicBrainz ID cleared"
   },
   "dash": {
     "stat": {
@@ -950,7 +961,8 @@
       "transcode_purge": "Transcode cache purge",
       "youtube_sync": "Subscription sync",
       "analysis_audio": "Audio analysis",
-      "db_backup": "Database backup"
+      "db_backup": "Database backup",
+      "discovery_releases": "Artists' new releases"
     },
     "suiteKind": {
       "youtube_import": "YouTube import",
@@ -960,7 +972,8 @@
       "transcode_purge": "Cache purge",
       "youtube_sync": "Subscription sync",
       "analysis_audio": "Audio analysis",
-      "db_backup": "Database backup"
+      "db_backup": "Database backup",
+      "discovery_releases": "Artists' new releases"
     },
     "suites": {
       "rescanAll": "AcoustID rescan of the whole library",
@@ -972,7 +985,8 @@
       "discovery": "Discovery refresh",
       "album": "Album “{album}” by {artist}",
       "analysis": "Audio analysis of the library",
-      "backup": "Database backup"
+      "backup": "Database backup",
+      "releases": "New releases of the library's artists"
     },
     "steps": {
       "download": "Download",
@@ -1082,6 +1096,10 @@
       "albumNotFound": "Album “{album}” by {artist} not found on Deezer",
       "albumTrackNotFound": "“{title}” not found on YouTube",
       "albumDone": "{created} songs requested, {skipped} already on the server or requested, {missing} not found, out of {count}"
+    },
+    "releases": {
+      "done": "{derived} artist(s) identified, releases read for {artists} artist(s), {fresh} new release(s) added from ListenBrainz",
+      "unreachable": "MusicBrainz unreachable, the rest will wait for the next run: {message}"
     },
     "analysis": {
       "done": "{analyzed} track(s) analyzed, {failed} failure(s)",
@@ -1323,7 +1341,30 @@
     "albumHint": "Request the whole album “{album}”",
     "albumSent": "Album “{album}” requested: its songs show up in your requests as they are found.",
     "albumAsked": "Album requested",
-    "new": "New"
+    "new": "New",
+    "artistsTitle": "Artists to discover"
+  },
+  "releases": {
+    "title": "New releases",
+    "hint": "Releases from the last three months and upcoming ones by the library's artists (MusicBrainz, ListenBrainz), without compilations, live albums or remixes.",
+    "hintUser": "Releases from the last three months by the library's artists, already on the server.",
+    "all": "All",
+    "recent": "Recent releases",
+    "upcomingFilter": "Upcoming",
+    "allTypes": "All types",
+    "none": "No new releases yet. They are read for artists whose MusicBrainz ID is known.",
+    "refresh": "Refresh new releases",
+    "refreshStarted": "Reading new releases: MusicBrainz is queried slowly (one request per second).",
+    "inLibrary": "In the library",
+    "upcoming": "Upcoming",
+    "open": "Open",
+    "import": "Import",
+    "askHint": "Request the whole album “{album}”",
+    "type": {
+      "album": "Album",
+      "ep": "EP",
+      "single": "Single"
+    }
   },
   "quietHours": {
     "title": "Quiet hours",

@@ -145,7 +145,8 @@
       "lastAdmin": "Il faut garder au moins un administrateur.",
       "deleteSelf": "Impossible de supprimer son propre compte.",
       "emptyTitle": "Le titre ne peut pas être vide.",
-      "badRelease": "Identifiant ou lien d'édition MusicBrainz attendu (musicbrainz.org/release/…)."
+      "badRelease": "Identifiant ou lien d'édition MusicBrainz attendu (musicbrainz.org/release/…).",
+      "badArtist": "Identifiant ou lien d'artiste MusicBrainz attendu (musicbrainz.org/artist/…)."
     },
     "unknownRole": "Rôle inconnu.",
     "passwordMin": "Mot de passe : {min} caractères minimum.",
@@ -347,7 +348,10 @@
     "rediscover": "À réécouter",
     "rediscoverHint": "Vos titres favoris et habituels, pas joués depuis un mois.",
     "notYetPlayed": "Pas encore écouté",
-    "notYetPlayedHint": "Des albums de la bibliothèque que vous n'avez jamais lancés."
+    "notYetPlayedHint": "Des albums de la bibliothèque que vous n'avez jamais lancés.",
+    "newReleases": "Nouveautés de vos artistes",
+    "newReleasesHint": "Sorties des trois derniers mois et à venir des artistes de la bibliothèque, d'après MusicBrainz.",
+    "newReleasesHintUser": "Sorties des trois derniers mois des artistes de la bibliothèque, déjà sur le serveur."
   },
   "favorites": {
     "empty": "Touchez le cœur d'un titre, d'un album ou d'un artiste pour le retrouver ici.",
@@ -378,7 +382,9 @@
     "allTracks": "Tous les titres",
     "showAll": "Voir tout ({count})",
     "showLess": "Voir moins",
-    "appearsOn": "Apparaît sur"
+    "appearsOn": "Apparaît sur",
+    "missingReleases": "Absents de la bibliothèque",
+    "missingReleasesHint": "Albums, EP et singles de l'artiste selon MusicBrainz, pas encore sur le serveur."
   },
   "search": {
     "placeholder": "Artistes, albums, titres…",
@@ -580,7 +586,12 @@
     "openRelease": "Voir sur MusicBrainz",
     "releaseHint": "Laisser vide pour délier. Le lien s'applique à tous les morceaux de l'album.",
     "releaseLinked": "Album lié à sa fiche MusicBrainz",
-    "releaseUnlinked": "Lien MusicBrainz retiré"
+    "releaseUnlinked": "Lien MusicBrainz retiré",
+    "artistMbid": "Fiche MusicBrainz de l'artiste ({artist})",
+    "artistMbidPlaceholder": "Identifiant ou lien musicbrainz.org/artist/…",
+    "artistMbidHint": "Lu dans les tags ou déduit des albums identifiés ; saisi ici, il n'est plus remplacé. Laisser vide pour l'effacer.",
+    "artistLinked": "Artiste lié à sa fiche MusicBrainz",
+    "artistUnlinked": "Identifiant MusicBrainz de l'artiste effacé"
   },
   "dash": {
     "stat": {
@@ -950,7 +961,8 @@
       "transcode_purge": "Purge du cache de transcodage",
       "youtube_sync": "Synchronisation d'abonnement",
       "analysis_audio": "Analyse audio",
-      "db_backup": "Sauvegarde de la base"
+      "db_backup": "Sauvegarde de la base",
+      "discovery_releases": "Nouveautés des artistes"
     },
     "suiteKind": {
       "youtube_import": "Import YouTube",
@@ -960,7 +972,8 @@
       "transcode_purge": "Purge du cache",
       "youtube_sync": "Synchronisation d'abonnement",
       "analysis_audio": "Analyse audio",
-      "db_backup": "Sauvegarde de la base"
+      "db_backup": "Sauvegarde de la base",
+      "discovery_releases": "Nouveautés des artistes"
     },
     "suites": {
       "rescanAll": "Rescan AcoustID de toute la bibliothèque",
@@ -972,7 +985,8 @@
       "discovery": "Actualisation de la découverte",
       "album": "Album « {album} » de {artist}",
       "analysis": "Analyse audio de la bibliothèque",
-      "backup": "Sauvegarde de la base de données"
+      "backup": "Sauvegarde de la base de données",
+      "releases": "Nouveautés des artistes de la bibliothèque"
     },
     "steps": {
       "download": "Téléchargement",
@@ -1082,6 +1096,10 @@
       "albumNotFound": "Album « {album} » de {artist} introuvable sur Deezer",
       "albumTrackNotFound": "« {title} » introuvable sur YouTube",
       "albumDone": "{created} titres demandés, {skipped} déjà sur le serveur ou déjà demandés, {missing} introuvables, sur {count}"
+    },
+    "releases": {
+      "done": "{derived} artiste(s) identifié(s), parutions lues pour {artists} artiste(s), {fresh} nouveauté(s) ajoutée(s) depuis ListenBrainz",
+      "unreachable": "MusicBrainz injoignable, la suite attendra le prochain passage : {message}"
     },
     "analysis": {
       "done": "{analyzed} morceau(x) analysé(s), {failed} échec(s)",
@@ -1323,7 +1341,30 @@
     "albumHint": "Demander tout l'album « {album} »",
     "albumSent": "Album « {album} » demandé : ses titres arrivent dans vos demandes au fil des recherches.",
     "albumAsked": "Album demandé",
-    "new": "Nouveau"
+    "new": "Nouveau",
+    "artistsTitle": "Artistes à découvrir"
+  },
+  "releases": {
+    "title": "Nouveautés",
+    "hint": "Sorties des trois derniers mois et à venir des artistes de la bibliothèque (MusicBrainz, ListenBrainz), sans compilations, live ni remix.",
+    "hintUser": "Sorties des trois derniers mois des artistes de la bibliothèque, déjà sur le serveur.",
+    "all": "Tout",
+    "recent": "Sorties récentes",
+    "upcomingFilter": "À venir",
+    "allTypes": "Tous types",
+    "none": "Aucune nouveauté pour l'instant. Elles sont lues pour les artistes dont l'identifiant MusicBrainz est connu.",
+    "refresh": "Actualiser les nouveautés",
+    "refreshStarted": "Lecture des nouveautés lancée : MusicBrainz est interrogé lentement (une requête par seconde).",
+    "inLibrary": "Dans la bibliothèque",
+    "upcoming": "À venir",
+    "open": "Ouvrir",
+    "import": "Importer",
+    "askHint": "Demander tout l'album « {album} »",
+    "type": {
+      "album": "Album",
+      "ep": "EP",
+      "single": "Single"
+    }
   },
   "quietHours": {
     "title": "Heures calmes",

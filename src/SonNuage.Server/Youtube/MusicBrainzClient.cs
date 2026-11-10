@@ -21,6 +21,12 @@ public sealed record MbRelease(
 
 public sealed record AcoustIdMatch(string RecordingId, double Score);
 
+/// <summary>Artiste d'un crédit MusicBrainz : son identifiant, son nom MusicBrainz et le nom sous lequel il est crédité.</summary>
+public sealed record MbArtistCredit(Guid Id, string ArtistName, string CreditedName);
+
+/// <summary>Groupe de parutions MusicBrainz : titre, types (« Album », « Live »…), première sortie (date éventuellement partielle).</summary>
+public sealed record MbReleaseGroup(Guid Id, string Title, string? PrimaryType, IReadOnlyList<string> SecondaryTypes, string? FirstReleaseDate);
+
 /// <summary>
 /// Tags MusicBrainz d'une édition : ceux de l'édition et de son groupe (<see cref="Release"/>), et ceux de chaque
 /// enregistrement (<see cref="ByRecording"/>, clé : identifiant de l'enregistrement). Noms en minuscules → votes.
@@ -51,6 +57,8 @@ public sealed class MusicBrainzClient(IHttpClientFactory httpFactory, YoutubeToo
     public const string HttpClientName = "musicbrainz";
     private static readonly SemaphoreSlim Gate = new(1, 1);
     private static DateTime _lastCall = DateTime.MinValue;
+    /// <summary>Écart minimal entre deux requêtes MusicBrainz (leur limite est d'une par seconde ; réduit dans les tests).</summary>
+    internal static TimeSpan Spacing = TimeSpan.FromSeconds(1.1);
     private static readonly SemaphoreSlim AcoustIdGate = new(1, 1);
     private static DateTime _lastAcoustId = DateTime.MinValue;
     internal static string AcoustIdUrl = "https://api.acoustid.org/v2/lookup";
@@ -135,6 +143,77 @@ public sealed class MusicBrainzClient(IHttpClientFactory httpFactory, YoutubeToo
         return (json?["recordings"]?.AsArray() ?? []).OfType<JsonObject>().Select(ParseRecording).ToList();
     }
 
+    private string Api => $"{options.Value.MusicBrainzUrl.TrimEnd('/')}/ws/2";
+
+    private string CoverArtArchive => options.Value.CoverArtArchiveUrl.TrimEnd('/');
+
+    /// <summary>Crédits d'une édition et son groupe d'éditions ; null si MusicBrainz ne la connaît pas.</summary>
+    public async Task<(IReadOnlyList<MbArtistCredit> Credits, Guid? ReleaseGroupId)?> ReleaseCreditsAsync(Guid releaseId, CancellationToken ct)
+    {
+        if (await GetJsonOrNullAsync($"{Api}/release/{releaseId}?fmt=json&inc=artist-credits+release-groups", ct) is not { } json) return null;
+        return (Credits(json), Library.MusicBrainzId.Parse(Str(json["release-group"] as JsonObject, "id")));
+    }
+
+    /// <summary>Crédits d'un enregistrement ; null si MusicBrainz ne le connaît pas.</summary>
+    public async Task<IReadOnlyList<MbArtistCredit>?> RecordingCreditsAsync(Guid recordingId, CancellationToken ct) =>
+        await GetJsonOrNullAsync($"{Api}/recording/{recordingId}?fmt=json&inc=artist-credits", ct) is { } json ? Credits(json) : null;
+
+    /// <summary>
+    /// Groupes de parutions d'un artiste (albums, EP, singles, compilations et live compris : <see cref="Discovery.ReleaseRules"/> fait le tri), par pages de
+    /// 100, au plus <paramref name="maxPages"/> pages : une requête par page.
+    /// </summary>
+    public async Task<IReadOnlyList<MbReleaseGroup>> ReleaseGroupsAsync(string artistMbid, int maxPages, CancellationToken ct)
+    {
+        const int pageSize = 100;
+        var groups = new List<MbReleaseGroup>();
+        for (var page = 0; page < maxPages; page++)
+        {
+            var json = await GetJsonAsync(
+                $"{Api}/release-group?artist={Uri.EscapeDataString(artistMbid)}&type=album%7Cep%7Csingle&limit={pageSize}&offset={page * pageSize}&fmt=json", ct);
+            var items = (json?["release-groups"]?.AsArray() ?? []).OfType<JsonObject>().ToList();
+            groups.AddRange(items.Select(ParseReleaseGroup).OfType<MbReleaseGroup>());
+            if (items.Count < pageSize || (page + 1) * pageSize >= (Int(json, "release-group-count") ?? 0)) break;
+        }
+        return groups.DistinctBy(g => g.Id).ToList();
+    }
+
+    /// <summary>Pochette 250 px d'un groupe de parutions (Cover Art Archive) ; null s'il n'en a pas. Erreur réseau : exception.</summary>
+    public async Task<byte[]?> ReleaseGroupCoverAsync(Guid releaseGroupId, CancellationToken ct)
+    {
+        var http = httpFactory.CreateClient(HttpClientName);
+        using var response = await http.GetAsync($"{CoverArtArchive}/release-group/{releaseGroupId}/front-250", ct);
+        if (response.StatusCode == HttpStatusCode.NotFound) return null;
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsByteArrayAsync(ct);
+    }
+
+    internal static MbReleaseGroup? ParseReleaseGroup(JsonObject g) =>
+        Library.MusicBrainzId.Parse(Str(g, "id")) is { } id && Str(g, "title") is { } title
+            ? new MbReleaseGroup(id, title, Str(g, "primary-type"),
+                (g["secondary-types"]?.AsArray() ?? []).Select(t => t?.GetValue<string>()).OfType<string>().ToList(),
+                Str(g, "first-release-date") is { Length: > 0 } date ? date : null)
+            : null;
+
+    private static IReadOnlyList<MbArtistCredit> Credits(JsonObject o) =>
+        (o["artist-credit"]?.AsArray() ?? []).OfType<JsonObject>()
+            .Select(c => c["artist"] is JsonObject a && Library.MusicBrainzId.Parse(Str(a, "id")) is { } id
+                ? new MbArtistCredit(id, Str(a, "name") ?? "", Str(c, "name") ?? Str(a, "name") ?? "")
+                : null)
+            .OfType<MbArtistCredit>()
+            .ToList();
+
+    private async Task<JsonObject?> GetJsonOrNullAsync(string url, CancellationToken ct)
+    {
+        try
+        {
+            return await GetJsonAsync(url, ct);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+    }
+
     private async Task<JsonObject?> GetJsonAsync(string url, CancellationToken ct)
     {
         var http = httpFactory.CreateClient(HttpClientName);
@@ -143,7 +222,7 @@ public sealed class MusicBrainzClient(IHttpClientFactory httpFactory, YoutubeToo
             await Gate.WaitAsync(ct);
             try
             {
-                var wait = _lastCall + TimeSpan.FromSeconds(1.1) - DateTime.UtcNow;
+                var wait = _lastCall + Spacing - DateTime.UtcNow;
                 if (wait > TimeSpan.Zero) await Task.Delay(wait, ct);
                 _lastCall = DateTime.UtcNow;
                 using var response = await http.GetAsync(url, ct);
@@ -168,8 +247,8 @@ public sealed class MusicBrainzClient(IHttpClientFactory httpFactory, YoutubeToo
         var http = httpFactory.CreateClient(HttpClientName);
         foreach (var url in new[]
                  {
-                     releaseId is null ? null : $"https://coverartarchive.org/release/{releaseId}/front-500",
-                     releaseGroupId is null ? null : $"https://coverartarchive.org/release-group/{releaseGroupId}/front-500",
+                     releaseId is null ? null : $"{CoverArtArchive}/release/{releaseId}/front-500",
+                     releaseGroupId is null ? null : $"{CoverArtArchive}/release-group/{releaseGroupId}/front-500",
                  })
         {
             if (url is null) continue;

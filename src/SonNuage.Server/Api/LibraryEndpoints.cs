@@ -43,7 +43,8 @@ public static class LibraryEndpoints
             var notYetPlayedIds = await HomeDiscovery.NotYetPlayedAlbumIdsAsync(db, userId, 20, ct);
             var notYetPlayed = await db.Albums.Where(a => notYetPlayedIds.Contains(a.Id)).Select(Projections.Album).ToListAsync(ct);
             notYetPlayed = notYetPlayedIds.Select(id => notYetPlayed.FirstOrDefault(a => a.Id == id)).OfType<AlbumDto>().ToList();
-            return new HomeDto(recentAlbums, recentTracks, playlists, rediscover, notYetPlayed);
+            var newReleases = await ReleaseEndpoints.HomeAsync(db, http.User.CanRequest(), time, ct);
+            return new HomeDto(recentAlbums, recentTracks, playlists, rediscover, notYetPlayed, newReleases);
         });
 
         g.MapGet("/artists", async (string? q, int? offset, int? limit, SonNuageDbContext db, CancellationToken ct) =>

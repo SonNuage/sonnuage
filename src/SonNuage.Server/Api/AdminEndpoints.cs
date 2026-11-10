@@ -157,6 +157,19 @@ public static class AdminEndpoints
             return Results.Ok(await db.Albums.Where(a => a.Id == id).Select(Projections.Album).FirstAsync(ct));
         });
 
+        // Saisi à la main : aucune autre source ne le remplace. Effacé, les tags ou la déduction pourront en poser un.
+        g.MapPut("/artists/{id:guid}/musicbrainz", async (Guid id, LinkArtistRequest req, SonNuageDbContext db, CancellationToken ct) =>
+        {
+            var mbid = MusicBrainzId.Parse(req.Artist);
+            if (mbid is null && !string.IsNullOrWhiteSpace(req.Artist)) return Results.Problem(Tx.Key("errors.admin.badArtist"), statusCode: 400);
+            var artist = await db.Artists.FirstOrDefaultAsync(a => a.Id == id, ct);
+            if (artist is null) return Results.NotFound();
+            artist.MusicBrainzId = mbid?.ToString();
+            artist.MusicBrainzIdSource = mbid is null ? ArtistMbidSource.None : ArtistMbidSource.Manual;
+            await db.SaveChangesAsync(ct);
+            return Results.Ok(await db.Artists.Where(a => a.Id == id).Select(Projections.Artist).FirstAsync(ct));
+        });
+
         g.MapPut("/albums/{id:guid}/cover", async (Guid id, HttpRequest request, SonNuageDbContext db, IOptions<SonNuageOptions> options, CancellationToken ct) =>
         {
             var album = await db.Albums.FirstOrDefaultAsync(a => a.Id == id, ct);
