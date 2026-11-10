@@ -30,16 +30,17 @@ public sealed record AudioFeel(
 
 /// <summary>
 /// Morceau vu par les radios. <see cref="Text"/> : titre et album en minuscules sans accents, entourés d'espaces ;
-/// <see cref="Genre"/> : genre du fichier en minuscules sans accents ; <see cref="Tags"/> : tags MusicBrainz.
+/// <see cref="Genre"/> : genre du fichier en minuscules sans accents ; <see cref="Tags"/> : tags MusicBrainz ;
+/// <see cref="Year"/> : année de sortie, si connue.
 /// </summary>
 public sealed record TrackProfile(
     Guid Id, Guid ArtistId, Guid AlbumId, bool AlbumHasCover, double DurationSeconds, string Text, string Genre,
-    IReadOnlySet<string> Tags, AudioFeel? Feel)
+    IReadOnlySet<string> Tags, AudioFeel? Feel, int? Year = null)
 {
     public static TrackProfile Create(Guid id, Guid artistId, Guid albumId, bool albumHasCover, double durationSeconds, string title,
-        string? albumTitle, string? genre, IEnumerable<string>? tags = null, AudioFeel? feel = null) =>
+        string? albumTitle, string? genre, IEnumerable<string>? tags = null, AudioFeel? feel = null, int? year = null) =>
         new(id, artistId, albumId, albumHasCover, durationSeconds, $" {Fold(title)} {Fold(albumTitle)} ", Fold(genre),
-            (tags ?? []).Select(t => t.ToLowerInvariant()).ToHashSet(), feel);
+            (tags ?? []).Select(t => t.ToLowerInvariant()).ToHashSet(), feel, year);
 
     /// <summary>Minuscules, sans accents ; ponctuation remplacée par des espaces (l'apostrophe reste).</summary>
     public static string Fold(string? text)
