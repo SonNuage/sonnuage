@@ -70,11 +70,12 @@ public static partial class SubsonicEndpoints
             foreach (var id in ids) board.Finish(r.UserId, r.Get("c"), id);
             var times = r.GetAll("time");
             var now = r.Service<TimeProvider>().GetUtcNow();
+            var client = Api.ListenHistory.Client(r.Get("c"));
             for (var i = 0; i < ids.Count; i++)
             {
                 if (!durations.TryGetValue(ids[i], out var duration)) continue;
                 var playedAt = i < times.Count && long.TryParse(times[i], out var ms) ? DateTimeOffset.FromUnixTimeMilliseconds(ms) : now;
-                r.Db.PlayEvents.Add(new PlayEvent { UserId = r.UserId, TrackId = ids[i], PlayedAt = playedAt, SecondsPlayed = duration, Completed = true });
+                r.Db.PlayEvents.Add(new PlayEvent { UserId = r.UserId, TrackId = ids[i], PlayedAt = playedAt, SecondsPlayed = duration, Completed = true, Client = client });
             }
             await r.Db.SaveChangesAsync(r.Ct);
             return r.Ok();

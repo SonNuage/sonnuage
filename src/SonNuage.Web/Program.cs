@@ -20,4 +20,6 @@ builder.Services.AddSonNuageUi();
 
 var host = builder.Build();
 await host.Services.GetRequiredService<PlaybackSettings>().LoadAsync();
+// Écoutes restées en attente hors ligne : elles partent sans retarder le démarrage.
+_ = host.Services.GetRequiredService<PlayHistory>().FlushAsync();
 await host.RunAsync();

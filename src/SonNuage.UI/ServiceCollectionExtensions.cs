@@ -19,6 +19,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ApiClient>();
         services.AddSingleton<IPlaybackPreferencesApi>(sp => sp.GetRequiredService<ApiClient>());
         services.AddSingleton<PlaybackSettings>();
+        services.AddSingleton<IPlayReportApi>(sp => sp.GetRequiredService<ApiClient>());
+        services.AddSingleton<PlayHistory>();
         services.AddSingleton<UiState>();
         services.AddSingleton<PreviewPlayer>();
         services.AddSingleton<Localizer>();

@@ -89,7 +89,13 @@ public sealed record AddPlaylistTracksRequest(IReadOnlyList<Guid> TrackIds, int?
 
 public sealed record MovePlaylistEntryRequest(int NewPosition);
 
-public sealed record PlayEventRequest(Guid TrackId, double SecondsPlayed, bool Completed);
+/// <summary>Une écoute envoyée par une appli (voir <see cref="ListenRules"/>).</summary>
+/// <param name="Completed">Écoutée jusqu'au bout ; sinon passée avant la fin.</param>
+/// <param name="StartedAt">Début de l'écoute selon l'appareil (une écoute mise en file hors ligne arrive plus tard).</param>
+/// <param name="Client">Appli qui l'envoie : « web », « android », « desktop », « ios »…</param>
+/// <param name="Id">Choisi par l'appareil : renvoyée après une réponse perdue, l'écoute n'est comptée qu'une fois.</param>
+public sealed record PlayEventRequest(Guid TrackId, double SecondsPlayed, bool Completed, DateTimeOffset? StartedAt = null, string? Client = null,
+    Guid? Id = null);
 
 /// <param name="Build">Empreinte du client web servi : un onglet ouvert la compare pour proposer de recharger après un déploiement.</param>
 /// <param name="Runtime">Environnement d'exécution du serveur (.NET, système), pour la page « À propos ».</param>

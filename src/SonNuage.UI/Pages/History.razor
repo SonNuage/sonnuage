@@ -1,0 +1,223 @@
+@page "/history"
+@inject ApiClient Api
+@inject IPlayer Player
+@inject UiState Ui
+
+<PageTitle>@L["history.title"] · SonNuage</PageTitle>
+
+@* Historique d'écoute du compte : statistiques, puis les écoutes par jour (heure de l'appareil). Visible de lui seul. *@
+<div class="page">
+    <header class="page-header">
+        <h1>@L["history.title"]</h1>
+        @if (_entries.Count > 0)
+        {
+            <button class="btn danger" @onclick="() => _confirmClear = true"><Icon Name="delete" Size="18" /> @L["history.clear"]</button>
+        }
+    </header>
+
+    <Loader Loading="_loading" Error="@_error" OnRetry="LoadAsync">
+        @if (_entries.Count == 0)
+        {
+            <p class="empty">@L["history.empty"]</p>
+        }
+        else
+        {
+            @if (_stats is { } stats)
+            {
+                <section>
+                    <div class="stats">
+                        <div class="stat"><span class="stat-value">@Format.LongDuration(stats.WeekSeconds)</span><span class="stat-label">@L["history.week"]</span></div>
+                        <div class="stat"><span class="stat-value">@Format.LongDuration(stats.MonthSeconds)</span><span class="stat-label">@L["history.month"]</span></div>
+                        <div class="stat"><span class="stat-value">@L.Number(stats.Plays)</span><span class="stat-label">@L["history.plays", ("period", PeriodLabel(stats.Days))]</span></div>
+                    </div>
+                    <nav class="tabs sub" aria-label="@L["history.period"]">
+                        @foreach (var days in Periods)
+                        {
+                            <button class="tab @(days == _days ? "active" : null)" aria-pressed="@(days == _days ? "true" : "false")"
+                                    @onclick="() => SetPeriodAsync(days)">@PeriodLabel(days)</button>
+                        }
+                    </nav>
+                    <div class="history-tops">
+                        @if (stats.TopArtists.Count > 0)
+                        {
+                            <div>
+                                <h2>@L["history.topArtists"]</h2>
+                                <ol class="history-top">
+                                    @foreach (var a in stats.TopArtists)
+                                    {
+                                        <li @key="a.Artist.Id">
+                                            <a href="artist/@a.Artist.Id">@a.Artist.Name</a>
+                                            <span class="muted small">@L["history.count", ("count", a.Plays)]</span>
+                                        </li>
+                                    }
+                                </ol>
+                            </div>
+                        }
+                        @if (stats.TopTracks.Count > 0)
+                        {
+                            <div>
+                                <h2>@L["history.topTracks"]</h2>
+                                <ol class="history-top">
+                                    @foreach (var t in stats.TopTracks)
+                                    {
+                                        <li @key="t.Track.Id">
+                                            <button class="link" @onclick="() => PlayAsync(t.Track)">@t.Track.Title</button>
+                                            <span class="muted small">@t.Track.ArtistName · @L["history.count", ("count", t.Plays)]</span>
+                                        </li>
+                                    }
+                                </ol>
+                            </div>
+                        }
+                    </div>
+                </section>
+            }
+
+            @foreach (var day in HistoryDays.Group(_entries, TimeZoneInfo.Local))
+            {
+                <section class="history-day" @key="day.Date">
+                    <div class="section-head">
+                        <h2>@DayLabel(day.Date)</h2>
+                        <span class="muted small">@Format.LongDuration(day.Seconds)</span>
+                    </div>
+                    <ul class="history-list">
+                        @foreach (var e in day.Entries)
+                        {
+                            <li class="history-entry" @key="e.Id">
+                                <span class="history-time muted small">@e.StartedAt.ToLocalTime().ToString("HH:mm")</span>
+                                <Cover AlbumId="e.Track.AlbumId" HasCover="e.Track.HasCover" Size="96" Class="cover-xs" Seed="@e.Track.AlbumTitle" />
+                                <span class="history-main">
+                                    <button class="link history-title" title="@L["common.play"]" @onclick="() => PlayAsync(e.Track)">@e.Track.Title</button>
+                                    <span class="muted small"><a href="artist/@e.Track.ArtistId">@e.Track.ArtistName</a> · <a href="album/@e.Track.AlbumId">@e.Track.AlbumTitle</a></span>
+                                </span>
+                                <span class="history-meta muted small">
+                                    @if (!e.Completed) { <span class="badge">@L["history.skipped"]</span> }
+                                    @if (ClientLabel(e.Client) is { } client) { <span>@client</span> }
+                                    <span title="@L["history.listened"]">@Format.Duration(e.SecondsPlayed)</span>
+                                </span>
+                                <button class="icon-btn" title="@L["history.remove"]" aria-label="@L["history.remove"]" @onclick="() => RemoveAsync(e)">
+                                    <Icon Name="close" Size="18" />
+                                </button>
+                            </li>
+                        }
+                    </ul>
+                </section>
+            }
+
+            @if (_entries.Count < _total)
+            {
+                <button class="btn" disabled="@_loadingMore" @onclick="MoreAsync">@L["common.showMore"]</button>
+            }
+        }
+    </Loader>
+</div>
+
+<Modal Open="_confirmClear" OpenChanged="v => _confirmClear = v" Title="@L["history.clearConfirm"]">
+    <ChildContent><p>@L["history.clearHint"]</p></ChildContent>
+    <Footer>
+        <button class="btn" @onclick="() => _confirmClear = false">@L["common.cancel"]</button>
+        <button class="btn danger" @onclick="ClearAsync">@L["history.clear"]</button>
+    </Footer>
+</Modal>
+
+@code {
+    private const int PageSize = 100;
+    private static readonly int[] Periods = [7, 30, 365, 0];
+
+    private readonly List<HistoryEntryDto> _entries = [];
+    private HistoryStatsDto? _stats;
+    private int _total;
+    private int _days = 30;
+    private bool _loading = true;
+    private bool _loadingMore;
+    private bool _confirmClear;
+    private string? _error;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            var page = await Api.HistoryAsync(0, PageSize);
+            _entries.Clear();
+            _entries.AddRange(page?.Items ?? []);
+            _total = page?.Total ?? 0;
+            _stats = await Api.HistoryStatsAsync(_days);
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            _error = L.Server(ex.Message);
+        }
+        _loading = false;
+    }
+
+    private Task MoreAsync() => RunAsync(async () =>
+    {
+        _loadingMore = true;
+        var page = await Api.HistoryAsync(_entries.Count, PageSize);
+        // Une écoute arrivée entre-temps décale les pages : pas de doublon.
+        var known = _entries.Select(e => e.Id).ToHashSet();
+        _entries.AddRange((page?.Items ?? []).Where(e => !known.Contains(e.Id)));
+        _total = page?.Total ?? _total;
+    });
+
+    private Task SetPeriodAsync(int days) => RunAsync(async () =>
+    {
+        _days = days;
+        _stats = await Api.HistoryStatsAsync(days);
+    });
+
+    private Task RemoveAsync(HistoryEntryDto entry) => RunAsync(async () =>
+    {
+        await Api.DeleteHistoryEntryAsync(entry.Id);
+        _entries.Remove(entry);
+        _total--;
+        _stats = await Api.HistoryStatsAsync(_days);
+    });
+
+    private Task ClearAsync() => RunAsync(async () =>
+    {
+        _confirmClear = false;
+        await Api.ClearHistoryAsync();
+        _entries.Clear();
+        _total = 0;
+        _stats = null;
+        Ui.Notify(L["history.cleared"]);
+    });
+
+    private async Task RunAsync(Func<Task> action)
+    {
+        try
+        {
+            await action();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+        _loadingMore = false;
+    }
+
+    private Task PlayAsync(TrackDto track) => Player.PlayAsync([track]);
+
+    private string PeriodLabel(int days) => days switch
+    {
+        0 => L["history.periods.all"],
+        365 => L["history.periods.year"],
+        _ => L["history.periods.days", ("count", days)],
+    };
+
+    private string DayLabel(DateOnly day)
+    {
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        if (day == today) return L["history.today"];
+        if (day == today.AddDays(-1)) return L["history.yesterday"];
+        return L.Date(new DateTimeOffset(day.ToDateTime(new TimeOnly(12, 0))));
+    }
+
+    /// <summary>Nom de l'appli : traduit pour les nôtres, tel quel pour une appli Subsonic.</summary>
+    private string? ClientLabel(string? client) =>
+        client is null ? null : L.Has("history.clients." + client) ? L["history.clients." + client] : client;
+}

@@ -12,7 +12,7 @@ public sealed class ApiException(HttpStatusCode status, string message) : Except
 }
 
 /// <summary>Client typé de l'API. Ajoute le jeton, réessaie une fois après renouvellement sur 401.</summary>
-public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint endpoint, AuthSession auth) : IPlaybackPreferencesApi
+public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint endpoint, AuthSession auth) : IPlaybackPreferencesApi, IPlayReportApi
 {
     // ---- Bibliothèque ----
     // Route publique : lue sans session (écran de connexion, démarrage avant la reprise de session, message de mise à jour).
@@ -63,6 +63,20 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
         SendAsync(favorite ? HttpMethod.Put : HttpMethod.Delete, $"api/me/favorites/{trackId}");
     public Task<List<TrackDto>?> RecentAsync(int count = 50) => GetAsync<List<TrackDto>>($"api/me/recent?count={count}");
     public Task ReportPlayAsync(PlayEventRequest play) => SendAsync(HttpMethod.Post, "api/me/plays", play);
+    public Task<PagedResult<HistoryEntryDto>?> HistoryAsync(int offset, int limit) =>
+        GetAsync<PagedResult<HistoryEntryDto>>($"api/me/history?offset={offset}&limit={limit}");
+    /// <param name="days">Période des classements, en jours ; 0 = depuis le début.</param>
+    public Task<HistoryStatsDto?> HistoryStatsAsync(int days) => GetAsync<HistoryStatsDto>($"api/me/history/stats?days={days}");
+    public Task DeleteHistoryEntryAsync(long id) => SendAsync(HttpMethod.Delete, $"api/me/history/{id}");
+    public Task ClearHistoryAsync() => SendAsync(HttpMethod.Delete, "api/me/history");
+    public Task<ListenBrainzAccountDto?> ListenBrainzAccountAsync() => GetAsync<ListenBrainzAccountDto>("api/me/listenbrainz");
+    public Task<ListenBrainzAccountDto?> SaveListenBrainzTokenAsync(string token) =>
+        SendAsync<ListenBrainzAccountDto>(HttpMethod.Put, "api/me/listenbrainz/token", new ListenBrainzTokenRequest(token));
+    public Task RemoveListenBrainzTokenAsync() => SendAsync(HttpMethod.Delete, "api/me/listenbrainz/token");
+    public Task<ListenBrainzAccountDto?> SetListenBrainzSubmitAsync(bool enabled) =>
+        SendAsync<ListenBrainzAccountDto>(HttpMethod.Put, "api/me/listenbrainz/submit", new ListenBrainzSubmitRequest(enabled));
+    public Task<ListenBrainzRecommendationsDto?> ListenBrainzRecommendationsAsync() =>
+        GetAsync<ListenBrainzRecommendationsDto>("api/me/listenbrainz/recommendations");
     public Task ChangePasswordAsync(string current, string next) =>
         SendAsync(HttpMethod.Post, "api/auth/password", new ChangePasswordRequest(current, next));
     public Task<SubsonicAccessDto?> SubsonicAccessAsync() => GetAsync<SubsonicAccessDto>("api/me/subsonic");

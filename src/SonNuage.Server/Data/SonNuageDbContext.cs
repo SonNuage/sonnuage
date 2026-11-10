@@ -104,6 +104,7 @@ public sealed class SonNuageDbContext(DbContextOptions<SonNuageDbContext> option
             e.HasIndex(x => x.NormalizedUsername).IsUnique();
             e.Property(x => x.Username).HasMaxLength(64);
             e.Property(x => x.Language).HasMaxLength(16);
+            e.Property(x => x.ListenBrainzUserName).HasMaxLength(64);
         });
 
         b.Entity<RefreshToken>(e =>
@@ -220,6 +221,9 @@ public sealed class SonNuageDbContext(DbContextOptions<SonNuageDbContext> option
         b.Entity<PlayEvent>(e =>
         {
             e.HasIndex(x => new { x.UserId, x.PlayedAt });
+            e.HasIndex(x => new { x.UserId, x.ClientEventId }).IsUnique();
+            e.Property(x => x.Client).HasMaxLength(PlayEvent.MaxClientLength);
+            e.Property(x => x.ListenBrainz).HasConversion<int>();
             e.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(x => x.Track).WithMany().HasForeignKey(x => x.TrackId).OnDelete(DeleteBehavior.Cascade);
         });

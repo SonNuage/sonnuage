@@ -238,6 +238,11 @@
     },
     "duplicates": {
       "notDuplicates": "These tracks are not copies of the same recording."
+    },
+    "listenbrainz": {
+      "invalidToken": "ListenBrainz does not recognise this token.",
+      "unreachable": "ListenBrainz is not responding. Try again later.",
+      "noToken": "Save your ListenBrainz token first."
     }
   },
   "login": {
@@ -329,7 +334,8 @@
       "light": "Light",
       "dark": "Dark"
     },
-    "help": "Help"
+    "help": "Help",
+    "history": "History"
   },
   "app": {
     "notFound": "Page not found.",
@@ -377,7 +383,10 @@
     "notYetPlayedHint": "Albums in the library you have never started.",
     "newReleases": "New from your artists",
     "newReleasesHint": "Releases from the last three months and upcoming ones by the library's artists, from MusicBrainz.",
-    "newReleasesHintUser": "Releases from the last three months by the library's artists, already on the server."
+    "newReleasesHintUser": "Releases from the last three months by the library's artists, already on the server.",
+    "recommended": "Recommended for you",
+    "recommendedHint": "Based on your listens on ListenBrainz.",
+    "recommendedOutside": "Not on the server yet"
   },
   "favorites": {
     "empty": "Tap the heart on a track, an album or an artist to find it here.",
@@ -974,7 +983,8 @@
       "library": "Library",
       "sync": "Subscriptions",
       "discovery": "Discovery",
-      "analysis": "Audio analysis"
+      "analysis": "Audio analysis",
+      "listens": "Listens (ListenBrainz)"
     },
     "kind": {
       "youtube_download": "YouTube download",
@@ -990,7 +1000,8 @@
       "db_backup": "Database backup",
       "discovery_releases": "Artists' new releases",
       "library_fingerprint": "Acoustic fingerprints",
-      "library_dedupe": "Duplicates removed"
+      "library_dedupe": "Duplicates removed",
+      "listenbrainz_submit": "Sending listens to ListenBrainz"
     },
     "suiteKind": {
       "youtube_import": "YouTube import",
@@ -1018,7 +1029,8 @@
       "backup": "Database backup",
       "releases": "New releases of the library's artists",
       "fingerprints": "Acoustic fingerprints of the library",
-      "duplicates": "Duplicates of {title}"
+      "duplicates": "Duplicates of {title}",
+      "listenbrainz": "Sending listens to ListenBrainz"
     },
     "steps": {
       "download": "Download",
@@ -1151,6 +1163,10 @@
       "deleted": "File deleted: {path}",
       "hidden": "Hidden (read-only library, file kept): {path}",
       "deleteFailed": "File not deleted: {path} ({error})"
+    },
+    "listenbrainz": {
+      "sent": "{sent} listen(s) sent, {ignored} skipped (too short).",
+      "later": "ListenBrainz is rate limiting or not responding: the rest will be sent later."
     }
   },
   "about": {
@@ -1660,5 +1676,57 @@
     "confirmHide": "These read-only files will be hidden from the library, not deleted:",
     "confirm": "Delete and hide",
     "resolved": "{deleted} files deleted, {hidden} hidden."
+  },
+  "history": {
+    "title": "History",
+    "empty": "No listens yet. Tracks played for at least 30 seconds (or half of a short track) show up here.",
+    "week": "listened in the last 7 days",
+    "month": "listened in the last 30 days",
+    "plays": "listens ({period})",
+    "period": "Period",
+    "periods": {
+      "days": "{count} days",
+      "year": "1 year",
+      "all": "All time"
+    },
+    "topArtists": "Top artists",
+    "topTracks": "Top tracks",
+    "count": {
+      "one": "{count} listen",
+      "other": "{count} listens"
+    },
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "skipped": "Skipped",
+    "listened": "Time listened",
+    "remove": "Remove from history",
+    "clear": "Clear history",
+    "clearConfirm": "Clear your whole history?",
+    "clearHint": "All your listens are deleted from this server, on all your devices. \"Rediscover\" and \"Not played yet\" start over. Listens already sent to ListenBrainz stay there.",
+    "cleared": "History cleared.",
+    "clients": {
+      "web": "Web",
+      "android": "Android",
+      "desktop": "Computer",
+      "ios": "iPhone"
+    },
+    "hint": "Your recent listens and stats"
+  },
+  "listenbrainz": {
+    "title": "ListenBrainz",
+    "intro": "Optional: link your ListenBrainz account to send it your listens and get personal recommendations on the home page. Nothing goes to ListenBrainz without your consent.",
+    "token": "ListenBrainz user token",
+    "tokenHint": "Copy it from your ListenBrainz settings:",
+    "save": "Save token",
+    "saved": "Token saved (ListenBrainz account \"{user}\").",
+    "connected": "ListenBrainz account linked.",
+    "remove": "Remove token",
+    "removed": "ListenBrainz token removed.",
+    "submit": "Send my listens to ListenBrainz",
+    "submitHint": "Only listens made from now on that count for ListenBrainz (half the track or 4 minutes). They are sent in the background a few minutes later.",
+    "sent": {
+      "one": "{count} listen sent.",
+      "other": "{count} listens sent."
+    }
   }
 }

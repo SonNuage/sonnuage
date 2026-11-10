@@ -730,7 +730,17 @@ namespace SonNuage.Server.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Client")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("ClientEventId")
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("Completed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ListenBrainz")
                         .HasColumnType("INTEGER");
 
                     b.Property<long>("PlayedAt")
@@ -748,6 +758,9 @@ namespace SonNuage.Server.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("TrackId");
+
+                    b.HasIndex("UserId", "ClientEventId")
+                        .IsUnique();
 
                     b.HasIndex("UserId", "PlayedAt");
 
@@ -1210,6 +1223,16 @@ namespace SonNuage.Server.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("LastSeenDevice")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("ListenBrainzSubmitSince")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ListenBrainzToken")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ListenBrainzUserName")
+                        .HasMaxLength(64)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("NormalizedUsername")

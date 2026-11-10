@@ -238,6 +238,11 @@
     },
     "duplicates": {
       "notDuplicates": "Ces morceaux ne sont pas des copies du même enregistrement."
+    },
+    "listenbrainz": {
+      "invalidToken": "ListenBrainz ne reconnaît pas ce jeton.",
+      "unreachable": "ListenBrainz ne répond pas. Réessayez plus tard.",
+      "noToken": "Enregistrez d'abord votre jeton ListenBrainz."
     }
   },
   "login": {
@@ -329,7 +334,8 @@
       "light": "Clair",
       "dark": "Sombre"
     },
-    "help": "Aide"
+    "help": "Aide",
+    "history": "Historique"
   },
   "app": {
     "notFound": "Page introuvable.",
@@ -377,7 +383,10 @@
     "notYetPlayedHint": "Des albums de la bibliothèque que vous n'avez jamais lancés.",
     "newReleases": "Nouveautés de vos artistes",
     "newReleasesHint": "Sorties des trois derniers mois et à venir des artistes de la bibliothèque, d'après MusicBrainz.",
-    "newReleasesHintUser": "Sorties des trois derniers mois des artistes de la bibliothèque, déjà sur le serveur."
+    "newReleasesHintUser": "Sorties des trois derniers mois des artistes de la bibliothèque, déjà sur le serveur.",
+    "recommended": "Recommandé pour vous",
+    "recommendedHint": "D'après vos écoutes sur ListenBrainz.",
+    "recommendedOutside": "Pas encore sur le serveur"
   },
   "favorites": {
     "empty": "Touchez le cœur d'un titre, d'un album ou d'un artiste pour le retrouver ici.",
@@ -974,7 +983,8 @@
       "library": "Bibliothèque",
       "sync": "Abonnements",
       "discovery": "Découverte",
-      "analysis": "Analyse audio"
+      "analysis": "Analyse audio",
+      "listens": "Écoutes (ListenBrainz)"
     },
     "kind": {
       "youtube_download": "Téléchargement YouTube",
@@ -990,7 +1000,8 @@
       "db_backup": "Sauvegarde de la base",
       "discovery_releases": "Nouveautés des artistes",
       "library_fingerprint": "Empreintes acoustiques",
-      "library_dedupe": "Doublons écartés"
+      "library_dedupe": "Doublons écartés",
+      "listenbrainz_submit": "Envoi des écoutes à ListenBrainz"
     },
     "suiteKind": {
       "youtube_import": "Import YouTube",
@@ -1018,7 +1029,8 @@
       "backup": "Sauvegarde de la base de données",
       "releases": "Nouveautés des artistes de la bibliothèque",
       "fingerprints": "Empreintes acoustiques de la bibliothèque",
-      "duplicates": "Doublons de {title}"
+      "duplicates": "Doublons de {title}",
+      "listenbrainz": "Envoi des écoutes à ListenBrainz"
     },
     "steps": {
       "download": "Téléchargement",
@@ -1151,6 +1163,10 @@
       "deleted": "Fichier supprimé : {path}",
       "hidden": "Masqué (bibliothèque en lecture seule, fichier conservé) : {path}",
       "deleteFailed": "Fichier non supprimé : {path} ({error})"
+    },
+    "listenbrainz": {
+      "sent": "{sent} écoute(s) envoyée(s), {ignored} écartée(s) (trop courtes).",
+      "later": "ListenBrainz bride les envois ou ne répond pas : la suite partira plus tard."
     }
   },
   "about": {
@@ -1660,5 +1676,57 @@
     "confirmHide": "Ces fichiers (lecture seule) seront masqués de la bibliothèque, sans être supprimés :",
     "confirm": "Supprimer et masquer",
     "resolved": "{deleted} fichiers supprimés, {hidden} masqués."
+  },
+  "history": {
+    "title": "Historique",
+    "empty": "Aucune écoute pour l'instant. Les morceaux écoutés au moins 30 secondes (ou la moitié d'un morceau court) s'affichent ici.",
+    "week": "d'écoute ces 7 derniers jours",
+    "month": "d'écoute ces 30 derniers jours",
+    "plays": "écoutes ({period})",
+    "period": "Période",
+    "periods": {
+      "days": "{count} jours",
+      "year": "1 an",
+      "all": "Depuis le début"
+    },
+    "topArtists": "Artistes les plus écoutés",
+    "topTracks": "Titres les plus écoutés",
+    "count": {
+      "one": "{count} écoute",
+      "other": "{count} écoutes"
+    },
+    "today": "Aujourd'hui",
+    "yesterday": "Hier",
+    "skipped": "Passé",
+    "listened": "Temps écouté",
+    "remove": "Retirer de l'historique",
+    "clear": "Effacer l'historique",
+    "clearConfirm": "Effacer tout l'historique ?",
+    "clearHint": "Toutes vos écoutes sont supprimées de ce serveur, sur tous vos appareils. « À réécouter » et « Pas encore écouté » repartent de zéro. Les écoutes déjà envoyées à ListenBrainz y restent.",
+    "cleared": "Historique effacé.",
+    "clients": {
+      "web": "Web",
+      "android": "Android",
+      "desktop": "Ordinateur",
+      "ios": "iPhone"
+    },
+    "hint": "Vos écoutes récentes et vos statistiques"
+  },
+  "listenbrainz": {
+    "title": "ListenBrainz",
+    "intro": "Facultatif : reliez votre compte ListenBrainz pour y envoyer vos écoutes et recevoir des recommandations personnelles sur l'accueil. Rien ne part vers ListenBrainz sans votre accord.",
+    "token": "Jeton utilisateur ListenBrainz",
+    "tokenHint": "À copier depuis vos réglages ListenBrainz :",
+    "save": "Enregistrer le jeton",
+    "saved": "Jeton enregistré (compte ListenBrainz « {user} »).",
+    "connected": "Compte ListenBrainz relié.",
+    "remove": "Supprimer le jeton",
+    "removed": "Jeton ListenBrainz supprimé.",
+    "submit": "Envoyer mes écoutes à ListenBrainz",
+    "submitHint": "Seulement les écoutes faites à partir de maintenant, et qui comptent selon ListenBrainz (la moitié du morceau ou 4 minutes). Elles partent en arrière-plan, quelques minutes après.",
+    "sent": {
+      "one": "{count} écoute envoyée.",
+      "other": "{count} écoutes envoyées."
+    }
   }
 }
