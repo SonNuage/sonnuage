@@ -944,7 +944,8 @@
       "search_reindex": "Search reindex",
       "transcode_purge": "Transcode cache purge",
       "youtube_sync": "Subscription sync",
-      "analysis_audio": "Audio analysis"
+      "analysis_audio": "Audio analysis",
+      "db_backup": "Database backup"
     },
     "suiteKind": {
       "youtube_import": "YouTube import",
@@ -953,7 +954,8 @@
       "search_reindex": "Search reindex",
       "transcode_purge": "Cache purge",
       "youtube_sync": "Subscription sync",
-      "analysis_audio": "Audio analysis"
+      "analysis_audio": "Audio analysis",
+      "db_backup": "Database backup"
     },
     "suites": {
       "rescanAll": "AcoustID rescan of the whole library",
@@ -964,7 +966,8 @@
       "sync": "Sync: {title}",
       "discovery": "Discovery refresh",
       "album": "Album “{album}” by {artist}",
-      "analysis": "Audio analysis of the library"
+      "analysis": "Audio analysis of the library",
+      "backup": "Database backup"
     },
     "steps": {
       "download": "Download",
@@ -1056,6 +1059,7 @@
       "noSearch": "No Elasticsearch configured: nothing to index.",
       "reindexed": "Index rebuilt: {count} documents in {ms} ms.",
       "purged": "{count} files deleted ({mb} MB).",
+      "backedUp": "Backup {name} ({mb} MB); {removed} old one(s) deleted.",
       "youtubeHold": "YouTube is rate-limiting: sync postponed.",
       "synced": "{queued} videos queued, {skipped} skipped."
     },
@@ -1325,6 +1329,18 @@
     "zone": "Times in {zone}.",
     "hint": "During the window, the checked lanes start nothing and their running task is interrupted without losing anything; everything resumes when the window ends. The window can span midnight (23:00 → 07:00).",
     "saved": "Quiet hours saved."
+  },
+  "backups": {
+    "title": "Database backups",
+    "enabled": "Back up the database every day",
+    "at": "Time",
+    "keep": "Backups kept",
+    "folder": "Server folder: {folder}",
+    "none": "No backup yet.",
+    "hint": "Hot copy of the database (accounts, playlists, favorites, ratings, history, audio analysis) without stopping the server. Time in {zone}. A server that was off at the scheduled time backs up when it comes back. Music files are not copied.",
+    "run": "Back up now",
+    "started": "Backup started.",
+    "saved": "Backup settings saved."
   },
   "discoverySettings": {
     "title": "Discovery",

@@ -383,7 +383,8 @@ depuis la découverte (couches 2 et 3).
 - 💡 Rafraîchissement du volet Tâches en push (Server-Sent Events) au lieu d'une interrogation chaque seconde.
 - 💡 Détection des doublons de la bibliothèque grâce aux empreintes AcoustID (même enregistrement, deux fichiers).
 - 💡 Revue groupée des propositions d'un rescan (accepter ou refuser en lot au lieu de lire le journal).
-- 💡 Sauvegarde automatique de la base SQLite (copie à chaud, rotation).
+- ✅ Sauvegarde automatique de la base SQLite : copie à chaud quotidienne (`VACUUM INTO`), rotation, sauvegarde immédiate depuis Réglages ; dossier `SonNuage__BackupPath` (par défaut `backups` du dossier de données). Restaurer : arrêter le serveur, remplacer `sonnuage.db` par la copie, supprimer `-wal`/`-shm`.
+- ✅ Heures calmes : plage quotidienne (Réglages) pendant laquelle les files choisies (analyse audio par défaut) ne démarrent rien ; la tâche en cours est interrompue sans rien perdre et reprend à la fin de la plage.
 - 💡 Recherche sémantique (« musique calme pour travailler ») via le modèle d'inférence d'Elasticsearch,
   déjà prévu dans la configuration (`SonNuage__Search__SemanticInferenceId`).
 

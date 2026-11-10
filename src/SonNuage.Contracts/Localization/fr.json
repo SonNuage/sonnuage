@@ -944,7 +944,8 @@
       "search_reindex": "Réindexation de la recherche",
       "transcode_purge": "Purge du cache de transcodage",
       "youtube_sync": "Synchronisation d'abonnement",
-      "analysis_audio": "Analyse audio"
+      "analysis_audio": "Analyse audio",
+      "db_backup": "Sauvegarde de la base"
     },
     "suiteKind": {
       "youtube_import": "Import YouTube",
@@ -953,7 +954,8 @@
       "search_reindex": "Réindexation de la recherche",
       "transcode_purge": "Purge du cache",
       "youtube_sync": "Synchronisation d'abonnement",
-      "analysis_audio": "Analyse audio"
+      "analysis_audio": "Analyse audio",
+      "db_backup": "Sauvegarde de la base"
     },
     "suites": {
       "rescanAll": "Rescan AcoustID de toute la bibliothèque",
@@ -964,7 +966,8 @@
       "sync": "Synchronisation : {title}",
       "discovery": "Actualisation de la découverte",
       "album": "Album « {album} » de {artist}",
-      "analysis": "Analyse audio de la bibliothèque"
+      "analysis": "Analyse audio de la bibliothèque",
+      "backup": "Sauvegarde de la base de données"
     },
     "steps": {
       "download": "Téléchargement",
@@ -1056,6 +1059,7 @@
       "noSearch": "Aucun Elasticsearch configuré : rien à indexer.",
       "reindexed": "Index reconstruit : {count} documents en {ms} ms.",
       "purged": "{count} fichiers supprimés ({mb} Mo).",
+      "backedUp": "Sauvegarde {name} ({mb} Mo) ; {removed} ancienne(s) supprimée(s).",
       "youtubeHold": "YouTube limite les requêtes : synchronisation remise à plus tard.",
       "synced": "{queued} vidéos mises en file, {skipped} ignorées."
     },
@@ -1325,6 +1329,18 @@
     "zone": "Heures de {zone}.",
     "hint": "Pendant la plage, les files cochées ne démarrent rien et leur tâche en cours est interrompue sans rien perdre ; tout reprend à la fin de la plage. La plage peut passer minuit (23:00 → 07:00).",
     "saved": "Heures calmes enregistrées."
+  },
+  "backups": {
+    "title": "Sauvegardes de la base",
+    "enabled": "Sauvegarder la base chaque jour",
+    "at": "Heure",
+    "keep": "Sauvegardes gardées",
+    "folder": "Dossier du serveur : {folder}",
+    "none": "Aucune sauvegarde pour l'instant.",
+    "hint": "Copie à chaud de la base (comptes, playlists, favoris, notes, historique, analyse audio), sans arrêter le serveur. Heure de {zone}. Un serveur éteint à l'heure prévue sauvegarde à son retour. Les fichiers de musique ne sont pas copiés.",
+    "run": "Sauvegarder maintenant",
+    "started": "Sauvegarde lancée.",
+    "saved": "Réglages des sauvegardes enregistrés."
   },
   "discoverySettings": {
     "title": "Découverte",

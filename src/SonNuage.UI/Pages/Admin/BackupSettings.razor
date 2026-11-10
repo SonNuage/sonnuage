@@ -1,0 +1,117 @@
+@inject ApiClient Api
+@inject UiState Ui
+@inject IJSRuntime JS
+
+@* Réglages → Sauvegardes de la base : copie quotidienne, nombre gardé, sauvegarde immédiate et liste des copies. *@
+<section class="panel" id="backups">
+    <h2>@L["backups.title"]</h2>
+    @if (_status is { } st)
+    {
+        <label class="row small" style="margin: 0 0 .6rem; flex-wrap: nowrap; align-items: flex-start">
+            <input type="checkbox" @bind="_enabled" />
+            <span>@L["backups.enabled"]</span>
+        </label>
+        <div class="form-grid">
+            <label class="field">
+                <span>@L["backups.at"]</span>
+                <input class="input" type="time" @bind="_at" />
+            </label>
+            <label class="field">
+                <span>@L["backups.keep"]</span>
+                <input class="input" type="number" min="1" max="@BackupSettingsDto.MaxKeep" step="1" @bind="_keep" />
+            </label>
+        </div>
+        <p class="muted small">@L["backups.hint", ("zone", _zone)]</p>
+        <div class="row">
+            <button class="btn primary" disabled="@_busy" @onclick="SaveAsync">@L["common.save"]</button>
+            <button class="btn" disabled="@_busy" @onclick="RunAsync"><Icon Name="refresh" Size="18" /> @L["backups.run"]</button>
+        </div>
+        <p class="muted small" style="margin-top: 1rem">@L["backups.folder", ("folder", st.Folder)]</p>
+        @if (st.Files.Count == 0)
+        {
+            <p class="muted small">@L["backups.none"]</p>
+        }
+        else
+        {
+            <ul class="small" style="margin: .3rem 0 0; padding-left: 1.2rem">
+                @foreach (var f in st.Files)
+                {
+                    <li><span class="strong">@L.Date(f.CreatedAt) @f.CreatedAt.ToLocalTime().ToString("HH:mm")</span><span class="sep">·</span>@Format.Bytes(f.Bytes)<span class="sep">·</span><span class="muted">@f.Name</span></li>
+                }
+            </ul>
+        }
+    }
+    else
+    {
+        <Logo Size="16" Animated="true" />
+    }
+</section>
+
+@code {
+    private BackupStatusDto? _status;
+    private bool _enabled, _busy;
+    private TimeOnly _at;
+    private int _keep;
+    private string _zone = "UTC";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CallAsync(async () => Show(await Api.BackupsAsync()));
+        try
+        {
+            _zone = await JS.InvokeAsync<string>("sonnuage.timeZone");
+        }
+        catch (JSException)
+        {
+            _zone = _status?.Settings.TimeZone ?? _zone;
+        }
+    }
+
+    private void Show(BackupStatusDto? s)
+    {
+        if (s is null) return;
+        _status = s;
+        (_enabled, _at, _keep) = (s.Settings.Enabled, s.Settings.At, s.Settings.Keep);
+    }
+
+    private async Task SaveAsync()
+    {
+        _busy = true;
+        await CallAsync(async () =>
+        {
+            Show(await Api.SaveBackupSettingsAsync(new BackupSettingsDto(_enabled, _at, Math.Clamp(_keep, 1, BackupSettingsDto.MaxKeep), _zone)));
+            Ui.Notify(L["backups.saved"]);
+        });
+        _busy = false;
+    }
+
+    private async Task RunAsync()
+    {
+        _busy = true;
+        await CallAsync(async () =>
+        {
+            await Api.RunBackupAsync();
+            Ui.Notify(L["backups.started"]);
+            // Une copie prend quelques secondes : la liste est relue ensuite.
+            var newest = _status?.Files.FirstOrDefault()?.Name;
+            for (var i = 0; i < 20 && _status?.Files.FirstOrDefault()?.Name == newest; i++)
+            {
+                await Task.Delay(1500);
+                Show(await Api.BackupsAsync());
+            }
+        });
+        _busy = false;
+    }
+
+    private async Task CallAsync(Func<Task> action)
+    {
+        try
+        {
+            await action();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+    }
+}
