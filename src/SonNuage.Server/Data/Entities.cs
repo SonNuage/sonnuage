@@ -420,6 +420,13 @@ public sealed class Job
     public DateTimeOffset? FinishedAt { get; set; }
 }
 
+/// <summary>File d'exécution mise en pause depuis l'admin : ses tâches attendent la reprise, toutes instances confondues.</summary>
+public sealed class JobLanePause
+{
+    public required string Lane { get; set; }
+    public DateTimeOffset PausedAt { get; set; }
+}
+
 public sealed class JobLog
 {
     public long Id { get; set; }

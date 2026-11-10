@@ -519,6 +519,20 @@ namespace SonNuage.Server.Data.Migrations
                     b.ToTable("Jobs");
                 });
 
+            modelBuilder.Entity("SonNuage.Server.Data.JobLanePause", b =>
+                {
+                    b.Property<string>("Lane")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("PausedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Lane");
+
+                    b.ToTable("JobLanePauses");
+                });
+
             modelBuilder.Entity("SonNuage.Server.Data.JobLog", b =>
                 {
                     b.Property<long>("Id")

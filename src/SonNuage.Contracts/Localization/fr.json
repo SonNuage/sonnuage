@@ -905,6 +905,11 @@
     "startedAt": "démarrée le {date}",
     "notBefore": "pas avant le {date}",
     "laneLoad": "{running}/{capacity} en cours · {queued} en attente",
+    "lanePaused": "En pause · {queued} en attente",
+    "pause": "Mettre en pause",
+    "resume": "Reprendre",
+    "pauseAll": "Tout mettre en pause",
+    "resumeAll": "Tout reprendre",
     "filter": {
       "active": "En cours et en attente",
       "failed": "En échec",
@@ -988,7 +993,8 @@
       "deferred": "Remise à plus tard : {reason}",
       "dependencyFailed": "Étape précédente en échec ou annulée.",
       "lost": "Abandonnée : interrompue trop de fois (arrêt du serveur pendant son exécution).",
-      "resumed": "Reprise après une interruption du serveur."
+      "resumed": "Reprise après une interruption du serveur.",
+      "paused": "File mise en pause : la tâche repartira quand la file reprendra."
     },
     "yt": {
       "notQueued": "Import supprimé ou déjà traité : rien à faire.",

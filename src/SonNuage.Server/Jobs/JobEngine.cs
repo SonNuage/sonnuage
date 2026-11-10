@@ -38,7 +38,7 @@ public sealed class JobEngine(
     private readonly Dictionary<string, IJobHandler> _handlers = handlers.ToDictionary(h => h.Kind.Name);
     private readonly Dictionary<string, Channel<bool>> _signals = JobLanes.All.ToDictionary(l => l,
         _ => Channel.CreateBounded<bool>(new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropWrite }));
-    private readonly ConcurrentDictionary<Guid, CancellationTokenSource> _running = new();
+    private readonly ConcurrentDictionary<Guid, RunningJob> _running = new();
     private readonly Channel<JobLog> _logs = Channel.CreateUnbounded<JobLog>(new UnboundedChannelOptions { SingleReader = true });
     private readonly string _workerId = $"{options.Value.Jobs.WorkerName}:{Guid.NewGuid():N}";
 
@@ -154,8 +154,53 @@ public sealed class JobEngine(
         }
         var running = await db.Jobs.Where(j => j.Id == jobId && j.Status == JobStatus.Running)
             .ExecuteUpdateAsync(s => s.SetProperty(j => j.CancelRequested, true), ct);
-        if (_running.TryGetValue(jobId, out var cts)) await cts.CancelAsync();
+        if (_running.TryGetValue(jobId, out var run)) await run.Cts.CancelAsync();
         return running > 0;
+    }
+
+    /// <summary>Files en pause (toutes instances confondues).</summary>
+    public Task<List<string>> PausedLanesAsync(SonNuageDbContext db, CancellationToken ct) =>
+        db.JobLanePauses.Select(p => p.Lane).ToListAsync(ct);
+
+    /// <summary>
+    /// Met des files en pause : plus aucune tâche n'y démarre, et celles qui tournent sont interrompues puis rendues à
+    /// la file sans compter de tentative (tout de suite ici, au prochain battement sur les autres instances).
+    /// </summary>
+    public async Task PauseAsync(SonNuageDbContext db, IReadOnlyCollection<string> lanes, CancellationToken ct)
+    {
+        var already = await db.JobLanePauses.Where(p => lanes.Contains(p.Lane)).Select(p => p.Lane).ToListAsync(ct);
+        db.JobLanePauses.AddRange(lanes.Except(already).Select(l => new JobLanePause { Lane = l, PausedAt = time.GetUtcNow() }));
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            // Mise en pause au même moment ailleurs : le résultat est le même.
+        }
+        foreach (var run in _running.Values.Where(r => lanes.Contains(r.Lane))) await run.PauseAsync();
+    }
+
+    /// <summary>Reprend des files en pause : leurs tâches repartent dans l'ordre habituel.</summary>
+    public async Task ResumeAsync(SonNuageDbContext db, IReadOnlyCollection<string> lanes, CancellationToken ct)
+    {
+        await db.JobLanePauses.Where(p => lanes.Contains(p.Lane)).ExecuteDeleteAsync(ct);
+        foreach (var lane in lanes) Wake(lane);
+    }
+
+    /// <summary>Tâche en cours sur cette instance. <see cref="Paused"/> distingue une pause d'une annulation.</summary>
+    private sealed class RunningJob(CancellationTokenSource cts, string lane)
+    {
+        private volatile bool _paused;
+        public CancellationTokenSource Cts => cts;
+        public string Lane => lane;
+        public bool Paused => _paused;
+
+        public async Task PauseAsync()
+        {
+            _paused = true;
+            await cts.CancelAsync();
+        }
     }
 
     public async Task CancelSuiteAsync(SonNuageDbContext db, Guid suiteId, CancellationToken ct)
@@ -270,6 +315,7 @@ public sealed class JobEngine(
                 ORDER BY "Priority" DESC, "CreatedAt"
                 LIMIT 1)
               AND (SELECT COUNT(*) FROM "Jobs" WHERE "Lane" = $lane AND "Status" = 'Running') < $capacity
+              AND NOT EXISTS (SELECT 1 FROM "JobLanePauses" WHERE "Lane" = $lane)
             RETURNING "Id"
             """;
         var now = time.GetUtcNow();
@@ -300,12 +346,13 @@ public sealed class JobEngine(
             : null;
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(stopping);
-        _running[id] = cts;
+        var run = new RunningJob(cts, job.Lane);
+        _running[id] = run;
         // Portée à part pour le travail de la tâche : son suivi par le moteur n'interfère pas avec ses entités.
         using var work = scopes.CreateScope();
         var ctx = new JobContext(job, input is null ? null : JsonNode.Parse(input) as JsonObject, work.ServiceProvider, this, cts.Token);
         using var beat = new CancellationTokenSource();
-        var heartbeat = HeartbeatAsync(id, ctx, cts, beat.Token);
+        var heartbeat = HeartbeatAsync(id, ctx, run, beat.Token);
 
         Outcome outcome;
         try
@@ -323,6 +370,12 @@ public sealed class JobEngine(
         catch (OperationCanceledException) when (stopping.IsCancellationRequested)
         {
             // Arrêt du serveur : la tâche reprendra au démarrage, sans compter cette tentative.
+            outcome = new Outcome(JobStatus.Queued, Deferred: true);
+        }
+        catch (OperationCanceledException) when (run.Paused)
+        {
+            // File en pause : la tâche attend la reprise, sans compter cette tentative.
+            Log(id, "info", Tx.Key("jobs.log.paused"));
             outcome = new Outcome(JobStatus.Queued, Deferred: true);
         }
         catch (OperationCanceledException) when (cts.IsCancellationRequested)
@@ -417,8 +470,8 @@ public sealed class JobEngine(
         }
     }
 
-    /// <summary>Renouvelle le bail, enregistre l'avancement et relève les demandes d'annulation venues d'ailleurs.</summary>
-    private async Task HeartbeatAsync(Guid id, JobContext ctx, CancellationTokenSource job, CancellationToken stop)
+    /// <summary>Renouvelle le bail, enregistre l'avancement et relève les annulations et pauses venues d'ailleurs.</summary>
+    private async Task HeartbeatAsync(Guid id, JobContext ctx, RunningJob job, CancellationToken stop)
     {
         double? lastProgress = null;
         try
@@ -433,7 +486,8 @@ public sealed class JobEngine(
                 await db.Jobs.Where(j => j.Id == id && j.WorkerId == _workerId)
                     .ExecuteUpdateAsync(s => s.SetProperty(j => j.LeaseUntil, lease).SetProperty(j => j.Progress, progress), stop);
                 lastProgress = progress;
-                if (await db.Jobs.AnyAsync(j => j.Id == id && j.CancelRequested, stop)) await job.CancelAsync();
+                if (await db.Jobs.AnyAsync(j => j.Id == id && j.CancelRequested, stop)) await job.Cts.CancelAsync();
+                else if (await db.JobLanePauses.AnyAsync(p => p.Lane == job.Lane, stop)) await job.PauseAsync();
             }
         }
         catch (OperationCanceledException)

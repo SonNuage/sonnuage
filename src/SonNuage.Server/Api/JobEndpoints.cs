@@ -23,9 +23,11 @@ public static class JobEndpoints
         {
             var lanes = await db.Jobs.Where(j => j.Status == JobStatus.Running || j.Status == JobStatus.Queued)
                 .GroupBy(j => new { j.Lane, j.Status }).Select(x => new { x.Key.Lane, x.Key.Status, Count = x.Count() }).ToListAsync(ct);
+            var paused = await engine.PausedLanesAsync(db, ct);
             var laneDtos = JobLanes.All.Select(l => new JobLaneDto(l, engine.Capacity(l),
                 lanes.Where(x => x.Lane == l && x.Status == JobStatus.Running).Sum(x => x.Count),
-                lanes.Where(x => x.Lane == l && x.Status == JobStatus.Queued).Sum(x => x.Count))).ToList();
+                lanes.Where(x => x.Lane == l && x.Status == JobStatus.Queued).Sum(x => x.Count),
+                paused.Contains(l))).ToList();
 
             var query = db.JobSuites.Select(s => new SuiteRow
             {
@@ -102,6 +104,34 @@ public static class JobEndpoints
             }
             var suite = await engine.EnqueueAsync(db, AcoustIdRescanJob.Plan(title, req.ArtistId, req.Apply, req.Threshold is { } t ? Math.Clamp(t, 0.5, 1) : null, http.User.UserId(), req.IncludeIdentified), ct);
             return Results.Ok(suite.Id);
+        });
+
+        // Pause d'une file, ou de toutes : rien n'y démarre, la tâche en cours est interrompue et reprendra (analyse
+        // audio bruyante la nuit, machine à libérer…).
+        g.MapPost("/lanes/pause", async (SonNuageDbContext db, JobEngine engine, CancellationToken ct) =>
+        {
+            await engine.PauseAsync(db, JobLanes.All, ct);
+            return Results.NoContent();
+        });
+
+        g.MapPost("/lanes/resume", async (SonNuageDbContext db, JobEngine engine, CancellationToken ct) =>
+        {
+            await engine.ResumeAsync(db, JobLanes.All, ct);
+            return Results.NoContent();
+        });
+
+        g.MapPost("/lanes/{lane}/pause", async (string lane, SonNuageDbContext db, JobEngine engine, CancellationToken ct) =>
+        {
+            if (!JobLanes.All.Contains(lane)) return Results.NotFound();
+            await engine.PauseAsync(db, [lane], ct);
+            return Results.NoContent();
+        });
+
+        g.MapPost("/lanes/{lane}/resume", async (string lane, SonNuageDbContext db, JobEngine engine, CancellationToken ct) =>
+        {
+            if (!JobLanes.All.Contains(lane)) return Results.NotFound();
+            await engine.ResumeAsync(db, [lane], ct);
+            return Results.NoContent();
         });
 
         g.MapPost("/{id:guid}/cancel", async (Guid id, SonNuageDbContext db, JobEngine engine, CancellationToken ct) =>

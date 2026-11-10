@@ -905,6 +905,11 @@
     "startedAt": "started {date}",
     "notBefore": "not before {date}",
     "laneLoad": "{running}/{capacity} running · {queued} waiting",
+    "lanePaused": "Paused · {queued} waiting",
+    "pause": "Pause",
+    "resume": "Resume",
+    "pauseAll": "Pause all",
+    "resumeAll": "Resume all",
     "filter": {
       "active": "Running and waiting",
       "failed": "Failed",
@@ -988,7 +993,8 @@
       "deferred": "Postponed: {reason}",
       "dependencyFailed": "Previous step failed or was canceled.",
       "lost": "Abandoned: interrupted too many times (server stopped while it ran).",
-      "resumed": "Resumed after a server interruption."
+      "resumed": "Resumed after a server interruption.",
+      "paused": "Lane paused: the task will start again when the lane resumes."
     },
     "yt": {
       "notQueued": "Import deleted or already handled: nothing to do.",

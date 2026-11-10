@@ -1,7 +1,10 @@
 namespace SonNuage.Contracts;
 
-/// <summary>État d'une file d'exécution : capacité (tâches simultanées), en cours, en attente.</summary>
-public sealed record JobLaneDto(string Lane, int Capacity, int Running, int Queued);
+/// <summary>
+/// État d'une file d'exécution : capacité (tâches simultanées), en cours, en attente, et pause demandée depuis l'admin
+/// (ses tâches attendent la reprise ; celle qui tournait a été interrompue et reprendra).
+/// </summary>
+public sealed record JobLaneDto(string Lane, int Capacity, int Running, int Queued, bool Paused = false);
 
 /// <summary>
 /// Suite de tâches. Status : « Running », « Queued » (rien ne tourne encore), « Failed », « Canceled » ou « Succeeded ».

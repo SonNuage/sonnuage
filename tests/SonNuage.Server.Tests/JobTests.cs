@@ -169,6 +169,57 @@ public sealed class JobTests(JobsFactory factory) : IClassFixture<JobsFactory>
     }
 
     [Fact]
+    public async Task A_paused_lane_interrupts_its_running_job_and_holds_the_queue_until_resumed()
+    {
+        var admin = await factory.AdminClientAsync();
+        var plan = new JobPlan("test", "pause").Then(ProbeJob.Definition, "bloquée", new { block = true });
+        await EnqueueAsync(plan);
+        var running = await WaitAsync(admin, plan.Last.Id, "Running");
+        var next = new JobPlan("test", "attend la reprise").Then(ProbeJob.Definition, "rapide");
+        try
+        {
+            (await admin.PostAsync($"/api/admin/jobs/lanes/{JobLanes.AcoustId}/pause", null, Ct)).EnsureSuccessStatusCode();
+            // Interrompue et rendue à la file, sans compter de tentative.
+            var held = await WaitAsync(admin, running.Id, "Queued");
+            Assert.Equal(0, held.Attempts);
+
+            await EnqueueAsync(next);
+            await Task.Delay(JobEngine.PollInterval * 4, Ct);
+            Assert.Equal("Queued", (await WaitAsync(admin, next.Last.Id, "Queued", "Running", "Succeeded")).Status);
+            var overview = await admin.GetFromJsonAsync<JobsOverviewDto>("/api/admin/jobs", Ct);
+            Assert.Contains(overview!.Lanes, l => l.Lane == JobLanes.AcoustId && l.Paused);
+            Assert.Contains(overview.Lanes, l => l.Lane == JobLanes.Download && !l.Paused);
+        }
+        finally
+        {
+            (await admin.PostAsync($"/api/admin/jobs/lanes/{JobLanes.AcoustId}/resume", null, Ct)).EnsureSuccessStatusCode();
+        }
+        // Reprise : la tâche interrompue repart la première, puis la file avance.
+        await WaitAsync(admin, running.Id, "Running");
+        (await admin.PostAsync($"/api/admin/jobs/{running.Id}/cancel", null, Ct)).EnsureSuccessStatusCode();
+        await WaitAsync(admin, next.Last.Id, "Succeeded");
+    }
+
+    [Fact]
+    public async Task Every_lane_can_be_paused_and_resumed_at_once()
+    {
+        var admin = await factory.AdminClientAsync();
+        try
+        {
+            (await admin.PostAsync("/api/admin/jobs/lanes/pause", null, Ct)).EnsureSuccessStatusCode();
+            var paused = await admin.GetFromJsonAsync<JobsOverviewDto>("/api/admin/jobs", Ct);
+            Assert.All(paused!.Lanes, l => Assert.True(l.Paused, l.Lane));
+        }
+        finally
+        {
+            (await admin.PostAsync("/api/admin/jobs/lanes/resume", null, Ct)).EnsureSuccessStatusCode();
+        }
+        var resumed = await admin.GetFromJsonAsync<JobsOverviewDto>("/api/admin/jobs", Ct);
+        Assert.All(resumed!.Lanes, l => Assert.False(l.Paused, l.Lane));
+        Assert.Equal(HttpStatusCode.NotFound, (await admin.PostAsync("/api/admin/jobs/lanes/nope/pause", null, Ct)).StatusCode);
+    }
+
+    [Fact]
     public async Task An_acoustid_rescan_needs_a_key()
     {
         var admin = await factory.AdminClientAsync();
