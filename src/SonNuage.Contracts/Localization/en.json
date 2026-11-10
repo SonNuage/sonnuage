@@ -983,11 +983,11 @@
       "artist": "One artist",
       "artistPlaceholder": "Artist name…",
       "otherArtist": "Change",
-      "apply": "Automatically fix confident matches above the threshold chosen below. Hand-edited tracks are left alone. Otherwise, suggestions are only logged.",
+      "apply": "Automatically fix safe matches above the threshold chosen below. Hand-edited tracks are left alone. Everything else is kept in the suggestions review.",
       "start": "Start",
       "started": "Task created.",
       "button": "New task",
-      "thresholdHint": "For this task only. Below it, the fix is only suggested in the log.",
+      "thresholdHint": "For this task only. Below it, the fix is kept in the suggestions review.",
       "includeIdentified": "Also check tracks already identified (MusicBrainz entry known)"
     },
     "log": {
@@ -1036,10 +1036,11 @@
       "unchanged": "Tags match: nothing to change.",
       "change": "{field}: “{from}” → “{to}”",
       "result": {
-        "proposed": "Suggestion only (automatic fixes disabled).",
+        "proposed": "Suggestion kept for review (automatic fixes disabled).",
         "locked": "Hand-edited track: left as is.",
-        "low": "Confidence {score}% below the {threshold}% threshold: left as is.",
-        "applied": "Fixed (confidence {score}%)."
+        "low": "Confidence {score}% below the {threshold}% threshold: suggestion kept for review.",
+        "applied": "Fixed (confidence {score}%).",
+        "rejected": "Result already rejected in the review: left as is."
       }
     },
     "fields": {

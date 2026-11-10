@@ -983,11 +983,11 @@
       "artist": "Un artiste",
       "artistPlaceholder": "Nom de l’artiste…",
       "otherArtist": "Changer",
-      "apply": "Corriger automatiquement les correspondances sûres au-dessus du seuil choisi ci-dessous. Les morceaux modifiés à la main ne sont pas touchés. Sinon, propositions dans le journal seulement.",
+      "apply": "Corriger automatiquement les correspondances sûres au-dessus du seuil choisi ci-dessous. Les morceaux modifiés à la main ne sont pas touchés. Le reste est gardé dans la revue des propositions.",
       "start": "Lancer",
       "started": "Tâche créée.",
       "button": "Nouvelle tâche",
-      "thresholdHint": "Pour cette tâche seulement. En dessous, la correction est seulement proposée dans le journal.",
+      "thresholdHint": "Pour cette tâche seulement. En dessous, la correction est gardée dans la revue des propositions.",
       "includeIdentified": "Vérifier aussi les morceaux déjà identifiés (fiche MusicBrainz connue)"
     },
     "log": {
@@ -1036,10 +1036,11 @@
       "unchanged": "Les tags concordent : rien à changer.",
       "change": "{field} : « {from} » → « {to} »",
       "result": {
-        "proposed": "Proposition seulement (correction automatique désactivée).",
+        "proposed": "Proposition gardée pour la revue (correction automatique désactivée).",
         "locked": "Morceau modifié à la main : laissé tel quel.",
-        "low": "Confiance {score} % sous le seuil de {threshold} % : laissé tel quel.",
-        "applied": "Corrigé (confiance {score} %)."
+        "low": "Confiance {score} % sous le seuil de {threshold} % : proposition gardée pour la revue.",
+        "applied": "Corrigé (confiance {score} %).",
+        "rejected": "Résultat déjà refusé dans la revue : laissé tel quel."
       }
     },
     "fields": {
