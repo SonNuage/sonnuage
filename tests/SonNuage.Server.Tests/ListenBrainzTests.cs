@@ -243,6 +243,8 @@ public sealed class ListenBrainzTests(ListenBrainzFactory factory) : IClassFixtu
     {
         var (_, userId, tracks, token) = await ConnectedAsync("lb-single", submit: true);
         await PlayedAsync(userId, tracks[0], DateTimeOffset.UtcNow.AddSeconds(1), 5);
+        // Ce que la planification regarde avant de demander la tâche.
+        Assert.True(await InDbAsync(db => ListenBrainzSubmitter.AnyPendingAsync(db, Ct)));
 
         await SubmitAsync();
 
