@@ -110,6 +110,7 @@ builder.Services.AddSingleton<YoutubeSyncService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<YoutubeSyncService>());
 
 // Gestionnaire de tâches : un consommateur par file, types de tâches déclarés par leurs exécutants.
+builder.Services.AddSingleton<JobChanges>();
 builder.Services.AddSingleton<JobEngine>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<JobEngine>());
 builder.Services.AddSingleton<IJobHandler, YoutubeDownloadJob>();

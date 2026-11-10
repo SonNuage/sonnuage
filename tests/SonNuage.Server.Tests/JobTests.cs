@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Json;
 using SonNuage.Contracts;
+using SonNuage.Server.Api;
 using SonNuage.Server.Data;
 using SonNuage.Server.Jobs;
 using SonNuage.Server.Youtube;
@@ -56,6 +57,9 @@ public sealed class JobsFactory : SonNuageFactory
     {
         JobEngine.RetryDelay = TimeSpan.FromMilliseconds(100);
         JobEngine.PollInterval = TimeSpan.FromMilliseconds(200);
+        // Flux en direct : battement de cœur rapide, relève lente (les changements doivent être poussés).
+        JobEventStream.Heartbeat = TimeSpan.FromMilliseconds(300);
+        JobEventStream.Backstop = TimeSpan.FromMinutes(1);
     }
 
     protected override void ConfigureMore(IWebHostBuilder builder) =>

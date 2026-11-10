@@ -65,6 +65,22 @@ public sealed record JobLogDto(long Id, DateTimeOffset At, string Level, string 
 /// <param name="IncludeIdentified">Rescan : vérifier aussi les morceaux déjà identifiés (identifiant MusicBrainz connu).</param>
 public sealed record CreateJobRequest(string Kind, Guid? ArtistId, bool Apply, double? Threshold = null, bool IncludeIdentified = false);
 
+/// <summary>
+/// Événements du flux en direct du volet Tâches (<c>GET /api/admin/jobs/events</c>, Server-Sent Events). Chacun porte
+/// l'état complet de ce qu'il nomme, envoyé à l'ouverture puis à chaque changement.
+/// </summary>
+public static class JobStreamEvents
+{
+    /// <summary><see cref="JobsOverviewDto"/> : files et page de suites (paramètres status, kind, q, limit).</summary>
+    public const string Overview = "overview";
+    /// <summary>PagedResult&lt;JobDto&gt; : tâches de la suite ouverte (paramètres suite, suiteLimit).</summary>
+    public const string Suite = "suite";
+    /// <summary><see cref="JobDetailDto"/> : tâche ouverte (paramètre job).</summary>
+    public const string Job = "job";
+    /// <summary>List&lt;JobLogDto&gt; : nouvelles lignes du journal de la tâche ouverte (après le paramètre after).</summary>
+    public const string Logs = "logs";
+}
+
 /// <summary>Types de tâches planifiables (voir <see cref="JobScheduleRequest"/>).</summary>
 public static class ScheduledJobKinds
 {
