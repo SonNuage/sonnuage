@@ -381,8 +381,8 @@ depuis la découverte (couches 2 et 3).
 
 - 💡 Tâches planifiées (« rescan AcoustID chaque dimanche à 3 h »).
 - 💡 Rafraîchissement du volet Tâches en push (Server-Sent Events) au lieu d'une interrogation chaque seconde.
-- 💡 Détection des doublons de la bibliothèque grâce aux empreintes AcoustID (même enregistrement, deux fichiers).
-- 💡 Revue groupée des propositions d'un rescan (accepter ou refuser en lot au lieu de lire le journal).
+- ✅ Détection des doublons (admin → Doublons) : même identifiant d'enregistrement MusicBrainz ou empreintes Chromaprint presque identiques (calculées en local par fpcalc, tâche par lots dans la file « acoustid » : pause et heures calmes respectées). On choisit la copie gardée ; favoris, notes, écoutes et playlists la rejoignent ; une copie d'`uploads/` est supprimée après confirmation, une copie de `music/` (lecture seule) est seulement masquée au scan. Chaque opération est tracée dans le volet Tâches.
+- ✅ Revue groupée des propositions d'un rescan (admin → Propositions, lien depuis la suite du rescan) : filtres par rescan, artiste et score, sélection de tout ou à partir d'un score, acceptation (même chemin que la correction automatique : tags d'`uploads/`, identifiants MusicBrainz, recherche ; morceaux verrouillés respectés) ou refus en lot, refus retenus par les rescans suivants.
 - ✅ Sauvegarde automatique de la base SQLite : copie à chaud quotidienne (`VACUUM INTO`), rotation, sauvegarde immédiate depuis Réglages ; dossier `SonNuage__BackupPath` (par défaut `backups` du dossier de données). Restaurer : arrêter le serveur, remplacer `sonnuage.db` par la copie, supprimer `-wal`/`-shm`.
 - ✅ Heures calmes : plage quotidienne (Réglages) pendant laquelle les files choisies (analyse audio par défaut) ne démarrent rien ; la tâche en cours est interrompue sans rien perdre et reprend à la fin de la plage.
 - 💡 Recherche sémantique (« musique calme pour travailler ») via le modèle d'inférence d'Elasticsearch,
