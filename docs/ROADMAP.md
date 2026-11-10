@@ -13,7 +13,7 @@ Légende : ✅ fait · 🔜 prochain · 💡 idée à creuser · ⚠️ limite c
 |---|---|
 | Lecture (web, Android, Android Auto, bureau) | ✅ bibliothèque, recherche, playlists, favoris, transcodage à la volée, lecture sur un autre appareil |
 | Comptes | ✅ admin et utilisateurs, plusieurs serveurs et comptes dans l'appli Android, langue de l'interface par compte (fr, en) |
-| Recherche | ✅ Elasticsearch (fautes de frappe, suggestions), avec repli automatique sur la base s'il tombe |
+| Recherche | ✅ Elasticsearch (fautes de frappe, suggestions), avec repli automatique sur la base s'il tombe ; recherche par ambiance (« musique calme pour travailler ») |
 | Import YouTube | ✅ recherche, playlists, albums, chaînes, abonnements synchronisés, extension de navigateur avec clés API |
 | Tâches | ✅ volet « Tâches » dans l'admin : files, suites de tâches, journal en direct, annulation et relance, rescan AcoustID |
 | Applis tierces | ✅ API Subsonic / OpenSubsonic (`/rest/*`) : Symfonium, Feishin, DSub, Substreamer, Tempo… |
@@ -385,8 +385,21 @@ depuis la découverte (couches 2 et 3).
 - 💡 Revue groupée des propositions d'un rescan (accepter ou refuser en lot au lieu de lire le journal).
 - ✅ Sauvegarde automatique de la base SQLite : copie à chaud quotidienne (`VACUUM INTO`), rotation, sauvegarde immédiate depuis Réglages ; dossier `SonNuage__BackupPath` (par défaut `backups` du dossier de données). Restaurer : arrêter le serveur, remplacer `sonnuage.db` par la copie, supprimer `-wal`/`-shm`.
 - ✅ Heures calmes : plage quotidienne (Réglages) pendant laquelle les files choisies (analyse audio par défaut) ne démarrent rien ; la tâche en cours est interrompue sans rien perdre et reprend à la fin de la plage.
-- 💡 Recherche sémantique (« musique calme pour travailler ») via le modèle d'inférence d'Elasticsearch,
-  déjà prévu dans la configuration (`SonNuage__Search__SemanticInferenceId`).
+- ✅ Recherche sémantique (« musique calme pour travailler »), en deux parties :
+  - ✅ **Recherche par ambiance**, sans Elasticsearch ni service extérieur : une demande en français ou en anglais
+    (humeur, énergie, tempo, activité, décennie, genre de la bibliothèque) devient des critères sur l'analyse audio,
+    les tags MusicBrainz, le genre et l'année. Section « Ambiance » au-dessus des résultats, appelée à part
+    (`/api/search/ambiance`, la recherche ordinaire et son repli ne changent pas), avec « Lancer en radio » (station
+    `ambiance:…` jouée sans fin). Le nom exact d'un artiste, album ou titre l'emporte. Vocabulaire extensible dans
+    `AmbianceVocabulary.cs`.
+  - 🟡 **Option Elasticsearch** (`SonNuage__Search__SemanticInferenceId`) corrigée : licence vérifiée avant
+    chaque réindexation, similarité qui réordonne sans ajouter de résultat hors sujet, titres décrits par leurs
+    ambiances. Inutilisable en production telle quelle : depuis 8.18/9.0, toute l'API d'inférence (ELSER/E5 intégrés
+    comme endpoints `openai`, `hugging_face`, `custom` vers un service local) exige une licence enterprise ou d'essai,
+    et les modèles intégrés demandent un nœud ML de plusieurs Go (production : 9.2.0 basic, 512 Mo de tas). Mise
+    en place avec un modèle local documentée dans le README, pour un cluster sous licence enterprise.
+  - 💡 Piste pour la licence basic : SonNuage calculerait lui-même les vecteurs (petit service d'embeddings local)
+    et les rangerait dans un champ `dense_vector` (recherche kNN, a priori hors licence payante — à vérifier).
 
 ## Limites connues
 
