@@ -44,7 +44,8 @@ public static class Projections
         ar.Albums.Where(al => al.CoverPath != null || al.HasEmbeddedCover)
             .OrderByDescending(al => al.Year)
             .Select(al => (Guid?)al.Id)
-            .FirstOrDefault());
+            .FirstOrDefault(),
+        ar.MusicBrainzId);
 
     public static readonly Expression<Func<Playlist, PlaylistDto>> Playlist = p => new PlaylistDto(
         p.Id,

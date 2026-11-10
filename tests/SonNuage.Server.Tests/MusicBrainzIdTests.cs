@@ -14,6 +14,8 @@ public sealed class TaggedLibraryFactory : SonNuageFactory
 {
     public static readonly Guid Recording = Guid.Parse("8f3471b5-7e6a-48da-86a9-c1c07a0f47ae");
     public static readonly Guid Release = Guid.Parse("1f4d3c3e-2a5b-4c6d-9e8f-0a1b2c3d4e5f");
+    public static readonly Guid ReleaseGroup = Guid.Parse("2a5e9c1d-3b4f-4a6e-8d7c-1b2a3c4d5e6f");
+    public static readonly Guid ArtistMbid = Guid.Parse("5b11f4ce-a62d-471e-81fc-a69a8278c7da");
 
     public TaggedLibraryFactory()
     {
@@ -27,6 +29,9 @@ public sealed class TaggedLibraryFactory : SonNuageFactory
             tag.Album = "Tagged Album";
             tag.MusicBrainzTrackId = Recording.ToString();
             tag.MusicBrainzReleaseId = Release.ToString();
+            tag.MusicBrainzReleaseGroupId = ReleaseGroup.ToString();
+            tag.MusicBrainzArtistId = ArtistMbid.ToString();
+            tag.MusicBrainzReleaseArtistId = ArtistMbid.ToString();
         });
     }
 
@@ -59,9 +64,27 @@ public sealed class MusicBrainzIdTests(TaggedLibraryFactory factory) : IClassFix
         Assert.Equal(TaggedLibraryFactory.Release, track.MusicBrainzReleaseId);
         Assert.Equal(TaggedLibraryFactory.Release, track.Album.MusicBrainzReleaseId);
 
+        Assert.Equal(TaggedLibraryFactory.ReleaseGroup, track.Album.MusicBrainzReleaseGroupId);
+
         // Les morceaux sans tags MusicBrainz restent non identifiés.
         var untagged = await WithDbAsync(db => db.Tracks.SingleAsync(t => t.Title == "Opening", Ct));
         Assert.Null(untagged.MusicBrainzRecordingId);
+    }
+
+    [Fact]
+    public async Task Scan_reads_the_musicbrainz_id_of_the_artist_from_the_tags()
+    {
+        var admin = await factory.AdminClientAsync();
+        await factory.WaitForScanAsync(admin);
+
+        var artist = await WithDbAsync(db => db.Artists.SingleAsync(a => a.Name == "Tagged Artist", Ct));
+        Assert.Equal(TaggedLibraryFactory.ArtistMbid.ToString(), artist.MusicBrainzId);
+        Assert.Equal(ArtistMbidSource.Tags, artist.MusicBrainzIdSource);
+        var detail = await admin.GetFromJsonAsync<ArtistDetailDto>($"/api/artists/{artist.Id}", Ct);
+        Assert.Equal(TaggedLibraryFactory.ArtistMbid.ToString(), detail!.Artist.MusicBrainzId);
+
+        var untagged = await WithDbAsync(db => db.Artists.SingleAsync(a => a.Name == "Other Band", Ct));
+        Assert.Null(untagged.MusicBrainzId);
     }
 
     [Fact]
@@ -115,6 +138,22 @@ public sealed class MusicBrainzIdTests(TaggedLibraryFactory factory) : IClassFix
     [InlineData(null, null)]
     public void Musicbrainz_ids_are_read_from_ids_lists_and_links(string? input, string? expected) =>
         Assert.Equal(expected is null ? null : Guid.Parse(expected), MusicBrainzId.Parse(input));
+
+    [Fact]
+    public void An_artist_id_is_replaced_only_by_a_surer_source()
+    {
+        var artist = new Artist { Name = "A", NormalizedName = "a" };
+        Guid first = Guid.NewGuid(), second = Guid.NewGuid(), third = Guid.NewGuid();
+
+        Assert.True(artist.OfferMusicBrainzId(first, ArtistMbidSource.Search));
+        Assert.True(artist.OfferMusicBrainzId(second, ArtistMbidSource.Tags));
+        // Deux fichiers tagués différemment : le premier lu reste.
+        Assert.False(artist.OfferMusicBrainzId(third, ArtistMbidSource.Tags));
+        Assert.False(artist.OfferMusicBrainzId(third, ArtistMbidSource.Derived));
+        Assert.Equal(second.ToString(), artist.MusicBrainzId);
+        Assert.True(artist.OfferMusicBrainzId(third, ArtistMbidSource.Manual));
+        Assert.Equal((third.ToString(), ArtistMbidSource.Manual), (artist.MusicBrainzId, artist.MusicBrainzIdSource));
+    }
 
     private static Track LibraryTrack(bool locked = false) => new()
     {

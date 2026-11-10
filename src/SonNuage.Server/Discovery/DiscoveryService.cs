@@ -88,7 +88,8 @@ public sealed class DiscoveryService(
             {
                 if (artist.MusicBrainzId is null && (artist.MusicBrainzCheckedAt is null || artist.MusicBrainzCheckedAt < time.GetUtcNow() - MbidRetry))
                 {
-                    artist.MusicBrainzId = await musicBrainz.ArtistIdAsync(artist.Name, ct);
+                    if (Library.MusicBrainzId.Parse(await musicBrainz.ArtistIdAsync(artist.Name, ct)) is { } found)
+                        artist.OfferMusicBrainzId(found, ArtistMbidSource.Search);
                     artist.MusicBrainzCheckedAt = time.GetUtcNow();
                     await db.SaveChangesAsync(ct);
                 }

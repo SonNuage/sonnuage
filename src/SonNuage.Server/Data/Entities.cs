@@ -7,13 +7,44 @@ public sealed class Artist
     /// <summary>Clé de regroupement (minuscules, sans accents ni ponctuation).</summary>
     public required string NormalizedName { get; set; }
     public string SortName { get; set; } = "";
-    /// <summary>Identifiant MusicBrainz, cherché par la découverte (nom identique, score 100).</summary>
+    /// <summary>
+    /// Identifiant MusicBrainz : lu dans les tags, déduit des albums et morceaux identifiés, saisi dans l'admin, ou
+    /// cherché par nom par la découverte (nom identique, score 100). Voir <see cref="MusicBrainzIdSource"/>.
+    /// </summary>
     public string? MusicBrainzId { get; set; }
+    /// <summary>D'où vient <see cref="MusicBrainzId"/> : une source moins sûre ne le remplace pas (<see cref="OfferMusicBrainzId"/>).</summary>
+    public ArtistMbidSource MusicBrainzIdSource { get; set; }
+    /// <summary>Dernière tentative de déduction de l'identifiant depuis les albums et morceaux identifiés (trouvé ou non).</summary>
+    public DateTimeOffset? MusicBrainzDerivedAt { get; set; }
     /// <summary>Dernière recherche de l'identifiant MusicBrainz (trouvé ou non) : on ne la refait pas à chaque actualisation.</summary>
     public DateTimeOffset? MusicBrainzCheckedAt { get; set; }
     public List<Album> Albums { get; set; } = [];
     /// <summary>Morceaux dont il est l'artiste principal (y compris sur les albums d'autres artistes).</summary>
     public List<Track> Tracks { get; set; } = [];
+
+    /// <summary>Retient l'identifiant s'il n'y en a pas, ou si sa source est plus sûre que celle de l'actuel. Vrai s'il est retenu.</summary>
+    public bool OfferMusicBrainzId(Guid id, ArtistMbidSource source)
+    {
+        if (MusicBrainzId is not null && source <= MusicBrainzIdSource) return false;
+        MusicBrainzId = id.ToString();
+        MusicBrainzIdSource = source;
+        return true;
+    }
+}
+
+/// <summary>Source de l'identifiant MusicBrainz d'un artiste, de la moins sûre à la plus sûre.</summary>
+public enum ArtistMbidSource
+{
+    /// <summary>Aucun identifiant, ou posé avant que la source soit retenue.</summary>
+    None = 0,
+    /// <summary>Recherche par nom (découverte).</summary>
+    Search = 1,
+    /// <summary>Déduit des crédits MusicBrainz des albums ou morceaux identifiés.</summary>
+    Derived = 2,
+    /// <summary>Lu dans les tags (« MusicBrainz Artist Id », « MusicBrainz Album Artist Id »).</summary>
+    Tags = 3,
+    /// <summary>Saisi par l'admin dans l'éditeur de bibliothèque.</summary>
+    Manual = 4,
 }
 
 /// <summary>Artiste invité sur un morceau (« OrelSan feat. Damso » : Damso). Voir <see cref="Library.ArtistCredit"/>.</summary>
@@ -41,6 +72,8 @@ public sealed class Album
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     /// <summary>Édition MusicBrainz de l'album : lue dans les tags, ou liée à la main dans l'admin (le scan ne l'écrase pas).</summary>
     public Guid? MusicBrainzReleaseId { get; set; }
+    /// <summary>Groupe d'éditions MusicBrainz de l'album (tags, ou lu avec l'édition) : sert à reconnaître ses nouveautés.</summary>
+    public Guid? MusicBrainzReleaseGroupId { get; set; }
     public List<Track> Tracks { get; set; } = [];
 }
 

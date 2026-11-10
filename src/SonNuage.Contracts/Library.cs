@@ -1,6 +1,7 @@
 namespace SonNuage.Contracts;
 
-public sealed record ArtistDto(Guid Id, string Name, int AlbumCount, int TrackCount, Guid? CoverAlbumId);
+/// <param name="MusicBrainzId">Identifiant MusicBrainz de l'artiste (absent d'un serveur antérieur à 1.22).</param>
+public sealed record ArtistDto(Guid Id, string Name, int AlbumCount, int TrackCount, Guid? CoverAlbumId, string? MusicBrainzId = null);
 
 public sealed record AlbumDto(
     Guid Id,
