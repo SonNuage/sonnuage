@@ -57,6 +57,7 @@ else
                     <button class="icon-btn" title="@L["nav.newPlaylist"]" @onclick="CreatePlaylistAsync"><Icon Name="add" Size="18" /></button>
                 </div>
                 <NavLink class="nav-sub" href="favorites"><Icon Name="heart" Size="16" /> @L["nav.likedSongs"]</NavLink>
+                <NavLink class="nav-sub" href="history"><Icon Name="history" Size="16" /> @L["nav.history"]</NavLink>
                 @foreach (var p in Ui.Playlists)
                 {
                     <NavLink class="nav-sub" href="@($"playlist/{p.Id}")">@p.Name</NavLink>

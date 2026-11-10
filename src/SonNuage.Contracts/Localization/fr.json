@@ -302,7 +302,8 @@
       "light": "Clair",
       "dark": "Sombre"
     },
-    "help": "Aide"
+    "help": "Aide",
+    "history": "Historique"
   },
   "app": {
     "notFound": "Page introuvable.",
@@ -1457,5 +1458,40 @@
     "run": "Analyser maintenant",
     "started": "Analyse audio lancée.",
     "saved": "Réglage de l'analyse audio enregistré."
+  },
+  "history": {
+    "title": "Historique",
+    "empty": "Aucune écoute pour l'instant. Les morceaux écoutés au moins 30 secondes (ou la moitié d'un morceau court) s'affichent ici.",
+    "week": "d'écoute ces 7 derniers jours",
+    "month": "d'écoute ces 30 derniers jours",
+    "plays": "écoutes ({period})",
+    "period": "Période",
+    "periods": {
+      "days": "{count} jours",
+      "year": "1 an",
+      "all": "Depuis le début"
+    },
+    "topArtists": "Artistes les plus écoutés",
+    "topTracks": "Titres les plus écoutés",
+    "count": {
+      "one": "{count} écoute",
+      "other": "{count} écoutes"
+    },
+    "today": "Aujourd'hui",
+    "yesterday": "Hier",
+    "skipped": "Passé",
+    "listened": "Temps écouté",
+    "remove": "Retirer de l'historique",
+    "clear": "Effacer l'historique",
+    "clearConfirm": "Effacer tout l'historique ?",
+    "clearHint": "Toutes vos écoutes sont supprimées de ce serveur, sur tous vos appareils. « À réécouter » et « Pas encore écouté » repartent de zéro. Les écoutes déjà envoyées à ListenBrainz y restent.",
+    "cleared": "Historique effacé.",
+    "clients": {
+      "web": "Web",
+      "android": "Android",
+      "desktop": "Ordinateur",
+      "ios": "iPhone"
+    },
+    "hint": "Vos écoutes récentes et vos statistiques"
   }
 }

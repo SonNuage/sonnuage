@@ -25,6 +25,10 @@
                     <span class="chip-icon liked large"><Icon Name="heart" /></span>
                     <div><span class="list-title">@L["nav.likedSongs"]</span><span class="list-sub">@L["library.autoPlaylist"]</span></div>
                 </a>
+                <a class="list-item" href="history">
+                    <span class="chip-icon large"><Icon Name="history" /></span>
+                    <div><span class="list-title">@L["nav.history"]</span><span class="list-sub">@L["history.hint"]</span></div>
+                </a>
                 @foreach (var p in Ui.Playlists)
                 {
                     <a class="list-item" href="playlist/@p.Id">

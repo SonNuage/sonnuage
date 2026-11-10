@@ -302,7 +302,8 @@
       "light": "Light",
       "dark": "Dark"
     },
-    "help": "Help"
+    "help": "Help",
+    "history": "History"
   },
   "app": {
     "notFound": "Page not found.",
@@ -1457,5 +1458,40 @@
     "run": "Analyze now",
     "started": "Audio analysis started.",
     "saved": "Audio analysis setting saved."
+  },
+  "history": {
+    "title": "History",
+    "empty": "No listens yet. Tracks played for at least 30 seconds (or half of a short track) show up here.",
+    "week": "listened in the last 7 days",
+    "month": "listened in the last 30 days",
+    "plays": "listens ({period})",
+    "period": "Period",
+    "periods": {
+      "days": "{count} days",
+      "year": "1 year",
+      "all": "All time"
+    },
+    "topArtists": "Top artists",
+    "topTracks": "Top tracks",
+    "count": {
+      "one": "{count} listen",
+      "other": "{count} listens"
+    },
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "skipped": "Skipped",
+    "listened": "Time listened",
+    "remove": "Remove from history",
+    "clear": "Clear history",
+    "clearConfirm": "Clear your whole history?",
+    "clearHint": "All your listens are deleted from this server, on all your devices. \"Rediscover\" and \"Not played yet\" start over. Listens already sent to ListenBrainz stay there.",
+    "cleared": "History cleared.",
+    "clients": {
+      "web": "Web",
+      "android": "Android",
+      "desktop": "Computer",
+      "ios": "iPhone"
+    },
+    "hint": "Your recent listens and stats"
   }
 }

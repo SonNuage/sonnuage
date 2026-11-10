@@ -60,6 +60,12 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
         SendAsync(favorite ? HttpMethod.Put : HttpMethod.Delete, $"api/me/favorites/{trackId}");
     public Task<List<TrackDto>?> RecentAsync(int count = 50) => GetAsync<List<TrackDto>>($"api/me/recent?count={count}");
     public Task ReportPlayAsync(PlayEventRequest play) => SendAsync(HttpMethod.Post, "api/me/plays", play);
+    public Task<PagedResult<HistoryEntryDto>?> HistoryAsync(int offset, int limit) =>
+        GetAsync<PagedResult<HistoryEntryDto>>($"api/me/history?offset={offset}&limit={limit}");
+    /// <param name="days">Période des classements, en jours ; 0 = depuis le début.</param>
+    public Task<HistoryStatsDto?> HistoryStatsAsync(int days) => GetAsync<HistoryStatsDto>($"api/me/history/stats?days={days}");
+    public Task DeleteHistoryEntryAsync(long id) => SendAsync(HttpMethod.Delete, $"api/me/history/{id}");
+    public Task ClearHistoryAsync() => SendAsync(HttpMethod.Delete, "api/me/history");
     public Task ChangePasswordAsync(string current, string next) =>
         SendAsync(HttpMethod.Post, "api/auth/password", new ChangePasswordRequest(current, next));
     public Task<SubsonicAccessDto?> SubsonicAccessAsync() => GetAsync<SubsonicAccessDto>("api/me/subsonic");
