@@ -1316,6 +1316,16 @@
     "albumAsked": "Album demandé",
     "new": "Nouveau"
   },
+  "quietHours": {
+    "title": "Heures calmes",
+    "enabled": "Retenir les tâches lourdes pendant la plage choisie",
+    "from": "De",
+    "to": "À",
+    "lanes": "Files retenues",
+    "zone": "Heures de {zone}.",
+    "hint": "Pendant la plage, les files cochées ne démarrent rien et leur tâche en cours est interrompue sans rien perdre ; tout reprend à la fin de la plage. La plage peut passer minuit (23:00 → 07:00).",
+    "saved": "Heures calmes enregistrées."
+  },
   "discoverySettings": {
     "title": "Découverte",
     "refreshHours": "Actualiser toutes les (heures)",

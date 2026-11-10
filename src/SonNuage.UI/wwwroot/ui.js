@@ -95,6 +95,8 @@ window.sonnuage = {
   preview,
   copy,
   languages: () => (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language]).join(','),
+  // Fuseau IANA de l'appareil (heures calmes, sauvegardes), comme le voit le navigateur.
+  timeZone: () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
   setLanguage: (code) => { document.documentElement.lang = code; },
   setTheme: applyTheme,
   // Paroles : la ligne en cours au milieu de la liste, sans faire défiler le reste de la page.

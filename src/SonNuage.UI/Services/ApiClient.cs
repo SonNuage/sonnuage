@@ -113,6 +113,8 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     public Task<RadioSettingsDto?> SaveRadioSettingsAsync(RadioSettingsRequest s) => SendAsync<RadioSettingsDto>(HttpMethod.Put, "api/admin/radio", s);
     public Task<DiscoverySettingsDto?> DiscoverySettingsAsync() => GetAsync<DiscoverySettingsDto>("api/admin/discovery/settings");
     public Task<DiscoverySettingsDto?> SaveDiscoverySettingsAsync(DiscoverySettingsDto s) => SendAsync<DiscoverySettingsDto>(HttpMethod.Put, "api/admin/discovery/settings", s);
+    public Task<QuietHoursDto?> QuietHoursAsync() => GetAsync<QuietHoursDto>("api/admin/jobs/quiet-hours");
+    public Task<QuietHoursDto?> SaveQuietHoursAsync(QuietHoursDto q) => SendAsync<QuietHoursDto>(HttpMethod.Put, "api/admin/jobs/quiet-hours", q);
     public Task<AudioAnalysisStatusDto?> AudioAnalysisAsync() => GetAsync<AudioAnalysisStatusDto>("api/admin/analysis");
     public Task<AudioAnalysisStatusDto?> SaveAudioAnalysisAsync(AudioAnalysisSettingsDto s) => SendAsync<AudioAnalysisStatusDto>(HttpMethod.Put, "api/admin/analysis/settings", s);
     public Task<AudioAnalysisStatusDto?> RunAudioAnalysisAsync() => SendAsync<AudioAnalysisStatusDto>(HttpMethod.Post, "api/admin/analysis/run");

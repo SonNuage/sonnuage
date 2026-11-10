@@ -27,16 +27,25 @@
                 @foreach (var lane in ov.Lanes)
                 {
                     var action = lane.Paused ? L["jobs.resume"] : L["jobs.pause"];
-                    <div class="lane @(lane.Paused ? "paused" : lane.Running > 0 ? "busy" : null)">
+                    <div class="lane @(lane.Paused || lane.QuietUntil is not null ? "paused" : lane.Running > 0 ? "busy" : null)">
                         <div class="lane-head">
                             <span class="strong">@Label("jobs.lane." + lane.Lane, lane.Lane)</span>
                             <button class="icon-btn" title="@action" aria-label="@action" @onclick="() => SetPausedAsync(lane.Lane, !lane.Paused)">
                                 <Icon Name="@(lane.Paused ? "play" : "pause")" Size="18" />
                             </button>
                         </div>
-                        <span class="muted small">@(lane.Paused
-                            ? L["jobs.lanePaused", ("queued", L.Number(lane.Queued))]
-                            : L["jobs.laneLoad", ("running", lane.Running), ("capacity", lane.Capacity), ("queued", L.Number(lane.Queued))])</span>
+                        @if (lane.Paused)
+                        {
+                            <span class="muted small">@L["jobs.lanePaused", ("queued", L.Number(lane.Queued))]</span>
+                        }
+                        else if (lane.QuietUntil is { } until)
+                        {
+                            <a class="muted small" href="admin/settings#quiet-hours">@L["jobs.laneQuiet", ("until", until.ToLocalTime().ToString("HH:mm")), ("queued", L.Number(lane.Queued))]</a>
+                        }
+                        else
+                        {
+                            <span class="muted small">@L["jobs.laneLoad", ("running", lane.Running), ("capacity", lane.Capacity), ("queued", L.Number(lane.Queued))]</span>
+                        }
                     </div>
                 }
             </div>

@@ -1316,6 +1316,16 @@
     "albumAsked": "Album requested",
     "new": "New"
   },
+  "quietHours": {
+    "title": "Quiet hours",
+    "enabled": "Hold heavy tasks during the chosen window",
+    "from": "From",
+    "to": "To",
+    "lanes": "Lanes held",
+    "zone": "Times in {zone}.",
+    "hint": "During the window, the checked lanes start nothing and their running task is interrupted without losing anything; everything resumes when the window ends. The window can span midnight (23:00 → 07:00).",
+    "saved": "Quiet hours saved."
+  },
   "discoverySettings": {
     "title": "Discovery",
     "refreshHours": "Refresh every (hours)",
