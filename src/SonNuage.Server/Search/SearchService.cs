@@ -2,6 +2,7 @@ using SonNuage.Contracts;
 using SonNuage.Server.Api;
 using SonNuage.Server.Data;
 using SonNuage.Server.Library;
+using SonNuage.Server.Radio;
 using Microsoft.EntityFrameworkCore;
 
 namespace SonNuage.Server.Search;
@@ -10,8 +11,34 @@ namespace SonNuage.Server.Search;
 /// Point d'entrée de la recherche : Elasticsearch quand il est configuré et répond à temps,
 /// sinon recherche « simple » en base (sous-chaînes normalisées, sans tolérance aux fautes).
 /// </summary>
-public sealed class SearchService(SonNuageDbContext db, SearchGateway gateway, ElasticsearchClient es)
+public sealed class SearchService(SonNuageDbContext db, SearchGateway gateway, ElasticsearchClient es, RadioStations radio)
 {
+    /// <summary>
+    /// Recherche par ambiance, à part de la recherche ordinaire (appelée en parallèle, sans la ralentir). Null quand
+    /// la demande n'est pas une ambiance, ou quand elle est exactement le nom d'un artiste, d'un album ou d'un titre de
+    /// la bibliothèque : « Calme » est alors cette chanson, pas une humeur.
+    /// </summary>
+    public async Task<AmbianceResultDto?> AmbianceAsync(string query, int limit, Guid userId, CancellationToken ct)
+    {
+        var whole = NameNormalizer.Key(query);
+        if (whole.Length == 0) return null;
+        if (await radio.ParseAmbianceAsync(db, query, ct) is not { } ambiance) return null;
+        if (await IsLibraryNameAsync(whole, ct)) return null;
+
+        var ids = await radio.AmbianceAsync(db, userId, ambiance, limit, ct);
+        var tracks = await LibraryEndpoints.TracksInOrderAsync(db, userId, ids, ct);
+        return new AmbianceResultDto(RadioStations.AmbianceStation(ambiance).Id, ambiance.Terms, tracks);
+    }
+
+    private async Task<bool> IsLibraryNameAsync(string key, CancellationToken ct)
+    {
+        // La clé de recherche d'un titre commence par la clé de son nom, suivie d'une espace.
+        var titled = key + " ";
+        return await db.Artists.AnyAsync(a => a.NormalizedName == key, ct)
+            || await db.Albums.AnyAsync(a => a.NormalizedTitle == key, ct)
+            || await db.Tracks.AnyAsync(t => t.SearchKey.StartsWith(titled), ct);
+    }
+
     public async Task<SearchResultDto> SearchAsync(string query, int limit, Guid userId, CancellationToken ct)
     {
         var whole = NameNormalizer.Key(query);

@@ -44,6 +44,8 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     public Task<LyricsDto?> LyricsAsync(Guid trackId) => GetAsync<LyricsDto>($"api/tracks/{trackId}/lyrics");
     public Task<List<TrackDto>?> LookupTracksAsync(IReadOnlyList<Guid> ids) => SendAsync<List<TrackDto>>(HttpMethod.Post, "api/tracks/lookup", ids);
     public Task<SearchResultDto?> SearchAsync(string q, int limit = 20) => GetAsync<SearchResultDto>($"api/search?limit={limit}&q={Uri.EscapeDataString(q)}");
+    /// <summary>Recherche par ambiance ; null quand la recherche n'en est pas une (ou serveur plus ancien).</summary>
+    public Task<AmbianceResultDto?> AmbianceAsync(string q, int limit = 10) => GetAsync<AmbianceResultDto>($"api/search/ambiance?limit={limit}&q={Uri.EscapeDataString(q)}");
     public Task<List<string>?> SuggestAsync(string q, int limit = 8) => GetAsync<List<string>>($"api/search/suggest?limit={limit}&q={Uri.EscapeDataString(q)}");
 
     // ---- Moi ----

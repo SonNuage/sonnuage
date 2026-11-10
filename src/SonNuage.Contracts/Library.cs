@@ -45,6 +45,14 @@ public sealed record SearchResultDto(
     IReadOnlyList<TrackDto> Tracks,
     string? Correction = null);
 
+/// <summary>
+/// Recherche par ambiance (« musique calme pour travailler », « rock énergique années 90 ») : les morceaux qui y
+/// répondent, du plus au moins proche. Absente (204) quand la recherche n'est pas une ambiance.
+/// </summary>
+/// <param name="StationId">Radio thématique qui joue cette ambiance sans fin (<c>/api/radio/stations/{id}/next</c>).</param>
+/// <param name="Terms">Expressions comprises (« calme », « travailler »), telles que saisies.</param>
+public sealed record AmbianceResultDto(string StationId, IReadOnlyList<string> Terms, IReadOnlyList<TrackDto> Tracks);
+
 /// <summary>Accueil. <see cref="Rediscover"/> et <see cref="NotYetPlayed"/> : absents d'un serveur antérieur à 1.7.</summary>
 public sealed record HomeDto(
     IReadOnlyList<AlbumDto> RecentlyAdded,

@@ -148,8 +148,22 @@ Avec **Elasticsearch** (8.x ou 9.x), elle devient instantanée et tolérante :
 - suggestions pendant la saisie, y compris au milieu d'un nom (`gilm` → David Gilmour)
 - `AC/DC`, `T.N.T.` trouvés en tapant `acdc`, `tnt`
 - titres les plus écoutés favorisés
-- recherche sémantique vectorielle en option (`SonNuage__Search__SemanticInferenceId` : identifiant d'un endpoint
-  d'inférence Elasticsearch, par exemple un modèle E5 multilingue. Selon la licence de votre cluster).
+- recherche sémantique en option (voir plus bas : licence Elasticsearch enterprise ou d'essai nécessaire).
+
+### Recherche par ambiance
+
+Une recherche en langage courant, en français ou en anglais (« musique calme pour travailler », « énergique
+pour courir », « chill du dimanche », « rock énergique années 90 », « sad songs ») ajoute une section
+**Ambiance** au-dessus des résultats, avec « Lancer en radio » (radio sans fin, comme les radios thématiques).
+Tout se passe sur le serveur, sans service extérieur ni Elasticsearch : les mots d'humeur, d'énergie, de
+tempo et d'activité, les décennies et les genres de la bibliothèque deviennent des critères sur l'analyse
+audio (Essentia), les tags MusicBrainz, le genre et l'année. Un morceau pas encore analysé peut répondre par ses
+tags ou son genre.
+
+Ce n'est une ambiance que si chaque mot est compris et qu'une humeur ou une décennie est demandée ; et le nom
+exact d'un artiste, d'un album ou d'un titre de la bibliothèque l'emporte (« Calme », si c'est une chanson).
+Le vocabulaire est une table à enrichir dans
+[AmbianceVocabulary.cs](src/SonNuage.Server/Search/AmbianceVocabulary.cs).
 
 L'index est reconstruit automatiquement après chaque scan, chaque modification depuis l'admin, au retour
 d'Elasticsearch après une panne et toutes les 30 minutes.
@@ -166,6 +180,42 @@ base immédiate) et sondé en arrière-plan jusqu'à son retour. L'état est vis
 | `SonNuage__Search__CertificateFingerprint` | Empreinte SHA-256 du certificat auto-signé d'Elasticsearch |
 | `SonNuage__Search__Index` | Préfixe des index (`sonnuage`) |
 | `SonNuage__Search__TimeoutMilliseconds` | Délai avant repli sur la base (`2000`) |
+| `SonNuage__Search__SemanticInferenceId` | Endpoint d'inférence de la recherche sémantique (voir ci-dessous). Vide = sans |
+
+### Recherche sémantique (option Elasticsearch)
+
+Avec `SonNuage__Search__SemanticInferenceId`, l'index reçoit un champ `semantic_text` : chaque titre y est décrit
+(noms, genre, décennie, tags, ambiances entendues par l'analyse audio) et la similarité de sens réordonne les
+résultats textuels (elle n'ajoute jamais de résultat sans correspondance textuelle).
+
+**Licence.** Depuis Elasticsearch 8.18/9.0, toute l'API d'inférence — modèles ELSER/E5 déployés dans le cluster
+comme endpoints vers un service externe ou local (`openai`, `hugging_face`, `custom`…) — exige une licence
+**enterprise** ou d'essai (30 jours) ([elastic/elasticsearch#122293](https://github.com/elastic/elasticsearch/pull/122293)).
+Avec la licence **basic** (gratuite), un champ `semantic_text` ferait échouer l'indexation : SonNuage lit la
+licence à chaque reconstruction de l'index et, si elle ne permet pas l'inférence, laisse l'option de côté (avertissement
+dans le journal). La recherche par ambiance ci-dessus couvre ce cas sans rien installer.
+
+**Mémoire.** Les modèles intégrés (`.multilingual-e5-small-elasticsearch`, ELSER) tournent sur un nœud de machine
+learning, hors du tas Java : Elastic indique 4 Go au minimum pour un nœud ML dédié à ELSER
+([doc ELSER](https://www.elastic.co/docs/explore-analyze/machine-learning/nlp/ml-nlp-elser)). Un Elasticsearch à
+512 Mo de tas ne suffit pas. Un petit service d'embeddings à côté, sur CPU, est plus léger.
+
+**Mise en place avec un modèle local** (licence enterprise ou d'essai ; non testé ici) :
+
+1. Service d'embeddings local, par exemple Hugging Face *Text Embeddings Inference* (image CPU) avec
+   `intfloat/multilingual-e5-small` (français et anglais), joignable par Elasticsearch, sans accès Internet nécessaire
+   une fois le modèle téléchargé :
+   `docker run -d --name tei -p 127.0.0.1:8081:80 -v tei-data:/data ghcr.io/huggingface/text-embeddings-inference:cpu-latest --model-id intfloat/multilingual-e5-small`
+2. Endpoint d'inférence vers ce service (le jeton est exigé par l'API, TEI l'ignore) :
+   ```
+   PUT _inference/text_embedding/sonnuage-e5
+   { "service": "hugging_face", "service_settings": { "api_key": "local", "url": "http://tei:80/embed" } }
+   ```
+   Vérifier : `POST _inference/text_embedding/sonnuage-e5 { "input": "musique calme" }`.
+3. `SonNuage__Search__SemanticInferenceId=sonnuage-e5` puis redémarrer : un nouvel index `…-semantic` est créé et
+   rempli (bouton « Réindexer la recherche » dans l'admin pour forcer), l'ancien est supprimé ensuite.
+
+Les requêtes de recherche partent alors vers ce service local, jamais vers un tiers.
 
 En local : `docker run -d -p 127.0.0.1:9200:9200 -e discovery.type=single-node -e xpack.security.enabled=false docker.elastic.co/elasticsearch/elasticsearch:9.2.0`
 (la configuration de dev pointe déjà sur `http://localhost:9200`).
