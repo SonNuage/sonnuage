@@ -195,13 +195,26 @@ Constat sur le homelab : certains imports prenaient plus de 3 minutes, là où T
    « avec », « , » seulement quand la première partie est l'artiste de l'album) appartient à OrelSan, Damso est
    un invité. La page artiste a une section « Apparaît sur » (`GET /api/artists/{id}/appearances`). Chaque scan
    complet recalcule les crédits : les données existantes se rangent au premier scan.
-6. 🔜 **Appli de bureau, suites** :
-   - essai réel sous macOS et Linux (seul Windows a été lancé) : icône, fenêtre cachée, touches média
-   - pré-chargement des pistes suivantes : il passe par `fetch` depuis la page, bloqué faute d'en-têtes CORS sur
-     le flux. Autoriser l'origine de l'appli sur `/api/stream` ou télécharger côté .NET.
-   - une seule instance (relancer l'appli rouvre la fenêtre), démarrage avec la session, option « démarrer caché »
-   - signature et notarisation macOS, signature Windows, installeurs (MSI, DMG, AppImage ou Flatpak)
-   - mises à jour automatiques.
+6. 🟡 **Appli de bureau, suites** (novembre 2026) :
+   - ✅ **pré-chargement des pistes suivantes** : le flux et les pochettes acceptent les requêtes `fetch` de l'appli
+     (CORS pour les seules origines `http://localhost`, WebView2 sous Windows, et `app://localhost`, WebKit ailleurs ;
+     GET et HEAD, en-tête Range, sans cookies : le jeton média est dans l'adresse). Le reste de l'API reste fermé.
+   - ✅ **une seule instance** : relancer l'appli ramène sa fenêtre (verrou et socket Unix dans le dossier de
+     données ; « reopen » du Finder et du Dock sous macOS).
+   - ✅ **lancement avec la session** (désactivé par défaut) et **démarrage caché** (seule l'icône de la barre
+     système) : clé `Run` de Windows, agent launchd, entrée XDG autostart. Réglages → Appli de bureau.
+   - ✅ **installeurs** produits par la CI du dépôt `sonnuage-desktop`, sans machine Windows ni Mac : installeur
+     NSIS par utilisateur, `.deb`, `.dmg`, à côté des archives. Signature Windows (osslsigncode), signature et
+     notarisation macOS (rcodesign) branchées : elles s'activent dès que les certificats sont dans les variables de
+     CI, sinon paquets non signés. L'AppImage est écartée (outils à télécharger depuis des builds non figés).
+   - ✅ **mises à jour** : l'appli lit la dernière release GitLab du projet au démarrage puis toutes les 6 heures,
+     un bandeau la propose, l'installeur se télécharge (contrôlé par `SHA256SUMS`) et se lance ; à défaut, la page
+     de la version s'ouvre. Le projet GitLab doit être public (releases et registre de paquets).
+   - L'interface partagée accueille des panneaux propres à l'hôte (`IPlatformInfo.SettingsSections` et `Notices`) :
+     l'appli de bureau les affiche après la montée de `SonNuage.UI` en 1.25.0.
+   - Reste : **essai réel sous macOS et Linux** (seul Windows a été lancé) : icône, fenêtre cachée, touches média,
+     relance et démarrage avec la session, `.dmg` et `.deb`, mise à jour de bout en bout. Premier pipeline avec les
+     nouveaux paquets à vérifier, puis certificats à fournir pour la signature.
 7. ✅ **Autres traitements en tâches** : scan complet, réindexation Elasticsearch (bouton « Réindexer la recherche »),
    synchronisation de chaque abonnement (voie `sync`) et purge du cache de transcodage passent par le moteur de
    tâches, avec journal, annulation, nouvelles tentatives et historique dans le volet Tâches.
