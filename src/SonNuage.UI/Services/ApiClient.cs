@@ -329,7 +329,18 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
         using var response = await SendCoreAsync(() => new HttpRequestMessage(HttpMethod.Get, url));
         if (response.StatusCode == HttpStatusCode.NotFound) return default;
         await EnsureSuccessAsync(response);
-        return await response.Content.ReadFromJsonAsync<T>(JsonDefaults.Options);
+        return await ReadAsync<T>(response);
+    }
+
+    /// <summary>
+    /// Contenu d'une réponse réussie ; rien si elle n'en a pas (204, ou corps vide) : « pas de résultat » n'est pas une
+    /// erreur, alors que lire du JSON dans un corps vide en lève une.
+    /// </summary>
+    public static async Task<T?> ReadAsync<T>(HttpResponseMessage response)
+    {
+        if (response.StatusCode == HttpStatusCode.NoContent) return default;
+        var body = await response.Content.ReadAsByteArrayAsync();
+        return body.Length == 0 ? default : System.Text.Json.JsonSerializer.Deserialize<T>(body, JsonDefaults.Options);
     }
 
     private async Task<T?> SendAsync<T>(HttpMethod method, string url, object? body = null)
