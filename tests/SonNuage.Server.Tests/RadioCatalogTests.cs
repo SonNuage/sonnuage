@@ -84,11 +84,42 @@ public sealed class RadioCatalogTests
     {
         var unknown = Track("Song", genre: "Ambient");
         Assert.False(Plays("chill", unknown));
-        Assert.True(Plays("chill", Track("Song", feel: new AudioFeel(Relaxed: 0.9, Energy: 0.1, Acoustic: 0.8, Aggressive: 0.05))));
+        Assert.True(Plays("chill", Track("Song", feel: new AudioFeel(Relaxed: 0.9, Energy: 0.1, Acoustic: 0.8, Aggressive: 0.05, Sad: 0.1))));
         Assert.False(Plays("chill", Track("Song", feel: new AudioFeel(Relaxed: 0.1, Energy: 0.95, Aggressive: 0.9))));
         Assert.True(Plays("energy", Track("Song", feel: new AudioFeel(Energy: 0.9, Danceability: 0.8, Bpm: 128))));
         Assert.True(Plays("focus", Track("Song", feel: new AudioFeel(Instrumental: 0.95, Relaxed: 0.7, Energy: 0.3, Aggressive: 0.1))));
-        Assert.True(Plays("melancholy", Track("Song", feel: new AudioFeel(Sad: 0.9, Valence: 0.1, Energy: 0.2))));
+        Assert.True(Plays("melancholy", Track("Song", feel: new AudioFeel(Sad: 0.9, Valence: 0.1, Energy: 0.2, Happy: 0.1, Party: 0.1))));
+    }
+
+    // Les classifieurs « calme », « triste » et « acoustique » vont ensemble : sans ces écarts, détente, mélancolie et
+    // automne jouaient presque la même liste.
+    [Fact]
+    public void Chill_is_calm_but_not_sad()
+    {
+        Assert.True(Plays("chill", Track("Song", feel: new AudioFeel(Relaxed: 0.8, Energy: 0.2, Aggressive: 0.05, Sad: 0.2))));
+        Assert.False(Plays("chill", Track("Song", feel: new AudioFeel(Relaxed: 0.9, Energy: 0.1, Acoustic: 0.9, Aggressive: 0.05, Sad: 0.9))));
+    }
+
+    [Fact]
+    public void Melancholy_leaves_out_what_also_sounds_happy_and_festive()
+    {
+        Assert.False(Plays("melancholy", Track("Song", feel: new AudioFeel(Sad: 0.7, Valence: 0.3, Energy: 0.2, Happy: 0.8, Party: 0.8))));
+    }
+
+    [Fact]
+    public void Autumn_is_acoustic_and_warm_rather_than_just_sad()
+    {
+        Assert.True(Plays("autumn", Track("Song", feel: new AudioFeel(Acoustic: 0.9, Relaxed: 0.8, Energy: 0.2, Valence: 0.6, Sad: 0.5))));
+        Assert.False(Plays("autumn", Track("Song", feel: new AudioFeel(Acoustic: 0.2, Relaxed: 0.9, Energy: 0.1, Valence: 0.1, Sad: 0.95))));
+    }
+
+    [Fact]
+    public void Of_two_equally_happy_pop_songs_the_less_sad_one_ranks_first()
+    {
+        var bright = Track("A", genre: "Pop", feel: new AudioFeel(Happy: 0.7, Valence: 0.6, Danceability: 0.6, Sad: 0.1));
+        var bittersweet = Track("B", genre: "Pop", feel: new AudioFeel(Happy: 0.7, Valence: 0.6, Danceability: 0.6, Sad: 0.9));
+
+        Assert.True(Station("good-mood-pop").Score(bright) > Station("good-mood-pop").Score(bittersweet));
     }
 
     [Theory]

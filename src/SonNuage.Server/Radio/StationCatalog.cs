@@ -139,7 +139,8 @@ public static class StationCatalog
             + Feel(p, f => 0.3 * V(f.Happy) + 0.25 * V(f.Party) + 0.25 * V(f.Danceability) + 0.2 * V(f.Valence)))),
 
         new("autumn", RadioStationKinds.Season, "#d9480f", new SeasonWindow(9, 22, 11, 30), p => Clamp(
-            Feel(p, f => 0.3 * V(f.Acoustic) + 0.2 * V(f.Relaxed) + 0.25 * V(f.Sad) + 0.25 * Inv(f.Energy))
+            // Acoustique et chaleureux, pas « triste » : sinon l'automne rejoue la station Mélancolie.
+            Feel(p, f => 0.4 * V(f.Acoustic) + 0.2 * V(f.Relaxed) + 0.15 * Inv(f.Energy) + 0.25 * V(f.Valence))
             + (Words(p, W.AutumnWords) ? 0.3 : 0)
             + (GenreHas(p, "folk", "singer songwriter", "jazz", "chanson") ? 0.15 : 0))),
     ];
@@ -149,10 +150,12 @@ public static class StationCatalog
         // Le genre seul ne suffit pas : sans analyse, toute la « pop » de la bibliothèque passerait, ballades tristes comprises.
         new("good-mood-pop", RadioStationKinds.Mood, "#ff922b", null, p => Feel(p, f =>
             (GenreHas(p, "pop", "dance", "disco", "funk", "synth", "variete", "motown", "soul", "new wave") ? 0.3 : 0)
-            + 0.35 * V(f.Happy) + 0.2 * V(f.Valence) + 0.15 * V(f.Danceability)), Threshold: 0.55),
+            + 0.3 * V(f.Happy) + 0.15 * V(f.Valence) + 0.1 * V(f.Danceability) + 0.15 * Inv(f.Sad)), Threshold: 0.55),
 
+        // Calme, posé et pas triste. Les classifieurs « calme », « triste » et « acoustique » vont ensemble (corrélés à plus
+        // de 0,8) : sans le « pas triste », cette station et Mélancolie jouaient presque la même liste.
         new("chill", RadioStationKinds.Mood, "#74c0fc", null,
-            p => Feel(p, f => 0.4 * V(f.Relaxed) + 0.3 * Inv(f.Energy) + 0.15 * V(f.Acoustic) + 0.15 * Inv(f.Aggressive)), Threshold: 0.65),
+            p => Feel(p, f => 0.35 * V(f.Relaxed) + 0.2 * Inv(f.Energy) + 0.1 * Inv(f.Aggressive) + 0.35 * Inv(f.Sad)), Threshold: 0.65),
 
         new("energy", RadioStationKinds.Mood, "#fa5252", null,
             p => Feel(p, f => 0.4 * V(f.Energy) + 0.2 * V(f.Danceability) + 0.1 * V(f.Aggressive) + (f.Bpm is >= 115 and <= 160 ? 0.3 : 0)), Threshold: 0.65),
@@ -162,7 +165,7 @@ public static class StationCatalog
             + (p.Feel is not null && GenreHas(p, "dance", "house", "disco", "electro", "edm", "techno", "funk") ? 0.15 : 0))),
 
         new("melancholy", RadioStationKinds.Mood, "#5c7cfa", null,
-            p => Feel(p, f => 0.5 * V(f.Sad) + 0.3 * Inv(f.Valence) + 0.2 * Inv(f.Energy))),
+            p => Feel(p, f => 0.5 * V(f.Sad) + 0.2 * Inv(f.Happy) + 0.15 * Inv(f.Valence) + 0.15 * Inv(f.Party))),
 
         new("focus", RadioStationKinds.Mood, "#20c997", null,
             p => Feel(p, f => 0.5 * V(f.Instrumental) + 0.2 * V(f.Relaxed) + 0.15 * Inv(f.Energy) + 0.15 * Inv(f.Aggressive)), Threshold: 0.65),
