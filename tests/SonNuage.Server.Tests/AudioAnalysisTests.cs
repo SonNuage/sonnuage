@@ -131,6 +131,27 @@ public sealed class AudioAnalysisTests(AudioAnalysisFactory factory) : IClassFix
     }
 
     [Fact]
+    public async Task Tracks_just_added_go_first_then_the_backlog_whatever_its_age()
+    {
+        var admin = await ReadyAsync();
+        var before = factory.Analyzed.Count;
+
+        // Tout est à refaire. « Encore » vient d'arriver ; les deux autres sont anciens, et celui qui passe en premier
+        // (le plus petit identifiant) est le plus ancien : la date d'ajout ne range pas l'arriéré.
+        var old = (await DbAsync(db => db.Tracks.Where(t => t.Title != "Encore").Select(t => new { t.Id, t.FilePath }).ToListAsync(Ct)))
+            .OrderBy(t => t.Id.ToString(), StringComparer.Ordinal).ToList();
+        var now = DateTimeOffset.UtcNow;
+        await DbAsync(db => db.Tracks.Where(t => t.Id == old[0].Id).ExecuteUpdateAsync(s => s.SetProperty(t => t.CreatedAt, now.AddDays(-400)), Ct));
+        await DbAsync(db => db.Tracks.Where(t => t.Id == old[1].Id).ExecuteUpdateAsync(s => s.SetProperty(t => t.CreatedAt, now.AddDays(-30)), Ct));
+        await DbAsync(db => db.AudioFeatures.ExecuteUpdateAsync(s => s.SetProperty(f => f.Version, 0), Ct));
+
+        Assert.Equal(HttpStatusCode.Accepted, (await admin.PostAsync("/api/admin/analysis/run", null, Ct)).StatusCode);
+        await IdleAsync(admin);
+
+        Assert.Equal(["Encore.wav", Path.GetFileName(old[0].FilePath), Path.GetFileName(old[1].FilePath)], factory.Analyzed.Skip(before));
+    }
+
+    [Fact]
     public async Task Disabling_the_analysis_stops_it_until_enabled_again()
     {
         var admin = await ReadyAsync();

@@ -6,7 +6,10 @@ using SonNuage.Server.Jobs;
 namespace SonNuage.Server.Analysis;
 
 /// <summary>
-/// Analyse audio d'un lot de morceaux en attente (<see cref="AudioAnalysis.Pending"/>), les plus récents d'abord.
+/// Analyse audio d'un lot de morceaux en attente (<see cref="AudioAnalysis.Pending"/>) : ceux ajoutés depuis moins de
+/// <see cref="RecentDays"/> jours d'abord, puis l'arriéré dans l'ordre des identifiants (aléatoires), pas par date d'ajout :
+/// une analyse en cours couvre ainsi toute la bibliothèque au lieu des derniers artistes importés, et les radios ne
+/// tournent pas sur quatre artistes.
 /// Chaque résultat est enregistré aussitôt : une tâche interrompue reprend où elle en était. S'il reste des morceaux,
 /// la tâche ajoute le lot suivant à sa suite. Analyse désactivée ou analyseur absent : la tâche s'arrête sans erreur.
 /// </summary>
@@ -14,6 +17,9 @@ public sealed class AudioAnalysisJob(IAudioAnalyzer analyzer, AudioAnalysisSetti
 {
     /// <summary>Morceaux par tâche (quelques secondes chacun).</summary>
     internal static int BatchSize = 50;
+
+    /// <summary>Âge, en jours, en dessous duquel un morceau passe avant l'arriéré.</summary>
+    public const int RecentDays = 7;
 
     public JobKind Kind => JobKinds.AudioAnalysis;
 
@@ -26,7 +32,8 @@ public sealed class AudioAnalysisJob(IAudioAnalyzer analyzer, AudioAnalysisSetti
         var ct = ctx.CancellationToken;
         var db = ctx.Services.GetRequiredService<SonNuageDbContext>();
         EnsureEnabled();
-        var batch = await AudioAnalysis.Pending(db).OrderByDescending(t => t.CreatedAt).ThenBy(t => t.Id)
+        var recent = time.GetUtcNow().AddDays(-RecentDays);
+        var batch = await AudioAnalysis.Pending(db).OrderByDescending(t => t.CreatedAt >= recent).ThenBy(t => t.Id)
             .Select(t => new { t.Id, t.FilePath, t.FileModifiedUtc, t.ArtistName, t.Title })
             .Take(BatchSize).ToListAsync(ct);
 
