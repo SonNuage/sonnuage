@@ -145,6 +145,38 @@ public sealed class RadioCatalogTests
         Assert.Equal(3, ids.Count);
     }
 
+    private static List<TrackProfile> SadSongs(int count) => Enumerable.Range(0, count)
+        .Select(i => Track($"S{i}", feel: new AudioFeel(Sad: 0.7 + 0.3 * i / count, Valence: 0.1, Energy: 0.1, Happy: 0.1, Party: 0.1))).ToList();
+
+    [Fact]
+    public void A_station_keeps_only_the_best_share_of_the_songs_it_can_judge()
+    {
+        // Tous passent le seuil ; sans coupe la station serait la moitié de la bibliothèque.
+        var songs = SadSongs(1000);
+
+        var kept = RadioStations.Candidates(Station("melancholy"), songs, RadioStations.Personal.None);
+
+        Assert.Equal(120, kept.Count);
+        Assert.Equal(songs.Skip(880).Select(p => p.Id).Order(), kept.Select(c => c.Profile.Id).Order());
+    }
+
+    [Fact]
+    public void A_small_library_keeps_enough_songs_for_a_station()
+    {
+        var kept = RadioStations.Candidates(Station("melancholy"), SadSongs(200), RadioStations.Personal.None);
+
+        Assert.Equal(60, kept.Count);
+    }
+
+    [Fact]
+    public void Songs_that_match_equally_all_stay()
+    {
+        // Un titre de Noël en est un : la coupe ne tire pas au sort parmi des notes égales.
+        var songs = Enumerable.Range(0, 300).Select(i => Track($"Christmas {i}")).ToList();
+
+        Assert.Equal(300, RadioStations.Candidates(Station("christmas"), songs, RadioStations.Personal.None).Count);
+    }
+
     [Fact]
     public void Account_ratings_hide_disliked_songs_and_favor_liked_ones()
     {

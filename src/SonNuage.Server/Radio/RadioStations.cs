@@ -121,9 +121,19 @@ public sealed class RadioStations(IMemoryCache cache, IWeatherSource weather, Ti
         public static readonly Personal None = new(new HashSet<Guid>(), new Dictionary<Guid, int>());
     }
 
+    /// <summary>Part des morceaux qu'une station sait juger (note au-dessus de zéro) qu'elle garde : les mieux notés.</summary>
+    public const double BestShare = 0.12;
+    /// <summary>Morceaux gardés au moins, quand autant passent le seuil : assez pour une radio variée.</summary>
+    public const int MinKept = 60;
+
+    /// <summary>
+    /// Morceaux de la station : au-dessus de son seuil, puis seulement les mieux notés (<see cref="BestShare"/>). Le seuil
+    /// seul laissait passer près de la moitié des morceaux analysés dans les ambiances calmes.
+    /// </summary>
     internal static List<Candidate> Candidates(StationDefinition station, IReadOnlyList<TrackProfile> profiles, Personal personal, double minDurationSeconds = 60)
     {
         var list = new List<Candidate>();
+        var judged = 0;
         foreach (var p in profiles)
         {
             if (p.DurationSeconds < minDurationSeconds) continue;
@@ -132,11 +142,20 @@ public sealed class RadioStations(IMemoryCache cache, IWeatherSource weather, Ti
                 : personal.Ratings.TryGetValue(p.ArtistId, out r) ? r : 0;
             if (rating is > 0 and <= 2) continue;
             var score = station.Score(p);
+            if (score > 0) judged++;
             if (score < station.Threshold) continue;
             if (rating >= 4 || personal.Liked.Contains(p.Id)) score = Math.Min(1, score + 0.1);
             list.Add(new Candidate(p, score));
         }
-        return list;
+        return Best(list, Math.Max(MinKept, (int)Math.Ceiling(BestShare * judged)));
+    }
+
+    /// <summary>Les <paramref name="keep"/> mieux notés ; ceux à égalité avec le dernier gardé restent aussi.</summary>
+    private static List<Candidate> Best(List<Candidate> list, int keep)
+    {
+        if (list.Count <= keep) return list;
+        var cut = list.Select(c => c.Score).OrderDescending().ElementAt(keep - 1);
+        return list.Where(c => c.Score >= cut).ToList();
     }
 
     /// <summary>
