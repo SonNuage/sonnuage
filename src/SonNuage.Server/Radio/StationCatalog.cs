@@ -31,16 +31,38 @@ public sealed record AudioFeel(
 /// <summary>
 /// Morceau vu par les radios. <see cref="Text"/> : titre et album en minuscules sans accents, entourés d'espaces ;
 /// <see cref="Genre"/> : genre du fichier en minuscules sans accents ; <see cref="Tags"/> : tags MusicBrainz ;
-/// <see cref="Year"/> : année de sortie, si connue.
+/// <see cref="Year"/> : année de sortie, si connue ; <see cref="Song"/> : la chanson, commune à ses versions
+/// (<see cref="SongOf"/>).
 /// </summary>
 public sealed record TrackProfile(
     Guid Id, Guid ArtistId, Guid AlbumId, bool AlbumHasCover, double DurationSeconds, string Text, string Genre,
-    IReadOnlySet<string> Tags, AudioFeel? Feel, int? Year = null)
+    IReadOnlySet<string> Tags, AudioFeel? Feel, int? Year = null, string Song = "")
 {
     public static TrackProfile Create(Guid id, Guid artistId, Guid albumId, bool albumHasCover, double durationSeconds, string title,
         string? albumTitle, string? genre, IEnumerable<string>? tags = null, AudioFeel? feel = null, int? year = null) =>
         new(id, artistId, albumId, albumHasCover, durationSeconds, $" {Fold(title)} {Fold(albumTitle)} ", Fold(genre),
-            (tags ?? []).Select(t => t.ToLowerInvariant()).ToHashSet(), feel, year);
+            (tags ?? []).Select(t => t.ToLowerInvariant()).ToHashSet(), feel, year, SongOf(title));
+
+    /// <summary>Mention entre parenthèses ou crochets, ou après un tiret en fin de titre.</summary>
+    private static readonly Regex Mention = new(@"[\(\[][^\)\]]*[\)\]]|\s[-–—]\s[^-–—]*$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+    /// <summary>Mots (sans accents) qui font d'une mention celle d'une version : remix, live, remaster, invité, année…</summary>
+    private static readonly Regex VersionWord = new(
+        @"(?<![a-z\d])([a-z]*mix(ed)?|version|versione|versao|live|edit|remaster(ed)?|remasterise|acoustic|acoustique|acustic[ao]|demo|mono"
+        + @"|stereo|instrumental|karaoke|radio|single|album|take|session|bonus|feat|ft|featuring|with|avec|con|duet|dueto|duo|original"
+        + @"|extended|club|dub|deluxe|explicit|clean|anniversary|(19|20)\d\d)(?![a-z\d])",
+        RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+    /// <summary>
+    /// La chanson d'un titre : le titre sans ses mentions de version (« (2019 stereo mix) », « - Radio Edit », « [live] »),
+    /// en minuscules sans accents. Les autres mentions restent : « (Part II) » ou « (reprise) » sont d'autres morceaux.
+    /// </summary>
+    public static string SongOf(string? title)
+    {
+        if (string.IsNullOrWhiteSpace(title)) return "";
+        var song = Fold(Mention.Replace(title, m => VersionWord.IsMatch(Fold(m.Value)) ? " " : m.Value));
+        return song.Length > 0 ? song : Fold(title);
+    }
 
     /// <summary>Minuscules, sans accents ; ponctuation remplacée par des espaces (l'apostrophe reste).</summary>
     public static string Fold(string? text)

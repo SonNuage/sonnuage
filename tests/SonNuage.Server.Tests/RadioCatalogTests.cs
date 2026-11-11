@@ -177,6 +177,42 @@ public sealed class RadioCatalogTests
         Assert.Equal(300, RadioStations.Candidates(Station("christmas"), songs, RadioStations.Personal.None).Count);
     }
 
+    [Theory]
+    [InlineData("Surrender", "Surrender (Ultamix)")]
+    [InlineData("Golden Slumbers", "Golden Slumbers (2019 stereo mix)")]
+    [InlineData("Yo sí", "Yo sí - Dave Audé Remix")]
+    [InlineData("La soledad", "La soledad (2013)")]
+    [InlineData("Song", "Song [Live at Wembley]")]
+    [InlineData("Song", "Song (feat. Someone)")]
+    [InlineData("Song", "SONG (Version acoustique)")]
+    public void Versions_of_a_song_are_the_same_song(string song, string version) =>
+        Assert.Equal(TrackProfile.SongOf(song), TrackProfile.SongOf(version));
+
+    [Theory]
+    [InlineData("Peace: A Theme", "Peace: An End")]
+    [InlineData("Larks' Tongues in Aspic (Part I)", "Larks' Tongues in Aspic (Part II)")]
+    [InlineData("Moi sì (Io sì)", "Yo sí (Io sì)")]
+    [InlineData("Sgt. Pepper's Lonely Hearts Club Band", "Sgt. Pepper's Lonely Hearts Club Band (reprise)")]
+    [InlineData("Up - Down", "Up")]
+    [InlineData("(Live)", "(Remix)")]
+    public void Other_songs_stay_apart(string one, string other) =>
+        Assert.NotEqual(TrackProfile.SongOf(one), TrackProfile.SongOf(other));
+
+    [Fact]
+    public void A_station_plays_one_version_of_a_song_the_best_match()
+    {
+        var artist = Guid.NewGuid();
+        var sad = new AudioFeel(Sad: 0.8, Valence: 0.1, Energy: 0.1, Happy: 0.1, Party: 0.1);
+        var album = Track("Dark Vacay", feel: sad, artist: artist);
+        var live = Track("Dark Vacay (live)", feel: sad with { Sad = 0.95 }, artist: artist);
+        var remix = Track("Dark Vacay - Night Remix", feel: sad with { Sad = 0.7 }, artist: artist);
+        var cover = Track("Dark Vacay", feel: sad);
+
+        var kept = RadioStations.Candidates(Station("melancholy"), [album, live, remix, cover], RadioStations.Personal.None);
+
+        Assert.Equal(new[] { live.Id, cover.Id }.Order(), kept.Select(c => c.Profile.Id).Order());
+    }
+
     [Fact]
     public void Account_ratings_hide_disliked_songs_and_favor_liked_ones()
     {

@@ -127,7 +127,8 @@ public sealed class RadioStations(IMemoryCache cache, IWeatherSource weather, Ti
     public const int MinKept = 60;
 
     /// <summary>
-    /// Morceaux de la station : au-dessus de son seuil, puis seulement les mieux notés (<see cref="BestShare"/>). Le seuil
+    /// Morceaux de la station : au-dessus de son seuil, une version par chanson, puis seulement les mieux notés
+    /// (<see cref="BestShare"/>). Le seuil
     /// seul laissait passer près de la moitié des morceaux analysés dans les ambiances calmes.
     /// </summary>
     internal static List<Candidate> Candidates(StationDefinition station, IReadOnlyList<TrackProfile> profiles, Personal personal, double minDurationSeconds = 60)
@@ -147,8 +148,13 @@ public sealed class RadioStations(IMemoryCache cache, IWeatherSource weather, Ti
             if (rating >= 4 || personal.Liked.Contains(p.Id)) score = Math.Min(1, score + 0.1);
             list.Add(new Candidate(p, score));
         }
-        return Best(list, Math.Max(MinKept, (int)Math.Ceiling(BestShare * judged)));
+        return Best(OneVersionPerSong(list), Math.Max(MinKept, (int)Math.Ceiling(BestShare * judged)));
     }
+
+    /// <summary>D'une chanson d'un artiste (<see cref="TrackProfile.Song"/>), la version la mieux notée : pas huit remix du même titre.</summary>
+    private static List<Candidate> OneVersionPerSong(List<Candidate> list) =>
+        list.GroupBy(c => (c.Profile.ArtistId, Song: c.Profile.Song.Length > 0 ? c.Profile.Song : c.Profile.Id.ToString()))
+            .Select(g => g.MaxBy(c => c.Score)!).ToList();
 
     /// <summary>Les <paramref name="keep"/> mieux notés ; ceux à égalité avec le dernier gardé restent aussi.</summary>
     private static List<Candidate> Best(List<Candidate> list, int keep)
