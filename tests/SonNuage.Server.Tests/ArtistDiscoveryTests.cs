@@ -147,6 +147,46 @@ public sealed class ArtistDiscoveryTests(SonNuageFactory factory) : IClassFixtur
     }
 
     [Fact]
+    public async Task An_artist_shows_a_few_songs_and_gives_the_next_ones_on_request()
+    {
+        Guid artistId;
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<SonNuageDbContext>();
+            var artist = new DiscoveryArtist { MusicBrainzId = "m-justice", Name = "Justice", Score = 1.2, BecauseOf = "Daft Punk", UpdatedAt = DateTimeOffset.UtcNow };
+            foreach (var (title, i) in new[] { "D.A.N.C.E.", "Genesis", "Phantom", "Safe and Sound" }.Select((t, i) => (t, i)))
+                artist.Tracks.Add(new DiscoveryTrack { Rank = i, Title = title, VideoId = $"justice0000{i}", MatchScore = 90, MatchedAt = DateTimeOffset.UtcNow });
+            artist.Tracks.Add(new DiscoveryTrack { Rank = 4, Title = "Stress" });
+            db.DiscoveryArtists.Add(artist);
+            await db.SaveChangesAsync(Ct);
+            artistId = artist.Id;
+        }
+        var contributor = await ClientAsync("disco-more", Roles.Contributor);
+
+        // La page : les trois premiers (réglage par défaut), et combien il en reste.
+        var page = await contributor.GetFromJsonAsync<DiscoveryPageDto>("/api/discovery/artists", Ct);
+        var justice = Assert.Single(page!.Artists, a => a.Name == "Justice");
+        Assert.Equal(["D.A.N.C.E.", "Genesis", "Phantom"], justice.Tracks.Select(t => t.Title));
+        Assert.Equal(2, justice.MoreTracks);
+
+        var one = await contributor.GetFromJsonAsync<DiscoveryMoreDto>($"/api/discovery/artists/{artistId}/tracks?skip=3&take=1", Ct);
+        Assert.Equal(["Safe and Sound"], one!.Tracks.Select(t => t.Title));
+        Assert.Equal("justice00003", one.Tracks[0].VideoId);
+        Assert.Equal(1, one.Remaining);
+
+        // « Voir tout » : le reste. Sans yt-dlp (tests), le titre pas encore cherché sur YouTube reste sans vidéo.
+        var rest = await contributor.GetFromJsonAsync<DiscoveryMoreDto>($"/api/discovery/artists/{artistId}/tracks?skip=3&take=10", Ct);
+        Assert.Equal(["Safe and Sound", "Stress"], rest!.Tracks.Select(t => t.Title));
+        Assert.Null(rest.Tracks[1].VideoId);
+        Assert.Equal(0, rest.Remaining);
+
+        var user = await ClientAsync("disco-more-user", Roles.User);
+        Assert.Equal(HttpStatusCode.Forbidden, (await user.GetAsync($"/api/discovery/artists/{artistId}/tracks?skip=3&take=3", Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await contributor.GetAsync($"/api/discovery/artists/{Guid.NewGuid()}/tracks?skip=3&take=3", Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await contributor.GetAsync($"/api/discovery/artists/{artistId}/tracks?skip=-1&take=3", Ct)).StatusCode);
+    }
+
+    [Fact]
     public async Task A_pre_downloaded_preview_is_served_first()
     {
         var dir = Path.Combine(factory.DataPath, "discovery", "previews");

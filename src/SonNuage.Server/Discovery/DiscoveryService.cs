@@ -36,6 +36,12 @@ public sealed class DiscoveryService(
     /// <summary>Candidats classés à chaque actualisation, parmi lesquels on prend les nouveaux.</summary>
     public const int CandidatePool = 200;
 
+    /// <summary>
+    /// Titres phares gardés par artiste. Les premiers (réglage « titres par artiste ») sont cherchés sur YouTube à
+    /// l'actualisation ; les suivants seulement quand quelqu'un les demande (« voir plus »).
+    /// </summary>
+    public const int StoredTracks = 15;
+
     public const int MinMatchScore = 60;
     private const int PrefetchPerRun = 40;
     private static readonly TimeSpan MbidRetry = TimeSpan.FromDays(30);
@@ -147,8 +153,10 @@ public sealed class DiscoveryService(
     private async Task FetchTracksAsync(SonNuageDbContext db, JobContext ctx, CancellationToken ct)
     {
         var stale = time.GetUtcNow() - TracksRefresh;
+        // « Pas plus de titres que ceux affichés » : artiste lu avant qu'on garde les suivants ; on le relit.
+        var shown = settings.Settings.TracksPerArtist;
         var artists = await db.DiscoveryArtists.Include(a => a.Tracks)
-            .Where(a => a.TracksFetchedAt == null || a.TracksFetchedAt < stale || !a.Tracks.Any())
+            .Where(a => a.TracksFetchedAt == null || a.TracksFetchedAt < stale || a.Tracks.Count <= shown)
             .OrderByDescending(a => a.Score).ToListAsync(ct);
         foreach (var artist in artists)
         {
@@ -157,7 +165,7 @@ public sealed class DiscoveryService(
                 var found = await listenBrainz.TopRecordingsAsync(artist.MusicBrainzId, ct);
                 if (found.Count == 0) found = await deezer.TopTracksAsync(artist.Name, ct);
                 var top = found
-                    .DistinctBy(r => Library.NameNormalizer.Key(r.Title)).Take(settings.Settings.TracksPerArtist).ToList();
+                    .DistinctBy(r => Library.NameNormalizer.Key(r.Title)).Take(Math.Max(StoredTracks, shown)).ToList();
                 var previous = artist.Tracks.GroupBy(t => Library.NameNormalizer.Key(t.Title)).ToDictionary(g => g.Key, g => g.First());
                 db.DiscoveryTracks.RemoveRange(artist.Tracks.Where(t => !top.Any(r => Library.NameNormalizer.Key(r.Title) == Library.NameNormalizer.Key(t.Title))));
                 for (var i = 0; i < top.Count; i++)
@@ -184,11 +192,61 @@ public sealed class DiscoveryService(
         }
     }
 
-    /// <summary>Retrouve chaque titre sur YouTube Music (recherche par correspondance) ; s'arrête si YouTube bride.</summary>
+    /// <summary>
+    /// Cherche maintenant sur YouTube ceux de ces titres qui ne l'ont pas encore été (« voir plus » d'un artiste) ;
+    /// s'arrête si YouTube bride. Sans yt-dlp, ils restent à chercher. Les titres viennent avec leur artiste.
+    /// </summary>
+    public async Task MatchAsync(SonNuageDbContext db, IEnumerable<DiscoveryTrack> tracks, CancellationToken ct)
+    {
+        if (tools.YtDlp is null) return;
+        foreach (var track in tracks.Where(t => t.MatchedAt is null))
+        {
+            try
+            {
+                await MatchOneAsync(db, track, ct);
+            }
+            catch (YtDlpException ex)
+            {
+                logger.LogInformation("Recherche YouTube de « {Title} » impossible : {Message}", track.Title, ex.Message);
+                if (ex.Kind == YtDlpFailure.Throttled) return;
+            }
+        }
+    }
+
+    /// <summary>Cherche le titre sur YouTube et note le résultat, trouvé ou non. Vrai s'il est trouvé.</summary>
+    private async Task<bool> MatchOneAsync(SonNuageDbContext db, DiscoveryTrack track, CancellationToken ct)
+    {
+        // YouTube Music et YouTube, comme la recherche par correspondance des demandes : la recherche
+        // YouTube Music ne donne ni chaîne ni durée, YouTube apporte la chaîne officielle et la durée.
+        var best = (await ytDlp.MatchAsync(new MatchQuery(track.Artist.Name, track.Title, track.DurationSeconds),
+            options.Value.MatchOfficialMinScore, ct)).FirstOrDefault();
+        var found = best is { Score: >= MinMatchScore };
+        if (found)
+        {
+            track.VideoId = best!.Entry.Id;
+            track.VideoTitle = best.Entry.Title.Length > 500 ? best.Entry.Title[..500] : best.Entry.Title;
+            track.Channel = best.Entry.Channel is { Length: > 200 } c ? c[..200] : best.Entry.Channel;
+            track.MatchScore = best.Score;
+        }
+        else
+        {
+            track.VideoId = track.VideoTitle = track.Channel = null;
+            track.MatchScore = null;
+        }
+        track.MatchedAt = time.GetUtcNow();
+        await db.SaveChangesAsync(ct);
+        return found;
+    }
+
+    /// <summary>
+    /// Retrouve sur YouTube Music (recherche par correspondance) les premiers titres de chaque artiste, ceux que la
+    /// page affiche d'emblée ; s'arrête si YouTube bride.
+    /// </summary>
     private async Task MatchAsync(SonNuageDbContext db, JobContext ctx, CancellationToken ct)
     {
+        var shown = settings.Settings.TracksPerArtist;
         var tracks = await db.DiscoveryTracks.Include(t => t.Artist)
-            .Where(t => t.MatchedAt == null)
+            .Where(t => t.MatchedAt == null && t.Rank < shown)
             .OrderByDescending(t => t.Artist.Score).ThenBy(t => t.Rank)
             .ToListAsync(ct);
         if (tracks.Count == 0) return;
@@ -202,25 +260,7 @@ public sealed class DiscoveryService(
         {
             try
             {
-                // YouTube Music et YouTube, comme la recherche par correspondance des demandes : la recherche
-                // YouTube Music ne donne ni chaîne ni durée, YouTube apporte la chaîne officielle et la durée.
-                var best = (await ytDlp.MatchAsync(new MatchQuery(track.Artist.Name, track.Title, track.DurationSeconds),
-                    options.Value.MatchOfficialMinScore, ct)).FirstOrDefault();
-                if (best is { Score: >= MinMatchScore })
-                {
-                    track.VideoId = best.Entry.Id;
-                    track.VideoTitle = best.Entry.Title.Length > 500 ? best.Entry.Title[..500] : best.Entry.Title;
-                    track.Channel = best.Entry.Channel is { Length: > 200 } c ? c[..200] : best.Entry.Channel;
-                    track.MatchScore = best.Score;
-                    found++;
-                }
-                else
-                {
-                    track.VideoId = track.VideoTitle = track.Channel = null;
-                    track.MatchScore = null;
-                }
-                track.MatchedAt = time.GetUtcNow();
-                await db.SaveChangesAsync(ct);
+                if (await MatchOneAsync(db, track, ct)) found++;
             }
             catch (YtDlpException ex) when (ex.Kind == YtDlpFailure.Throttled)
             {

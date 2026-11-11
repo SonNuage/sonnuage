@@ -82,7 +82,7 @@
                     <p class="muted small discover-because">@L["discover.because", ("artists", string.Join(", ", artist.BecauseOf))]</p>
                 }
                 <div class="disc-row">
-                    @foreach (var t in artist.Tracks)
+                    @foreach (var t in TracksOf(artist))
                     {
                         var known = t.ImportStatus is not null and not "Failed" and not "Skipped";
                         <article @key="t.Id" class="disc-card @(known ? "known" : null)">
@@ -142,6 +142,25 @@
                         </article>
                     }
                 </div>
+                @if (RemainingOf(artist) is > 0 and var remaining)
+                {
+                    <div class="row discover-more">
+                        @if (_loadingMore == artist.Id)
+                        {
+                            <span class="muted small"><Logo Size="14" Animated="true" /> @L["discover.moreLoading"]</span>
+                        }
+                        else
+                        {
+                            <button class="btn compact" disabled="@(_loadingMore is not null)" title="@L["discover.moreHint"]"
+                                    @onclick="() => MoreAsync(artist, all: false)"><Icon Name="add" Size="16" /> @L["discover.more"]</button>
+                            @if (remaining > MoreStep)
+                            {
+                                <button class="btn compact" disabled="@(_loadingMore is not null)" title="@L["discover.moreHint"]"
+                                        @onclick="() => MoreAsync(artist, all: true)">@L["discover.all", ("count", remaining)]</button>
+                            }
+                        }
+                    </div>
+                }
             </section>
         }
     }
@@ -191,6 +210,40 @@
             Ui.Notify(L["releases.refreshStarted"]);
         });
         _refreshingReleases = false;
+    }
+
+    /// <summary>Titres ajoutés par « voir plus » : le serveur les cherche sur YouTube à la demande, par petits lots.</summary>
+    private const int MoreStep = 3;
+    private readonly Dictionary<Guid, List<DiscoveryTrackDto>> _more = [];
+    private readonly Dictionary<Guid, int> _remaining = [];
+    private Guid? _loadingMore;
+
+    private IEnumerable<DiscoveryTrackDto> TracksOf(DiscoveryArtistDto artist) =>
+        _more.TryGetValue(artist.Id, out var more) ? artist.Tracks.Concat(more) : artist.Tracks;
+
+    private int RemainingOf(DiscoveryArtistDto artist) => _remaining.TryGetValue(artist.Id, out var left) ? left : artist.MoreTracks;
+
+    /// <summary>Les titres suivants de l'artiste ; « tout » : lot après lot, chacun affiché dès qu'il arrive.</summary>
+    private async Task MoreAsync(DiscoveryArtistDto artist, bool all)
+    {
+        _loadingMore = artist.Id;
+        await RunAsync(async () =>
+        {
+            do
+            {
+                var shown = TracksOf(artist).Count();
+                if (await Api.DiscoveryMoreAsync(artist.Id, shown, MoreStep) is not { Tracks.Count: > 0 } next)
+                {
+                    _remaining[artist.Id] = 0;
+                    break;
+                }
+                if (!_more.TryGetValue(artist.Id, out var more)) _more[artist.Id] = more = [];
+                more.AddRange(next.Tracks);
+                _remaining[artist.Id] = next.Remaining;
+                StateHasChanged();
+            } while (all && RemainingOf(artist) > 0);
+        });
+        _loadingMore = null;
     }
 
     private static string MatchLink(string artist, string title) =>

@@ -16,8 +16,13 @@ public sealed record DiscoveryTrackDto(Guid Id, string Title, double? DurationSe
 
 /// <summary>Artiste proche de ceux de la bibliothèque. <paramref name="BecauseOf"/> : les artistes de la bibliothèque qui y mènent.</summary>
 /// <param name="AddedAt">Proposé pour la première fois (les plus récents d'abord ; retiré au bout de 7 jours).</param>
+/// <param name="Tracks">Les premiers titres phares (réglage « titres par artiste »).</param>
+/// <param name="MoreTracks">Titres phares suivants, à demander par <c>/api/discovery/artists/{id}/tracks</c>.</param>
 public sealed record DiscoveryArtistDto(Guid Id, string Name, string? Comment, IReadOnlyList<string> BecauseOf, IReadOnlyList<DiscoveryTrackDto> Tracks,
-    DateTimeOffset AddedAt = default);
+    DateTimeOffset AddedAt = default, int MoreTracks = 0);
+
+/// <summary>Titres phares suivants d'un artiste à découvrir, et combien il en reste après eux.</summary>
+public sealed record DiscoveryMoreDto(IReadOnlyList<DiscoveryTrackDto> Tracks, int Remaining);
 
 /// <param name="UpdatedAt">Dernière actualisation terminée (null : jamais).</param>
 /// <param name="Refreshing">Une actualisation attend ou tourne.</param>

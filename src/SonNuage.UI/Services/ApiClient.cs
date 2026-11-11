@@ -121,6 +121,9 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     // ---- Demandes de téléchargement (contributeurs ; liste et décision : admin) ----
     public Task<YoutubeListingDto?> RequestSearchAsync(string q, bool music) => GetAsync<YoutubeListingDto>($"api/requests/search?music={music}&q={Uri.EscapeDataString(q)}");
     public Task<DiscoveryPageDto?> DiscoveryAsync() => GetAsync<DiscoveryPageDto>("api/discovery/artists");
+    /// <summary>Titres phares suivants d'un artiste à découvrir, après les <paramref name="skip"/> déjà affichés.</summary>
+    public Task<DiscoveryMoreDto?> DiscoveryMoreAsync(Guid artistId, int skip, int take) =>
+        GetAsync<DiscoveryMoreDto>($"api/discovery/artists/{artistId}/tracks?skip={skip}&take={take}");
     public Task RefreshDiscoveryAsync() => SendAsync(HttpMethod.Post, "api/admin/discovery/refresh");
     /// <summary>Nouveautés des artistes : <paramref name="when"/> « recent » ou « upcoming », <paramref name="type"/> « album », « ep » ou « single » (null : tout).</summary>
     public Task<List<ArtistReleaseDto>?> ReleasesAsync(string? when = null, string? type = null) =>

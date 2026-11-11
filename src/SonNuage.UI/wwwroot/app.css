@@ -106,6 +106,7 @@ button { font: inherit; color: inherit; }
 .discover-artist-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem .6rem; }
 .discover-artist-head h2 { margin: 0; font-size: 1.35rem; }
 .discover-because { margin: .25rem 0 .8rem; }
+.discover-more { margin-top: .75rem; gap: .5rem; min-height: 2rem; }
 .disc-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; max-width: 1100px; }
 .disc-card { display: flex; flex-direction: column; gap: .55rem; min-width: 0; background: var(--bg-elevated); border-radius: var(--radius); padding: .55rem .55rem .65rem; }
 .disc-card.known { opacity: .7; }
