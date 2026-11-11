@@ -460,7 +460,7 @@ select.input { cursor: pointer; }
 .hero-meta p { margin: .3rem 0; }
 .eyebrow { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
 .editable { cursor: text; }
-.actions { display: flex; align-items: center; gap: .75rem; margin-bottom: 1rem; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-bottom: 1rem; }
 
 /* ---------- Listes de titres ---------- */
 
