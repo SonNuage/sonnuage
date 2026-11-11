@@ -41,6 +41,8 @@ public sealed class DiscoveryService(
     /// l'actualisation ; les suivants seulement quand quelqu'un les demande (« voir plus »).
     /// </summary>
     public const int StoredTracks = 15;
+    /// <summary>Au plus, quand « voir plus » va au-delà des titres gardés.</summary>
+    public const int MaxTracks = 30;
 
     public const int MinMatchScore = 60;
     private const int PrefetchPerRun = 40;
@@ -162,28 +164,7 @@ public sealed class DiscoveryService(
         {
             try
             {
-                var found = await listenBrainz.TopRecordingsAsync(artist.MusicBrainzId, ct);
-                if (found.Count == 0) found = await deezer.TopTracksAsync(artist.Name, ct);
-                var top = found
-                    .DistinctBy(r => Library.NameNormalizer.Key(r.Title)).Take(Math.Max(StoredTracks, shown)).ToList();
-                var previous = artist.Tracks.GroupBy(t => Library.NameNormalizer.Key(t.Title)).ToDictionary(g => g.Key, g => g.First());
-                db.DiscoveryTracks.RemoveRange(artist.Tracks.Where(t => !top.Any(r => Library.NameNormalizer.Key(r.Title) == Library.NameNormalizer.Key(t.Title))));
-                for (var i = 0; i < top.Count; i++)
-                {
-                    var r = top[i];
-                    if (!previous.TryGetValue(Library.NameNormalizer.Key(r.Title), out var track))
-                    {
-                        track = new DiscoveryTrack { Title = r.Title, ArtistId = artist.Id };
-                        db.DiscoveryTracks.Add(track);
-                    }
-                    track.Rank = i;
-                    track.Title = r.Title;
-                    track.RecordingMbid = r.RecordingMbid;
-                    track.ReleaseName = r.ReleaseName;
-                    track.DurationSeconds = r.LengthSeconds;
-                }
-                artist.TracksFetchedAt = time.GetUtcNow();
-                await db.SaveChangesAsync(ct);
+                await StoreTopAsync(db, artist, Math.Max(StoredTracks, shown), dropOthers: true, ct);
             }
             catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
             {
@@ -191,6 +172,73 @@ public sealed class DiscoveryService(
             }
         }
     }
+
+    /// <summary>
+    /// Lit les titres phares de l'artiste (ListenBrainz, sinon Deezer) et garde les <paramref name="max"/> premiers,
+    /// dans leur ordre ; ceux déjà connus gardent leur vidéo. <paramref name="dropOthers"/> : les titres qui ne sont
+    /// plus dans cette liste sont retirés.
+    /// </summary>
+    private async Task StoreTopAsync(SonNuageDbContext db, DiscoveryArtist artist, int max, bool dropOthers, CancellationToken ct)
+    {
+        var found = await listenBrainz.TopRecordingsAsync(artist.MusicBrainzId, ct);
+        if (found.Count == 0) found = await deezer.TopTracksAsync(artist.Name, ct);
+        var top = found.DistinctBy(r => Library.NameNormalizer.Key(r.Title)).Take(max).ToList();
+        var previous = artist.Tracks.GroupBy(t => Library.NameNormalizer.Key(t.Title)).ToDictionary(g => g.Key, g => g.First());
+        if (dropOthers)
+            db.DiscoveryTracks.RemoveRange(artist.Tracks.Where(t => !top.Any(r => Library.NameNormalizer.Key(r.Title) == Library.NameNormalizer.Key(t.Title))));
+        for (var i = 0; i < top.Count; i++)
+        {
+            var r = top[i];
+            if (!previous.TryGetValue(Library.NameNormalizer.Key(r.Title), out var track))
+            {
+                // Ajout explicite : rangé seulement dans artist.Tracks, EF le prendrait pour un titre existant (sa clé est déjà fixée).
+                track = new DiscoveryTrack { Title = r.Title, ArtistId = artist.Id, Artist = artist };
+                db.DiscoveryTracks.Add(track);
+            }
+            track.Rank = i;
+            track.Title = r.Title;
+            track.RecordingMbid = r.RecordingMbid;
+            track.ReleaseName = r.ReleaseName;
+            track.DurationSeconds = r.LengthSeconds;
+        }
+        artist.TracksFetchedAt = time.GetUtcNow();
+        await db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>
+    /// « Voir plus » au-delà des titres gardés : relit tout de suite les titres phares de l'artiste et en garde davantage
+    /// (<see cref="MaxTracks"/>). Source injoignable : on reste avec ce qu'on a.
+    /// </summary>
+    public async Task FetchMoreTracksAsync(SonNuageDbContext db, DiscoveryArtist artist, CancellationToken ct)
+    {
+        if (artist.Tracks.Count >= MaxTracks) return;
+        try
+        {
+            await StoreTopAsync(db, artist, MaxTracks, dropOthers: false, ct);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or System.Text.Json.JsonException || ex is TaskCanceledException && !ct.IsCancellationRequested)
+        {
+            logger.LogInformation("Titres phares de {Artist} illisibles : {Message}", artist.Name, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Vidéos déjà prises : importées (ou en cours d'import) ou demandées. Leurs titres ne sont plus proposés ; le
+    /// titre suivant de l'artiste prend leur place.
+    /// </summary>
+    public static async Task<HashSet<string>> TakenAsync(SonNuageDbContext db, IReadOnlyCollection<string> videoIds, CancellationToken ct)
+    {
+        var imported = await db.YoutubeItems
+            .Where(i => videoIds.Contains(i.VideoId) && i.Status != YoutubeItemStatus.Failed && i.Status != YoutubeItemStatus.Skipped)
+            .Select(i => i.VideoId).ToListAsync(ct);
+        var asked = await db.DownloadRequests.Where(r => videoIds.Contains(r.VideoId) && r.Decision == DownloadRequestDecision.Requested)
+            .Select(r => r.VideoId).ToListAsync(ct);
+        return [.. imported, .. asked];
+    }
+
+    /// <summary>Titres de l'artiste encore à proposer (ni importés ni demandés), du plus au moins écouté.</summary>
+    public static List<DiscoveryTrack> Open(DiscoveryArtist artist, HashSet<string> taken) =>
+        artist.Tracks.Where(t => t.VideoId is null || !taken.Contains(t.VideoId)).OrderBy(t => t.Rank).ToList();
 
     /// <summary>
     /// Cherche maintenant sur YouTube ceux de ces titres qui ne l'ont pas encore été (« voir plus » d'un artiste) ;
@@ -239,16 +287,19 @@ public sealed class DiscoveryService(
     }
 
     /// <summary>
-    /// Retrouve sur YouTube Music (recherche par correspondance) les premiers titres de chaque artiste, ceux que la
-    /// page affiche d'emblée ; s'arrête si YouTube bride.
+    /// Retrouve sur YouTube Music (recherche par correspondance) de quoi afficher d'emblée le nombre de titres réglé
+    /// pour chaque artiste, sans compter ceux déjà importés ou demandés ; s'arrête si YouTube bride.
     /// </summary>
     private async Task MatchAsync(SonNuageDbContext db, JobContext ctx, CancellationToken ct)
     {
         var shown = settings.Settings.TracksPerArtist;
-        var tracks = await db.DiscoveryTracks.Include(t => t.Artist)
-            .Where(t => t.MatchedAt == null && t.Rank < shown)
-            .OrderByDescending(t => t.Artist.Score).ThenBy(t => t.Rank)
-            .ToListAsync(ct);
+        var artists = await db.DiscoveryArtists.Include(a => a.Tracks).OrderByDescending(a => a.Score).ToListAsync(ct);
+        var taken = await TakenAsync(db, artists.SelectMany(a => a.Tracks).Where(t => t.VideoId != null).Select(t => t.VideoId!).Distinct().ToList(), ct);
+        var tracks = artists.SelectMany(a =>
+        {
+            var open = Open(a, taken);
+            return open.Where(t => t.MatchedAt == null).Take(Math.Max(0, shown - open.Count(t => t.MatchedAt != null)));
+        }).ToList();
         if (tracks.Count == 0) return;
         if (tools.YtDlp is null)
         {

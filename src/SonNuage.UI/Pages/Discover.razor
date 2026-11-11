@@ -131,7 +131,7 @@
                                     var albumAsked = _albums.Contains(AlbumKey(artist.Name, album));
                                     <button class="btn compact disc-album @(albumAsked ? "on" : null)" disabled="@(albumAsked || _sendingAlbum)"
                                             title="@(albumAsked ? L["discover.albumAsked"] : L["discover.albumHint", ("album", album)])"
-                                            @onclick="() => AskAlbumAsync(artist.Name, album)"><Icon Name="album" Size="16" /> @L["discover.album"]</button>
+                                            @onclick="() => AskAlbumAsync(artist, album)"><Icon Name="album" Size="16" /> @L["discover.album"]</button>
                                 }
                                 @if (t.VideoId is { } openId)
                                 {
@@ -142,8 +142,9 @@
                         </article>
                     }
                 </div>
-                @if (RemainingOf(artist) is > 0 and var remaining)
+                @if (!_noMore.Contains(artist.Id))
                 {
+                    var remaining = RemainingOf(artist);
                     <div class="row discover-more">
                         @if (_loadingMore == artist.Id)
                         {
@@ -152,11 +153,11 @@
                         else
                         {
                             <button class="btn compact" disabled="@(_loadingMore is not null)" title="@L["discover.moreHint"]"
-                                    @onclick="() => MoreAsync(artist, all: false)"><Icon Name="add" Size="16" /> @L["discover.more"]</button>
+                                    @onclick="() => MoreAsync(artist, MoreStep)"><Icon Name="add" Size="16" /> @L["discover.more"]</button>
                             @if (remaining > MoreStep)
                             {
                                 <button class="btn compact" disabled="@(_loadingMore is not null)" title="@L["discover.moreHint"]"
-                                        @onclick="() => MoreAsync(artist, all: true)">@L["discover.all", ("count", remaining)]</button>
+                                        @onclick="() => MoreAsync(artist, MoreStep, all: true)">@L["discover.all", ("count", remaining)]</button>
                             }
                         }
                     </div>
@@ -218,32 +219,62 @@
     private readonly Dictionary<Guid, int> _remaining = [];
     private Guid? _loadingMore;
 
-    private IEnumerable<DiscoveryTrackDto> TracksOf(DiscoveryArtistDto artist) =>
+    /// <summary>Artistes dont le serveur n'a plus de titre à proposer : plus de bouton « voir plus ».</summary>
+    private readonly HashSet<Guid> _noMore = [];
+    /// <summary>Titres retirés de la page : demandés à l'instant (le serveur ne les propose plus non plus).</summary>
+    private readonly HashSet<Guid> _hidden = [];
+    /// <summary>
+    /// Par artiste, titres retirés parce que leur album vient d'être demandé : le serveur les propose encore tant que
+    /// la tâche de fond ne les a pas demandés un par un, ils comptent donc dans les titres « déjà vus ».
+    /// </summary>
+    private readonly Dictionary<Guid, int> _albumHidden = [];
+
+    private IEnumerable<DiscoveryTrackDto> AllOf(DiscoveryArtistDto artist) =>
         _more.TryGetValue(artist.Id, out var more) ? artist.Tracks.Concat(more) : artist.Tracks;
+
+    private IEnumerable<DiscoveryTrackDto> TracksOf(DiscoveryArtistDto artist) => AllOf(artist).Where(t => !_hidden.Contains(t.Id));
 
     private int RemainingOf(DiscoveryArtistDto artist) => _remaining.TryGetValue(artist.Id, out var left) ? left : artist.MoreTracks;
 
-    /// <summary>Les titres suivants de l'artiste ; « tout » : lot après lot, chacun affiché dès qu'il arrive.</summary>
-    private async Task MoreAsync(DiscoveryArtistDto artist, bool all)
+    /// <summary>
+    /// Les <paramref name="take"/> titres suivants de l'artiste, cherchés par le serveur à l'instant ; « tout » : lot
+    /// après lot, chacun affiché dès qu'il arrive.
+    /// </summary>
+    private async Task MoreAsync(DiscoveryArtistDto artist, int take, bool all = false)
     {
         _loadingMore = artist.Id;
+        StateHasChanged();
         await RunAsync(async () =>
         {
-            do
+            // Borne : un lot peut revenir vide alors qu'il reste des titres (vidéos trouvées mais déjà importées).
+            for (var round = 0; round < 12; round++)
             {
-                var shown = TracksOf(artist).Count();
-                if (await Api.DiscoveryMoreAsync(artist.Id, shown, MoreStep) is not { Tracks.Count: > 0 } next)
+                var skip = TracksOf(artist).Count() + _albumHidden.GetValueOrDefault(artist.Id);
+                var next = await Api.DiscoveryMoreAsync(artist.Id, skip, take);
+                _remaining[artist.Id] = next?.Remaining ?? 0;
+                if (next is null || next.Tracks.Count == 0 && next.Remaining == 0)
                 {
-                    _remaining[artist.Id] = 0;
+                    _noMore.Add(artist.Id);
                     break;
                 }
+                var known = AllOf(artist).Select(t => t.Id).ToHashSet();
+                var fresh = next.Tracks.Where(t => !known.Contains(t.Id)).ToList();
                 if (!_more.TryGetValue(artist.Id, out var more)) _more[artist.Id] = more = [];
-                more.AddRange(next.Tracks);
-                _remaining[artist.Id] = next.Remaining;
+                more.AddRange(fresh);
                 StateHasChanged();
-            } while (all && RemainingOf(artist) > 0);
+                if (fresh.Count > 0 && !all) break;
+            }
         });
         _loadingMore = null;
+    }
+
+    /// <summary>Retire des titres de la page et demande au serveur de quoi les remplacer.</summary>
+    private async Task ReplaceAsync(DiscoveryArtistDto artist, IReadOnlyCollection<DiscoveryTrackDto> gone, bool byAlbum)
+    {
+        if (gone.Count == 0) return;
+        foreach (var t in gone) _hidden.Add(t.Id);
+        if (byAlbum) _albumHidden[artist.Id] = _albumHidden.GetValueOrDefault(artist.Id) + gone.Count;
+        if (!_noMore.Contains(artist.Id)) await MoreAsync(artist, gone.Count);
     }
 
     private static string MatchLink(string artist, string title) =>
@@ -255,21 +286,26 @@
     private static string AlbumKey(string artist, string album) => $"{artist}\n{album}".ToLowerInvariant();
 
     /// <summary>Tout l'album : le serveur retrouve ses titres et les demande un par un, en tâche de fond.</summary>
-    private async Task AskAlbumAsync(string artist, string album)
+    private async Task AskAlbumAsync(DiscoveryArtistDto artist, string album)
     {
         _sendingAlbum = true;
+        var sent = false;
         await RunAsync(async () =>
         {
-            await Api.RequestAlbumAsync(new CreateAlbumRequest(artist, album));
-            _albums.Add(AlbumKey(artist, album));
+            await Api.RequestAlbumAsync(new CreateAlbumRequest(artist.Name, album));
+            _albums.Add(AlbumKey(artist.Name, album));
             Ui.Notify(L["discover.albumSent", ("album", album)]);
+            sent = true;
         });
         _sendingAlbum = false;
+        // Les titres de cet album quittent la page ; les suivants de l'artiste les remplacent.
+        if (sent) await ReplaceAsync(artist, TracksOf(artist).Where(t => t.ReleaseName == album).ToList(), byAlbum: true);
     }
 
     private async Task AskAsync(DiscoveryArtistDto artist, DiscoveryTrackDto track)
     {
         _sending = track.VideoId;
+        var sent = false;
         await RunAsync(async () =>
         {
             var title = track.VideoTitle ?? $"{artist.Name} - {track.Title}";
@@ -278,9 +314,12 @@
             {
                 _asked.Add(track.VideoId!);
                 Ui.Notify(created.AutoApproved ? L["requests.sentAuto"] : L["requests.sent"]);
+                sent = true;
             }
         });
         _sending = null;
+        // Demandé : il quitte la page, le titre suivant de l'artiste prend sa place.
+        if (sent) await ReplaceAsync(artist, [track], byAlbum: false);
     }
 
     private async Task RefreshAsync()
