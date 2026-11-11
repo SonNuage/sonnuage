@@ -124,11 +124,10 @@ public static class StationCatalog
 
     public static readonly IReadOnlyList<StationDefinition> Moods =
     [
-        new("good-mood-pop", RadioStationKinds.Mood, "#ff922b", null, p =>
-        {
-            var pop = GenreHas(p, "pop", "dance", "disco", "funk", "synth", "variete", "motown", "soul", "new wave") ? 1 : 0;
-            return p.Feel is { } f ? 0.3 * pop + 0.35 * V(f.Happy) + 0.2 * V(f.Valence) + 0.15 * V(f.Danceability) : 0.6 * pop;
-        }, Threshold: 0.55),
+        // Le genre seul ne suffit pas : sans analyse, toute la « pop » de la bibliothèque passerait, ballades tristes comprises.
+        new("good-mood-pop", RadioStationKinds.Mood, "#ff922b", null, p => Feel(p, f =>
+            (GenreHas(p, "pop", "dance", "disco", "funk", "synth", "variete", "motown", "soul", "new wave") ? 0.3 : 0)
+            + 0.35 * V(f.Happy) + 0.2 * V(f.Valence) + 0.15 * V(f.Danceability)), Threshold: 0.55),
 
         new("chill", RadioStationKinds.Mood, "#74c0fc", null,
             p => Feel(p, f => 0.4 * V(f.Relaxed) + 0.3 * Inv(f.Energy) + 0.15 * V(f.Acoustic) + 0.15 * Inv(f.Aggressive)), Threshold: 0.65),

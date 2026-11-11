@@ -70,9 +70,10 @@ public sealed class RadioCatalogTests
     }
 
     [Fact]
-    public void Good_mood_pop_needs_pop_or_happy_sounds()
+    public void Good_mood_pop_takes_happy_songs_once_they_are_analyzed()
     {
-        Assert.True(Plays("good-mood-pop", Track("Song", genre: "Pop")));
+        // Sans analyse, le genre seul ne dit rien de l'humeur : une ballade triste est aussi de la « pop ».
+        Assert.False(Plays("good-mood-pop", Track("Song", genre: "Pop")));
         Assert.True(Plays("good-mood-pop", Track("Song", genre: "Pop", feel: new AudioFeel(Happy: 0.8, Valence: 0.7, Danceability: 0.6))));
         Assert.False(Plays("good-mood-pop", Track("Song", genre: "Pop", feel: new AudioFeel(Happy: 0.05, Sad: 0.9, Valence: 0.1))));
         Assert.False(Plays("good-mood-pop", Track("Song", genre: "Metal")));
@@ -147,9 +148,10 @@ public sealed class RadioCatalogTests
     [Fact]
     public void Account_ratings_hide_disliked_songs_and_favor_liked_ones()
     {
-        var liked = Track("Song", genre: "Pop");
-        var disliked = Track("Song", genre: "Pop");
-        var albumDisliked = Track("Song", genre: "Pop");
+        var happy = new AudioFeel(Happy: 0.8, Valence: 0.7, Danceability: 0.6);
+        var liked = Track("Song", genre: "Pop", feel: happy);
+        var disliked = Track("Song", genre: "Pop", feel: happy);
+        var albumDisliked = Track("Song", genre: "Pop", feel: happy);
         var personal = new RadioStations.Personal(new HashSet<Guid> { liked.Id },
             new Dictionary<Guid, int> { [disliked.Id] = 1, [albumDisliked.AlbumId] = 2 });
 
