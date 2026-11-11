@@ -98,6 +98,24 @@ window.sonnuage = {
   // Fuseau IANA de l'appareil (heures calmes, sauvegardes), comme le voit le navigateur.
   timeZone: () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
   setLanguage: (code) => { document.documentElement.lang = code; },
+  // Carrousel : fait défiler la ligne d'à peu près sa largeur visible.
+  scrollRow: (track, direction) => {
+    if (track) track.scrollBy({ left: direction * Math.max(200, track.clientWidth * 0.85), behavior: 'smooth' });
+  },
+  // Carrousel : note sur son cadre si la ligne est au début ou à la fin, pour cacher la flèche inutile.
+  watchRow: (track) => {
+    if (!track || !track.parentElement) return;
+    const update = () => {
+      track.parentElement.dataset.start = track.scrollLeft <= 2;
+      track.parentElement.dataset.end = track.scrollLeft + track.clientWidth >= track.scrollWidth - 2;
+    };
+    if (!track.dataset.watched) {
+      track.dataset.watched = 'true';
+      track.addEventListener('scroll', update, { passive: true });
+      new ResizeObserver(update).observe(track);
+    }
+    update();
+  },
   setTheme: applyTheme,
   // Paroles : la ligne en cours au milieu de la liste, sans faire défiler le reste de la page.
   scrollLyric: (list, index) => {

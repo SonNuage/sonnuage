@@ -1,0 +1,43 @@
+@* Une ligne de tuiles qui défile sur place : flèches à gauche et à droite (cachées au bout de la ligne), et défilement
+   tactile ou à la molette comme d'habitude. Le contenu est une grille (.grid) : ses tuiles se rangent sur une ligne. *@
+@inject IJSRuntime JS
+
+<div class="carousel">
+    <div class="carousel-track" @ref="_track">@ChildContent</div>
+    <button type="button" class="carousel-arrow prev" title="@L["common.seePrevious"]" aria-label="@L["common.seePrevious"]" @onclick="() => ScrollAsync(-1)">
+        <Icon Name="chevron-right" Size="24" />
+    </button>
+    <button type="button" class="carousel-arrow next" title="@L["common.seeNext"]" aria-label="@L["common.seeNext"]" @onclick="() => ScrollAsync(1)">
+        <Icon Name="chevron-right" Size="24" />
+    </button>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public RenderFragment? ChildContent { get; set; }
+
+    private ElementReference _track;
+
+    // Après chaque rendu : les tuiles ont pu changer, les flèches à montrer aussi.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("sonnuage.watchRow", _track);
+        }
+        catch (Exception ex) when (ex is JSException or JSDisconnectedException or TaskCanceledException)
+        {
+            // Sans script (prérendu, page quittée) : la ligne défile quand même, les deux flèches restent.
+        }
+    }
+
+    private async Task ScrollAsync(int direction)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("sonnuage.scrollRow", _track, direction);
+        }
+        catch (Exception ex) when (ex is JSException or JSDisconnectedException or TaskCanceledException)
+        {
+        }
+    }
+}

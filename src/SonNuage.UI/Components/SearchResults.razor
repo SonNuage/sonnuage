@@ -32,34 +32,37 @@ else if (_result is { } r)
     {
         <p class="empty">@L["search.noResults", ("query", _shown)]</p>
     }
-    @if (r.Tracks.Count > 0)
+    @* Albums puis artistes, chacun sur une ligne qui défile sur place ; les titres viennent ensuite, en liste. *@
+    @if (r.Albums.Count > 0)
     {
         <section>
-            <h2>@L["search.tracks"]</h2>
-            <TrackList Tracks="r.Tracks" ShowCover="true" />
+            <h2>@L["search.albums"]</h2>
+            <Carousel><AlbumGrid Albums="r.Albums" /></Carousel>
         </section>
     }
     @if (r.Artists.Count > 0)
     {
         <section>
             <h2>@L["search.artists"]</h2>
-            <div class="grid">
-                @foreach (var a in r.Artists)
-                {
-                    <a class="card" href="artist/@a.Id">
-                        <div class="card-cover round"><Cover AlbumId="a.CoverAlbumId" HasCover="a.CoverAlbumId is not null" Round="true" Seed="@a.Name" /></div>
-                        <span class="card-title">@a.Name</span>
-                        <span class="card-sub">@L["common.artist"]</span>
-                    </a>
-                }
-            </div>
+            <Carousel>
+                <div class="grid">
+                    @foreach (var a in r.Artists)
+                    {
+                        <a class="card" href="artist/@a.Id" @key="a.Id">
+                            <div class="card-cover round"><Cover AlbumId="a.CoverAlbumId" HasCover="a.CoverAlbumId is not null" Round="true" Seed="@a.Name" /></div>
+                            <span class="card-title">@a.Name</span>
+                            <span class="card-sub">@L["common.artist"]</span>
+                        </a>
+                    }
+                </div>
+            </Carousel>
         </section>
     }
-    @if (r.Albums.Count > 0)
+    @if (r.Tracks.Count > 0)
     {
         <section>
-            <h2>@L["search.albums"]</h2>
-            <AlbumGrid Albums="r.Albums" />
+            <h2>@L["search.tracks"]</h2>
+            <TrackList Tracks="r.Tracks" ShowCover="true" />
         </section>
     }
 }
