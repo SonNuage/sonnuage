@@ -2,7 +2,8 @@
 @inject IPlayer Player
 @inject UiState Ui
 
-@* Radios thématiques (saisons, ambiances, météo) : une rangée de vignettes, un appui lance la radio. *@
+@* Radios thématiques (saisons, ambiances, météo) : une rangée de vignettes. Le bouton rond lance la radio ;
+   la vignette, son nom et sa description ouvrent sa page (Radio.razor), avec la liste de ses titres. *@
 @if (_stations is { Count: > 0 } stations)
 {
     <section>
@@ -14,14 +15,16 @@
         <div class="radio-row">
             @foreach (var s in stations)
             {
-                <button class="radio-card" @key="s.Id" style="--station: @s.Color" title="@L["radio.play", ("name", s.Name)]"
-                        disabled="@(_starting is not null)" @onclick="() => PlayAsync(s)">
-                    <span class="radio-covers n@(Math.Min(s.CoverAlbumIds.Count, 4))">
-                        @foreach (var album in s.CoverAlbumIds.Take(4))
-                        {
-                            <Cover AlbumId="album" Size="160" Seed="@s.Name" />
-                        }
-                        <span class="radio-play">
+                <article class="radio-card" @key="s.Id" style="--station: @s.Color">
+                    <div class="radio-covers n@(Math.Min(s.CoverAlbumIds.Count, 4))">
+                        <a class="radio-open" href="radio/@s.Id" title="@L["radio.open", ("name", s.Name)]" aria-label="@L["radio.open", ("name", s.Name)]">
+                            @foreach (var album in s.CoverAlbumIds.Take(4))
+                            {
+                                <Cover AlbumId="album" Size="160" Seed="@s.Name" />
+                            }
+                        </a>
+                        <button class="radio-play" title="@L["radio.play", ("name", s.Name)]" aria-label="@L["radio.play", ("name", s.Name)]"
+                                disabled="@(_starting is not null)" @onclick="() => PlayAsync(s)">
                             @if (_starting == s.Id)
                             {
                                 <Logo Size="14" Animated="true" />
@@ -30,11 +33,13 @@
                             {
                                 <Icon Name="play" Size="26" />
                             }
-                        </span>
-                    </span>
-                    <span class="radio-name">@s.Name</span>
-                    <span class="radio-desc">@s.Description</span>
-                </button>
+                        </button>
+                    </div>
+                    <a class="radio-text" href="radio/@s.Id" title="@L["radio.open", ("name", s.Name)]">
+                        <span class="radio-name">@s.Name</span>
+                        <span class="radio-desc">@s.Description</span>
+                    </a>
+                </article>
             }
         </div>
     </section>

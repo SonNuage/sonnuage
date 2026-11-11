@@ -1,0 +1,89 @@
+@page "/radio/{Id}"
+@inject ApiClient Api
+@inject IPlayer Player
+
+<PageTitle>@(_station?.Name ?? L["radio.title"]) · SonNuage</PageTitle>
+
+@* Une radio thématique avant de l'écouter : un tirage de ses titres. « Lecture » joue ce tirage, puis la radio continue. *@
+<Loader Loading="_tracks is null && _error is null" Error="@_error" OnRetry="LoadAsync">
+    @if (_station is { } s && _tracks is { } tracks)
+    {
+        <div class="page">
+            <header class="hero">
+                <span class="hero-cover radio-covers n@(Math.Min(s.CoverAlbumIds.Count, 4))" style="--station: @s.Color">
+                    @foreach (var album in s.CoverAlbumIds.Take(4))
+                    {
+                        <Cover AlbumId="album" Size="300" Seed="@s.Name" />
+                    }
+                </span>
+                <div class="hero-meta">
+                    <span class="eyebrow">@L["radio.eyebrow"]</span>
+                    <h1>@s.Name</h1>
+                    <p class="muted">@s.Description</p>
+                    <p>@L["common.tracks", ("count", tracks.Count)], @Format.LongDuration(tracks.Sum(t => t.DurationSeconds))</p>
+                </div>
+            </header>
+
+            <div class="actions">
+                <button class="play-btn large" title="@L["radio.play", ("name", s.Name)]" disabled="@(tracks.Count == 0)" @onclick="() => PlayAsync(0)"><Icon Name="play" Size="32" /></button>
+                <button class="btn" disabled="@_drawing" title="@L["radio.redrawHint"]" @onclick="RedrawAsync"><Icon Name="refresh" Size="18" /> @L["radio.redraw"]</button>
+            </div>
+            <p class="muted small">@L["radio.pageHint"]</p>
+
+            @if (tracks.Count == 0)
+            {
+                <p class="empty">@L["radio.empty"]</p>
+            }
+            else
+            {
+                <TrackList Tracks="tracks" ShowCover="true" OnPlay="PlayAsync" />
+            }
+        </div>
+    }
+</Loader>
+
+@code {
+    /// <summary>Tirage affiché : assez pour juger la radio, sans la dérouler en entier.</summary>
+    private const int Shown = 50;
+
+    [Parameter] public string Id { get; set; } = "";
+
+    private RadioStationDto? _station;
+    private List<TrackDto>? _tracks;
+    private string? _error;
+    private string? _loaded;
+    private bool _drawing;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loaded == Id) return;
+        _loaded = Id;
+        (_station, _tracks) = (null, null);
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _error = null;
+        try
+        {
+            _station = (await Api.RadioStationsAsync())?.FirstOrDefault(s => s.Id == Id);
+            if (_station is null) _error = L["radio.notFound"];
+            else _tracks = await Api.RadioStationNextAsync(Id, new StationNextRequest([], Shown)) ?? [];
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            _error = L.Server(ex.Message);
+        }
+    }
+
+    private async Task RedrawAsync()
+    {
+        _drawing = true;
+        await LoadAsync();
+        _drawing = false;
+    }
+
+    /// <summary>La radio à partir de ce titre du tirage ; à la fin, elle continue avec d'autres titres.</summary>
+    private Task PlayAsync(int index) => Player.PlayStationAsync(Id, _tracks!.Skip(index).ToList());
+}

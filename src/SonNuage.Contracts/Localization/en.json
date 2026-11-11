@@ -1505,6 +1505,12 @@
     "play": "Play the {name} radio",
     "empty": "Nothing to play on this radio for now.",
     "playing": "{name} radio",
+    "eyebrow": "Radio",
+    "open": "See the songs of the {name} radio",
+    "redraw": "Draw again",
+    "redrawHint": "Draw other songs from this radio",
+    "pageHint": "A draw from this radio's songs. Playback starts with these, then the radio goes on endlessly.",
+    "notFound": "Radio not found.",
     "stations": {
       "halloween": {
         "name": "Halloween",

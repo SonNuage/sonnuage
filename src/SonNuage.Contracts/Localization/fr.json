@@ -1505,6 +1505,12 @@
     "play": "Écouter la radio {name}",
     "empty": "Rien à jouer pour cette radio pour l'instant.",
     "playing": "Radio {name}",
+    "eyebrow": "Radio",
+    "open": "Voir les titres de la radio {name}",
+    "redraw": "Autre tirage",
+    "redrawHint": "Tirer d'autres titres de cette radio",
+    "pageHint": "Un tirage parmi les titres de cette radio. La lecture commence par ces titres, puis la radio continue sans fin.",
+    "notFound": "Radio introuvable.",
     "stations": {
       "halloween": {
         "name": "Halloween",
