@@ -269,7 +269,7 @@ The server is meant to be reached only through a **Cloudflare tunnel** (no open 
    (e.g. `music.example.org`) to `http://sonnuage:8080`, copy the token.
 2. On the host machine:
    ```bash
-   cd deploy && cp .env.example .env   # fill in image, music folder, admin password, token
+   cd deploy && cp .env.example .env   # set the music folder, the admin password and the tunnel token
    docker compose up -d
    ```
 

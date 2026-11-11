@@ -270,7 +270,7 @@ Le serveur est prévu pour être joint uniquement par un **tunnel Cloudflare** (
    (ex. `musique.example.org`) vers `http://sonnuage:8080`, copier le jeton.
 2. Sur la machine hôte :
    ```bash
-   cd deploy && cp .env.example .env   # renseigner image, dossier musique, mot de passe admin, jeton
+   cd deploy && cp .env.example .env   # renseigner le dossier de musique, le mot de passe admin et le jeton
    docker compose up -d
    ```
 
