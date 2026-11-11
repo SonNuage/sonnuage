@@ -1,6 +1,7 @@
 @* Parutions des artistes de la bibliothèque (nouveautés) : pochette, titre, artiste, date et type. Déjà dans la
    bibliothèque : lien vers l'album. Sinon « Importer » (admin) ou « Demander » (contributeur), par la demande d'album
-   habituelle ; une parution à venir n'a que sa date. *@
+   habituelle ; une parution à venir n'a que sa date. Une parution sortie et absente de la bibliothèque a son extrait de
+   30 s sur la pochette (contributeurs et admins), comme les titres de la découverte. *@
 @inject ApiClient Api
 @inject AuthSession Auth
 @inject UiState Ui
@@ -18,6 +19,11 @@
                 else
                 {
                     <span class="disc-placeholder"><Icon Name="album" Size="40" /></span>
+                }
+                @if (r.AlbumId is null && !r.Upcoming && Auth.CanRequest)
+                {
+                    <PreviewButton VideoId="@($"release:{r.ReleaseGroupId}")" Url="() => Api.ReleasePreviewUrlAsync(r.ReleaseGroupId)"
+                                   FailedMessage="@L["releases.previewFailed"]" Overlay="true" />
                 }
                 @if (r.AlbumId is not null)
                 {

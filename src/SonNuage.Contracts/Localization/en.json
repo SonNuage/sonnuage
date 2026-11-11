@@ -222,7 +222,8 @@
     "preview": {
       "noFfmpeg": "ffmpeg is missing on the server: previews can't be prepared.",
       "noFile": "yt-dlp produced no preview.",
-      "failed": "Preview unavailable: {message}"
+      "failed": "Preview unavailable: {message}",
+      "notFound": "Release not found on YouTube: no preview."
     },
     "storage": {
       "minFree": "The minimum free space must be between 0 and {max} GB.",
@@ -1429,7 +1430,8 @@
       "album": "Album",
       "ep": "EP",
       "single": "Single"
-    }
+    },
+    "previewFailed": "No preview for this release: it was not found on YouTube, or YouTube does not answer."
   },
   "schedules": {
     "title": "Scheduled tasks",

@@ -268,6 +268,34 @@ public sealed class ArtistReleasesTests(ReleasesFactory factory) : IClassFixture
     }
 
     [Fact]
+    public async Task A_release_has_a_thirty_second_preview_for_contributors()
+    {
+        var admin = await factory.ReadyAsync();
+        var client = factory.CreateClient();
+        var tokens = await SonNuageFactory.LoginAsync(client, "admin", SonNuageFactory.AdminPassword);
+        string Url(Guid group) => $"/api/releases/{group}/preview";
+
+        // La vidéo de cette parution est connue et son extrait déjà sur le disque : il est servi tel quel.
+        factory.Services.GetRequiredService<ReleasePreviews>().Remember(ReleasesFactory.NewAlbumGroup, "relprev0001", null);
+        var dir = Path.Combine(factory.DataPath, "discovery", "previews");
+        Directory.CreateDirectory(dir);
+        await File.WriteAllBytesAsync(Path.Combine(dir, "relprev0001.mp3"), new byte[1024], Ct);
+        var ready = await client.GetAsync($"{Url(ReleasesFactory.NewAlbumGroup)}?t={tokens.MediaToken}", Ct);
+        Assert.Equal(HttpStatusCode.OK, ready.StatusCode);
+        Assert.Equal("audio/mpeg", ready.Content.Headers.ContentType?.MediaType);
+        Assert.Equal(1024, (await ready.Content.ReadAsByteArrayAsync(Ct)).Length);
+
+        // Sans yt-dlp (tests), une autre parution ne peut pas être cherchée sur YouTube : erreur dite, pas de plantage.
+        Assert.Equal(HttpStatusCode.BadGateway, (await client.GetAsync($"{Url(ReleasesFactory.NextSingleGroup)}?t={tokens.MediaToken}", Ct)).StatusCode);
+
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"{Url(Guid.NewGuid())}?t={tokens.MediaToken}", Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync(Url(ReleasesFactory.NewAlbumGroup), Ct)).StatusCode);
+        await AccountAsync(admin, "release-preview-user", Roles.User);
+        var user = await SonNuageFactory.LoginAsync(factory.CreateClient(), "release-preview-user", "password-1234");
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync($"{Url(ReleasesFactory.NewAlbumGroup)}?t={user.MediaToken}", Ct)).StatusCode);
+    }
+
+    [Fact]
     public async Task Only_the_admin_starts_a_refresh()
     {
         var admin = await factory.ReadyAsync();

@@ -103,6 +103,7 @@ builder.Services.AddHostedService<SonNuage.Server.Discovery.DiscoveryScheduler>(
 builder.Services.AddSingleton<IJobHandler, SonNuage.Server.Discovery.ArtistReleasesJob>();
 builder.Services.AddHostedService<SonNuage.Server.Discovery.ArtistReleasesScheduler>();
 builder.Services.AddSingleton<SonNuage.Server.Discovery.ReleaseCoverCache>();
+builder.Services.AddSingleton<SonNuage.Server.Discovery.ReleasePreviews>();
 builder.Services.AddSingleton<YoutubeListingTasks>();
 builder.Services.AddSingleton<MusicBrainzClient>();
 builder.Services.AddSingleton<MetadataResolver>();

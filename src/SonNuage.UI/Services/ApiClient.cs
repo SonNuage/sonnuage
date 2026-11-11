@@ -312,6 +312,14 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
         return new Uri(endpoint.BaseAddress, $"api/requests/preview/{Uri.EscapeDataString(videoId)}?{duration}t={token}").ToString();
     }
 
+    /// <summary>Extrait de 30 s d'une parution des nouveautés (contributeurs) : le serveur la cherche sur YouTube à la première écoute.</summary>
+    public async Task<string?> ReleasePreviewUrlAsync(Guid releaseGroupId)
+    {
+        var token = await auth.GetMediaTokenAsync();
+        if (token is null || endpoint.BaseAddress is null) return null;
+        return new Uri(endpoint.BaseAddress, $"api/releases/{releaseGroupId}/preview?t={token}").ToString();
+    }
+
     // ---- Plomberie ----
 
     private static string Q(string? q) => string.IsNullOrWhiteSpace(q) ? "" : $"&q={Uri.EscapeDataString(q)}";

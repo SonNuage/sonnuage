@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SonNuage.Contracts;
+using SonNuage.Contracts.Localization;
 using SonNuage.Server.Auth;
 using SonNuage.Server.Data;
 using SonNuage.Server.Discovery;
@@ -41,6 +42,31 @@ public static class ReleaseEndpoints
             http.Response.Headers.CacheControl = "private, max-age=604800";
             return Results.File(path, LibraryFiles.ContentType(path));
         }).RequireAuthorization(AuthConstants.MediaPolicy).WithTags("Media");
+
+        // Extrait de 30 s d'une parution connue, cherchée sur YouTube à la première écoute. Lu par un élément audio
+        // (jeton média dans l'adresse) ; hors de la bibliothèque, donc contributeurs et admins.
+        app.MapGet("/api/releases/{id:guid}/preview", async (Guid id, HttpContext http, SonNuageDbContext db, ReleasePreviews previews, CancellationToken ct) =>
+        {
+            var release = await db.ArtistReleases.AsNoTracking().FirstOrDefaultAsync(r => r.ReleaseGroupId == id, ct);
+            if (release is null) return Results.NotFound();
+            var artist = await db.Artists.Where(a => a.MusicBrainzId == release.ArtistMbid).Select(a => a.Name).FirstOrDefaultAsync(ct);
+            if (artist is null) return Results.NotFound();
+            try
+            {
+                if (await previews.GetAsync(id, artist, release.Title, ct) is not { } path)
+                    return Results.Problem(Tx.Key("errors.preview.notFound"), statusCode: StatusCodes.Status404NotFound);
+                http.Response.Headers.CacheControl = "private, max-age=3600";
+                return Results.File(path, "audio/mpeg", enableRangeProcessing: true);
+            }
+            catch (Youtube.YtDlpException ex)
+            {
+                return Results.Problem(Tx.Key("errors.preview.failed", ("message", ex.Message)), statusCode: StatusCodes.Status502BadGateway);
+            }
+            catch (Storage.StorageFullException ex)
+            {
+                return Results.Problem(ex.Message, statusCode: StatusCodes.Status507InsufficientStorage);
+            }
+        }).RequireAuthorization(AuthConstants.ContributorMediaPolicy).WithTags("Discovery");
 
         app.MapPost("/api/admin/releases/refresh", async (IServiceScopeFactory scopes, CancellationToken ct) =>
         {

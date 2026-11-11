@@ -222,7 +222,8 @@
     "preview": {
       "noFfmpeg": "ffmpeg manque sur le serveur : impossible de préparer un extrait.",
       "noFile": "yt-dlp n'a produit aucun extrait.",
-      "failed": "Extrait indisponible : {message}"
+      "failed": "Extrait indisponible : {message}",
+      "notFound": "Parution introuvable sur YouTube : pas d'extrait."
     },
     "storage": {
       "minFree": "L'espace libre minimum va de 0 à {max} Go.",
@@ -1429,7 +1430,8 @@
       "album": "Album",
       "ep": "EP",
       "single": "Single"
-    }
+    },
+    "previewFailed": "Extrait indisponible pour cette parution : elle n'a pas été trouvée sur YouTube, ou YouTube ne répond pas."
   },
   "schedules": {
     "title": "Tâches planifiées",

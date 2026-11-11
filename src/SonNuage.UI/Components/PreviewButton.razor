@@ -54,6 +54,13 @@ else
     [Parameter] public double? DurationSeconds { get; set; }
     /// <summary>Bouton posé sur une miniature (position absolue, elle doit être en position relative).</summary>
     [Parameter] public bool Overlay { get; set; }
+    /// <summary>
+    /// Adresse de l'extrait quand ce n'est pas celui d'une vidéo connue (parution des nouveautés, que le serveur cherche
+    /// sur YouTube) ; <see cref="VideoId"/> ne sert alors que de clé pour « un seul extrait à la fois ».
+    /// </summary>
+    [Parameter] public Func<Task<string?>>? Url { get; set; }
+    /// <summary>Message si l'extrait ne peut pas être lu ; par défaut celui d'une vidéo.</summary>
+    [Parameter] public string? FailedMessage { get; set; }
 
     private JsPreviewAudio? _audio;
 
@@ -64,8 +71,8 @@ else
     private Task ToggleAsync()
     {
         _audio ??= new JsPreviewAudio(JS, Preview);
-        return Preview.ToggleAsync(VideoId, () => Api.PreviewUrlAsync(VideoId, DurationSeconds), _audio,
-            () => Ui.Notify(L["requests.previewFailed"], true));
+        return Preview.ToggleAsync(VideoId, Url ?? (() => Api.PreviewUrlAsync(VideoId, DurationSeconds)), _audio,
+            () => Ui.Notify(FailedMessage ?? L["requests.previewFailed"], true));
     }
 
     public void Dispose()
