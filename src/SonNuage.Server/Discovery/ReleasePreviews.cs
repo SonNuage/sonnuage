@@ -10,9 +10,20 @@ namespace SonNuage.Server.Discovery;
 /// habituel (<see cref="PreviewService"/>, cache disque). La vidéo trouvée est retenue en mémoire : après un
 /// redémarrage, la recherche est refaite une fois, l'extrait lui reste sur le disque.
 /// </summary>
-public sealed class ReleasePreviews(YtDlp ytDlp, PreviewService previews, IOptions<SonNuageOptions> options)
+/// <remarks>Donne aussi les titres de la parution (Deezer), retenus de même, pour la fenêtre qui la détaille.</remarks>
+public sealed class ReleasePreviews(YtDlp ytDlp, PreviewService previews, DeezerClient deezer, IOptions<SonNuageOptions> options)
 {
     private readonly ConcurrentDictionary<Guid, (string VideoId, double? Duration)> _videos = new();
+    private readonly ConcurrentDictionary<Guid, IReadOnlyList<TopRecording>> _tracks = new();
+
+    /// <summary>Titres de la parution, dans l'ordre ; aucun si Deezer ne la connaît pas (alors redemandé la fois suivante).</summary>
+    public async Task<IReadOnlyList<TopRecording>> TracksAsync(Guid releaseGroupId, string artist, string title, CancellationToken ct)
+    {
+        if (_tracks.TryGetValue(releaseGroupId, out var known)) return known;
+        var found = await deezer.AlbumTracksAsync(artist, title, ct);
+        if (found.Count > 0) _tracks[releaseGroupId] = found;
+        return found;
+    }
 
     /// <summary>Vidéo d'une parution, déjà connue.</summary>
     internal void Remember(Guid releaseGroupId, string videoId, double? duration) => _videos[releaseGroupId] = (videoId, duration);

@@ -148,8 +148,12 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     public Task<AudioAnalysisStatusDto?> AudioAnalysisAsync() => GetAsync<AudioAnalysisStatusDto>("api/admin/analysis");
     public Task<AudioAnalysisStatusDto?> SaveAudioAnalysisAsync(AudioAnalysisSettingsDto s) => SendAsync<AudioAnalysisStatusDto>(HttpMethod.Put, "api/admin/analysis/settings", s);
     public Task<AudioAnalysisStatusDto?> RunAudioAnalysisAsync() => SendAsync<AudioAnalysisStatusDto>(HttpMethod.Post, "api/admin/analysis/run");
-    public Task<MatchResultDto?> RequestMatchAsync(string artist, string title) =>
-        GetAsync<MatchResultDto>($"api/requests/match?artist={Uri.EscapeDataString(artist)}&title={Uri.EscapeDataString(title)}");
+    /// <param name="duration">Durée attendue si on la connaît ; sinon le serveur la demande à MusicBrainz.</param>
+    public Task<MatchResultDto?> RequestMatchAsync(string artist, string title, double? duration = null) =>
+        GetAsync<MatchResultDto>($"api/requests/match?artist={Uri.EscapeDataString(artist)}&title={Uri.EscapeDataString(title)}"
+            + (duration is > 0 ? $"&duration={Math.Round(duration.Value).ToString(System.Globalization.CultureInfo.InvariantCulture)}" : ""));
+    /// <summary>Titres d'une parution des nouveautés, dans l'ordre (contributeurs et admins).</summary>
+    public Task<List<ReleaseTrackDto>?> ReleaseTracksAsync(Guid releaseGroupId) => GetAsync<List<ReleaseTrackDto>>($"api/releases/{releaseGroupId}/tracks");
     public Task<DownloadRequestDto?> CreateRequestAsync(CreateDownloadRequest req) => SendAsync<DownloadRequestDto>(HttpMethod.Post, "api/requests", req);
     public Task RequestAlbumAsync(CreateAlbumRequest req) => SendAsync(HttpMethod.Post, "api/requests/album", req);
     public Task<PagedResult<DownloadRequestDto>?> MyRequestsAsync(int offset, int limit) => GetAsync<PagedResult<DownloadRequestDto>>($"api/requests/mine?offset={offset}&limit={limit}");

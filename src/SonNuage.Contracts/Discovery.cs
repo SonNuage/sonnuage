@@ -8,6 +8,9 @@ namespace SonNuage.Contracts;
 public sealed record ArtistReleaseDto(Guid ReleaseGroupId, string Title, Guid ArtistId, string ArtistName, string Type, string? Date, bool Upcoming,
     Guid? AlbumId = null);
 
+/// <summary>Titre d'une parution (album, EP, single), dans l'ordre de celle-ci.</summary>
+public sealed record ReleaseTrackDto(string Title, double? DurationSeconds);
+
 /// <summary>Titre phare d'un artiste à découvrir, retrouvé sur YouTube quand c'est possible (sinon <paramref name="VideoId"/> nul).</summary>
 /// <param name="PreviewReady">Extrait déjà téléchargé : il se lit tout de suite.</param>
 /// <param name="ImportStatus">État de l'import YouTube de cette vidéo, si elle est déjà connue du serveur.</param>

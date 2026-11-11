@@ -1,7 +1,8 @@
 @* Parutions des artistes de la bibliothèque (nouveautés) : pochette, titre, artiste, date et type. Déjà dans la
    bibliothèque : lien vers l'album. Sinon « Importer » (admin) ou « Demander » (contributeur), par la demande d'album
    habituelle ; une parution à venir n'a que sa date. Une parution sortie et absente de la bibliothèque a son extrait de
-   30 s sur la pochette (contributeurs et admins), comme les titres de la découverte. *@
+   30 s sur la pochette (contributeurs et admins), comme les titres de la découverte ; son titre ouvre le détail de ses
+   titres (ReleaseDetails), à écouter et importer un par un ou tous ensemble. *@
 @inject ApiClient Api
 @inject AuthSession Auth
 @inject UiState Ui
@@ -35,7 +36,14 @@
                 }
             </div>
             <div class="disc-body">
-                <span class="disc-title" title="@r.Title">@r.Title</span>
+                @if (r.AlbumId is null && !r.Upcoming && Auth.CanRequest)
+                {
+                    <button type="button" class="disc-title disc-title-btn" title="@L["releases.details", ("title", r.Title)]" @onclick="() => _detail = r">@r.Title</button>
+                }
+                else
+                {
+                    <span class="disc-title" title="@r.Title">@r.Title</span>
+                }
                 @if (ShowArtist)
                 {
                     <a class="muted small disc-sub" href="artist/@r.ArtistId">@r.ArtistName</a>
@@ -66,7 +74,13 @@
     }
 </div>
 
+<ReleaseDetails Release="_detail" OnClose="() => _detail = null" OnAskAll="AskAsync"
+                AllAsked="@(_detail is { } open && _asked.Contains(open.ReleaseGroupId))" />
+
 @code {
+    /// <summary>Parution ouverte dans la fenêtre de détail (ses titres, un par un ou tous).</summary>
+    private ArtistReleaseDto? _detail;
+
     [Parameter, EditorRequired] public IReadOnlyList<ArtistReleaseDto> Releases { get; set; } = [];
     [Parameter] public bool ShowArtist { get; set; } = true;
 

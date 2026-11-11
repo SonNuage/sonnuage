@@ -49,6 +49,7 @@ public sealed class ReleasesFactory : SonNuageFactory
         builder.UseSetting("SonNuage:MusicBrainzUrl", "http://mb.test");
         builder.UseSetting("SonNuage:ListenBrainzUrl", "http://lb.test");
         builder.UseSetting("SonNuage:CoverArtArchiveUrl", "http://caa.test");
+        builder.UseSetting("SonNuage:DeezerUrl", "http://dz.test");
         builder.ConfigureServices(s => s.AddHttpClient(MusicBrainzClient.HttpClientName).ConfigurePrimaryHttpMessageHandler(() => new Fake(this)));
     }
 
@@ -120,6 +121,12 @@ public sealed class ReleasesFactory : SonNuageFactory
                 $$"""{"release-group-count":1,"release-groups":[{{Group(LiveGroup, "Live", "Album", Day(-5))}}]}""",
             ("lb.test", "/1/explore/fresh-releases/") =>
                 $$$"""{"payload":{"releases":[{"artist_credit_name":"Test Artist","artist_mbids":["{{{TestArtistMbid}}}"],"release_date":"{{{Day(-3)}}}","release_group_mbid":"{{{FreshEpGroup}}}","release_group_primary_type":"EP","release_group_secondary_type":null,"release_name":"Fresh EP"},{"artist_credit_name":"Inconnu","artist_mbids":["99999999-9999-4999-8999-999999999999"],"release_date":"{{{Day(-1)}}}","release_group_mbid":"{{{Guid.NewGuid()}}}","release_group_primary_type":"Album","release_name":"Ailleurs"}]}}""",
+            // Deezer : « New Album » de « Test Artist » et ses deux titres ; rien pour les autres parutions.
+            ("dz.test", "/search/album") when query.Contains("New Album") =>
+                """{"data":[{"id":77,"title":"New Album","artist":{"name":"Test Artist"}}]}""",
+            ("dz.test", "/search/album") => """{"data":[]}""",
+            ("dz.test", "/album/77/tracks") =>
+                """{"data":[{"id":1,"title":"Opening Song","duration":200},{"id":2,"title":"Second Song","duration":181}]}""",
             _ => null,
         };
         if (uri.Host == "caa.test" && uri.AbsolutePath == $"/release-group/{NewAlbumGroup}/front-250")
@@ -293,6 +300,27 @@ public sealed class ArtistReleasesTests(ReleasesFactory factory) : IClassFixture
         await AccountAsync(admin, "release-preview-user", Roles.User);
         var user = await SonNuageFactory.LoginAsync(factory.CreateClient(), "release-preview-user", "password-1234");
         Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync($"{Url(ReleasesFactory.NewAlbumGroup)}?t={user.MediaToken}", Ct)).StatusCode);
+    }
+
+    [Fact]
+    public async Task A_release_lists_its_songs_for_contributors()
+    {
+        var admin = await factory.ReadyAsync();
+        var contributor = await AccountAsync(admin, "release-songs-contrib", Roles.Contributor);
+        var url = $"/api/releases/{ReleasesFactory.NewAlbumGroup}/tracks";
+
+        var songs = await contributor.GetFromJsonAsync<List<ReleaseTrackDto>>(url, Ct);
+        Assert.Equal([new ReleaseTrackDto("Opening Song", 200), new ReleaseTrackDto("Second Song", 181)], songs);
+        // Lue une fois chez Deezer, puis retenue.
+        await contributor.GetFromJsonAsync<List<ReleaseTrackDto>>(url, Ct);
+        Assert.Equal(1, factory.CountRequests("dz.test", "/album/77/tracks"));
+
+        // Deezer ne connaît pas cette parution : liste vide, pas une erreur.
+        Assert.Empty((await contributor.GetFromJsonAsync<List<ReleaseTrackDto>>($"/api/releases/{ReleasesFactory.FreshEpGroup}/tracks", Ct))!);
+
+        Assert.Equal(HttpStatusCode.NotFound, (await contributor.GetAsync($"/api/releases/{Guid.NewGuid()}/tracks", Ct)).StatusCode);
+        var user = await AccountAsync(admin, "release-songs-user", Roles.User);
+        Assert.Equal(HttpStatusCode.Forbidden, (await user.GetAsync(url, Ct)).StatusCode);
     }
 
     [Fact]

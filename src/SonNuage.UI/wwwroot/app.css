@@ -117,6 +117,35 @@ button { font: inherit; color: inherit; }
 .disc-badge { position: absolute; left: .4rem; top: .4rem; }
 .disc-body { display: flex; flex-direction: column; min-width: 0; padding: 0 .15rem; }
 .disc-title { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Titre d'une parution : ouvre le détail de ses titres. */
+.disc-title-btn { border: 0; padding: 0; background: none; color: inherit; font: inherit; font-weight: 700; text-align: left; cursor: pointer; }
+.disc-title-btn:hover, .disc-title-btn:focus-visible { text-decoration: underline; }
+/* Détail d'une parution : ses titres, un par ligne. */
+.release-songs { list-style: none; margin: .5rem 0 0; padding: 0; display: flex; flex-direction: column; }
+.release-songs li { display: grid; grid-template-columns: 1.6rem minmax(0, 1fr) auto auto auto; align-items: center; gap: .6rem; padding: .4rem 0; border-top: 1px solid var(--border, rgba(128,128,128,.2)); }
+.release-songs li:first-child { border-top: 0; }
+.release-songs .rs-n { text-align: right; font-variant-numeric: tabular-nums; }
+.release-songs .rs-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+.release-all-hint { margin-right: auto; align-self: center; }
+@media (max-width: 520px) {
+  .release-songs li { grid-template-columns: 1.4rem minmax(0, 1fr) auto auto; }
+  .release-songs .rs-dur { display: none; }
+}
+/* Carrousel : une ligne de tuiles qui défile sur place, flèches aux bords. */
+.carousel { position: relative; }
+.carousel-track { overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; }
+.carousel-track::-webkit-scrollbar { display: none; }
+.carousel-track > .grid { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(150px, 170px); }
+.carousel-track > .grid > * { scroll-snap-align: start; }
+.carousel-arrow {
+  position: absolute; top: 38%; transform: translateY(-50%); display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 50%;
+  background: var(--bg-elevated); color: var(--text); box-shadow: 0 4px 14px var(--shadow); cursor: pointer; z-index: 1;
+}
+.carousel-arrow:hover { background: var(--accent); color: var(--on-accent, #111); }
+.carousel-arrow.next { right: -.5rem; }
+.carousel-arrow.prev { left: -.5rem; }
+.carousel-arrow.prev svg { transform: rotate(180deg); }
+.carousel[data-start="true"] .carousel-arrow.prev, .carousel[data-end="true"] .carousel-arrow.next { display: none; }
 .disc-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .disc-actions { display: flex; align-items: center; gap: .4rem; margin-top: auto; }
 .disc-actions .btn { flex: 1; justify-content: center; }

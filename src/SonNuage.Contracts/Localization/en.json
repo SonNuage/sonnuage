@@ -66,6 +66,8 @@
     "create": "Create",
     "retry": "Try again",
     "close": "Close",
+    "seeNext": "See more",
+    "seePrevious": "Go back",
     "play": "Play",
     "favorite": "Like",
     "remove": "Remove",
@@ -224,6 +226,9 @@
       "noFile": "yt-dlp produced no preview.",
       "failed": "Preview unavailable: {message}",
       "notFound": "Release not found on YouTube: no preview."
+    },
+    "releases": {
+      "tracksUnavailable": "Deezer does not answer: the songs of this release cannot be read for now."
     },
     "storage": {
       "minFree": "The minimum free space must be between 0 and {max} GB.",
@@ -1431,7 +1436,17 @@
       "ep": "EP",
       "single": "Single"
     },
-    "previewFailed": "No preview for this release: it was not found on YouTube, or YouTube does not answer."
+    "previewFailed": "No preview for this release: it was not found on YouTube, or YouTube does not answer.",
+    "details": "See the songs of “{title}”",
+    "songs": "Songs",
+    "songsNone": "Deezer does not know this release: its songs cannot be listed. “Import all” still works, the server will look them up.",
+    "importAll": "Import all",
+    "askAll": "Ask for all",
+    "importSong": "Import this song",
+    "askSong": "Ask for this song",
+    "songNotFound": "“{title}” was not found on YouTube.",
+    "songPreviewFailed": "No preview for this song.",
+    "allHint": "The songs are looked up on YouTube, then imported one by one in the background."
   },
   "schedules": {
     "title": "Scheduled tasks",

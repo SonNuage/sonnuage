@@ -43,6 +43,24 @@ public static class ReleaseEndpoints
             return Results.File(path, LibraryFiles.ContentType(path));
         }).RequireAuthorization(AuthConstants.MediaPolicy).WithTags("Media");
 
+        // Titres d'une parution connue (Deezer), pour la détailler avant de l'importer en entier ou titre par titre.
+        app.MapGet("/api/releases/{id:guid}/tracks", async (Guid id, SonNuageDbContext db, ReleasePreviews previews, CancellationToken ct) =>
+        {
+            var release = await db.ArtistReleases.AsNoTracking().FirstOrDefaultAsync(r => r.ReleaseGroupId == id, ct);
+            if (release is null) return Results.NotFound();
+            var artist = await db.Artists.Where(a => a.MusicBrainzId == release.ArtistMbid).Select(a => a.Name).FirstOrDefaultAsync(ct);
+            if (artist is null) return Results.NotFound();
+            try
+            {
+                var tracks = await previews.TracksAsync(id, artist, release.Title, ct);
+                return Results.Ok(tracks.Select(t => new ReleaseTrackDto(t.Title, t.LengthSeconds)).ToList());
+            }
+            catch (Exception ex) when (ex is HttpRequestException or System.Text.Json.JsonException || ex is TaskCanceledException && !ct.IsCancellationRequested)
+            {
+                return Results.Problem(Tx.Key("errors.releases.tracksUnavailable"), statusCode: StatusCodes.Status502BadGateway);
+            }
+        }).RequireAuthorization(AuthConstants.ContributorPolicy).WithTags("Discovery");
+
         // Extrait de 30 s d'une parution connue, cherchée sur YouTube à la première écoute. Lu par un élément audio
         // (jeton média dans l'adresse) ; hors de la bibliothèque, donc contributeurs et admins.
         app.MapGet("/api/releases/{id:guid}/preview", async (Guid id, HttpContext http, SonNuageDbContext db, ReleasePreviews previews, CancellationToken ct) =>

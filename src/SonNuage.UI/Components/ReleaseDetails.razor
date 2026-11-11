@@ -1,0 +1,168 @@
+@* Détail d'une parution des nouveautés pas encore dans la bibliothèque : ses titres (Deezer), chacun avec son extrait
+   de 30 s et son import (ou sa demande), et « tout importer ». La vidéo d'un titre n'est cherchée sur YouTube que
+   lorsqu'on l'écoute ou qu'on le demande. *@
+@inject ApiClient Api
+@inject AuthSession Auth
+@inject UiState Ui
+
+<Modal Open="Release is not null" OpenChanged="CloseAsync" Title="@(Release is { } shown ? $"{shown.Title} · {shown.ArtistName}" : "")">
+    <ChildContent>
+        @if (Release is { } r)
+        {
+            <p class="muted small">@L[$"releases.type.{r.Type}"]@(_tracks is { Count: > 0 } counted ? $" · {L["common.tracks", ("count", counted.Count)]}" : "")</p>
+            @if (_tracks is null)
+            {
+                <div class="empty"><Logo Size="16" Animated="true" /></div>
+            }
+            else if (_tracks.Count == 0)
+            {
+                <p class="empty">@L["releases.songsNone"]</p>
+            }
+            else
+            {
+                <ol class="release-songs">
+                    @for (var i = 0; i < _tracks.Count; i++)
+                    {
+                        var index = i;
+                        var t = _tracks[i];
+                        <li @key="index">
+                            <span class="rs-n muted">@(index + 1)</span>
+                            <span class="rs-title" title="@t.Title">@t.Title</span>
+                            <span class="rs-dur muted small">@(t.DurationSeconds is { } d ? Format.Duration(d) : "")</span>
+                            <PreviewButton VideoId="@($"release-song:{r.ReleaseGroupId}:{index}")" Url="() => PreviewUrlAsync(index)"
+                                           FailedMessage="@L["releases.songPreviewFailed"]" />
+                            @if (_asked.Contains(index))
+                            {
+                                <span class="btn compact disc-state"><Icon Name="inbox" Size="16" /> @L["requests.asked"]</span>
+                            }
+                            else
+                            {
+                                <button class="btn compact" disabled="@(_sending is not null)" title="@(Auth.IsAdmin ? L["releases.importSong"] : L["releases.askSong"])"
+                                        @onclick="() => AskSongAsync(index)">
+                                    @if (_sending == index)
+                                    {
+                                        <Logo Size="14" Animated="true" />
+                                    }
+                                    else
+                                    {
+                                        <Icon Name="add" Size="16" />
+                                    }
+                                    @(Auth.IsAdmin ? L["releases.import"] : L["requests.ask"])
+                                </button>
+                            }
+                        </li>
+                    }
+                </ol>
+            }
+        }
+    </ChildContent>
+    <Footer>
+        @if (Release is { } r)
+        {
+            <span class="muted small release-all-hint">@L["releases.allHint"]</span>
+            @if (AllAsked)
+            {
+                <span class="btn disc-state"><Icon Name="inbox" Size="16" /> @L["requests.asked"]</span>
+            }
+            else
+            {
+                <button class="btn primary" @onclick="() => OnAskAll.InvokeAsync(r)"><Icon Name="album" Size="16" /> @(Auth.IsAdmin ? L["releases.importAll"] : L["releases.askAll"])</button>
+            }
+        }
+    </Footer>
+</Modal>
+
+@code {
+    /// <summary>Note de correspondance à partir de laquelle une vidéo est retenue, comme côté serveur pour un album entier.</summary>
+    private const int MinScore = 60;
+
+    /// <summary>Parution détaillée ; null : fenêtre fermée.</summary>
+    [Parameter] public ArtistReleaseDto? Release { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    /// <summary>« Tout importer » : la demande d'album habituelle, faite par la rangée.</summary>
+    [Parameter] public EventCallback<ArtistReleaseDto> OnAskAll { get; set; }
+    [Parameter] public bool AllAsked { get; set; }
+
+    private Guid? _loaded;
+    private List<ReleaseTrackDto>? _tracks;
+    private readonly Dictionary<int, Task<YoutubeVideoDto?>> _videos = [];
+    private readonly HashSet<int> _asked = [];
+    private int? _sending;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Release?.ReleaseGroupId == _loaded) return;
+        _loaded = Release?.ReleaseGroupId;
+        _tracks = null;
+        _videos.Clear();
+        _asked.Clear();
+        if (Release is not { } release) return;
+        try
+        {
+            var tracks = await Api.ReleaseTracksAsync(release.ReleaseGroupId) ?? [];
+            if (_loaded == release.ReleaseGroupId) _tracks = tracks;
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+            if (_loaded == release.ReleaseGroupId) _tracks = [];
+        }
+    }
+
+    private Task CloseAsync(bool open) => open ? Task.CompletedTask : OnClose.InvokeAsync();
+
+    /// <summary>Vidéo YouTube du titre, cherchée une fois (recherche par correspondance) ; null si rien d'assez sûr.</summary>
+    private Task<YoutubeVideoDto?> VideoAsync(int index)
+    {
+        if (!_videos.TryGetValue(index, out var task)) _videos[index] = task = FindAsync(index);
+        return task;
+    }
+
+    private async Task<YoutubeVideoDto?> FindAsync(int index)
+    {
+        try
+        {
+            var track = _tracks![index];
+            var match = await Api.RequestMatchAsync(Release!.ArtistName, track.Title, track.DurationSeconds);
+            return match?.Candidates.FirstOrDefault() is { Score: >= MinScore } best ? best.Video : null;
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            // Panne passagère : la prochaine écoute réessaiera.
+            _videos.Remove(index);
+            return null;
+        }
+    }
+
+    private async Task<string?> PreviewUrlAsync(int index) =>
+        await VideoAsync(index) is { } video ? await Api.PreviewUrlAsync(video.VideoId, video.DurationSeconds ?? _tracks![index].DurationSeconds) : null;
+
+    private async Task AskSongAsync(int index)
+    {
+        _sending = index;
+        try
+        {
+            var track = _tracks![index];
+            if (await VideoAsync(index) is not { } video)
+            {
+                Ui.Notify(L["releases.songNotFound", ("title", track.Title)], true);
+                return;
+            }
+            // L'artiste plutôt que la chaîne, et l'album en note : c'est ce que l'admin doit voir.
+            var request = new CreateDownloadRequest(video.VideoId, video.Title, Release!.ArtistName, track.DurationSeconds ?? video.DurationSeconds, Release.Title);
+            if (await Api.CreateRequestAsync(request) is { } created)
+            {
+                _asked.Add(index);
+                Ui.Notify(created.AutoApproved ? L["requests.sentAuto"] : L["requests.sent"]);
+            }
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+        finally
+        {
+            _sending = null;
+        }
+    }
+}

@@ -66,6 +66,8 @@
     "create": "Créer",
     "retry": "Réessayer",
     "close": "Fermer",
+    "seeNext": "Voir la suite",
+    "seePrevious": "Revenir en arrière",
     "play": "Lire",
     "favorite": "Favori",
     "remove": "Retirer",
@@ -224,6 +226,9 @@
       "noFile": "yt-dlp n'a produit aucun extrait.",
       "failed": "Extrait indisponible : {message}",
       "notFound": "Parution introuvable sur YouTube : pas d'extrait."
+    },
+    "releases": {
+      "tracksUnavailable": "Deezer ne répond pas : impossible de lire les titres de cette parution pour l'instant."
     },
     "storage": {
       "minFree": "L'espace libre minimum va de 0 à {max} Go.",
@@ -1431,7 +1436,17 @@
       "ep": "EP",
       "single": "Single"
     },
-    "previewFailed": "Extrait indisponible pour cette parution : elle n'a pas été trouvée sur YouTube, ou YouTube ne répond pas."
+    "previewFailed": "Extrait indisponible pour cette parution : elle n'a pas été trouvée sur YouTube, ou YouTube ne répond pas.",
+    "details": "Voir les titres de « {title} »",
+    "songs": "Titres",
+    "songsNone": "Deezer ne connaît pas cette parution : ses titres ne peuvent pas être listés. « Tout importer » reste possible, le serveur les cherchera.",
+    "importAll": "Tout importer",
+    "askAll": "Tout demander",
+    "importSong": "Importer ce titre",
+    "askSong": "Demander ce titre",
+    "songNotFound": "« {title} » n'a pas été trouvé sur YouTube.",
+    "songPreviewFailed": "Extrait indisponible pour ce titre.",
+    "allHint": "Les titres sont cherchés sur YouTube puis importés un par un, en tâche de fond."
   },
   "schedules": {
     "title": "Tâches planifiées",
