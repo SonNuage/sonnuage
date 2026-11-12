@@ -82,6 +82,7 @@ builder.Services.AddSingleton<StorageGuard>();
 builder.Services.AddSingleton<SonNuage.Server.Discovery.ListenBrainzClient>();
 builder.Services.AddSingleton<SonNuage.Server.Discovery.ISimilarArtistSource>(sp => sp.GetRequiredService<SonNuage.Server.Discovery.ListenBrainzClient>());
 builder.Services.AddSingleton<SonNuage.Server.Subsonic.NowPlayingBoard>();
+builder.Services.AddSingleton<SonNuage.Server.Api.PlaybackRelay>();
 builder.Services.AddSingleton<SonNuage.Server.Discovery.DeezerClient>();
 builder.Services.AddHttpClient(SonNuage.Server.Lyrics.LrclibClient.HttpClientName, http => http.Timeout = TimeSpan.FromSeconds(15));
 builder.Services.AddHttpClient(SonNuage.Server.Radio.OpenMeteoWeather.HttpClientName, http =>
@@ -221,6 +222,7 @@ app.MapAuthEndpoints();
 app.MapLibraryEndpoints();
 app.MapStreamEndpoints();
 app.MapMeEndpoints();
+app.MapDeviceEndpoints();
 app.MapHistoryEndpoints();
 app.MapListenBrainzEndpoints();
 app.MapPlaylistEndpoints();
