@@ -7,8 +7,8 @@ namespace SonNuage.Server.Tests;
 public sealed class RadioCatalogTests
 {
     private static TrackProfile Track(string title, string? album = null, string? genre = null, AudioFeel? feel = null, string[]? tags = null,
-        Guid? artist = null) =>
-        TrackProfile.Create(Guid.NewGuid(), artist ?? Guid.NewGuid(), Guid.NewGuid(), true, 200, title, album, genre, tags, feel);
+        Guid? artist = null, string? styles = null, int? year = null) =>
+        TrackProfile.Create(Guid.NewGuid(), artist ?? Guid.NewGuid(), Guid.NewGuid(), true, 200, title, album, genre, tags, feel, year, styles);
 
     private static StationDefinition Station(string id) => StationCatalog.Find(id)!;
 
@@ -77,6 +77,64 @@ public sealed class RadioCatalogTests
         Assert.True(Plays("good-mood-pop", Track("Song", genre: "Pop", feel: new AudioFeel(Happy: 0.8, Valence: 0.7, Danceability: 0.6))));
         Assert.False(Plays("good-mood-pop", Track("Song", genre: "Pop", feel: new AudioFeel(Happy: 0.05, Sad: 0.9, Valence: 0.1))));
         Assert.False(Plays("good-mood-pop", Track("Song", genre: "Metal")));
+    }
+
+    [Fact]
+    public void Good_mood_pop_keeps_to_pop_whatever_the_mood_of_old_rock()
+    {
+        var happy = new AudioFeel(Happy: 0.98, Valence: 0.7, Danceability: 0.75, Sad: 0.08);
+
+        Assert.False(Plays("good-mood-pop", Track("Burning Love", genre: "Rock", feel: happy, styles: "Rock---Rock & Roll:0.7|Rock---Rockabilly:0.4")));
+        Assert.False(Plays("good-mood-pop", Track("Song", genre: "Rock", feel: happy)));
+        Assert.True(Plays("good-mood-pop", Track("Song", genre: "Rock", feel: happy, styles: "Pop---Europop:0.5|Rock---Pop Rock:0.4")));
+        Assert.True(Plays("good-mood-pop", Track("Song", feel: happy, styles: "Electronic---Synth-pop:0.6")));
+    }
+
+    [Fact]
+    public void Genre_stations_play_their_genre_even_before_the_analysis()
+    {
+        Assert.True(Plays("metal", Track("Song", genre: "Heavy Metal")));
+        Assert.True(Plays("metal", Track("Song", styles: "Rock---Thrash:0.8")));
+        Assert.False(Plays("metal", Track("Song", genre: "Pop")));
+        Assert.True(Plays("blues", Track("Song", genre: "Blues Rock")));
+        Assert.True(Plays("hip-hop", Track("Song", tags: ["hip hop"])));
+        Assert.True(Plays("jazz", Track("Song", styles: "Jazz---Cool Jazz:0.4")));
+        Assert.False(Plays("jazz", Track("Song")));
+    }
+
+    [Fact]
+    public void Classic_rock_is_rock_from_before_the_nineties()
+    {
+        Assert.True(Plays("classic-rock", Track("Song", genre: "Classic Rock", year: 1975)));
+        Assert.True(Plays("classic-rock", Track("Song", styles: "Rock---Hard Rock:0.6", year: 1984)));
+        Assert.False(Plays("classic-rock", Track("Song", styles: "Rock---Hard Rock:0.6", year: 2015)));
+        Assert.False(Plays("classic-rock", Track("Song", styles: "Pop---Ballad:0.6", year: 1975)));
+    }
+
+    [Fact]
+    public void Rock_stations_split_loud_and_soft()
+    {
+        var rock = "Rock---Classic Rock:0.6";
+        var loud = new AudioFeel(Energy: 0.9, Relaxed: 0.05, Aggressive: 0.6, Acoustic: 0.05);
+        var soft = new AudioFeel(Energy: 0.15, Relaxed: 0.9, Aggressive: 0.02, Acoustic: 0.8, Sad: 0.5);
+
+        Assert.True(Plays("rock-energy", Track("Song", feel: loud, styles: rock)));
+        Assert.False(Plays("rock-energy", Track("Song", feel: soft, styles: rock)));
+        Assert.True(Plays("rock-ballads", Track("Song", feel: soft, styles: rock)));
+        Assert.False(Plays("rock-ballads", Track("Song", feel: loud, styles: rock)));
+        Assert.False(Plays("rock-ballads", Track("Song", feel: soft, styles: "Pop---Ballad:0.6")));
+    }
+
+    [Fact]
+    public void Every_station_has_a_name_and_a_description_in_each_language()
+    {
+        var t = SonNuage.Contracts.Localization.Translations.Instance;
+        foreach (var station in StationCatalog.Seasons.Concat(StationCatalog.Moods).Concat(StationCatalog.Genres))
+        foreach (var lang in new[] { "fr", "en" })
+        {
+            Assert.NotEqual($"radio.stations.{station.Id}.name", t.Get(lang, $"radio.stations.{station.Id}.name"));
+            Assert.NotEqual($"radio.stations.{station.Id}.description", t.Get(lang, $"radio.stations.{station.Id}.description"));
+        }
     }
 
     [Fact]

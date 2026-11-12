@@ -20,6 +20,8 @@ public static class RadioStationKinds
     public const string Season = "season";
     public const string Mood = "mood";
     public const string Weather = "weather";
+    /// <summary>Un genre cohérent (rock, jazz…), parfois une humeur en plus.</summary>
+    public const string Genre = "genre";
     /// <summary>Ambiance demandée dans la recherche : identifiant « ambiance:… », jamais listée.</summary>
     public const string Ambiance = "ambiance";
 }

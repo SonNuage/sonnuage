@@ -31,7 +31,8 @@ public sealed class RadioStations(IMemoryCache cache, IWeatherSource weather, Ti
     public async Task<IReadOnlyList<StationDefinition>> TodayAsync(CancellationToken ct)
     {
         var today = DateOnly.FromDateTime(time.GetUtcNow().UtcDateTime);
-        var list = StationCatalog.Seasons.Where(s => s.Window!.Contains(today)).Concat(StationCatalog.Moods).ToList();
+        var list = StationCatalog.Seasons.Where(s => s.Window!.Contains(today)).Concat(StationCatalog.Moods)
+            .Concat(StationCatalog.Genres).ToList();
         if (await weather.NowAsync(ct) is { } now) list.Add(StationCatalog.ForWeather(now));
         return list;
     }
@@ -216,13 +217,14 @@ public sealed class RadioStations(IMemoryCache cache, IWeatherSource weather, Ti
             {
                 f.TrackId, Feel = AudioFeel.FromAnalysis(f.Bpm, f.Danceability, f.Energy, f.Valence, f.Happy, f.Sad, f.Relaxed, f.Aggressive, f.Party,
                     f.Acoustic, f.Electronic, f.Instrumental),
+                f.Styles,
             })
-            .ToDictionaryAsync(f => f.TrackId, f => f.Feel, ct);
+            .ToDictionaryAsync(f => f.TrackId, ct);
         var tags = (await db.TrackTags.AsNoTracking().Select(t => new { t.TrackId, t.Name }).ToListAsync(ct))
             .GroupBy(t => t.TrackId).ToDictionary(g => g.Key, g => g.Select(t => t.Name).ToList());
         return tracks
             .Select(t => TrackProfile.Create(t.Id, t.ArtistId, t.AlbumId, t.Cover, t.DurationSeconds, t.Title, t.Album, t.Genre,
-                tags.GetValueOrDefault(t.Id), feels.GetValueOrDefault(t.Id), t.Year))
+                tags.GetValueOrDefault(t.Id), feels.GetValueOrDefault(t.Id)?.Feel, t.Year, feels.GetValueOrDefault(t.Id)?.Styles))
             .ToList();
     }
 

@@ -50,7 +50,7 @@ public sealed class RadioStationTests(RadioFactory factory) : IClassFixture<Radi
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    /// <summary>Tous les morceaux de test « sonnent » joyeux et calmes : assez pour la pop bonne humeur et la pluie.</summary>
+    /// <summary>Tous les morceaux de test « sonnent » joyeux, calmes et pop : assez pour la pop bonne humeur et la pluie.</summary>
     private async Task<HttpClient> SessionAsync()
     {
         var admin = await factory.AdminClientAsync();
@@ -63,7 +63,7 @@ public sealed class RadioStationTests(RadioFactory factory) : IClassFixture<Radi
             db.AudioFeatures.Add(new TrackAudioFeatures
             {
                 TrackId = id, Version = TrackAudioFeatures.CurrentVersion, AnalyzedAt = DateTimeOffset.UtcNow, Happy = 0.9, Valence = 0.9,
-                Danceability = 0.8, Relaxed = 0.9, Acoustic = 0.9, Energy = 0.2, Sad = 0.5, Aggressive = 0.05,
+                Danceability = 0.8, Relaxed = 0.9, Acoustic = 0.9, Energy = 0.2, Sad = 0.5, Aggressive = 0.05, Styles = "Pop---Europop:0.6",
             });
         }
         await db.SaveChangesAsync(Ct);

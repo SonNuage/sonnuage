@@ -1589,6 +1589,86 @@
         "name": "Concentration",
         "description": "Surtout instrumental, pour travailler."
       },
+      "pop-ballads": {
+        "name": "Ballades pop",
+        "description": "Pop douce et sentimentale."
+      },
+      "rock-energy": {
+        "name": "Rock à fond",
+        "description": "Guitares saturées, ça envoie."
+      },
+      "rock-ballads": {
+        "name": "Ballades rock",
+        "description": "Le rock quand il se pose."
+      },
+      "classic-rock": {
+        "name": "Classic rock",
+        "description": "Les grands du rock, des années 50 aux années 80."
+      },
+      "metal": {
+        "name": "Hard rock & metal",
+        "description": "Riffs lourds et décibels."
+      },
+      "prog-psych": {
+        "name": "Prog & psyché",
+        "description": "Longues envolées, rock progressif et psychédélique."
+      },
+      "indie": {
+        "name": "Indé & alternatif",
+        "description": "Rock indé, britpop, shoegaze."
+      },
+      "punk-grunge": {
+        "name": "Punk & grunge",
+        "description": "Brut, rapide, sans fioritures."
+      },
+      "new-wave": {
+        "name": "New wave & synthpop",
+        "description": "Synthés, boîtes à rythmes et cold wave."
+      },
+      "blues": {
+        "name": "Blues",
+        "description": "Du Delta au blues rock."
+      },
+      "soul-funk": {
+        "name": "Soul & funk",
+        "description": "Groove, cuivres et voix soul."
+      },
+      "electro-dance": {
+        "name": "Électro & dance",
+        "description": "House, disco, dance : pour danser."
+      },
+      "electro-chill": {
+        "name": "Électro planante",
+        "description": "Ambient, downtempo, trip hop."
+      },
+      "hip-hop": {
+        "name": "Hip-hop",
+        "description": "Rap et beats."
+      },
+      "folk-country": {
+        "name": "Folk & country",
+        "description": "Guitares acoustiques et grands espaces."
+      },
+      "chanson": {
+        "name": "Chanson",
+        "description": "Chanson et yé-yé."
+      },
+      "jazz": {
+        "name": "Jazz",
+        "description": "Du swing au jazz moderne."
+      },
+      "classical": {
+        "name": "Classique",
+        "description": "Musique classique, baroque à contemporaine."
+      },
+      "latin-reggae": {
+        "name": "Latino & reggae",
+        "description": "Salsa, bossa, reggae : rythmes chauds."
+      },
+      "soundtracks": {
+        "name": "Bandes originales",
+        "description": "Musiques de films, de séries et de comédies musicales."
+      },
       "weather": {
         "name": "Météo du moment",
         "description": "Une ambiance qui suit le temps qu'il fait."

@@ -32,16 +32,20 @@ public sealed record AudioFeel(
 /// Morceau vu par les radios. <see cref="Text"/> : titre et album en minuscules sans accents, entourés d'espaces ;
 /// <see cref="Genre"/> : genre du fichier en minuscules sans accents ; <see cref="Tags"/> : tags MusicBrainz ;
 /// <see cref="Year"/> : année de sortie, si connue ; <see cref="Song"/> : la chanson, commune à ses versions
-/// (<see cref="SongOf"/>).
+/// (<see cref="SongOf"/>) ; <see cref="Styles"/> : genre et styles Discogs (<see cref="TrackGenre"/>).
 /// </summary>
 public sealed record TrackProfile(
     Guid Id, Guid ArtistId, Guid AlbumId, bool AlbumHasCover, double DurationSeconds, string Text, string Genre,
-    IReadOnlySet<string> Tags, AudioFeel? Feel, int? Year = null, string Song = "")
+    IReadOnlySet<string> Tags, AudioFeel? Feel, int? Year = null, string Song = "", TrackGenre? Styles = null)
 {
+    /// <param name="styles">Styles Discogs de l'analyse audio (<see cref="Analysis.DiscogsStyles"/>).</param>
     public static TrackProfile Create(Guid id, Guid artistId, Guid albumId, bool albumHasCover, double durationSeconds, string title,
-        string? albumTitle, string? genre, IEnumerable<string>? tags = null, AudioFeel? feel = null, int? year = null) =>
-        new(id, artistId, albumId, albumHasCover, durationSeconds, $" {Fold(title)} {Fold(albumTitle)} ", Fold(genre),
-            (tags ?? []).Select(t => t.ToLowerInvariant()).ToHashSet(), feel, year, SongOf(title));
+        string? albumTitle, string? genre, IEnumerable<string>? tags = null, AudioFeel? feel = null, int? year = null, string? styles = null)
+    {
+        var tagList = (tags ?? []).ToList();
+        return new(id, artistId, albumId, albumHasCover, durationSeconds, $" {Fold(title)} {Fold(albumTitle)} ", Fold(genre),
+            tagList.Select(t => t.ToLowerInvariant()).ToHashSet(), feel, year, SongOf(title), TrackGenre.From(styles, genre, tagList));
+    }
 
     /// <summary>Mention entre parenthèses ou crochets, ou après un tiret en fin de titre.</summary>
     private static readonly Regex Mention = new(@"[\(\[][^\)\]]*[\)\]]|\s[-–—]\s[^-–—]*$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
@@ -87,6 +91,21 @@ public sealed record SeasonWindow(int FromMonth, int FromDay, int ToMonth, int T
         int from = FromMonth * 100 + FromDay, to = ToMonth * 100 + ToDay;
         return from <= to ? d >= from && d <= to : d >= from || d <= to;
     }
+}
+
+/// <summary>
+/// Genres admis par une station : un grand genre Discogs ou un style suffit, sauf un style écarté. Un morceau dont le
+/// genre est inconnu n'y entre pas.
+/// </summary>
+public sealed record GenreFilter(IReadOnlySet<string> Genres, IReadOnlySet<string> Styles, IReadOnlySet<string> Excluded)
+{
+    public static GenreFilter Of(string[]? genres = null, string[]? styles = null, string[]? excluded = null) =>
+        new(Set(genres), Set(styles), Set(excluded));
+
+    public bool Accepts(TrackGenre? g) =>
+        g is { Known: true } && !g.Styles.Overlaps(Excluded) && (g.Genres.Overlaps(Genres) || g.Styles.Overlaps(Styles));
+
+    private static HashSet<string> Set(string[]? words) => (words ?? []).Select(TrackProfile.Fold).ToHashSet();
 }
 
 /// <summary>
@@ -147,10 +166,9 @@ public static class StationCatalog
 
     public static readonly IReadOnlyList<StationDefinition> Moods =
     [
-        // Le genre seul ne suffit pas : sans analyse, toute la « pop » de la bibliothèque passerait, ballades tristes comprises.
-        new("good-mood-pop", RadioStationKinds.Mood, "#ff922b", null, p => Feel(p, f =>
-            (GenreHas(p, "pop", "dance", "disco", "funk", "synth", "variete", "motown", "soul", "new wave") ? 0.3 : 0)
-            + 0.3 * V(f.Happy) + 0.15 * V(f.Valence) + 0.1 * V(f.Danceability) + 0.15 * Inv(f.Sad)), Threshold: 0.55),
+        // De la pop, et joyeuse : le genre écarte le rock enjoué, l'analyse les ballades tristes.
+        new("good-mood-pop", RadioStationKinds.Mood, "#ff922b", null, Only(G.Pop, p => Feel(p, f =>
+            0.45 * V(f.Happy) + 0.25 * V(f.Valence) + 0.15 * V(f.Danceability) + 0.15 * Inv(f.Sad))), Threshold: 0.55),
 
         // Calme, posé et pas triste. Les classifieurs « calme », « triste » et « acoustique » vont ensemble (corrélés à plus
         // de 0,8) : sans le « pas triste », cette station et Mélancolie jouaient presque la même liste.
@@ -170,6 +188,101 @@ public static class StationCatalog
         new("focus", RadioStationKinds.Mood, "#20c997", null,
             p => Feel(p, f => 0.5 * V(f.Instrumental) + 0.2 * V(f.Relaxed) + 0.15 * Inv(f.Energy) + 0.15 * Inv(f.Aggressive)), Threshold: 0.65),
     ];
+
+    /// <summary>
+    /// Stations de genre : un genre cohérent, parfois une humeur en plus. Proposées seulement si la bibliothèque a assez
+    /// de morceaux du genre (<see cref="RadioStations.MinTracks"/>).
+    /// </summary>
+    public static readonly IReadOnlyList<StationDefinition> Genres =
+    [
+        new("pop-ballads", RadioStationKinds.Genre, "#f783ac", null, Only(G.Pop, p => Feel(p, f =>
+            0.35 * V(f.Relaxed) + 0.25 * V(f.Sad) + 0.2 * Inv(f.Energy) + 0.2 * V(f.Acoustic)))),
+        new("rock-energy", RadioStationKinds.Genre, "#e03131", null, Only(G.Rock, p => Feel(p, f =>
+            0.45 * V(f.Energy) + 0.25 * Inv(f.Relaxed) + 0.15 * V(f.Aggressive) + 0.15 * Inv(f.Acoustic)))),
+        new("rock-ballads", RadioStationKinds.Genre, "#c2255c", null, Only(G.Rock, p => Feel(p, f =>
+            0.35 * V(f.Relaxed) + 0.25 * V(f.Acoustic) + 0.2 * Inv(f.Energy) + 0.2 * Inv(f.Aggressive)))),
+        new("classic-rock", RadioStationKinds.Genre, "#b35900", null, Only(G.ClassicRock, p => p.Year is null or < 1990 ? GenreOnly : 0)),
+        new("metal", RadioStationKinds.Genre, "#495057", null, Only(G.Metal, _ => GenreOnly)),
+        new("prog-psych", RadioStationKinds.Genre, "#7048e8", null, Only(G.Prog, _ => GenreOnly)),
+        new("indie", RadioStationKinds.Genre, "#1098ad", null, Only(G.Indie, _ => GenreOnly)),
+        new("punk-grunge", RadioStationKinds.Genre, "#2b8a3e", null, Only(G.Punk, _ => GenreOnly)),
+        new("new-wave", RadioStationKinds.Genre, "#d6336c", null, Only(G.NewWave, _ => GenreOnly)),
+        new("blues", RadioStationKinds.Genre, "#1c7ed6", null, Only(G.Blues, _ => GenreOnly)),
+        new("soul-funk", RadioStationKinds.Genre, "#f08c00", null, Only(G.Soul, _ => GenreOnly)),
+        new("electro-dance", RadioStationKinds.Genre, "#ae3ec9", null, Only(G.Dance, p => Feel(p, f =>
+            0.45 * V(f.Danceability) + 0.35 * V(f.Party) + 0.2 * V(f.Energy))), Threshold: 0.5),
+        new("electro-chill", RadioStationKinds.Genre, "#3bc9db", null, Only(G.ElectroChill, _ => GenreOnly)),
+        new("hip-hop", RadioStationKinds.Genre, "#5f3dc4", null, Only(G.HipHop, _ => GenreOnly)),
+        new("folk-country", RadioStationKinds.Genre, "#8f5902", null, Only(G.Folk, _ => GenreOnly)),
+        new("chanson", RadioStationKinds.Genre, "#364fc7", null, Only(G.Chanson, _ => GenreOnly)),
+        new("jazz", RadioStationKinds.Genre, "#9c36b5", null, Only(G.Jazz, _ => GenreOnly)),
+        new("classical", RadioStationKinds.Genre, "#5c940d", null, Only(G.Classical, _ => GenreOnly)),
+        new("latin-reggae", RadioStationKinds.Genre, "#f59f00", null, Only(G.LatinReggae, _ => GenreOnly)),
+        new("soundtracks", RadioStationKinds.Genre, "#343a40", null, Only(G.Screen, _ => GenreOnly)),
+    ];
+
+    /// <summary>Note d'un morceau d'une station de genre pur : tous se valent, le tirage fait le reste.</summary>
+    private const double GenreOnly = 0.8;
+
+    /// <summary>Familles de genres des stations, en noms Discogs.</summary>
+    private static class G
+    {
+        private static readonly string[] Loud = ["Hard Rock", "Heavy Metal", "Thrash", "Speed Metal", "Death Metal", "Black Metal",
+            "Doom Metal", "Nu Metal", "Metalcore", "Grindcore", "Punk", "Hardcore", "Grunge"];
+
+        public static readonly GenreFilter Pop = GenreFilter.Of(["Pop", "Funk / Soul"],
+            ["Dance-pop", "Synth-pop", "Disco", "Euro-Disco", "Italo-Disco", "Eurodance", "Nu-Disco", "Hi NRG", "Pop Rock", "Soft Rock",
+             "Power Pop", "Brit Pop", "Indie Pop", "Contemporary R&B", "RnB/Swing", "Pop Rap", "Reggae-Pop"], Loud);
+
+        public static readonly GenreFilter Rock = GenreFilter.Of(["Rock"], excluded: ["Black Metal", "Death Metal", "Grindcore", "Goregrind"]);
+
+        public static readonly GenreFilter ClassicRock = GenreFilter.Of(styles: ["Classic Rock", "Rock & Roll", "Rockabilly", "Blues Rock",
+            "Arena Rock", "Hard Rock", "Southern Rock", "AOR", "Glam", "Psychedelic Rock", "Prog Rock", "Country Rock", "Folk Rock",
+            "Pub Rock", "Beat", "Garage Rock", "Symphonic Rock", "Soft Rock", "Acid Rock", "Mod", "Surf", "Doo Wop"]);
+
+        public static readonly GenreFilter Metal = GenreFilter.Of(styles: ["Hard Rock", "Heavy Metal", "Thrash", "Speed Metal", "Power Metal",
+            "Doom Metal", "Death Metal", "Black Metal", "Melodic Death Metal", "Progressive Metal", "Nu Metal", "Metalcore", "Gothic Metal",
+            "Folk Metal", "Viking Metal", "Sludge Metal", "Stoner Rock", "Glam", "Funk Metal", "Post-Metal"]);
+
+        public static readonly GenreFilter Prog = GenreFilter.Of(styles: ["Prog Rock", "Psychedelic Rock", "Art Rock", "Space Rock",
+            "Krautrock", "Symphonic Rock", "Progressive Metal", "Acid Rock", "Jazz-Rock", "Fusion", "Psychedelic"]);
+
+        public static readonly GenreFilter Indie = GenreFilter.Of(styles: ["Alternative Rock", "Indie Rock", "Indie Pop", "Brit Pop",
+            "Shoegaze", "Dream Pop", "Post Rock", "Lo-Fi", "Math Rock"]);
+
+        public static readonly GenreFilter Punk = GenreFilter.Of(styles: ["Punk", "Pop Punk", "Grunge", "Garage Rock", "Hardcore", "Emo", "Oi",
+            "Post-Hardcore", "Melodic Hardcore", "Psychobilly", "No Wave"]);
+
+        public static readonly GenreFilter NewWave = GenreFilter.Of(styles: ["New Wave", "Synth-pop", "Post-Punk", "Coldwave", "Darkwave",
+            "Italo-Disco", "Euro-Disco", "Hi NRG", "EBM", "Electroclash", "Synthwave"]);
+
+        public static readonly GenreFilter Blues = GenreFilter.Of(["Blues"], ["Blues Rock"]);
+
+        public static readonly GenreFilter Soul = GenreFilter.Of(["Funk / Soul"], ["Jazz-Funk", "Soul-Jazz"]);
+
+        private static readonly string[] Ambient = ["Ambient", "Dark Ambient", "Drone", "New Age", "Modern Classical", "Downtempo",
+            "Trip Hop", "Chillwave", "IDM", "Berlin-School", "Abstract", "Musique Concrète", "Sound Collage", "Illbient", "Dub Techno",
+            "Leftfield", "Vaporwave"];
+
+        public static readonly GenreFilter Dance = GenreFilter.Of(["Electronic"], ["Disco", "Dance-pop"],
+            [.. Ambient, "Noise", "Power Electronics", "Dungeon Synth"]);
+
+        public static readonly GenreFilter ElectroChill = GenreFilter.Of(styles: Ambient);
+
+        public static readonly GenreFilter HipHop = GenreFilter.Of(["Hip Hop"]);
+
+        public static readonly GenreFilter Folk = GenreFilter.Of(["Folk, World, & Country"], ["Folk Rock", "Country Rock", "Acoustic"]);
+
+        public static readonly GenreFilter Chanson = GenreFilter.Of(styles: ["Chanson", "Yé-Yé"]);
+
+        public static readonly GenreFilter Jazz = GenreFilter.Of(["Jazz"]);
+
+        public static readonly GenreFilter Classical = GenreFilter.Of(["Classical"], ["Modern Classical"]);
+
+        public static readonly GenreFilter LatinReggae = GenreFilter.Of(["Latin", "Reggae"], ["Bossa Nova"]);
+
+        public static readonly GenreFilter Screen = GenreFilter.Of(["Stage & Screen"]);
+    }
 
     public const string WeatherId = "weather";
 
@@ -216,12 +329,15 @@ public static class StationCatalog
     };
 
     public static StationDefinition? Find(string id) =>
-        Seasons.Concat(Moods).FirstOrDefault(s => s.Id == id);
+        Seasons.Concat(Moods).Concat(Genres).FirstOrDefault(s => s.Id == id);
 
     private static double V(double? x) => x ?? 0;
     private static double Inv(double? x) => x is { } v ? 1 - v : 0;
     private static double Clamp(double x) => Math.Clamp(x, 0, 1);
     private static double Max(params double[] xs) => xs.Max();
+    /// <summary>La note, pour les morceaux du genre admis ; 0 pour les autres.</summary>
+    private static Func<TrackProfile, double> Only(GenreFilter genres, Func<TrackProfile, double> score) =>
+        p => genres.Accepts(p.Styles) ? score(p) : 0;
     /// <summary>Note tirée de l'analyse audio ; 0 pour un morceau pas encore analysé.</summary>
     private static double Feel(TrackProfile p, Func<AudioFeel, double> f) => p.Feel is { } feel ? f(feel) : 0;
     private static bool Words(TrackProfile p, Regex words) => words.IsMatch(p.Text);
