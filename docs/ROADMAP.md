@@ -11,7 +11,7 @@ Légende : ✅ fait · 🔜 prochain · 💡 idée à creuser · ⚠️ limite c
 
 | Domaine | État |
 |---|---|
-| Lecture (web, Android, Android Auto, bureau) | ✅ bibliothèque, recherche, playlists, favoris, transcodage à la volée, lecture sur un autre appareil |
+| Lecture (web, Android, Android Auto, bureau) | ✅ bibliothèque, recherche, playlists, favoris, transcodage à la volée, lecture partagée entre tous les appareils du compte |
 | Comptes | ✅ admin et utilisateurs, plusieurs serveurs et comptes dans l'appli Android, langue de l'interface par compte (fr, en) |
 | Recherche | ✅ Elasticsearch (fautes de frappe, suggestions), avec repli automatique sur la base s'il tombe ; recherche par ambiance (« musique calme pour travailler ») |
 | Import YouTube | ✅ recherche, playlists, albums, chaînes, abonnements synchronisés, extension de navigateur avec clés API |
@@ -21,6 +21,22 @@ Légende : ✅ fait · 🔜 prochain · 💡 idée à creuser · ⚠️ limite c
 | Déploiement | ✅ Docker Compose sur le homelab (SonNuage + Elasticsearch), CI GitLab avec runner dédié, APK Android signé |
 
 ## Livré récemment
+
+### Lecture entre appareils, matrice Glyph (novembre 2026)
+
+- **Un seul appareil du compte joue, les autres le pilotent** : web, Android, bureau et iOS passent par un relais du
+  serveur (`/api/me/devices/link`, Server-Sent Events, en mémoire) au lieu du seul canal entre onglets d'un navigateur.
+  Le lecteur affiche « En lecture sur *nom de l'appareil* · Lire ici » ; les commandes (pause, suivant, file, volume)
+  partent vers l'appareil qui joue. Le téléphone apparaît même sans interface ouverte (service de lecture). Position
+  envoyée au plus chaque seconde, aussitôt après un saut.
+- **Nom de chaque appareil** : celui du système (nom du téléphone, de l'ordinateur ; « Firefox · Windows » pour un
+  navigateur), modifiable dans Réglages → Appareils, qui liste aussi les appareils connectés et celui qui joue.
+- **Applis Subsonic** visibles mais pas pilotables : « Symfonium joue … », et « Reprendre ici » pour la file qu'elles
+  ont enregistrée (`savePlayQueue`).
+- **Nothing Phone (3)** : le nuage du logo danse sur la matrice Glyph pendant la lecture, et Glyph Toy « SonNuage ».
+  SDK de Nothing téléchargé au build (sa licence en interdit la redistribution).
+- 💡 Suites possibles : envoyer la lecture *vers* un autre appareil (« Lire sur… ») depuis la liste ; animation Glyph
+  au tempo du morceau (BPM de l'analyse audio).
 
 ### Radios thématiques, favoris et notes (novembre 2026)
 
