@@ -138,7 +138,7 @@ What comes next: [docs/ROADMAP.md](docs/ROADMAP.md) (in French).
 
 For the themed radios (good-mood pop, calm, party…), each track is analyzed by
 [Essentia](https://essentia.upf.edu/) and its TensorFlow models: moods (happy, sad, relaxed, aggressive,
-party), acoustic / electronic, danceability, voice / instrumental, valence and energy, tempo. Only the three
+party), acoustic / electronic, danceability, voice / instrumental, valence and energy, tempo, and Discogs styles (400 styles under 15 genres, such as Rock > Pop Rock) that keep each radio to one genre. Only the three
 minutes in the middle are listened to, on two low-priority threads: a few seconds per track.
 
 - "analysis" queue (one task at a time), started at startup and after each scan: tracks never analyzed,
@@ -152,7 +152,7 @@ minutes in the middle are listened to, on two low-priority threads: a few second
   `SonNuage__Analysis__PythonPath` (Python where `essentia-tensorflow` is installed) and `SonNuage__Analysis__ModelsPath`
   (models folder, list and checksums in the [Dockerfile](Dockerfile)).
 
-The Essentia models (discogs-effnet, msd-musicnn, emomusic, TempoCNN) are © Music Technology Group, Universitat
+The Essentia models (discogs-effnet, genre_discogs400, msd-musicnn, emomusic, TempoCNN) are © Music Technology Group, Universitat
 Pompeu Fabra, under the [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) licence: non-commercial
 use only, with attribution. Essentia is under the AGPL v3 licence.
 
