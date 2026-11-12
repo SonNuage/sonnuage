@@ -47,6 +47,7 @@ public static class AudioAnalysis
         row.Acoustic = values?.Acoustic;
         row.Electronic = values?.Electronic;
         row.Instrumental = values?.Instrumental;
+        row.Styles = values?.Styles;
     }
 
     public static async Task<AudioAnalysisStatusDto> StatusAsync(SonNuageDbContext db, bool available, bool enabled, CancellationToken ct)

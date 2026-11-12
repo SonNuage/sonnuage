@@ -53,8 +53,15 @@ public static class EssentiaProtocol
         double? Unit(string name) => Number(f[name]) is { } v && v is >= 0 and <= 1 ? v : null;
         var bpm = Number(f["bpm"]) is { } b && b is > 0 and <= MaxBpm ? b : (double?)null;
         return new AudioFeatureValues(bpm, Unit("danceability"), Unit("energy"), Unit("valence"), Unit("happy"), Unit("sad"),
-            Unit("relaxed"), Unit("aggressive"), Unit("party"), Unit("acoustic"), Unit("electronic"), Unit("instrumental"));
+            Unit("relaxed"), Unit("aggressive"), Unit("party"), Unit("acoustic"), Unit("electronic"), Unit("instrumental"),
+            Styles(f["styles"]));
     }
+
+    /// <summary>Paires [libellé, activation] ; ce qui n'en est pas une est écarté.</summary>
+    private static string? Styles(JsonNode? n) => n is JsonArray a
+        ? DiscogsStyles.Encode(a.OfType<JsonArray>().Where(p => p.Count == 2 && Text(p[0]) is not null && Number(p[1]) is not null)
+            .Select(p => (Text(p[0])!, Number(p[1])!.Value)))
+        : null;
 
     private static double? Number(JsonNode? n) =>
         n is JsonValue v && v.TryGetValue<double>(out var d) && double.IsFinite(d) ? d : null;

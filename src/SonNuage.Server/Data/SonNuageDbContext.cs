@@ -146,6 +146,7 @@ public sealed class SonNuageDbContext(DbContextOptions<SonNuageDbContext> option
         {
             e.HasKey(x => x.TrackId);
             e.Property(x => x.Error).HasMaxLength(TrackAudioFeatures.MaxErrorLength);
+            e.Property(x => x.Styles).HasMaxLength(Analysis.DiscogsStyles.MaxLength);
             e.HasOne(x => x.Track).WithOne().HasForeignKey<TrackAudioFeatures>(x => x.TrackId).OnDelete(DeleteBehavior.Cascade);
         });
 

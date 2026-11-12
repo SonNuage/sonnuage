@@ -8,7 +8,10 @@ Au démarrage, une ligne {"ready": true, "version": 1} (ou {"fatal": "..."} et s
 Modèles Essentia (https://essentia.upf.edu/models/, licence CC BY-NC-SA 4.0) :
 - discogs-effnet-bs64-1 (plongements) et ses têtes de classification (humeurs, dansabilité, voix/instrumental) ;
 - msd-musicnn-1 (plongements) et emomusic-msd-musicnn-2 (valence et éveil, de 1 à 9, ramenés à 0..1) ;
-- deeptemp-k16-3 (TempoCNN) pour le tempo.
+- deeptemp-k16-3 (TempoCNN) pour le tempo ;
+- genre_discogs400-discogs-effnet-1 : 400 styles Discogs rangés sous leur grand genre (« Rock---Pop Rock »), activations
+  indépendantes de 0 à 1. Les libellés viennent du fichier .json du modèle. Les plus probables sont renvoyés dans
+  « styles » : [["Rock---Pop Rock", 0.62], …].
 
 Pour borner le temps de calcul, seules les trois minutes du milieu du morceau sont analysées (décodées par ffmpeg).
 Usage : python -I essentia_analyzer.py --models /opt/analysis/models [--threads 2] [--nice 10] [--ffmpeg ffmpeg]
@@ -23,7 +26,7 @@ import sys
 import time
 
 # Version du calcul : à monter avec TrackAudioFeatures.CurrentVersion quand les modèles ou le calcul changent.
-VERSION = 1
+VERSION = 2
 SAMPLE_RATE = 16000
 TEMPO_SAMPLE_RATE = 11025
 MAX_SECONDS = 180.0
@@ -33,6 +36,9 @@ EFFNET = "discogs-effnet-bs64-1.pb"
 MUSICNN = "msd-musicnn-1.pb"
 AROUSAL_VALENCE = "emomusic-msd-musicnn-2.pb"
 TEMPO = "deeptemp-k16-3.pb"
+GENRE = "genre_discogs400-discogs-effnet-1.pb"
+GENRE_LABELS = "genre_discogs400-discogs-effnet-1.json"
+TOP_STYLES = 5
 
 # Têtes posées sur les plongements discogs-effnet : (caractéristique, fichier, rang de la classe positive).
 # Les rangs viennent des métadonnées .json de chaque modèle (classes : ["happy", "non_happy"], ["non_party", "party"]…).
@@ -130,6 +136,11 @@ class Analyzer:
         self.musicnn = es.TensorflowPredictMusiCNN(graphFilename=path(MUSICNN), output="model/dense/BiasAdd")
         self.arousal_valence = es.TensorflowPredict2D(graphFilename=path(AROUSAL_VALENCE), output="model/Identity")
         self.tempo = es.TempoCNN(graphFilename=path(TEMPO))
+        # Entrée et sortie nommées dans les métadonnées du modèle (sigmoïde, une activation par style).
+        self.genre = es.TensorflowPredict2D(graphFilename=path(GENRE), input="serving_default_model_Placeholder",
+                                            output="PartitionedCall:0")
+        with open(path(GENRE_LABELS), encoding="utf-8") as labels:
+            self.styles = json.load(labels)["classes"]
         self.resample = es.Resample(inputSampleRate=SAMPLE_RATE, outputSampleRate=TEMPO_SAMPLE_RATE)
 
     def load(self, file):
@@ -153,6 +164,11 @@ class Analyzer:
         embeddings = self.effnet(audio)
         for name, head, index in self.heads:
             features[name] = rounded(head(embeddings)[:, index].mean())
+        activations = self.genre(embeddings).mean(axis=0)
+        if len(activations) != len(self.styles):
+            raise RuntimeError(f"genre model gives {len(activations)} values for {len(self.styles)} styles")
+        best = activations.argsort()[::-1][:TOP_STYLES]
+        features["styles"] = [[self.styles[i], rounded(activations[i])] for i in best]
         # Sorties emoMusic : (valence, éveil) par fenêtre.
         av = self.arousal_valence(self.musicnn(audio)).mean(axis=0)
         features["valence"] = rounded(to_unit(av[0]))

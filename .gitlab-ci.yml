@@ -81,7 +81,8 @@ ci-image:
     - docker build --pull -f build/ci.Dockerfile -t "$CI_IMAGE" build
     - docker push "$CI_IMAGE"
 
-# Base d'exécution (ASP.NET, ffmpeg, yt-dlp, Deno, fpcalc), reconstruite quand le Dockerfile change,
+# Base d'exécution (ASP.NET, ffmpeg, yt-dlp, Deno, fpcalc, analyse audio), reconstruite quand le Dockerfile ou les listes de
+# docker/analysis changent,
 # ou à la demande : Run pipeline avec BUILD_RUNTIME_BASE=1 (mises à jour de sécurité de l'image ASP.NET).
 runtime-base:
   extends: .dind
@@ -90,7 +91,7 @@ runtime-base:
   rules:
     - if: $BUILD_RUNTIME_BASE == "1"
     - if: $CI_PIPELINE_SOURCE == "push"
-      changes: [Dockerfile]
+      changes: [Dockerfile, docker/analysis/*]
   script:
     - *registry-login
     - docker build --pull --target base -t "$RUNTIME_BASE" .

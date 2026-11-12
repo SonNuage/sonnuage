@@ -13,7 +13,10 @@ public interface IAudioAnalyzer
     Task<AudioAnalysisOutcome> AnalyzeAsync(string path, CancellationToken ct);
 }
 
-/// <summary>Caractéristiques d'un morceau : tempo en BPM, le reste de 0 à 1 (null quand le modèle n'a rien donné).</summary>
+/// <summary>
+/// Caractéristiques d'un morceau : tempo en BPM, le reste de 0 à 1 (null quand le modèle n'a rien donné).
+/// <paramref name="Styles"/> : styles Discogs les plus probables, au format de <see cref="DiscogsStyles"/>.
+/// </summary>
 public sealed record AudioFeatureValues(
     double? Bpm,
     double? Danceability,
@@ -26,7 +29,8 @@ public sealed record AudioFeatureValues(
     double? Party,
     double? Acoustic,
     double? Electronic,
-    double? Instrumental);
+    double? Instrumental,
+    string? Styles = null);
 
 /// <summary>Résultat de l'analyse d'un fichier : ses caractéristiques, ou la raison de l'échec.</summary>
 public abstract record AudioAnalysisOutcome

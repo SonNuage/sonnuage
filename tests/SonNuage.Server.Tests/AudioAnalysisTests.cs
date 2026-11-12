@@ -37,7 +37,8 @@ public sealed class AudioAnalysisFactory : SonNuageFactory
             AudioAnalysisOutcome outcome = Path.GetFileName(path) == "Encore.wav"
                 ? new AudioAnalysisOutcome.Failed("RuntimeError: unreadable")
                 : new AudioAnalysisOutcome.Analyzed(new AudioFeatureValues(Bpm: 120, Danceability: 0.9, Energy: 0.8, Valence: 0.7,
-                    Happy: 0.6, Sad: 0.1, Relaxed: 0.2, Aggressive: 0.3, Party: 0.5, Acoustic: 0.4, Electronic: 0.35, Instrumental: 0.05));
+                    Happy: 0.6, Sad: 0.1, Relaxed: 0.2, Aggressive: 0.3, Party: 0.5, Acoustic: 0.4, Electronic: 0.35, Instrumental: 0.05,
+                    Styles: "Rock---Pop Rock:0.6|Pop---Ballad:0.2"));
             return Task.FromResult(outcome);
         }
     }
@@ -93,6 +94,7 @@ public sealed class AudioAnalysisTests(AudioAnalysisFactory factory) : IClassFix
         var hit = Assert.Single(rows, r => r.Track.Title == "Opening");
         Assert.Equal((120, 0.9, 0.8, 0.7, 0.6, 0.1, 0.2, 0.3, 0.5, 0.4, 0.35, 0.05),
             (hit.Bpm, hit.Danceability, hit.Energy, hit.Valence, hit.Happy, hit.Sad, hit.Relaxed, hit.Aggressive, hit.Party, hit.Acoustic, hit.Electronic, hit.Instrumental));
+        Assert.Equal("Rock---Pop Rock:0.6|Pop---Ballad:0.2", hit.Styles);
         Assert.Null(hit.Error);
     }
 
@@ -216,6 +218,19 @@ public sealed class EssentiaProtocolTests
 
         var values = Assert.IsType<AudioAnalysisOutcome.Analyzed>(result.Outcome).Values;
         Assert.Equal(new AudioFeatureValues(null, null, null, null, null, null, null, null, 1, null, null, null), values);
+    }
+
+    [Fact]
+    public void Discogs_styles_are_kept_best_first_in_one_canonical_text()
+    {
+        var line = """
+            {"id": "d", "features": {"happy": 0.5, "styles": [["Pop---Ballad", 0.21], ["Rock---Pop Rock", 0.6234],
+             ["Nonsense", 0.9], ["Rock---Soft Rock", 1.7], ["Rock---Classic Rock", 0.05]]}}
+            """.ReplaceLineEndings(" ");
+
+        var values = Assert.IsType<AudioAnalysisOutcome.Analyzed>(Assert.IsType<EssentiaProtocol.Result>(EssentiaProtocol.Parse(line)).Outcome).Values;
+
+        Assert.Equal("Rock---Pop Rock:0.623|Pop---Ballad:0.21|Rock---Classic Rock:0.05", values.Styles);
     }
 
     [Fact]
