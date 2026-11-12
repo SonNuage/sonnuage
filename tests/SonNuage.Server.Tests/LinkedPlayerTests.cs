@@ -134,6 +134,29 @@ public class LinkedPlayerTests
         Assert.Equal(3, b.State.Queue.Count);
     }
 
+    [Fact]
+    public async Task The_position_alone_is_sent_at_most_once_a_second()
+    {
+        var bus = new Bus();
+        var time = new Clock();
+        var localA = new FakePlayer();
+        var a = new LinkedPlayer(localA, localA, bus.Join("tab-a"), time);
+        await a.RestoreAsync();
+        await a.PlayAsync(Tracks, 0);
+        var sent = bus.Sent.Count;
+
+        await localA.SeekAsync(1);
+        await localA.SeekAsync(1.5);
+        Assert.Equal(sent, bus.Sent.Count);
+
+        time.Now += TimeSpan.FromSeconds(1);
+        await localA.SeekAsync(2);
+        Assert.Equal(sent + 1, bus.Sent.Count);
+        // Tout autre changement part aussitôt.
+        await localA.NextAsync();
+        Assert.Equal(sent + 2, bus.Sent.Count);
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -159,7 +182,13 @@ public class LinkedPlayerTests
     private static TrackDto Track(string title) => new(
         Guid.NewGuid(), title, Guid.NewGuid(), "Artiste", Guid.NewGuid(), "Album", 1, 1, 200, "mp3", false, 320, false, false);
 
-    /// <summary>BroadcastChannel en mémoire : chaque message part vers tous les autres onglets, aussitôt.</summary>
+    private sealed class Clock : TimeProvider
+    {
+        public DateTimeOffset Now { get; set; } = new(2026, 11, 12, 12, 0, 0, TimeSpan.Zero);
+        public override DateTimeOffset GetUtcNow() => Now;
+    }
+
+    /// <summary>Relais en mémoire : chaque message part vers tous les autres onglets, aussitôt.</summary>
     private sealed class Bus
     {
         private readonly List<Link> _links = [];
@@ -172,8 +201,11 @@ public class LinkedPlayerTests
         }
 
         /// <summary>Comme le relais du serveur : le nom de l'expéditeur est ajouté au message.</summary>
+        public List<PlaybackMessage> Sent { get; } = [];
+
         public async Task SendAsync(PlaybackMessage m)
         {
+            Sent.Add(m);
             m = m with { FromName = "Name of " + m.From };
             foreach (var l in _links.ToList())
             {

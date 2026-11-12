@@ -12,6 +12,9 @@ public sealed class LinkedPlayer : IPlayer, IRestorablePlayer, IConnectPlayer
     /// <summary>Le temps pour un lecteur actif de répondre à un nouvel arrivant.</summary>
     private static readonly TimeSpan HelloWait = TimeSpan.FromMilliseconds(300);
 
+    /// <summary>Un état qui ne diffère que par la position part au plus à ce rythme (Android relit la position deux fois par seconde).</summary>
+    private static readonly TimeSpan PositionEvery = TimeSpan.FromSeconds(1);
+
     private readonly IPlayer _local;
     private readonly IAdoptablePlayer _adoptable;
     private readonly IPlaybackLink _link;
@@ -22,9 +25,13 @@ public sealed class LinkedPlayer : IPlayer, IRestorablePlayer, IConnectPlayer
     private PlayerState _remote = PlayerState.Empty;
     private IReadOnlyList<TrackDto>? _sentQueue;
     private int _sentCount = -1;
+    private readonly TimeProvider _time;
+    private PlayerState? _published;
+    private DateTimeOffset _publishedAt;
 
-    public LinkedPlayer(IPlayer local, IAdoptablePlayer adoptable, IPlaybackLink link)
+    public LinkedPlayer(IPlayer local, IAdoptablePlayer adoptable, IPlaybackLink link, TimeProvider? time = null)
     {
+        _time = time ?? TimeProvider.System;
         _local = local;
         _adoptable = adoptable;
         _link = link;
@@ -73,6 +80,7 @@ public sealed class LinkedPlayer : IPlayer, IRestorablePlayer, IConnectPlayer
         if (_active == Me)
         {
             _sentQueue = null;
+            _published = null;
             await _link.SendAsync(new PlaybackMessage("claim", Me));
             await PublishAsync(_local.State);
         }
@@ -193,8 +201,14 @@ public sealed class LinkedPlayer : IPlayer, IRestorablePlayer, IConnectPlayer
 
     private Task PublishAsync(PlayerState state)
     {
-        // La file (jusqu'à des centaines de pistes) ne part que quand elle change. La position, à chaque seconde.
+        var now = _time.GetUtcNow();
+        // La file (jusqu'à des centaines de pistes) ne part que quand elle change. La position seule, au plus chaque seconde.
         var full = !ReferenceEquals(state.Queue, _sentQueue) || state.Queue.Count != _sentCount;
+        if (!full && _published is { } last && last with { PositionSeconds = state.PositionSeconds, Queue = state.Queue } == state
+            && now - _publishedAt < PositionEvery && !Jumped(last, state, now - _publishedAt))
+            return Task.CompletedTask;
+        _published = state;
+        _publishedAt = now;
         if (full)
         {
             _sentQueue = state.Queue;
@@ -203,12 +217,20 @@ public sealed class LinkedPlayer : IPlayer, IRestorablePlayer, IConnectPlayer
         return _link.SendAsync(new PlaybackMessage("state", Me, State: full ? state : state with { Queue = [] }, HasQueue: full));
     }
 
+    /// <summary>La position ne suit pas la lecture (on a cherché dans le morceau) : elle part aussitôt.</summary>
+    private static bool Jumped(PlayerState last, PlayerState state, TimeSpan elapsed)
+    {
+        var expected = last.PositionSeconds + (last.IsPlaying ? elapsed.TotalSeconds : 0);
+        return Math.Abs(state.PositionSeconds - expected) > 1.5;
+    }
+
     private async Task OnMessageAsync(PlaybackMessage m)
     {
         switch (m.Type)
         {
             case "hello" when _active == Me:
                 _sentQueue = null;
+                _published = null;
                 await PublishAsync(_local.State);
                 break;
             case "claim":
