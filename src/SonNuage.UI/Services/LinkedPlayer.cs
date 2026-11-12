@@ -65,6 +65,12 @@ public sealed class LinkedPlayer : IPlayer, IRestorablePlayer, IConnectPlayer
     public Task PrepareReloadAsync() =>
         !IsRemote && _local is IRestorablePlayer restorable ? restorable.PrepareReloadAsync() : Task.CompletedTask;
 
+    /// <summary>
+    /// Rejoint les autres appareils sans toucher à la file : pour un hôte dont la lecture démarre sans interface
+    /// (service Android lancé par Android Auto ou la notification).
+    /// </summary>
+    public Task ConnectAsync() => EnsureStartedAsync();
+
     private Task EnsureStartedAsync() => _started ??= StartAsync();
 
     private async Task StartAsync()
