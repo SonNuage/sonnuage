@@ -105,6 +105,46 @@ public sealed class RadioStationTests(RadioFactory factory) : IClassFixture<Radi
     }
 
     [Fact]
+    public async Task Station_lists_are_kept_until_the_library_changes()
+    {
+        var admin = await SessionAsync();
+        Assert.Contains(await StationsAsync(admin), s => s.Id == "good-mood-pop");
+        try
+        {
+            await DbAsync(db => db.AudioFeatures.ExecuteUpdateAsync(s => s.SetProperty(f => f.Styles, "Rock---Hard Rock:0.7"), Ct));
+
+            // Gardées : pas de nouveau calcul à chaque visite.
+            Assert.Contains(await StationsAsync(admin), s => s.Id == "good-mood-pop");
+
+            // La bibliothèque a changé (fin de scan) : les stations sont recalculées.
+            factory.Services.GetRequiredService<SonNuage.Server.Library.ScanCoordinator>().RequestFullScan();
+            await WaitUntilAsync(async () => !(await StationsAsync(admin)).Any(s => s.Id == "good-mood-pop"));
+            Assert.Contains(await StationsAsync(admin), s => s.Id == "metal");
+        }
+        finally
+        {
+            await DbAsync(db => db.AudioFeatures.ExecuteUpdateAsync(s => s.SetProperty(f => f.Styles, "Pop---Europop:0.6"), Ct));
+            factory.Services.GetRequiredService<RadioStations>().Forget();
+        }
+    }
+
+    private async Task<int> DbAsync(Func<SonNuageDbContext, Task<int>> action)
+    {
+        using var scope = factory.Services.CreateScope();
+        return await action(scope.ServiceProvider.GetRequiredService<SonNuageDbContext>());
+    }
+
+    private static async Task WaitUntilAsync(Func<Task<bool>> done)
+    {
+        var watch = Stopwatch.StartNew();
+        while (!await done())
+        {
+            if (watch.Elapsed > TimeSpan.FromSeconds(20)) throw new TimeoutException();
+            await Task.Delay(100, Ct);
+        }
+    }
+
+    [Fact]
     public async Task The_weather_station_follows_the_weather_of_the_chosen_city()
     {
         var client = await SessionAsync();

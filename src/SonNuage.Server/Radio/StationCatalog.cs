@@ -112,8 +112,12 @@ public sealed record GenreFilter(IReadOnlySet<string> Genres, IReadOnlySet<strin
 /// Radio thématique : une note de 0 à 1 par morceau, retenu au-dessus de <see cref="Threshold"/>. Les clés de texte
 /// sont <c>radio.stations.{Id}.name</c> et <c>.description</c>.
 /// </summary>
+/// <param name="Key">Clé des morceaux gardés de la station, quand sa note change sans changer d'identifiant (météo).</param>
 public sealed record StationDefinition(string Id, string Kind, string Color, SeasonWindow? Window, Func<TrackProfile, double> Score,
-    double Threshold = 0.6);
+    double Threshold = 0.6, string? Key = null)
+{
+    public string PoolKey => Key ?? Id;
+}
 
 /// <summary>
 /// Les radios fournies : saisons (visibles à leur période), ambiances (toujours), et celle de la météo, construite à
@@ -304,7 +308,8 @@ public static class StationCatalog
         };
         // La nuit, plus doux.
         var final = weather.IsDay ? score : p => 0.85 * score(p) + 0.15 * (p.Feel is { } f ? Inv(f.Energy) : 0);
-        return new StationDefinition(WeatherId, RadioStationKinds.Weather, Color(Category(weather)), null, final);
+        return new StationDefinition(WeatherId, RadioStationKinds.Weather, Color(Category(weather)), null, final,
+            Key: $"{WeatherId}-{Category(weather)}-{(weather.IsDay ? "day" : "night")}");
     }
 
     public static WeatherCategory Category(WeatherNow w) => w.Code switch

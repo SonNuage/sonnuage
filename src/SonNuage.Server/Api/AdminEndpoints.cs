@@ -19,13 +19,17 @@ public static class AdminEndpoints
     public static void MapAdminEndpoints(this IEndpointRouteBuilder app)
     {
         var g = app.MapGroup("/api/admin").RequireAuthorization(AuthConstants.AdminPolicy).WithTags("Admin");
-        // Toute modification de pistes ou d'albums (tags, pochettes, suppressions) se répercute sur l'index de recherche.
+        // Toute modification de pistes ou d'albums (tags, pochettes, suppressions) se répercute sur l'index de recherche
+        // et sur les radios.
         g.AddEndpointFilter(async (context, next) =>
         {
             var result = await next(context);
             var request = context.HttpContext.Request;
             if (!HttpMethods.IsGet(request.Method) && (request.Path.Value?.Contains("/tracks") == true || request.Path.Value?.Contains("/albums") == true))
+            {
                 context.HttpContext.RequestServices.GetRequiredService<SearchIndexer>().RequestReindex();
+                context.HttpContext.RequestServices.GetRequiredService<SonNuage.Server.Radio.RadioStations>().Forget();
+            }
             return result;
         });
 

@@ -25,7 +25,18 @@ public sealed class RadioStations(IMemoryCache cache, IWeatherSource weather, Ti
     private const string GenresKey = "radio-genres";
     /// <summary>Radio d'une ambiance demandée dans la recherche : « ambiance: » suivi de la demande (<see cref="AmbianceQuery.Key"/>).</summary>
     public const string AmbiancePrefix = "ambiance:";
-    private static readonly TimeSpan ProfilesFor = TimeSpan.FromMinutes(10);
+    /// <summary>
+    /// Durée de vie des profils et des morceaux de chaque station, recalculés plus tôt quand la bibliothèque, ses tags
+    /// ou son analyse changent (<see cref="Forget"/>) : ouvrir les radios ne recalcule rien.
+    /// </summary>
+    private static readonly TimeSpan ProfilesFor = TimeSpan.FromHours(6);
+
+    /// <summary>Profils de la bibliothèque et, calculés à la première demande, les morceaux de chaque station.</summary>
+    private sealed class Snapshot(IReadOnlyList<TrackProfile> profiles)
+    {
+        public IReadOnlyList<TrackProfile> Profiles { get; } = profiles;
+        public System.Collections.Concurrent.ConcurrentDictionary<string, List<Candidate>> Pools { get; } = new();
+    }
 
     /// <summary>Stations du jour : saisons en cours, ambiances, météo (si un lieu est réglé).</summary>
     public async Task<IReadOnlyList<StationDefinition>> TodayAsync(CancellationToken ct)
@@ -39,7 +50,7 @@ public sealed class RadioStations(IMemoryCache cache, IWeatherSource weather, Ti
 
     public async Task<List<RadioStationDto>> ListAsync(SonNuageDbContext db, Guid userId, string language, CancellationToken ct)
     {
-        var profiles = await ProfilesAsync(db, ct);
+        var snapshot = await SnapshotAsync(db, ct);
         var personal = await PersonalAsync(db, userId, ct);
         var now = await weather.NowAsync(ct);
         var t = Translations.Instance;
@@ -47,7 +58,7 @@ public sealed class RadioStations(IMemoryCache cache, IWeatherSource weather, Ti
         var result = new List<RadioStationDto>();
         foreach (var station in await TodayAsync(ct))
         {
-            var candidates = Candidates(station, profiles, personal, MinDurationSeconds);
+            var candidates = StationCandidates(snapshot, station, personal);
             if (candidates.Count < MinTracks) continue;
             // Pochettes : parmi les mieux notés, une sélection qui change chaque jour.
             var rng = new Random(HashCode.Combine(day, StableHash(station.Id)));
@@ -70,7 +81,7 @@ public sealed class RadioStations(IMemoryCache cache, IWeatherSource weather, Ti
             : null;
         var station = ambiance is not null ? AmbianceStation(ambiance) : (await TodayAsync(ct)).FirstOrDefault(s => s.Id == stationId);
         if (station is null) return null;
-        var candidates = Candidates(station, await ProfilesAsync(db, ct), await PersonalAsync(db, userId, ct), MinDurationSeconds);
+        var candidates = StationCandidates(await SnapshotAsync(db, ct), station, await PersonalAsync(db, userId, ct));
         // Une ambiance demandée joue même avec peu de morceaux : la radio recommence quand tout est passé.
         if (ambiance is null && candidates.Count < MinTracks) return null;
         if (candidates.Count == 0) return [];
@@ -85,7 +96,7 @@ public sealed class RadioStations(IMemoryCache cache, IWeatherSource weather, Ti
     /// <summary>Les <paramref name="count"/> morceaux qui répondent le mieux à l'ambiance (titres mal notés exclus).</summary>
     public async Task<List<Guid>> AmbianceAsync(SonNuageDbContext db, Guid userId, AmbianceQuery query, int count, CancellationToken ct)
     {
-        var candidates = Candidates(AmbianceStation(query), await ProfilesAsync(db, ct), await PersonalAsync(db, userId, ct), MinDurationSeconds);
+        var candidates = StationCandidates(await SnapshotAsync(db, ct), AmbianceStation(query), await PersonalAsync(db, userId, ct));
         return Rank(candidates, count, StableHash(query.Key));
     }
 
@@ -127,29 +138,47 @@ public sealed class RadioStations(IMemoryCache cache, IWeatherSource weather, Ti
     /// <summary>Morceaux gardés au moins, quand autant passent le seuil : assez pour une radio variée.</summary>
     public const int MinKept = 60;
 
+    /// <summary>Morceaux de la station pour ce compte : ceux de la station, gardés avec les profils, puis les notes du compte.</summary>
+    private List<Candidate> StationCandidates(Snapshot snapshot, StationDefinition station, Personal personal) =>
+        Personalize(snapshot.Pools.GetOrAdd(station.PoolKey, _ => Pool(station, snapshot.Profiles, MinDurationSeconds)), personal);
+
+    internal static List<Candidate> Candidates(StationDefinition station, IReadOnlyList<TrackProfile> profiles, Personal personal, double minDurationSeconds = 60) =>
+        Personalize(Pool(station, profiles, minDurationSeconds), personal);
+
     /// <summary>
-    /// Morceaux de la station : au-dessus de son seuil, une version par chanson, puis seulement les mieux notés
-    /// (<see cref="BestShare"/>). Le seuil
-    /// seul laissait passer près de la moitié des morceaux analysés dans les ambiances calmes.
+    /// Morceaux de la station, pareils pour tous les comptes : au-dessus de son seuil, une version par chanson, puis
+    /// seulement les mieux notés (<see cref="BestShare"/>). Le seuil seul laissait passer près de la moitié des morceaux
+    /// analysés dans les ambiances calmes.
     /// </summary>
-    internal static List<Candidate> Candidates(StationDefinition station, IReadOnlyList<TrackProfile> profiles, Personal personal, double minDurationSeconds = 60)
+    internal static List<Candidate> Pool(StationDefinition station, IReadOnlyList<TrackProfile> profiles, double minDurationSeconds = 60)
     {
         var list = new List<Candidate>();
         var judged = 0;
         foreach (var p in profiles)
         {
             if (p.DurationSeconds < minDurationSeconds) continue;
+            var score = station.Score(p);
+            if (score > 0) judged++;
+            if (score < station.Threshold) continue;
+            list.Add(new Candidate(p, score));
+        }
+        return Best(OneVersionPerSong(list), Math.Max(MinKept, (int)Math.Ceiling(BestShare * judged)));
+    }
+
+    /// <summary>Notes du compte : titres notés 1–2 (eux, leur album ou leur artiste) retirés, favoris et 4–5 un peu plus souvent.</summary>
+    internal static List<Candidate> Personalize(List<Candidate> pool, Personal personal)
+    {
+        var list = new List<Candidate>(pool.Count);
+        foreach (var c in pool)
+        {
+            var p = c.Profile;
             var rating = personal.Ratings.TryGetValue(p.Id, out var r) ? r
                 : personal.Ratings.TryGetValue(p.AlbumId, out r) ? r
                 : personal.Ratings.TryGetValue(p.ArtistId, out r) ? r : 0;
             if (rating is > 0 and <= 2) continue;
-            var score = station.Score(p);
-            if (score > 0) judged++;
-            if (score < station.Threshold) continue;
-            if (rating >= 4 || personal.Liked.Contains(p.Id)) score = Math.Min(1, score + 0.1);
-            list.Add(new Candidate(p, score));
+            list.Add(rating >= 4 || personal.Liked.Contains(p.Id) ? c with { Score = Math.Min(1, c.Score + 0.1) } : c);
         }
-        return Best(OneVersionPerSong(list), Math.Max(MinKept, (int)Math.Ceiling(BestShare * judged)));
+        return list;
     }
 
     /// <summary>D'une chanson d'un artiste (<see cref="TrackProfile.Song"/>), la version la mieux notée : pas huit remix du même titre.</summary>
@@ -194,12 +223,12 @@ public sealed class RadioStations(IMemoryCache cache, IWeatherSource weather, Ti
         return picked.Select(p => p.Id).ToList();
     }
 
-    private async Task<IReadOnlyList<TrackProfile>> ProfilesAsync(SonNuageDbContext db, CancellationToken ct)
+    private async Task<Snapshot> SnapshotAsync(SonNuageDbContext db, CancellationToken ct)
     {
-        if (cache.TryGetValue(ProfilesKey, out IReadOnlyList<TrackProfile>? known) && known is not null) return known;
-        var profiles = await LoadProfilesAsync(db, ct);
-        cache.Set(ProfilesKey, profiles, ProfilesFor);
-        return profiles;
+        if (cache.TryGetValue(ProfilesKey, out Snapshot? known) && known is not null) return known;
+        var snapshot = new Snapshot(await LoadProfilesAsync(db, ct));
+        cache.Set(ProfilesKey, snapshot, ProfilesFor);
+        return snapshot;
     }
 
     /// <summary>Profils de tous les morceaux, lus en base (sans cache).</summary>

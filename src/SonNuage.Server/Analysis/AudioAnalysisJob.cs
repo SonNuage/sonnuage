@@ -52,6 +52,8 @@ public sealed class AudioAnalysisJob(IAudioAnalyzer analyzer, AudioAnalysisSetti
             ctx.Report((i + 1.0) / batch.Count);
         }
         ctx.Info(Tx.Key("jobs.analysis.done", ("analyzed", batch.Count - failed), ("failed", failed)));
+        // Les radios gardent leurs morceaux plusieurs heures : elles tiennent compte des nouvelles analyses dès ce lot.
+        if (batch.Count > 0) ctx.Services.GetRequiredService<Radio.RadioStations>().Forget();
 
         // Lot suivant, sans reprendre ceux de ce lot (un fichier modifié pendant son analyse attendra le prochain scan) :
         // pas de boucle sans fin si un résultat ne pouvait pas être enregistré.

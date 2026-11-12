@@ -193,6 +193,9 @@ var app = builder.Build();
 
 await InitializeAsync(app);
 
+// Les radios gardent leurs morceaux plusieurs heures : un scan, un envoi ou un import les fait recalculer.
+app.Services.GetRequiredService<ScanCoordinator>().LibraryChanged += app.Services.GetRequiredService<SonNuage.Server.Radio.RadioStations>().Forget;
+
 var sonnuage = app.Services.GetRequiredService<IOptions<SonNuageOptions>>().Value;
 if (sonnuage.BehindProxy)
 {
