@@ -289,10 +289,11 @@
       "sourceLrclib": "Lyrics: LRCLIB"
     },
     "remote": {
-      "title": "Play the music in this tab",
-      "elsewhere": "Playing in another tab",
-      "elsewhereShort": "In another tab",
-      "playHere": "Play here"
+      "title": "Play the music on this device",
+      "elsewhere": "Playing on {device}",
+      "elsewhereShort": "On {device}",
+      "playHere": "Play here",
+      "otherDevice": "another device"
     }
   },
   "desktop": {
@@ -1835,5 +1836,22 @@
       "one": "{count} listen sent.",
       "other": "{count} listens sent."
     }
+  },
+  "devices": {
+    "title": "Devices",
+    "intro": "One device of your account plays at a time: the others show what it plays and control it. “Play here” brings the music to the device you are on.",
+    "name": "Name of this device",
+    "nameHint": "The name your other devices show. Empty: {default}.",
+    "save": "Save",
+    "saved": "Name saved",
+    "connected": "Connected devices",
+    "thisOne": "this device",
+    "playing": "playing",
+    "none": "No other device connected.",
+    "apps": "Subsonic apps",
+    "appsHint": "Shown here, but they cannot be controlled from SonNuage.",
+    "appPlaying": "{app} is playing {title} · {artist}",
+    "savedQueue": "Queue saved by {app}: {count} tracks, current: {title}",
+    "resume": "Resume here"
   }
 }

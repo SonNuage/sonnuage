@@ -3,7 +3,7 @@ using SonNuage.Contracts;
 namespace SonNuage.UI.Services;
 
 /// <summary>
-/// Un seul lecteur actif à la fois parmi ceux reliés par <see cref="IPlaybackLink"/> : celui qui se met à jouer
+/// Un seul lecteur actif à la fois parmi les appareils du compte reliés par <see cref="IPlaybackLink"/> : celui qui se met à jouer
 /// le signale (claim) et les autres se taisent, puis affichent son état et lui transmettent leurs commandes,
 /// comme une télécommande. Quand il disparaît, chacun reprend sa file, en pause. « Lire ici » ramène la lecture.
 /// </summary>
@@ -18,6 +18,7 @@ public sealed class LinkedPlayer : IPlayer, IRestorablePlayer, IConnectPlayer
     private Task? _started;
     // Lecteur qui joue : null (aucun), le nôtre, ou un autre.
     private string? _active;
+    private string? _activeName;
     private PlayerState _remote = PlayerState.Empty;
     private IReadOnlyList<TrackDto>? _sentQueue;
     private int _sentCount = -1;
@@ -29,6 +30,7 @@ public sealed class LinkedPlayer : IPlayer, IRestorablePlayer, IConnectPlayer
         _link = link;
         _local.StateChanged += OnLocalChanged;
         _link.OnMessage = OnMessageAsync;
+        _link.OnConnected = OnConnectedAsync;
     }
 
     public event Action? StateChanged;
@@ -36,6 +38,10 @@ public sealed class LinkedPlayer : IPlayer, IRestorablePlayer, IConnectPlayer
     private string Me => _link.DeviceId;
 
     public bool IsRemote => _active is not null && _active != Me;
+
+    public string? RemoteId => IsRemote ? _active : null;
+
+    public string? RemoteName => IsRemote ? _activeName : null;
 
     public PlayerState State => IsRemote ? _remote : _local.State;
 
@@ -59,6 +65,21 @@ public sealed class LinkedPlayer : IPlayer, IRestorablePlayer, IConnectPlayer
         await _link.StartAsync();
         await _link.SendAsync(new PlaybackMessage("hello", Me));
         await Task.Delay(HelloWait);
+    }
+
+    /// <summary>Après une coupure du relais : celui qui joue republie tout, les autres redemandent l'état.</summary>
+    private async Task OnConnectedAsync()
+    {
+        if (_active == Me)
+        {
+            _sentQueue = null;
+            await _link.SendAsync(new PlaybackMessage("claim", Me));
+            await PublishAsync(_local.State);
+        }
+        else
+        {
+            await _link.SendAsync(new PlaybackMessage("hello", Me));
+        }
     }
 
     public async Task PlayHereAsync()
@@ -191,10 +212,10 @@ public sealed class LinkedPlayer : IPlayer, IRestorablePlayer, IConnectPlayer
                 await PublishAsync(_local.State);
                 break;
             case "claim":
-                await YieldToAsync(m.From);
+                await YieldToAsync(m.From, m.FromName);
                 break;
             case "state" when m.State is { } state:
-                if (_active != m.From) await YieldToAsync(m.From);
+                if (_active != m.From) await YieldToAsync(m.From, m.FromName);
                 _remote = m.HasQueue ? state : state with { Queue = _remote.Queue };
                 StateChanged?.Invoke();
                 break;
@@ -210,10 +231,11 @@ public sealed class LinkedPlayer : IPlayer, IRestorablePlayer, IConnectPlayer
         }
     }
 
-    private async Task YieldToAsync(string device)
+    private async Task YieldToAsync(string device, string? name)
     {
         var wasLocal = !IsRemote;
         _active = device;
+        _activeName = name;
         if (wasLocal) await _adoptable.ReleaseAsync();
         StateChanged?.Invoke();
     }

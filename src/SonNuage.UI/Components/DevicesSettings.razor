@@ -1,0 +1,171 @@
+@* Appareils du compte : nom de celui-ci, ceux qui sont connectés (et lequel joue), applis Subsonic en lecture et leur file à reprendre. *@
+@implements IDisposable
+@inject ApiClient Api
+@inject UiState Ui
+@inject DeviceIdentity Identity
+@inject ServerPlaybackLink Link
+@inject IPlayer Player
+
+<section class="panel">
+    <h2>@L["devices.title"]</h2>
+    <p class="muted">@L["devices.intro"]</p>
+
+    <form class="stack" @onsubmit="RenameAsync" @onsubmit:preventDefault="true">
+        <label class="field">
+            <span>@L["devices.name"]</span>
+            <input class="input" maxlength="@DeviceLink.MaxNameLength" placeholder="@_systemName" @bind="_name" />
+        </label>
+        <p class="muted small">@L["devices.nameHint", ("default", _systemName)]</p>
+        <button class="btn" type="submit" disabled="@_busy">@L["devices.save"]</button>
+    </form>
+
+    @if (_devices is { } devices)
+    {
+        <h3>@L["devices.connected"]</h3>
+        @if (devices.Devices.All(d => d.Id == Link.DeviceId))
+        {
+            <p class="muted small">@L["devices.none"]</p>
+        }
+        <ul class="devices">
+            @foreach (var device in devices.Devices)
+            {
+                var playing = device.Id == PlayingId;
+                <li>
+                    <Icon Name="@(playing ? "volume" : "library")" Size="18" />
+                    <strong>@device.Name</strong>
+                    @if (device.Id == Link.DeviceId) { <span class="muted small"> · @L["devices.thisOne"]</span> }
+                    @if (playing) { <span class="muted small"> · @L["devices.playing"]</span> }
+                </li>
+            }
+        </ul>
+
+        @if (devices.Apps.Count > 0 || devices.SavedQueue is not null)
+        {
+            <h3>@L["devices.apps"]</h3>
+            <p class="muted small">@L["devices.appsHint"]</p>
+            <ul class="devices">
+                @foreach (var app in devices.Apps)
+                {
+                    <li><Icon Name="volume" Size="18" /> @L["devices.appPlaying", ("app", app.Client), ("title", app.Track.Title), ("artist", app.Track.ArtistName)]</li>
+                }
+            </ul>
+            @if (devices.SavedQueue is { } queue)
+            {
+                <p class="small">@L["devices.savedQueue", ("app", queue.ChangedBy ?? "Subsonic"), ("count", queue.Tracks.Count), ("title", queue.Tracks[Math.Min(queue.CurrentIndex, queue.Tracks.Count - 1)].Title)]</p>
+                <button class="btn" disabled="@_busy" @onclick="() => ResumeAsync(queue)"><Icon Name="play" Size="18" /> @L["devices.resume"]</button>
+            }
+        }
+    }
+</section>
+
+@code {
+    private DevicesDto? _devices;
+    private string? _name;
+    private string _systemName = "";
+    private string? _shownPlaying;
+    private bool _busy;
+    private readonly CancellationTokenSource _alive = new();
+
+    /// <summary>Les autres appareils vont et viennent : la liste se relit à ce rythme tant que la page est ouverte.</summary>
+    private static readonly TimeSpan Refresh = TimeSpan.FromSeconds(10);
+
+    /// <summary>L'appareil qui joue : un autre (lecteur relié), sinon celui-ci s'il joue.</summary>
+    private string? PlayingId => Player is IConnectPlayer { IsRemote: true } connect ? connect.RemoteId
+        : Player.State.IsPlaying ? Link.DeviceId : null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Identity.LoadAsync();
+        _name = Identity.CustomName;
+        _systemName = Identity.CustomName is null ? Identity.Name : Identity.Platform;
+        _shownPlaying = PlayingId;
+        Player.StateChanged += OnPlayerChanged;
+        Link.Connected += OnLinkConnected;
+        await LoadAsync();
+        _ = RefreshAsync();
+    }
+
+    private async Task RefreshAsync()
+    {
+        using var timer = new PeriodicTimer(Refresh);
+        try
+        {
+            while (await timer.WaitForNextTickAsync(_alive.Token))
+            {
+                await InvokeAsync(async () =>
+                {
+                    await LoadAsync();
+                    StateHasChanged();
+                });
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private void OnLinkConnected() => InvokeAsync(async () =>
+    {
+        await LoadAsync();
+        StateHasChanged();
+    });
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _devices = await Api.DevicesAsync();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            // Liste indisponible (serveur ancien, hors ligne) : la section garde le nom de l'appareil.
+        }
+    }
+
+    // Un autre appareil prend la main : la liste se relit (le lecteur publie sa position chaque seconde, on ne relit qu'au changement).
+    private void OnPlayerChanged() => InvokeAsync(async () =>
+    {
+        if (PlayingId == _shownPlaying) return;
+        _shownPlaying = PlayingId;
+        await LoadAsync();
+        StateHasChanged();
+    });
+
+    private async Task RenameAsync()
+    {
+        _busy = true;
+        try
+        {
+            await Identity.RenameAsync(_name);
+            _name = Identity.CustomName;
+            Ui.Notify(L["devices.saved"]);
+            // Le relais rouvre son flux sous le nouveau nom : la liste suit (Link.Connected).
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ResumeAsync(SavedQueueDto queue)
+    {
+        _busy = true;
+        try
+        {
+            if (Player is IConnectPlayer { IsRemote: true } connect) await connect.PlayHereAsync();
+            await Player.PlayAsync(queue.Tracks, queue.CurrentIndex, shuffle: false);
+            if (queue.PositionSeconds > 0) await Player.SeekAsync(queue.PositionSeconds);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        Player.StateChanged -= OnPlayerChanged;
+        Link.Connected -= OnLinkConnected;
+        _alive.Cancel();
+    }
+}

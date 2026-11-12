@@ -255,6 +255,31 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
         await foreach (var e in ServerSentEvents.ReadAsync(stream, TimeSpan.FromSeconds(45), ct)) yield return e;
     }
 
+    // ---- Appareils du compte (relais de lecture) ----
+
+    public Task<DevicesDto?> DevicesAsync() => GetAsync<DevicesDto>(DeviceLink.Route);
+
+    /// <summary>
+    /// Flux du relais de lecture pour cet appareil (voir <see cref="DeviceLink"/>). Se termine (ou lève) quand le flux
+    /// se ferme ou reste muet.
+    /// </summary>
+    public async IAsyncEnumerable<ServerSentEvent> DeviceLinkAsync(string deviceId, string name, string platform, [EnumeratorCancellation] CancellationToken ct)
+    {
+        var url = $"{DeviceLink.LinkRoute}?id={Uri.EscapeDataString(deviceId)}&name={Uri.EscapeDataString(name)}&platform={Uri.EscapeDataString(platform)}";
+        using var response = await SendCoreAsync(() =>
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Accept.ParseAdd("text/event-stream");
+            request.Options.Set(new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse"), true);
+            return request;
+        }, completion: HttpCompletionOption.ResponseHeadersRead, ct: ct);
+        await EnsureSuccessAsync(response);
+        await using var stream = await response.Content.ReadAsStreamAsync(ct);
+        await foreach (var e in ServerSentEvents.ReadAsync(stream, TimeSpan.FromSeconds(45), ct)) yield return e;
+    }
+
+    public Task SendDeviceMessageAsync(PlaybackMessage message) => SendAsync(HttpMethod.Post, DeviceLink.LinkRoute, message);
+
     public Task<List<JobScheduleDto>?> JobSchedulesAsync() => GetAsync<List<JobScheduleDto>>($"{Jobs}/schedules");
     public Task<JobScheduleDto?> CreateJobScheduleAsync(JobScheduleRequest req) => SendAsync<JobScheduleDto>(HttpMethod.Post, $"{Jobs}/schedules", req);
     public Task<JobScheduleDto?> UpdateJobScheduleAsync(Guid id, JobScheduleRequest req) => SendAsync<JobScheduleDto>(HttpMethod.Put, $"{Jobs}/schedules/{id}", req);

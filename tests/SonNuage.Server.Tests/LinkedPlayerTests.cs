@@ -108,6 +108,32 @@ public class LinkedPlayerTests
         Assert.Equal(("bye", "tab-a"), (bye.Type, bye.From));
     }
 
+    [Fact]
+    public async Task The_device_that_plays_is_shown_by_its_name()
+    {
+        var (a, _, b, _, _) = await TwoTabsAsync();
+
+        await a.PlayAsync(Tracks, 0);
+
+        Assert.Equal("Name of tab-a", ((IConnectPlayer)b).RemoteName);
+        Assert.Null(((IConnectPlayer)a).RemoteName);
+    }
+
+    [Fact]
+    public async Task After_a_reconnection_the_playing_device_sends_its_whole_queue_again()
+    {
+        var (a, _, b, _, bus) = await TwoTabsAsync();
+        await a.PlayAsync(Tracks, 0);
+        // B a été coupé du relais : il a reçu le « bye » de A et repris la file en pause.
+        await bus.SendAsync(new PlaybackMessage("bye", "tab-a"));
+        Assert.False(b.IsRemote);
+
+        await bus.ReconnectAsync("tab-a");
+
+        Assert.True(b.IsRemote);
+        Assert.Equal(3, b.State.Queue.Count);
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -145,13 +171,20 @@ public class LinkedPlayerTests
             return link;
         }
 
+        /// <summary>Comme le relais du serveur : le nom de l'expéditeur est ajouté au message.</summary>
         public async Task SendAsync(PlaybackMessage m)
         {
+            m = m with { FromName = "Name of " + m.From };
             foreach (var l in _links.ToList())
             {
                 if (l.DeviceId == m.From || m.To is { } to && to != l.DeviceId || l.OnMessage is null) continue;
                 await l.OnMessage(m);
             }
+        }
+
+        public async Task ReconnectAsync(string id)
+        {
+            if (_links.Single(l => l.DeviceId == id).OnConnected is { } connected) await connected();
         }
     }
 
@@ -159,6 +192,7 @@ public class LinkedPlayerTests
     {
         public string DeviceId => id;
         public Func<PlaybackMessage, Task>? OnMessage { get; set; }
+        public Func<Task>? OnConnected { get; set; }
         public Task StartAsync() => Task.CompletedTask;
         public Task SendAsync(PlaybackMessage message) => bus.SendAsync(message);
     }

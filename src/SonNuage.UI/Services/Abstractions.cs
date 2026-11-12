@@ -81,6 +81,8 @@ public interface IPlatformInfo
     /// <summary>Plateforme où un réseau mobile/Wi-Fi est distinguable (Android).</summary>
     bool HasMeteredNetworkDetection { get; }
     string Name { get; }
+    /// <summary>Nom de l'appareil donné par le système (« Pixel de Phil », nom du PC), proposé aux autres appareils du compte.</summary>
+    Task<string?> DeviceNameAsync() => Task.FromResult<string?>(null);
     /// <summary>Version de l'application hôte (Android, ordinateur…) ; aucune sur le web, servi par le serveur.</summary>
     string? AppVersion => null;
     /// <summary>Interface chargée depuis le serveur (web) : un déploiement la rend obsolète, il faut recharger la page.</summary>

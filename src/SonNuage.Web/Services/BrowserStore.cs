@@ -28,9 +28,16 @@ public sealed class SameOriginEndpoint(Uri baseAddress) : IServerEndpoint
     }
 }
 
-public sealed class BrowserPlatform : IPlatformInfo
+public sealed class BrowserPlatform(IJSRuntime js) : IPlatformInfo
 {
     public bool HasMeteredNetworkDetection => false;
     public string Name => "web";
     public bool ServedByServer => true;
+
+    /// <summary>« Firefox · Windows » : le navigateur ne donne pas le nom de la machine.</summary>
+    public async Task<string?> DeviceNameAsync()
+    {
+        await using var module = await js.InvokeAsync<IJSObjectReference>("import", "./js/device.js");
+        return DeviceNames.FromUserAgent(await module.InvokeAsync<string>("userAgent"));
+    }
 }

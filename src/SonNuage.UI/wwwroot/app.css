@@ -921,6 +921,8 @@ button.tab { border: 0; cursor: pointer; color: inherit; display: inline-flex; a
 .accounts { list-style: none; padding: 0; margin: 0 0 1rem; display: grid; gap: .5rem; }
 .accounts li { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; justify-content: space-between; padding: .7rem .9rem; border-radius: var(--radius); background: var(--tint-1); border: 1px solid transparent; }
 .accounts li.active { border-color: var(--accent); }
+.devices { list-style: none; padding: 0; margin: 0 0 1rem; display: grid; gap: .4rem; }
+.devices li { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; padding: .55rem .8rem; border-radius: var(--radius); background: var(--tint-1); overflow-wrap: anywhere; }
 .account-name { display: flex; flex-direction: column; min-width: 0; }
 .account-name strong { overflow: hidden; text-overflow: ellipsis; }
 

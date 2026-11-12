@@ -10,7 +10,7 @@
             <button class="icon-btn" title="@L["player.collapse"]" @onclick="() => Ui.SetNowPlayingOpen(false)"><Icon Name="down" Size="28" /></button>
             @if (Player is IConnectPlayer { IsRemote: true } connect)
             {
-                <button class="np-context pb-remote" title="@L["player.remote.title"]" @onclick="connect.PlayHereAsync">@L["player.remote.elsewhereShort"] · <span class="strong">@L["player.remote.playHere"]</span></button>
+                <button class="np-context pb-remote" title="@L["player.remote.title"]" @onclick="connect.PlayHereAsync">@L["player.remote.elsewhereShort", ("device", connect.RemoteName ?? L["player.remote.otherDevice"])] · <span class="strong">@L["player.remote.playHere"]</span></button>
             }
             else
             {

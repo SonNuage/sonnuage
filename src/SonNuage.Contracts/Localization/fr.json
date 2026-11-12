@@ -289,10 +289,11 @@
       "sourceLrclib": "Paroles : LRCLIB"
     },
     "remote": {
-      "title": "Faire jouer la musique dans cet onglet",
-      "elsewhere": "Lecture dans un autre onglet",
-      "elsewhereShort": "Dans un autre onglet",
-      "playHere": "Lire ici"
+      "title": "Faire jouer la musique sur cet appareil",
+      "elsewhere": "En lecture sur {device}",
+      "elsewhereShort": "Sur {device}",
+      "playHere": "Lire ici",
+      "otherDevice": "un autre appareil"
     }
   },
   "desktop": {
@@ -1835,5 +1836,22 @@
       "one": "{count} écoute envoyée.",
       "other": "{count} écoutes envoyées."
     }
+  },
+  "devices": {
+    "title": "Appareils",
+    "intro": "Un seul appareil de votre compte joue à la fois : les autres affichent ce qu'il joue et le pilotent. « Lire ici » ramène la musique sur l'appareil où vous êtes.",
+    "name": "Nom de cet appareil",
+    "nameHint": "Le nom que vos autres appareils affichent. Vide : {default}.",
+    "save": "Enregistrer",
+    "saved": "Nom enregistré",
+    "connected": "Appareils connectés",
+    "thisOne": "cet appareil",
+    "playing": "en lecture",
+    "none": "Aucun autre appareil connecté.",
+    "apps": "Applis Subsonic",
+    "appsHint": "Visibles ici, mais elles ne se pilotent pas depuis SonNuage.",
+    "appPlaying": "{app} joue {title} · {artist}",
+    "savedQueue": "File enregistrée par {app} : {count} titres, en cours : {title}",
+    "resume": "Reprendre ici"
   }
 }

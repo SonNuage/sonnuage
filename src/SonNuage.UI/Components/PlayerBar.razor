@@ -41,7 +41,7 @@
             @if (Player is IConnectPlayer { IsRemote: true } connect)
             {
                 <button class="pb-remote" title="@L["player.remote.title"]" @onclick="connect.PlayHereAsync">
-                    <Icon Name="volume" Size="14" /> @L["player.remote.elsewhere"] · <span class="strong">@L["player.remote.playHere"]</span>
+                    <Icon Name="volume" Size="14" /> @L["player.remote.elsewhere", ("device", connect.RemoteName ?? L["player.remote.otherDevice"])] · <span class="strong">@L["player.remote.playHere"]</span>
                 </button>
             }
             else if (State.Error is { } error)

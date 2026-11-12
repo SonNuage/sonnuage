@@ -22,6 +22,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IPlayReportApi>(sp => sp.GetRequiredService<ApiClient>());
         services.AddSingleton<PlayHistory>();
         services.AddSingleton<UiState>();
+        services.AddSingleton<DeviceIdentity>();
+        // Relais de lecture entre les appareils du compte, que l'hôte branche sur son lecteur (LinkedPlayer).
+        services.AddSingleton<ServerPlaybackLink>();
         services.AddSingleton<PreviewPlayer>();
         services.AddSingleton<Localizer>();
         services.AddSingleton<ThemeSettings>();
