@@ -34,9 +34,13 @@ Légende : ✅ fait · 🔜 prochain · 💡 idée à creuser · ⚠️ limite c
 - **Applis Subsonic** visibles mais pas pilotables : « Symfonium joue … », et « Reprendre ici » pour la file qu'elles
   ont enregistrée (`savePlayQueue`).
 - **Nothing Phone (3)** : le nuage du logo danse sur la matrice Glyph pendant la lecture, et Glyph Toy « SonNuage ».
-  SDK de Nothing téléchargé au build (sa licence en interdit la redistribution).
+  SDK de Nothing téléchargé au build (sa licence en interdit la redistribution). Réglage dans l'appli (Réglages →
+  Glyph), grisé sur tout autre téléphone.
+- **Montre Wear OS (dépôt `sonnuage-wear`, v1)** : télécommande pour la Xiaomi Watch 2 Pro (et toute montre Wear
+  OS) par le même relais de lecture — lecture/pause, suivant/précédent, titre en cours — sans dépendre du
+  Bluetooth avec le téléphone (la montre parle directement au serveur, par sa 4G ou son Wi-Fi).
 - 💡 Suites possibles : envoyer la lecture *vers* un autre appareil (« Lire sur… ») depuis la liste ; animation Glyph
-  au tempo du morceau (BPM de l'analyse audio).
+  au tempo du morceau (BPM de l'analyse audio) ; lecture autonome sur la montre (moteur ExoPlayer embarqué).
 
 ### Radios thématiques, favoris et notes (novembre 2026)
 
