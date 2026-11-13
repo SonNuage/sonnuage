@@ -170,7 +170,7 @@ button { font: inherit; color: inherit; }
   background: rgba(0,0,0,.62); color: #fff; box-shadow: 0 2px 12px rgba(0,0,0,.45); transition: transform .15s ease, background .15s ease; }
 .preview-overlay:hover .po-btn, .preview-overlay:focus-visible .po-btn { transform: scale(1.08); background: var(--accent); color: var(--on-accent); }
 .preview-overlay:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.preview-overlay.on .po-btn, .preview-overlay.loading .po-btn { background: var(--accent); color: var(--on-accent); }
+.preview-overlay.on .po-btn, .preview-overlay.po-loading .po-btn { background: var(--accent); color: var(--on-accent); }
 .preview-overlay .po-label { position: absolute; left: .5rem; bottom: .4rem; font-size: .75rem; font-weight: 700; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
 .preview-overlay.on::after { content: ""; position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: var(--accent); animation: po-progress 30s linear forwards; }
 @keyframes po-progress { to { width: 100%; } }

@@ -15,7 +15,7 @@
         PreviewState.Playing => L["requests.previewStop"],
         _ => L["requests.preview"],
     };
-    <button type="button" class="preview-overlay @(state == PreviewState.Playing ? "on" : null) @(state == PreviewState.Loading ? "loading" : null)"
+    <button type="button" class="preview-overlay @(state == PreviewState.Playing ? "on" : null) @(state == PreviewState.Loading ? "po-loading" : null)"
             aria-pressed="@(state != PreviewState.Idle ? "true" : "false")" aria-label="@label" title="@L["requests.previewHint"]" @onclick="ToggleAsync">
         <span class="po-btn">
             @if (state == PreviewState.Loading)
