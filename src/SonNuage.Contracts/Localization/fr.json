@@ -1282,6 +1282,10 @@
         "q": "Android et Android Auto",
         "a": "L'application Android lit en arrière-plan et s'affiche dans Android Auto. Installée hors du Play Store, elle demande d'activer « Sources inconnues » dans les paramètres développeur d'Android Auto."
       },
+      "glyph": {
+        "q": "Glyph (Nothing Phone 3)",
+        "a": "Sur un Nothing Phone (3), le logo SonNuage anime la matrice Glyph pendant la lecture, et un Glyph Toy « SonNuage » peut être choisi dans les réglages du téléphone. Ça se désactive dans Réglages → Glyph."
+      },
       "desktop": {
         "q": "Ordinateur",
         "a": "L'application pour ordinateur reprend la même interface dans sa propre fenêtre."
@@ -1853,5 +1857,11 @@
     "appPlaying": "{app} joue {title} · {artist}",
     "savedQueue": "File enregistrée par {app} : {count} titres, en cours : {title}",
     "resume": "Reprendre ici"
+  },
+  "glyph": {
+    "title": "Glyph",
+    "toggle": "Animer le nuage sur le Glyph pendant la lecture",
+    "hint": "Le logo SonNuage danse sur la matrice Glyph du téléphone tant qu'un morceau joue.",
+    "unsupported": "Nécessite un Nothing Phone (3)."
   }
 }

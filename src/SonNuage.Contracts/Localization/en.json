@@ -1282,6 +1282,10 @@
         "q": "Android and Android Auto",
         "a": "The Android app plays in the background and shows up in Android Auto. Installed outside the Play Store, it needs “Unknown sources” turned on in Android Auto's developer settings."
       },
+      "glyph": {
+        "q": "Glyph (Nothing Phone 3)",
+        "a": "On a Nothing Phone (3), the SonNuage logo animates the Glyph matrix during playback, and a “SonNuage” Glyph Toy can be picked in the phone's own settings. Turn it off in Settings → Glyph."
+      },
       "desktop": {
         "q": "Desktop",
         "a": "The desktop app has the same interface in its own window."
@@ -1853,5 +1857,11 @@
     "appPlaying": "{app} is playing {title} · {artist}",
     "savedQueue": "Queue saved by {app}: {count} tracks, current: {title}",
     "resume": "Resume here"
+  },
+  "glyph": {
+    "title": "Glyph",
+    "toggle": "Animate the cloud on the Glyph during playback",
+    "hint": "The SonNuage logo dances on the phone's Glyph matrix while a track plays.",
+    "unsupported": "Requires a Nothing Phone (3)."
   }
 }
