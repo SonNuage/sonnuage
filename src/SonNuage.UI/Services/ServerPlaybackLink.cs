@@ -17,6 +17,9 @@ public sealed class ServerPlaybackLink : IPlaybackLink, IDisposable
     /// <summary>Au démarrage, le temps laissé au flux pour s'ouvrir avant que le lecteur ne s'annonce.</summary>
     private static readonly TimeSpan FirstConnection = TimeSpan.FromSeconds(3);
 
+    /// <summary>Un message attend au plus ce temps que le flux (r)ouvre, au lieu d'être perdu.</summary>
+    private static readonly TimeSpan SendWait = TimeSpan.FromSeconds(5);
+
     private readonly ApiClient _api;
     private readonly AuthSession _auth;
     private readonly AccountStore _accounts;
@@ -61,17 +64,44 @@ public sealed class ServerPlaybackLink : IPlaybackLink, IDisposable
         await Task.WhenAny(_ready.Task, Task.Delay(FirstConnection));
     }
 
+    /// <summary>
+    /// Envoie au relais. Flux en cours de réouverture : le message l'attend. Refusé parce que le serveur ne connaît
+    /// plus cet appareil (flux perdu sans qu'on le sache, écran de montre éteint) : le flux est rouvert et le message
+    /// renvoyé une fois.
+    /// </summary>
     public async Task SendAsync(PlaybackMessage message)
     {
-        if (!_connected) return;
-        try
+        for (var attempt = 0; attempt < 2; attempt++)
         {
-            await _api.SendDeviceMessageAsync(message);
+            var connection = await ConnectionAsync();
+            if (connection is null) return;
+            try
+            {
+                await _api.SendDeviceMessageAsync(message);
+                return;
+            }
+            catch (ApiException ex) when (ex.Status == HttpStatusCode.Conflict)
+            {
+                Restart(ifStill: connection);
+            }
+            catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException)
+            {
+                // Relais coupé : le flux se rouvrira, et chacun se réannoncera (OnConnected).
+                return;
+            }
         }
-        catch (Exception ex) when (ex is ApiException or HttpRequestException or TaskCanceledException)
-        {
-            // Relais coupé : le flux se rouvrira, et chacun se réannoncera (OnConnected).
-        }
+    }
+
+    /// <summary>Rouvre le flux tout de suite (appli revenue au premier plan, réseau peut-être changé entre-temps).</summary>
+    public void Reconnect() => Restart();
+
+    /// <summary>Le flux ouvert (attendu au plus <see cref="SendWait"/>), ou null s'il ne s'ouvre pas.</summary>
+    private async Task<TaskCompletionSource?> ConnectionAsync()
+    {
+        TaskCompletionSource ready;
+        lock (_lock) ready = _ready;
+        await Task.WhenAny(ready.Task, Task.Delay(SendWait));
+        lock (_lock) return _connected ? _ready : null;
     }
 
     private void OnAuthChanged()
@@ -84,14 +114,18 @@ public sealed class ServerPlaybackLink : IPlaybackLink, IDisposable
         Restart();
     }
 
-    private void Restart()
+    private void Restart() => Restart(ifStill: null);
+
+    /// <summary>Rouvre le flux, sauf si <paramref name="ifStill"/> n'est plus la connexion en cours (déjà rouverte).</summary>
+    private void Restart(TaskCompletionSource? ifStill)
     {
         CancellationTokenSource run;
         lock (_lock)
         {
+            if (ifStill is not null && !ReferenceEquals(ifStill, _ready)) return;
             _run?.Cancel();
             _run = null;
-            _connected = false;
+            MarkDisconnected();
             if (!_auth.IsAuthenticated) return;
             _run = run = new CancellationTokenSource();
         }
@@ -111,8 +145,11 @@ public sealed class ServerPlaybackLink : IPlaybackLink, IDisposable
                     if (e.Event == DeviceLink.ReadyEvent)
                     {
                         failures = 0;
-                        _connected = true;
-                        _ready.TrySetResult();
+                        lock (_lock)
+                        {
+                            _connected = true;
+                            _ready.TrySetResult();
+                        }
                         if (OnConnected is { } connected) await connected();
                         Connected?.Invoke();
                     }
@@ -129,14 +166,14 @@ public sealed class ServerPlaybackLink : IPlaybackLink, IDisposable
             catch (ApiException ex) when (ex.Status == HttpStatusCode.Unauthorized)
             {
                 // Session terminée : le flux reprendra à la prochaine connexion (AuthSession.Changed).
-                _connected = false;
+                lock (_lock) MarkDisconnected();
                 return;
             }
             catch (Exception ex) when (ex is ApiException or HttpRequestException or IOException or TimeoutException or OperationCanceledException or JsonException)
             {
                 // Coupure : nouvelle tentative plus bas.
             }
-            _connected = false;
+            lock (_lock) MarkDisconnected();
             try
             {
                 await Task.Delay(Backoff[Math.Min(failures++, Backoff.Length - 1)], ct);
@@ -146,6 +183,13 @@ public sealed class ServerPlaybackLink : IPlaybackLink, IDisposable
                 return;
             }
         }
+    }
+
+    /// <summary>Hors connexion : les messages à venir attendent la prochaine (sous verrou).</summary>
+    private void MarkDisconnected()
+    {
+        _connected = false;
+        if (_ready.Task.IsCompleted) _ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
     }
 
     private PlaybackMessage? Parse(string json)
