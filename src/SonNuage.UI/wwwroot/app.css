@@ -533,7 +533,8 @@ select.input { cursor: pointer; }
   display: grid; grid-template-columns: minmax(180px, 30%) 1fr minmax(180px, 30%); align-items: center; gap: 1rem; padding: 0 1rem;
   position: relative;
 }
-.pb-track { display: flex; align-items: center; gap: .8rem; min-width: 0; cursor: pointer; }
+.pb-track { display: flex; align-items: center; gap: .8rem; min-width: 0; cursor: pointer; touch-action: pan-y; transition: transform .2s ease; }
+.pb-track.dragging { transition: none; }
 .pb-meta { display: flex; flex-direction: column; min-width: 0; }
 .pb-title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pb-artist { color: var(--text-muted); font-size: .85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

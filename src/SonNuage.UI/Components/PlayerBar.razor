@@ -8,7 +8,8 @@
     <footer class="player-bar">
         <div class="pb-progress-mobile" style="width:@Percent.ToString(System.Globalization.CultureInfo.InvariantCulture)%"></div>
 
-        <div class="pb-track" @onclick="() => Ui.SetNowPlayingOpen(true)">
+        <div class="pb-track @(_touch is null ? "" : "dragging")" style="@TrackStyle" @onclick="OpenNowPlaying"
+             @ontouchstart="TouchStart" @ontouchmove="TouchMove" @ontouchend="TouchEndAsync" @ontouchcancel="TouchCancel">
             <Cover AlbumId="track.AlbumId" HasCover="track.HasCover" Size="96" Class="cover-sm" Seed="@track.AlbumTitle" />
             <div class="pb-meta">
                 <span class="pb-title">@track.Title</span>
@@ -83,6 +84,59 @@
     }
 
     private void Refresh() => InvokeAsync(StateHasChanged);
+
+    // Balayage du bandeau (TrackSwipe) : point de départ du doigt, décalage affiché, et le clic qui suit un
+    // balayage, à ignorer (ce n'était pas un toucher pour ouvrir le lecteur).
+    private (double X, double Y)? _touch;
+    private double _offset;
+    private bool _swiped;
+
+    private string? TrackStyle => _offset == 0 ? null
+        : $"transform: translateX({_offset.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)}px)";
+
+    private void TouchStart(TouchEventArgs e)
+    {
+        if (e.Touches.Length != 1) return;
+        _touch = (e.Touches[0].ClientX, e.Touches[0].ClientY);
+        _swiped = false;
+    }
+
+    private void TouchMove(TouchEventArgs e)
+    {
+        if (_touch is not { } start || e.Touches.Length != 1) return;
+        _offset = TrackSwipe.Offset(e.Touches[0].ClientX - start.X, e.Touches[0].ClientY - start.Y);
+    }
+
+    private Task TouchEndAsync(TouchEventArgs e)
+    {
+        if (_touch is not { } start || e.ChangedTouches.Length == 0) return TouchCancel();
+        var action = TrackSwipe.Classify(e.ChangedTouches[0].ClientX - start.X, e.ChangedTouches[0].ClientY - start.Y);
+        TouchCancel();
+        _swiped = action != SwipeAction.None;
+        return action switch
+        {
+            SwipeAction.Next => Player.NextAsync(),
+            SwipeAction.Previous => Player.PreviousAsync(),
+            _ => Task.CompletedTask,
+        };
+    }
+
+    private Task TouchCancel()
+    {
+        _touch = null;
+        _offset = 0;
+        return Task.CompletedTask;
+    }
+
+    private void OpenNowPlaying()
+    {
+        if (_swiped)
+        {
+            _swiped = false;
+            return;
+        }
+        Ui.SetNowPlayingOpen(true);
+    }
 
     private Task SeekAsync(ChangeEventArgs e) =>
         double.TryParse(e.Value?.ToString(), System.Globalization.CultureInfo.InvariantCulture, out var s) ? Player.SeekAsync(s) : Task.CompletedTask;
