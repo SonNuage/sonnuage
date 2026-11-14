@@ -43,6 +43,23 @@ public sealed class ServerPlaybackLinkTests
         Assert.Equal(2, relay.Streams);
     }
 
+    [Fact]
+    public async Task Messages_still_go_out_after_the_stream_is_reopened()
+    {
+        var relay = new FakeRelay();
+        using var link = await LinkAsync(relay);
+        await link.StartAsync();
+
+        link.Reconnect();
+        await relay.WaitForStreamsAsync(2);
+        // L'ancien flux finit de se fermer après que le nouveau s'est ouvert.
+        await Task.Delay(OpenStream.SlowClose * 2, TestContext.Current.CancellationToken);
+        await link.SendAsync(Toggle with { From = link.DeviceId });
+
+        Assert.Single(relay.Posted);
+        Assert.Equal(2, relay.Streams);
+    }
+
     private static async Task<ServerPlaybackLink> LinkAsync(FakeRelay relay)
     {
         var store = new MemoryStore();
@@ -91,6 +108,11 @@ public sealed class ServerPlaybackLinkTests
 
         public Task WaitUntilClosedAsync() => _closed.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
+        public async Task WaitForStreamsAsync(int count)
+        {
+            for (var i = 0; i < 100 && Streams < count; i++) await Task.Delay(20);
+        }
+
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
             if (request.Method == HttpMethod.Get)
@@ -117,9 +139,14 @@ public sealed class ServerPlaybackLinkTests
         }
     }
 
-    /// <summary>« ready », puis plus rien jusqu'à la fermeture.</summary>
+    /// <summary>
+    /// « ready », puis plus rien jusqu'à la fermeture. Annulé, il se ferme comme sous Android : lentement, et par une
+    /// erreur d'entrée-sortie plutôt qu'une annulation.
+    /// </summary>
     private sealed class OpenStream : Stream
     {
+        public static readonly TimeSpan SlowClose = TimeSpan.FromMilliseconds(300);
+
         private readonly byte[] _ready = Encoding.UTF8.GetBytes($"event: {DeviceLink.ReadyEvent}\ndata: {{}}\n\n");
         private readonly TaskCompletionSource _end = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private int _position;
@@ -140,7 +167,15 @@ public sealed class ServerPlaybackLinkTests
                 _position += n;
                 return n;
             }
-            await _end.Task.WaitAsync(ct);
+            try
+            {
+                await _end.Task.WaitAsync(ct);
+            }
+            catch (OperationCanceledException)
+            {
+                await Task.Delay(SlowClose, CancellationToken.None);
+                throw new IOException("Unable to read data from the transport connection: Operation canceled.");
+            }
             _closed?.TrySetResult();
             return 0;
         }

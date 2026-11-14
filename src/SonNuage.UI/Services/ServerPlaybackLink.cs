@@ -173,7 +173,12 @@ public sealed class ServerPlaybackLink : IPlaybackLink, IDisposable
             {
                 // Coupure : nouvelle tentative plus bas.
             }
-            lock (_lock) MarkDisconnected();
+            lock (_lock)
+            {
+                // Un flux remplacé se ferme parfois après que son successeur s'est ouvert : il ne doit pas le défaire.
+                if (ct.IsCancellationRequested) return;
+                MarkDisconnected();
+            }
             try
             {
                 await Task.Delay(Backoff[Math.Min(failures++, Backoff.Length - 1)], ct);
