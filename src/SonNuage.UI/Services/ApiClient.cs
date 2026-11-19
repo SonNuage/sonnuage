@@ -77,6 +77,31 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
         SendAsync<ListenBrainzAccountDto>(HttpMethod.Put, "api/me/listenbrainz/submit", new ListenBrainzSubmitRequest(enabled));
     public Task<ListenBrainzRecommendationsDto?> ListenBrainzRecommendationsAsync() =>
         GetAsync<ListenBrainzRecommendationsDto>("api/me/listenbrainz/recommendations");
+
+    // ---- Rejoindre un Jam (Spotify) ----
+
+    public Task<MusicServiceAccountDto?> SpotifyAccountAsync() => GetAsync<MusicServiceAccountDto>("api/me/jam/spotify");
+    public Task<MusicServiceAccountDto?> SaveSpotifyTokenAsync(MusicServiceTokenRequest req) =>
+        SendAsync<MusicServiceAccountDto>(HttpMethod.Put, "api/me/jam/spotify/token", req);
+    public Task DisconnectSpotifyAsync() => SendAsync(HttpMethod.Delete, "api/me/jam/spotify/token");
+    public Task<JamStateDto?> JamJoinAsync(JamJoinRequest req) => SendAsync<JamStateDto>(HttpMethod.Post, "api/me/jam/join", req);
+    public Task JamLeaveAsync() => SendAsync(HttpMethod.Post, "api/me/jam/leave");
+    public Task<JamStateDto?> JamStateAsync() => GetAsync<JamStateDto>("api/me/jam/state");
+
+    /// <summary>Flux d'état du Jam suivi (Server-Sent Events). Se termine quand le flux se ferme ou reste muet.</summary>
+    public async IAsyncEnumerable<ServerSentEvent> JamStreamAsync([EnumeratorCancellation] CancellationToken ct)
+    {
+        using var response = await SendCoreAsync(() =>
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, Contracts.Jam.StreamRoute);
+            request.Headers.Accept.ParseAdd("text/event-stream");
+            request.Options.Set(new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse"), true);
+            return request;
+        }, completion: HttpCompletionOption.ResponseHeadersRead, ct: ct);
+        await EnsureSuccessAsync(response);
+        await using var stream = await response.Content.ReadAsStreamAsync(ct);
+        await foreach (var e in ServerSentEvents.ReadAsync(stream, TimeSpan.FromSeconds(45), ct)) yield return e;
+    }
     public Task ChangePasswordAsync(string current, string next) =>
         SendAsync(HttpMethod.Post, "api/auth/password", new ChangePasswordRequest(current, next));
     public Task<SubsonicAccessDto?> SubsonicAccessAsync() => GetAsync<SubsonicAccessDto>("api/me/subsonic");

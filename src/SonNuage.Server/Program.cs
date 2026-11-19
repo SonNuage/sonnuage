@@ -148,6 +148,14 @@ builder.Services.AddSingleton<SonNuage.Server.ListenBrainz.ListenBrainzSubmitter
 builder.Services.AddSingleton<IJobHandler, SonNuage.Server.ListenBrainz.ListenBrainzSubmitJob>();
 builder.Services.AddHostedService<SonNuage.Server.ListenBrainz.ListenBrainzScheduler>();
 
+// Rejoindre un Jam (Spotify) : jetons chiffrés par compte, suivi de l'hôte en direct, résolution vers la bibliothèque/YouTube.
+// Redirections suivies à la main (SpotifyLink) : chaque saut est revérifié, pour ne jamais sortir de Spotify.
+builder.Services.AddHttpClient<SonNuage.Server.Jam.SpotifyClient>(http => http.Timeout = TimeSpan.FromSeconds(20))
+    .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false });
+builder.Services.AddSingleton<SonNuage.Server.Jam.SpotifyTokens>();
+builder.Services.AddSingleton<SonNuage.Server.Jam.JamResolver>();
+builder.Services.AddSingleton<SonNuage.Server.Jam.JamHub>();
+
 // Analyse audio (Essentia) : caractéristiques des morceaux pour les radios thématiques.
 builder.Services.AddSingleton<SonNuage.Server.Analysis.IAudioAnalyzer, SonNuage.Server.Analysis.EssentiaAudioAnalyzer>();
 builder.Services.AddSingleton<SonNuage.Server.Analysis.AudioAnalysisSettingsStore>();
@@ -225,6 +233,7 @@ app.MapMeEndpoints();
 app.MapDeviceEndpoints();
 app.MapHistoryEndpoints();
 app.MapListenBrainzEndpoints();
+app.MapJamEndpoints();
 app.MapPlaylistEndpoints();
 app.MapAdminEndpoints();
 app.MapYoutubeEndpoints();

@@ -30,6 +30,11 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ThemeSettings>();
         // L'appli hôte peut fournir la sienne (partagée avec son journal de plantage).
         services.TryAddSingleton<Breadcrumbs>(_ => new Breadcrumbs());
+        // Connexion à un service d'écoute (Spotify) : l'hôte capable (Android, bureau) remplace ce défaut sans effet.
+        services.TryAddSingleton<IMusicServiceAuth, NoMusicServiceAuth>();
+        services.TryAddSingleton<IJamScanner, NoJamScanner>();
+        services.AddSingleton<YoutubeDirect>();
+        services.AddSingleton<JamSession>();
         return services;
     }
 }

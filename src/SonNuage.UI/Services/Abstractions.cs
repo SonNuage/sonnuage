@@ -54,6 +54,12 @@ public interface IPlayer
     bool SupportsCrossfade => false;
 
     Task PlayAsync(IReadOnlyList<TrackDto> tracks, int startIndex = 0, bool? shuffle = null);
+    /// <summary>Lance une file directement à une position (une seule requête de flux, au lieu de « début puis saut »).</summary>
+    async Task PlayAtAsync(IReadOnlyList<TrackDto> tracks, int startIndex, double startSeconds)
+    {
+        await PlayAsync(tracks, startIndex);
+        if (startSeconds > 0) await SeekAsync(startSeconds);
+    }
     /// <summary>
     /// Radio thématique : joue ses premiers morceaux puis demande la suite à la station tant qu'on l'écoute (sans
     /// lecture infinie, le lecteur s'arrête à la fin de ces morceaux).
@@ -74,6 +80,11 @@ public interface IPlayer
     Task ReloadSettingsAsync();
     /// <summary>Met à jour l'état favori d'une piste dans la file sans la recharger.</summary>
     void UpdateTrack(TrackDto track);
+    /// <summary>
+    /// Vitesse de lecture (1 = normale), hauteur conservée. Sert à rattraper en douceur un petit décalage (Jam) sans
+    /// saut audible. Sans effet sur un lecteur qui ne sait pas le faire.
+    /// </summary>
+    Task SetSpeedAsync(double speed) => Task.CompletedTask;
 }
 
 public interface IPlatformInfo

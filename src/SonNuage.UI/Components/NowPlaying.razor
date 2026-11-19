@@ -16,7 +16,10 @@
             {
                 <span class="np-context">@L["player.nowPlaying"]</span>
             }
-            <button class="icon-btn" title="@L["nav.queue"]" @onclick='() => Go("queue")'><Icon Name="queue" /></button>
+            <div class="np-header-actions">
+                <JamButton Variant="icon" />
+                <button class="icon-btn" title="@L["nav.queue"]" @onclick='() => Go("queue")'><Icon Name="queue" /></button>
+            </div>
         </header>
 
         @if (Ui.LyricsShown)

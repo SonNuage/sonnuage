@@ -1,0 +1,73 @@
+@* Rejoindre un Jam (facultatif, par compte) : liaison du service d'écoute. Les jetons restent côté serveur. *@
+@inject ApiClient Api
+@inject JamSession Jam
+@inject IMusicServiceAuth Auth
+@inject UiState Ui
+
+<section class="panel">
+    <h2>@L["jam.title"]</h2>
+    <p class="muted">@L["jam.intro"]</p>
+
+    @if (_account is { Connected: true } account)
+    {
+        <p class="jam-status"><span class="jam-dot on"></span>
+            @(account.DisplayName is { Length: > 0 } ? L["jam.connected", ("name", account.DisplayName)] : L["jam.connectedUnknown"])</p>
+        <div class="row">
+            <JamButton Variant="button" Class="primary" />
+            <button class="btn danger" disabled="@_busy" @onclick="DisconnectAsync">@L["jam.disconnect"]</button>
+        </div>
+    }
+    else if (_account is not null)
+    {
+        @if (Auth.CanConnect(SonNuage.Contracts.Jam.Spotify))
+        {
+            <button class="btn primary" disabled="@_busy" @onclick="ConnectAsync">
+                <Icon Name="open" Size="18" /> @L["jam.connect"]
+            </button>
+            <small class="muted">@L["jam.connectOnDevice"]</small>
+        }
+        else
+        {
+            <p class="muted small">@L["jam.needConnect"]</p>
+        }
+    }
+</section>
+
+@code {
+    private MusicServiceAccountDto? _account;
+    private bool _busy;
+
+    protected override Task OnInitializedAsync() => Run(async () => _account = await Jam.SpotifyAccountAsync());
+
+    private Task ConnectAsync() => Run(async () =>
+    {
+        var tokens = await Auth.ConnectAsync(SonNuage.Contracts.Jam.Spotify, CancellationToken.None);
+        if (tokens is null) return; // Annulé.
+        _account = await Api.SaveSpotifyTokenAsync(tokens);
+        Ui.Notify(_account?.DisplayName is { Length: > 0 } name ? L["jam.saved", ("name", name)] : L["jam.connectedUnknown"]);
+    });
+
+    private Task DisconnectAsync() => Run(async () =>
+    {
+        await Api.DisconnectSpotifyAsync();
+        _account = new MusicServiceAccountDto(SonNuage.Contracts.Jam.Spotify, false, null);
+        Ui.Notify(L["jam.disconnected"]);
+    });
+
+    private async Task Run(Func<Task> action)
+    {
+        _busy = true;
+        try
+        {
+            await action();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

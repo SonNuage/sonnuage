@@ -51,6 +51,7 @@ else
             <NavLink class="nav-item desktop-only" href="queue"><Icon Name="queue" /><span>@L["nav.queue"]</span></NavLink>
             @* Sur ordinateur, les réglages sont dans la pastille du compte. Sur mobile (sans pastille), dans la barre du bas. *@
             <NavLink class="nav-item mobile-only" href="settings"><Icon Name="settings" /><span>@L["nav.settings"]</span></NavLink>
+            <JamButton Variant="nav" Class="desktop-only" />
 
             <div class="sidebar-playlists desktop-only">
                 <div class="sidebar-heading">
@@ -74,6 +75,7 @@ else
             <div class="content-scroll">@Body</div>
         </main>
 
+        <JamBanner />
         <PlayerBar />
     </div>
 }

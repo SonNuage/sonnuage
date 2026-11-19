@@ -1,0 +1,74 @@
+@* Bandeau d'un Jam suivi : hôte, titre en cours, avancement de la résolution, et bouton pour quitter. *@
+@implements IDisposable
+@inject JamSession Jam
+@inject UiState Ui
+@inject AuthSession Auth
+
+@if (Jam.State is { Active: true } state)
+{
+    <div class="jam-banner @(state.Audio == JamAudio.Guest ? "guest" : "remote")">
+        <Icon Name="users" Size="18" />
+        <div class="jam-meta">
+            <span class="jam-host"><span class="jam-dot"></span>@(state.HostName is { Length: > 0 } ? L["jam.following", ("host", state.HostName)] : L["jam.followingAnon"])</span>
+            <span class="jam-track">@Line(state)</span>
+        </div>
+        <button class="btn small" disabled="@_busy" @onclick="LeaveAsync">@L["jam.leave"]</button>
+    </div>
+}
+
+@code {
+    private bool _busy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Jam.StateChanged += OnChanged;
+        Jam.Ended += OnEnded;
+        Auth.Changed += OnAuthChanged;
+        // Un Jam déjà suivi côté serveur (appli relancée) reprend tout seul.
+        await Jam.ResumeAsync();
+    }
+
+    private void OnAuthChanged() => _ = InvokeAsync(Jam.ResumeAsync);
+
+    private string Line(JamStateDto state)
+    {
+        if (state.Track is not { } t || string.IsNullOrEmpty(t.Title)) return L["jam.waiting"];
+        var who = string.IsNullOrEmpty(t.Artist) ? t.Title : $"{t.Title} — {t.Artist}";
+        // Son chez l'hôte : rien n'est cherché ni importé ici, seul le titre compte.
+        if (state.Audio != JamAudio.Guest) return who;
+        return state.Resolve switch
+        {
+            JamResolve.Importing => L["jam.importing", ("title", t.Title)],
+            JamResolve.Unavailable => L["jam.unavailable", ("title", t.Title)],
+            _ => who,
+        };
+    }
+
+    private async Task LeaveAsync()
+    {
+        _busy = true;
+        try
+        {
+            await Jam.LeaveAsync();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void OnChanged() => InvokeAsync(StateHasChanged);
+
+    private void OnEnded() => InvokeAsync(() => Ui.Notify(L["jam.ended"]));
+
+    public void Dispose()
+    {
+        Jam.StateChanged -= OnChanged;
+        Jam.Ended -= OnEnded;
+        Auth.Changed -= OnAuthChanged;
+    }
+}

@@ -1261,6 +1261,18 @@ namespace SonNuage.Server.Data.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("SpotifyAccessToken")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SpotifyDisplayName")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("SpotifyExpiresAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SpotifyRefreshToken")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("SubsonicKeyHash")
                         .HasColumnType("TEXT");
 

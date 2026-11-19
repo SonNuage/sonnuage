@@ -163,6 +163,14 @@ public sealed class User
     public string? ListenBrainzUserName { get; set; }
     /// <summary>Envoi des écoutes activé depuis cette date (seules les écoutes commencées depuis partent). Null = désactivé.</summary>
     public DateTimeOffset? ListenBrainzSubmitSince { get; set; }
+    /// <summary>Jeton d'accès Spotify du compte, chiffré (voir <see cref="Jam.SpotifyTokens"/>). Null = pas relié.</summary>
+    public string? SpotifyAccessToken { get; set; }
+    /// <summary>Jeton de rafraîchissement Spotify, chiffré. Null si le service n'en a pas fourni.</summary>
+    public string? SpotifyRefreshToken { get; set; }
+    /// <summary>Expiration du jeton d'accès Spotify ; rafraîchi au besoin avant.</summary>
+    public DateTimeOffset? SpotifyExpiresAt { get; set; }
+    /// <summary>Nom affiché du compte Spotify relié (pour le montrer dans les réglages).</summary>
+    public string? SpotifyDisplayName { get; set; }
 }
 
 public sealed class RefreshToken

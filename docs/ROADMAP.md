@@ -22,6 +22,27 @@ Légende : ✅ fait · 🔜 prochain · 💡 idée à creuser · ⚠️ limite c
 
 ## Livré récemment
 
+### Rejoindre un Jam Spotify (novembre 2026, expérimental)
+
+- **Suivre un Jam Spotify et le jouer ici.** Le compte relie Spotify (bouton dans les réglages et dans « Rejoindre un
+  Jam »), colle ou scanne un lien de Jam, et SonNuage suit en direct le titre et la position de l'hôte pour les
+  rejouer depuis la bibliothèque ou, à défaut, un import YouTube. Deux modes : **hôte seulement** (on affiche sans
+  jouer) et **sur cet appareil aussi** (le lecteur local se cale sur l'hôte — même titre, même position, mêmes pauses).
+- **Marche avec un compte Spotify gratuit** : c'est tout l'intérêt, un invité non Premium peut synchroniser sa musique
+  avec l'hôte d'un Jam. Le son de Spotify n'est jamais récupéré (pas de DRM contourné) : seuls le titre et la position
+  le sont, et SonNuage joue sa propre source.
+- **Côté technique** : jetons OAuth chiffrés par compte (comme ListenBrainz), suivi en direct via le flux « dealer » et
+  l'état « connect-state » de Spotify, résolution titre→piste par titre/artiste/durée, flux d'état poussé aux appareils
+  (Server-Sent Events). La connexion se fait sur l'appareil (OAuth en boucle locale, client id de l'appli de bureau).
+- **En phase sans à-coups** : départ directement à la position de l'hôte, titres de sa file préparés d'avance et
+  enchaînés sans blanc, petits écarts rattrapés en ajustant la vitesse de quelques % plutôt qu'en sautant.
+- **Lecture YouTube directe sur l'appareil** quand le titre n'est pas encore dans la bibliothèque : le son démarre en
+  moins d'une seconde au lieu d'attendre l'import (~20 s).
+- **Fin du Jam** détectée (Jam supprimé, invité retiré, connexion perdue pour de bon) ; quitter retire aussi le compte
+  du Jam côté Spotify. QR code du Jam scannable sur Android.
+- **Limite** : utilise l'API interne de Spotify hors de ses conditions d'utilisation ; cela peut cesser de marcher si
+  Spotify change son API. Pas de Deezer : il n'a pas d'équivalent au Jam. Voir [docs/JAM.md](JAM.md).
+
 ### Lecture entre appareils, matrice Glyph (novembre 2026)
 
 - **Un seul appareil du compte joue, les autres le pilotent** : web, Android, bureau et iOS passent par un relais du

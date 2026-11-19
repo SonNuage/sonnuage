@@ -1,0 +1,139 @@
+@* Entrée « Rejoindre un Jam » (comme le bouton Jam de Spotify) : choix du service, lien collé ou scanné, mode d'écoute. *@
+@implements IDisposable
+@inject JamSession Jam
+@inject ApiClient Api
+@inject IMusicServiceAuth Auth
+@inject IJamScanner Scanner
+@inject UiState Ui
+
+@switch (Variant)
+{
+    case "icon":
+        <button class="icon-btn @Class" title="@L["jam.join"]" @onclick="OpenAsync"><Icon Name="users" Size="28" /></button>
+        break;
+    case "nav":
+        <button class="nav-item @Class" @onclick="OpenAsync"><Icon Name="users" /><span>@L["jam.join"]</span></button>
+        break;
+    default:
+        <button class="btn @Class" @onclick="OpenAsync"><Icon Name="users" Size="18" /> @L["jam.join"]</button>
+        break;
+}
+
+<Modal Open="_open" OpenChanged="v => _open = v" Title="@L["jam.join"]">
+    <ChildContent>
+        @if (_account is null)
+        {
+            <p class="muted">@L["common.loading"]</p>
+        }
+        else if (!_account.Connected)
+        {
+            <p class="muted">@L["jam.intro"]</p>
+            @if (Auth.CanConnect(SonNuage.Contracts.Jam.Spotify))
+            {
+                <button class="btn primary" disabled="@_busy" @onclick="ConnectAsync"><Icon Name="open" Size="18" /> @L["jam.connect"]</button>
+                <small class="muted">@L["jam.connectOnDevice"]</small>
+            }
+            else
+            {
+                <p class="muted small">@L["jam.needConnect"]</p>
+            }
+        }
+        else
+        {
+            <label class="field">
+                <span>@L["jam.link"]</span>
+                <div class="row jam-link">
+                    <input class="input" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://spotify.link/…"
+                           maxlength="@SonNuage.Contracts.Jam.MaxLinkLength" @bind="_link" @bind:event="oninput" />
+                    @if (Scanner.Available)
+                    {
+                        <button class="btn" type="button" disabled="@_busy" @onclick="ScanAsync" title="@L["jam.scan"]" aria-label="@L["jam.scan"]"><Icon Name="qr-scan" Size="18" /></button>
+                    }
+                </div>
+                <small class="muted">@L["jam.joinHint"]</small>
+            </label>
+
+            <fieldset class="jam-audio">
+                <legend>@L["jam.audio"]</legend>
+                <label class="field check">
+                    <input type="radio" name="jam-audio" checked="@(_audio == JamAudio.Guest)" @onchange="() => _audio = JamAudio.Guest" />
+                    <span>@L["jam.guest"]<small class="muted">@L["jam.guestHint"]</small></span>
+                </label>
+                <label class="field check">
+                    <input type="radio" name="jam-audio" checked="@(_audio == JamAudio.RemoteOnly)" @onchange="() => _audio = JamAudio.RemoteOnly" />
+                    <span>@L["jam.remoteOnly"]<small class="muted">@L["jam.remoteOnlyHint"]</small></span>
+                </label>
+            </fieldset>
+        }
+    </ChildContent>
+    <Footer>
+        <button class="btn" @onclick="() => _open = false">@L["common.cancel"]</button>
+        @if (_account is { Connected: true })
+        {
+            <button class="btn primary" disabled="@(_busy || string.IsNullOrWhiteSpace(_link))" @onclick="JoinAsync">@L["jam.joinButton"]</button>
+        }
+    </Footer>
+</Modal>
+
+@code {
+    /// <summary>Forme du déclencheur : « button » (défaut), « icon » (lecteur), « nav » (barre latérale).</summary>
+    [Parameter] public string Variant { get; set; } = "button";
+    [Parameter] public string? Class { get; set; }
+
+    private bool _open;
+    private bool _busy;
+    private string _link = "";
+    private JamAudio _audio = JamAudio.Guest;
+    private MusicServiceAccountDto? _account;
+
+    protected override void OnInitialized() => Jam.StateChanged += OnChanged;
+
+    private async Task OpenAsync()
+    {
+        _open = true;
+        _account = null;
+        await Run(async () => _account = await Jam.SpotifyAccountAsync());
+    }
+
+    private Task ConnectAsync() => Run(async () =>
+    {
+        var tokens = await Auth.ConnectAsync(SonNuage.Contracts.Jam.Spotify, CancellationToken.None);
+        if (tokens is null) return;
+        _account = await Api.SaveSpotifyTokenAsync(tokens);
+        Ui.Notify(_account?.DisplayName is { Length: > 0 } name ? L["jam.saved", ("name", name)] : L["jam.connectedUnknown"]);
+    });
+
+    private Task ScanAsync() => Run(async () =>
+    {
+        if (await Scanner.ScanAsync(CancellationToken.None) is { Length: > 0 } text) _link = text;
+    });
+
+    private Task JoinAsync() => Run(async () =>
+    {
+        await Jam.JoinAsync(_link.Trim(), _audio);
+        _open = false;
+        _link = "";
+    });
+
+    private async Task Run(Func<Task> action)
+    {
+        _busy = true;
+        try
+        {
+            await action();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+        finally
+        {
+            _busy = false;
+            StateHasChanged();
+        }
+    }
+
+    private void OnChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Jam.StateChanged -= OnChanged;
+}

@@ -83,7 +83,8 @@
     "cancel": "Annuler",
     "delete": "Supprimer",
     "never": "jamais",
-    "total": "Total"
+    "total": "Total",
+    "loading": "Chargement…"
   },
   "format": {
     "hoursMinutes": "{hours} h {minutes} min",
@@ -249,6 +250,14 @@
       "invalidToken": "ListenBrainz ne reconnaît pas ce jeton.",
       "unreachable": "ListenBrainz ne répond pas. Réessayez plus tard.",
       "noToken": "Enregistrez d'abord votre jeton ListenBrainz."
+    },
+    "jam": {
+      "service": "Service non pris en charge.",
+      "token": "Jeton Spotify invalide.",
+      "link": "Lien de Jam invalide.",
+      "badLink": "Impossible de lire un Jam depuis ce lien.",
+      "refused": "Spotify refuse l’accès à ce Jam : il est peut-être terminé, ou l’hôte vous en a retiré.",
+      "notConnected": "Reliez d’abord votre compte Spotify."
     }
   },
   "login": {
@@ -1891,5 +1900,35 @@
     "toggle": "Animer le nuage sur le Glyph pendant la lecture",
     "hint": "Le logo SonNuage danse sur la matrice Glyph du téléphone tant qu'un morceau joue.",
     "unsupported": "Nécessite un Nothing Phone (3)."
+  },
+  "jam": {
+    "title": "Rejoindre un Jam",
+    "intro": "Suivez un Jam Spotify en direct et jouez le même titre ici, depuis votre bibliothèque ou YouTube. Seuls le titre et la position sont lus : le son est celui de SonNuage. Expérimental : utilise Spotify hors de ses conditions, et peut cesser de marcher.",
+    "connect": "Connecter Spotify",
+    "connected": "Spotify connecté en tant que {name}.",
+    "connectedUnknown": "Spotify connecté.",
+    "saved": "Compte Spotify « {name} » relié.",
+    "disconnect": "Déconnecter Spotify",
+    "disconnected": "Spotify déconnecté.",
+    "join": "Rejoindre un Jam",
+    "joinHint": "Collez un lien d’invitation au Jam, ou scannez son QR code.",
+    "link": "Lien du Jam",
+    "scan": "Scanner le QR code",
+    "scanHint": "Visez le QR code du Jam",
+    "audio": "Où jouer",
+    "remoteOnly": "Hôte seulement",
+    "remoteOnlyHint": "Suivre sans plus : le son reste sur l’hôte, rien ne joue ici.",
+    "guest": "Sur cet appareil aussi",
+    "guestHint": "Jouer le même titre ici, en phase avec l’hôte, depuis SonNuage.",
+    "joinButton": "Rejoindre",
+    "leave": "Quitter le Jam",
+    "ended": "Le Jam est terminé.",
+    "following": "Jam de {host} suivi",
+    "followingAnon": "Jam suivi",
+    "waiting": "En attente que l’hôte lance la lecture…",
+    "importing": "Import de « {title} » depuis YouTube…",
+    "unavailable": "« {title} » n’est pas dans votre bibliothèque et n’a pas pu être importé.",
+    "needConnect": "Reliez d’abord votre compte Spotify.",
+    "connectOnDevice": "Un navigateur s’ouvrira pour se connecter à Spotify, puis reviendra ici."
   }
 }

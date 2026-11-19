@@ -83,7 +83,8 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "never": "never",
-    "total": "Total"
+    "total": "Total",
+    "loading": "Loading…"
   },
   "format": {
     "hoursMinutes": "{hours} h {minutes} min",
@@ -249,6 +250,14 @@
       "invalidToken": "ListenBrainz does not recognise this token.",
       "unreachable": "ListenBrainz is not responding. Try again later.",
       "noToken": "Save your ListenBrainz token first."
+    },
+    "jam": {
+      "service": "Unsupported service.",
+      "token": "Invalid Spotify token.",
+      "link": "Invalid Jam link.",
+      "badLink": "Couldn’t read a Jam from this link.",
+      "refused": "Spotify won’t let you into this Jam: it may have ended, or the host removed you.",
+      "notConnected": "Connect your Spotify account first."
     }
   },
   "login": {
@@ -1891,5 +1900,35 @@
     "toggle": "Animate the cloud on the Glyph during playback",
     "hint": "The SonNuage logo dances on the phone's Glyph matrix while a track plays.",
     "unsupported": "Requires a Nothing Phone (3)."
+  },
+  "jam": {
+    "title": "Join a Jam",
+    "intro": "Follow a Spotify Jam live and play the same track here, from your library or YouTube. Only the track and position are read — the sound is SonNuage's own. Experimental: it uses Spotify in a way outside its terms, so it may stop working.",
+    "connect": "Connect Spotify",
+    "connected": "Spotify connected as {name}.",
+    "connectedUnknown": "Spotify connected.",
+    "saved": "Spotify account “{name}” linked.",
+    "disconnect": "Disconnect Spotify",
+    "disconnected": "Spotify disconnected.",
+    "join": "Join a Jam",
+    "joinHint": "Paste a Jam invite link, or scan its QR code.",
+    "link": "Jam link",
+    "scan": "Scan QR code",
+    "scanHint": "Point at the Jam’s QR code",
+    "audio": "Where to play",
+    "remoteOnly": "Host only",
+    "remoteOnlyHint": "Just follow along: the sound stays on the host, nothing plays here.",
+    "guest": "On this device too",
+    "guestHint": "Play the same track here, in time with the host, from SonNuage.",
+    "joinButton": "Join",
+    "leave": "Leave the Jam",
+    "ended": "The Jam has ended.",
+    "following": "Following {host}’s Jam",
+    "followingAnon": "Following the Jam",
+    "waiting": "Waiting for the host to play…",
+    "importing": "Importing “{title}” from YouTube…",
+    "unavailable": "“{title}” isn’t in your library and couldn’t be imported.",
+    "needConnect": "Connect your Spotify account first.",
+    "connectOnDevice": "A browser will open to sign in to Spotify, then come back here."
   }
 }

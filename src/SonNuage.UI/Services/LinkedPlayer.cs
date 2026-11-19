@@ -130,6 +130,19 @@ public sealed class LinkedPlayer : IPlayer, IRestorablePlayer, IConnectPlayer
         return SendAsync(new PlayerCommand("seek", seconds));
     }
 
+    public async Task PlayAtAsync(IReadOnlyList<TrackDto> tracks, int startIndex, double startSeconds)
+    {
+        if (!IsRemote)
+        {
+            await _local.PlayAtAsync(tracks, startIndex, startSeconds);
+            return;
+        }
+        await PlayAsync(tracks, startIndex);
+        if (startSeconds > 0) await SeekAsync(startSeconds);
+    }
+
+    public Task SetSpeedAsync(double speed) => IsRemote ? Task.CompletedTask : _local.SetSpeedAsync(speed);
+
     public Task JumpToAsync(int queueIndex) => IsRemote ? SendAsync(new PlayerCommand("jump", Index: queueIndex)) : _local.JumpToAsync(queueIndex);
 
     public Task SetShuffleAsync(bool shuffle) => IsRemote ? SendAsync(new PlayerCommand("shuffle", Flag: shuffle)) : _local.SetShuffleAsync(shuffle);
