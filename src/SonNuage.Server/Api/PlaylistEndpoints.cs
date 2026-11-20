@@ -20,6 +20,19 @@ public static class PlaylistEndpoints
             return await db.Playlists.Where(p => p.OwnerId == userId).OrderBy(p => p.Name).Select(Projections.Playlist).ToListAsync(ct);
         });
 
+        // Combien des titres donnés chaque playlist contient déjà : la fenêtre d'ajout le montre (et n'en remet pas).
+        g.MapGet("/containing", async ([Microsoft.AspNetCore.Mvc.FromQuery] Guid[] track, HttpContext http, SonNuageDbContext db, CancellationToken ct) =>
+        {
+            if (track.Length is 0 or > MaxEntries) return Results.BadRequest();
+            var userId = http.User.UserId();
+            var ids = track.Distinct().ToList();
+            return Results.Ok(await db.PlaylistEntries
+                .Where(e => e.Playlist.OwnerId == userId && ids.Contains(e.TrackId))
+                .GroupBy(e => e.PlaylistId)
+                .Select(g => new PlaylistContentsDto(g.Key, g.Select(e => e.TrackId).Distinct().Count()))
+                .ToListAsync(ct));
+        });
+
         g.MapGet("/{id:guid}", async (Guid id, HttpContext http, SonNuageDbContext db, CancellationToken ct) =>
         {
             var userId = http.User.UserId();
@@ -42,7 +55,7 @@ public static class PlaylistEndpoints
             db.Playlists.Add(playlist);
             if (req.TrackIds is { Count: > 0 } ids)
             {
-                var valid = await ValidTrackIdsAsync(db, ids, ct);
+                var valid = (await ValidTrackIdsAsync(db, ids, ct)).Distinct();
                 playlist.Entries.AddRange(valid.Select((t, i) => new PlaylistEntry { TrackId = t, Position = i }));
             }
             await db.SaveChangesAsync(ct);
@@ -76,18 +89,8 @@ public static class PlaylistEndpoints
         {
             var playlist = await OwnedAsync(db, id, http, ct);
             if (playlist is null) return Results.NotFound();
-            var entries = await db.PlaylistEntries.Where(e => e.PlaylistId == id).OrderBy(e => e.Position).ToListAsync(ct);
-            var valid = await ValidTrackIdsAsync(db, req.TrackIds, ct);
-            if (entries.Count + valid.Count > MaxEntries) return Results.Problem(Tx.Key("errors.playlistLimit", ("max", MaxEntries)), statusCode: 400);
-
-            var insertAt = Math.Clamp(req.Position ?? entries.Count, 0, entries.Count);
-            var added = valid.Select(t => new PlaylistEntry { PlaylistId = id, TrackId = t }).ToList();
-            entries.InsertRange(insertAt, added);
-            db.PlaylistEntries.AddRange(added);
-            Renumber(entries);
-            playlist.UpdatedAt = DateTimeOffset.UtcNow;
-            await db.SaveChangesAsync(ct);
-            return Results.NoContent();
+            var result = await AddTracksAsync(db, playlist, req.TrackIds, req.Position, ct);
+            return result is null ? Results.Problem(Tx.Key("errors.playlistLimit", ("max", MaxEntries)), statusCode: 400) : Results.Ok(result);
         });
 
         g.MapDelete("/{id:guid}/entries/{entryId:guid}", async (Guid id, Guid entryId, HttpContext http, SonNuageDbContext db, CancellationToken ct) =>
@@ -121,6 +124,31 @@ public static class PlaylistEndpoints
         });
     }
 
+    /// <summary>
+    /// Ajoute les titres connus qui n'y sont pas encore, une fois chacun, à <paramref name="position"/> (à la fin par
+    /// défaut) ; null si la playlist dépasserait sa taille maximale.
+    /// </summary>
+    internal static async Task<AddPlaylistTracksResultDto?> AddTracksAsync(SonNuageDbContext db, Playlist playlist, IReadOnlyList<Guid> trackIds,
+        int? position, CancellationToken ct)
+    {
+        var entries = await db.PlaylistEntries.Where(e => e.PlaylistId == playlist.Id).OrderBy(e => e.Position).ToListAsync(ct);
+        var present = entries.Select(e => e.TrackId).ToHashSet();
+        var valid = (await ValidTrackIdsAsync(db, trackIds, ct)).Distinct().ToList();
+        var fresh = valid.Where(t => !present.Contains(t)).ToList();
+        if (entries.Count + fresh.Count > MaxEntries) return null;
+        if (fresh.Count > 0)
+        {
+            var insertAt = Math.Clamp(position ?? entries.Count, 0, entries.Count);
+            var added = fresh.Select(t => new PlaylistEntry { PlaylistId = playlist.Id, TrackId = t }).ToList();
+            entries.InsertRange(insertAt, added);
+            db.PlaylistEntries.AddRange(added);
+            Renumber(entries);
+            playlist.UpdatedAt = DateTimeOffset.UtcNow;
+            await db.SaveChangesAsync(ct);
+        }
+        return new AddPlaylistTracksResultDto(fresh.Count, valid.Count - fresh.Count);
+    }
+
     private static void Renumber(List<PlaylistEntry> entries)
     {
         for (var i = 0; i < entries.Count; i++) entries[i].Position = i;
@@ -132,7 +160,7 @@ public static class PlaylistEndpoints
         return db.Playlists.FirstOrDefaultAsync(p => p.Id == id && p.OwnerId == userId, ct);
     }
 
-    /// <summary>Garde l'ordre et les doublons voulus par le client, en écartant les IDs inconnus.</summary>
+    /// <summary>Garde l'ordre voulu par le client, en écartant les IDs inconnus.</summary>
     private static async Task<List<Guid>> ValidTrackIdsAsync(SonNuageDbContext db, IReadOnlyList<Guid> ids, CancellationToken ct)
     {
         var distinct = ids.Distinct().ToList();

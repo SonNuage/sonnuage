@@ -62,6 +62,7 @@ public static class DownloadRequestEndpoints
         {
             var user = await db.Users.FindAsync([http.User.UserId()], ct);
             if (user is null) return Results.Unauthorized();
+            if (!await OwnsPlaylistAsync(db, user.Id, req.PlaylistId, ct)) return Results.NotFound();
             var (outcome, request) = await CreateAsync(db, importer, user, req, time.GetUtcNow(), ct);
             return outcome switch
             {
@@ -80,11 +81,12 @@ public static class DownloadRequestEndpoints
                 return Results.Problem(Tx.Key("errors.requests.albumQuery"), statusCode: 400);
             var user = await db.Users.FindAsync([http.User.UserId()], ct);
             if (user is null) return Results.Unauthorized();
+            if (!await OwnsPlaylistAsync(db, user.Id, req.PlaylistId, ct)) return Results.NotFound();
             if (user.Role != Roles.Admin && await UsedAsync(db, user.Id, time.GetUtcNow(), ct) >= user.RequestsPerDay)
                 return Results.Problem(Tx.Key("errors.requests.quota", ("limit", user.RequestsPerDay)), statusCode: 429);
             var title = Tx.Key("jobs.suites.album", ("artist", artist), ("album", album));
             var plan = new Jobs.JobPlan(Jobs.JobSuiteKinds.RequestAlbum, title, user.Id)
-                .Then(Jobs.JobKinds.RequestAlbum, title, new Jobs.AlbumRequestPayload(user.Id, artist, album));
+                .Then(Jobs.JobKinds.RequestAlbum, title, new Jobs.AlbumRequestPayload(user.Id, artist, album, req.PlaylistId));
             await engine.EnqueueAsync(db, plan, ct);
             return Results.Accepted();
         });
@@ -192,6 +194,9 @@ public static class DownloadRequestEndpoints
         await db.SaveChangesAsync(ct);
     }
 
+    private static async Task<bool> OwnsPlaylistAsync(SonNuageDbContext db, Guid userId, Guid? playlistId, CancellationToken ct) =>
+        playlistId is not { } id || await db.Playlists.AnyAsync(p => p.Id == id && p.OwnerId == userId, ct);
+
     private static Task<int> UsedAsync(SonNuageDbContext db, Guid userId, DateTimeOffset now, CancellationToken ct)
     {
         var since = now.AddDays(-1);
@@ -277,6 +282,7 @@ public static class DownloadRequestEndpoints
             DurationSeconds = req.DurationSeconds is > 0 and < 86_400 ? req.DurationSeconds : null,
             Note = Clean(req.Note, 500),
             CreatedAt = now,
+            PlaylistId = req.PlaylistId,
         };
         db.DownloadRequests.Add(request);
         if (user.Role == Roles.Admin || user.AutoApproveRequests) await AcceptAsync(db, importer, request, null, now, ct);

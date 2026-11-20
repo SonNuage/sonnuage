@@ -577,6 +577,11 @@ public sealed class DownloadRequest
     public bool AutoApproved { get; set; }
     public Guid? YoutubeItemId { get; set; }
     public YoutubeItem? YoutubeItem { get; set; }
+    /// <summary>
+    /// Playlist de l'auteur où le titre entre une fois importé (effacée une fois fait). Sans clé étrangère : SQLite
+    /// devrait reconstruire la table ; une playlist supprimée entre-temps est simplement ignorée.
+    /// </summary>
+    public Guid? PlaylistId { get; set; }
 }
 
 /// <summary>Artiste à découvrir, hors de la bibliothèque : proche d'artistes qu'on a (ListenBrainz). Voir Discovery/.</summary>

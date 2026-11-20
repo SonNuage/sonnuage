@@ -218,21 +218,21 @@ public sealed class ApiTests(SonNuageFactory factory) : IClassFixture<SonNuageFa
         var album = (await admin.GetFromJsonAsync<PagedResult<AlbumDto>>("/api/albums?q=first", Ct))!.Items[0];
         var tracks = (await admin.GetFromJsonAsync<AlbumDetailDto>($"/api/albums/{album.Id}", Ct))!.Tracks;
 
-        var created = await admin.PostAsJsonAsync("/api/playlists", new CreatePlaylistRequest("Mix", null, [tracks[0].Id, tracks[1].Id]), Ct);
+        var created = await admin.PostAsJsonAsync("/api/playlists", new CreatePlaylistRequest("Mix", null, [tracks[0].Id]), Ct);
         var playlist = (await created.Content.ReadFromJsonAsync<PlaylistDto>(Ct))!;
-        Assert.Equal(2, playlist.TrackCount);
+        Assert.Equal(1, playlist.TrackCount);
 
-        await admin.PostAsJsonAsync($"/api/playlists/{playlist.Id}/tracks", new AddPlaylistTracksRequest([tracks[0].Id], 0), Ct);
+        await admin.PostAsJsonAsync($"/api/playlists/{playlist.Id}/tracks", new AddPlaylistTracksRequest([tracks[1].Id], 0), Ct);
         var detail = (await admin.GetFromJsonAsync<PlaylistDetailDto>($"/api/playlists/{playlist.Id}", Ct))!;
-        Assert.Equal([tracks[0].Id, tracks[0].Id, tracks[1].Id], detail.Entries.Select(e => e.Track.Id));
+        Assert.Equal([tracks[1].Id, tracks[0].Id], detail.Entries.Select(e => e.Track.Id));
 
-        await admin.PostAsJsonAsync($"/api/playlists/{playlist.Id}/entries/{detail.Entries[2].EntryId}/move", new MovePlaylistEntryRequest(0), Ct);
+        await admin.PostAsJsonAsync($"/api/playlists/{playlist.Id}/entries/{detail.Entries[1].EntryId}/move", new MovePlaylistEntryRequest(0), Ct);
         detail = (await admin.GetFromJsonAsync<PlaylistDetailDto>($"/api/playlists/{playlist.Id}", Ct))!;
-        Assert.Equal([tracks[1].Id, tracks[0].Id, tracks[0].Id], detail.Entries.Select(e => e.Track.Id));
+        Assert.Equal([tracks[0].Id, tracks[1].Id], detail.Entries.Select(e => e.Track.Id));
 
         await admin.DeleteAsync($"/api/playlists/{playlist.Id}/entries/{detail.Entries[1].EntryId}", Ct);
         detail = (await admin.GetFromJsonAsync<PlaylistDetailDto>($"/api/playlists/{playlist.Id}", Ct))!;
-        Assert.Equal([0, 1], detail.Entries.Select(e => e.Position));
+        Assert.Equal([0], detail.Entries.Select(e => e.Position));
     }
 
     [Fact]

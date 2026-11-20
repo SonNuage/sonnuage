@@ -87,6 +87,12 @@ public sealed record UpdatePlaylistRequest(string? Name, string? Description);
 
 public sealed record AddPlaylistTracksRequest(IReadOnlyList<Guid> TrackIds, int? Position);
 
+/// <summary>Un titre déjà dans la playlist n'y est pas remis.</summary>
+public sealed record AddPlaylistTracksResultDto(int Added, int AlreadyThere);
+
+/// <summary>Combien des titres demandés la playlist contient déjà (fenêtre « Ajouter à une playlist »).</summary>
+public sealed record PlaylistContentsDto(Guid PlaylistId, int Count);
+
 public sealed record MovePlaylistEntryRequest(int NewPosition);
 
 /// <summary>Une écoute envoyée par une appli (voir <see cref="ListenRules"/>).</summary>

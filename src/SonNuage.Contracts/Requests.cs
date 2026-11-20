@@ -20,8 +20,11 @@ public static class DownloadRequestStatus
     public static readonly IReadOnlyList<string> All = [Requested, Accepted, Denied, InProgress, Done, Failed];
 }
 
-/// <summary>Video : identifiant de la vidéo YouTube ou son adresse (youtube.com, youtu.be, music.youtube.com).</summary>
-public sealed record CreateDownloadRequest(string Video, string? Title, string? Channel, double? DurationSeconds, string? Note);
+/// <summary>
+/// Video : identifiant de la vidéo YouTube ou son adresse (youtube.com, youtu.be, music.youtube.com).
+/// PlaylistId : playlist de l'auteur où le titre entre une fois importé.
+/// </summary>
+public sealed record CreateDownloadRequest(string Video, string? Title, string? Channel, double? DurationSeconds, string? Note, Guid? PlaylistId = null);
 
 public sealed record DenyDownloadRequest(string? Reason);
 
@@ -63,7 +66,7 @@ public sealed record CatalogAlbumDto(long Id, string Artist, string Title, strin
 public sealed record CatalogArtistDto(long Id, string Name, int? AlbumCount, string? PictureUrl, bool InLibrary);
 
 /// <summary>Demande d'un album entier : ses titres sont cherchés sur YouTube puis demandés un par un, en tâche de fond.</summary>
-public sealed record CreateAlbumRequest(string Artist, string Album);
+public sealed record CreateAlbumRequest(string Artist, string Album, Guid? PlaylistId = null);
 
 public sealed record MatchCandidateDto(YoutubeVideoDto Video, int Score);
 

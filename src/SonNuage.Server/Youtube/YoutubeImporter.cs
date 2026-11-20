@@ -327,6 +327,7 @@ public sealed class YoutubeImporter(
             item.Error = null;
             item.CompletedAt = time.GetUtcNow();
             await SetAsync(db, item, YoutubeItemStatus.Done, ct);
+            await RequestedPlaylists.AddImportedAsync(db, item, ct);
             DeleteQuietly(workDir);
             logger.LogInformation("YouTube {VideoId} importé : {Artist} - {Title} ({Source}, {Confidence:P0})",
                 item.VideoId, resolution.Best.Artist, resolution.Best.Title, resolution.Best.Source, resolution.Confidence);

@@ -9,7 +9,8 @@ using SonNuage.Server.Youtube;
 
 namespace SonNuage.Server.Jobs;
 
-public sealed record AlbumRequestPayload(Guid UserId, string Artist, string Album);
+/// <param name="PlaylistId">Playlist de l'auteur où chaque titre entre une fois importé.</param>
+public sealed record AlbumRequestPayload(Guid UserId, string Artist, string Album, Guid? PlaylistId = null);
 
 /// <summary>
 /// « Prendre tout l'album » : les titres de l'album (Deezer, dans l'ordre) sont retrouvés sur YouTube par la recherche
@@ -69,7 +70,8 @@ public sealed class AlbumRequestJob(DeezerClient deezer, YtDlp ytDlp, YoutubeToo
                 continue;
             }
 
-            var request = new CreateDownloadRequest(best.Entry.Id, best.Entry.Title, payload.Artist, track.LengthSeconds ?? best.Entry.DurationSeconds, payload.Album);
+            var request = new CreateDownloadRequest(best.Entry.Id, best.Entry.Title, payload.Artist, track.LengthSeconds ?? best.Entry.DurationSeconds, payload.Album,
+                payload.PlaylistId);
             var (outcome, _) = await DownloadRequestEndpoints.CreateAsync(db, importer, user, request, time.GetUtcNow(), ct);
             if (outcome == DownloadRequestEndpoints.CreateOutcome.Quota)
             {
