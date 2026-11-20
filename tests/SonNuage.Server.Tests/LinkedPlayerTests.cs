@@ -135,6 +135,32 @@ public class LinkedPlayerTests
     }
 
     [Fact]
+    public async Task A_device_that_missed_the_queue_asks_for_it_again()
+    {
+        var bus = new Bus();
+        var time = new Clock();
+        var localA = new FakePlayer();
+        var a = new LinkedPlayer(localA, localA, bus.Join("tab-a"), time);
+        await a.RestoreAsync();
+        await a.PlayAsync(Tracks, 1);
+
+        // B arrive pendant que A joue, mais son « hello » se perd (flux de A mort sans qu'il le sache, réseau…) :
+        // A ne lui envoie pas sa file, seulement sa position, chaque seconde.
+        bus.Lose = m => m.Type == "hello" && m.From == "tab-b";
+        var localB = new FakePlayer();
+        var b = new LinkedPlayer(localB, localB, bus.Join("tab-b"), time);
+        await b.RestoreAsync();
+        bus.Lose = null;
+
+        time.Now += TimeSpan.FromSeconds(1);
+        await localA.SeekAsync(5);
+
+        Assert.True(b.IsRemote);
+        Assert.Equal("B", b.State.Current?.Title);
+        Assert.Equal(3, b.State.Queue.Count);
+    }
+
+    [Fact]
     public async Task The_position_alone_is_sent_at_most_once_a_second()
     {
         var bus = new Bus();
@@ -203,9 +229,13 @@ public class LinkedPlayerTests
         /// <summary>Comme le relais du serveur : le nom de l'expéditeur est ajouté au message.</summary>
         public List<PlaybackMessage> Sent { get; } = [];
 
+        /// <summary>Messages perdus en route.</summary>
+        public Func<PlaybackMessage, bool>? Lose { get; set; }
+
         public async Task SendAsync(PlaybackMessage m)
         {
             Sent.Add(m);
+            if (Lose?.Invoke(m) == true) return;
             m = m with { FromName = "Name of " + m.From };
             foreach (var l in _links.ToList())
             {

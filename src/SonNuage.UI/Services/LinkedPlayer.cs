@@ -15,6 +15,9 @@ public sealed class LinkedPlayer : IPlayer, IRestorablePlayer, IConnectPlayer
     /// <summary>Un état qui ne diffère que par la position part au plus à ce rythme (Android relit la position deux fois par seconde).</summary>
     private static readonly TimeSpan PositionEvery = TimeSpan.FromSeconds(1);
 
+    /// <summary>Un état reçu sans sa file la redemande au lecteur actif, au plus à ce rythme.</summary>
+    private static readonly TimeSpan AskQueueEvery = TimeSpan.FromSeconds(5);
+
     private readonly IPlayer _local;
     private readonly IAdoptablePlayer _adoptable;
     private readonly IPlaybackLink _link;
@@ -28,6 +31,7 @@ public sealed class LinkedPlayer : IPlayer, IRestorablePlayer, IConnectPlayer
     private readonly TimeProvider _time;
     private PlayerState? _published;
     private DateTimeOffset _publishedAt;
+    private DateTimeOffset _askedQueueAt = DateTimeOffset.MinValue;
 
     public LinkedPlayer(IPlayer local, IAdoptablePlayer adoptable, IPlaybackLink link, TimeProvider? time = null)
     {
@@ -246,6 +250,9 @@ public sealed class LinkedPlayer : IPlayer, IRestorablePlayer, IConnectPlayer
                 if (_active != m.From) await YieldToAsync(m.From, m.FromName);
                 _remote = m.HasQueue ? state : state with { Queue = _remote.Queue };
                 StateChanged?.Invoke();
+                // Sa file nous a échappé (notre « hello » perdu, arrivée pendant une coupure) : seule la position arrive,
+                // sans titre à afficher. On la redemande au lecteur actif.
+                if (!m.HasQueue && state.CurrentIndex >= _remote.Queue.Count) await AskQueueAsync(m.From);
                 break;
             case "command" when m.Command is { } command && _active == Me:
                 await ExecuteAsync(command);
@@ -259,9 +266,19 @@ public sealed class LinkedPlayer : IPlayer, IRestorablePlayer, IConnectPlayer
         }
     }
 
+    private Task AskQueueAsync(string device)
+    {
+        var now = _time.GetUtcNow();
+        if (now - _askedQueueAt < AskQueueEvery) return Task.CompletedTask;
+        _askedQueueAt = now;
+        return _link.SendAsync(new PlaybackMessage("hello", Me, To: device));
+    }
+
     private async Task YieldToAsync(string device, string? name)
     {
         var wasLocal = !IsRemote;
+        // Un autre lecteur prend la main : la file connue était celle du précédent.
+        if (device != _active) _remote = PlayerState.Empty;
         _active = device;
         _activeName = name;
         if (wasLocal) await _adoptable.ReleaseAsync();
