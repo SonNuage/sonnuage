@@ -120,7 +120,8 @@
     "thePlaylist": "the playlist",
     "playlistCreated": "Playlist “{name}” created",
     "playNext": "Will play next",
-    "queued": "Added to queue"
+    "queued": "Added to queue",
+    "alreadyIn": "Already in {name}"
   },
   "errors": {
     "radio": {
@@ -362,7 +363,12 @@
   },
   "picker": {
     "title": "Add to playlist",
-    "newPlaceholder": "New playlist…"
+    "newPlaceholder": "New playlist…",
+    "alreadyIn": "Already in",
+    "partlyIn": {
+      "one": "{count} track already in",
+      "other": "{count} tracks already in"
+    }
   },
   "track": {
     "lossless": "Lossless source file",
@@ -462,11 +468,33 @@
     "reorder": "Reorder",
     "delete": "Delete playlist",
     "deleteConfirm": "Delete this playlist?",
-    "empty": "This playlist is empty. Add tracks from an album or a search (⋮ menu → “Add to playlist”).",
+    "empty": "Empty playlist. Add tracks with the “Add tracks” button, or from an album (⋮ menu → “Add to playlist”).",
     "moveUp": "Move up",
     "moveDown": "Move down",
     "removeFrom": "Remove from playlist",
-    "notFound": "Playlist not found."
+    "notFound": "Playlist not found.",
+    "addTracks": "Add tracks",
+    "add": {
+      "title": "Add to “{name}”",
+      "placeholder": "Track, album or artist…",
+      "hint": "Search the server for a track or an album.",
+      "loading": "Searching…",
+      "addOne": "Add to the playlist",
+      "notFound": "Track or album not found on the server.",
+      "askQuestion": "Request it?",
+      "askYes": "Yes, search the catalog",
+      "notThere": "Not what you are looking for?",
+      "askLink": "Make a request",
+      "catalogHint": "Full catalog: a requested track joins the playlist once imported.",
+      "backToServer": "Back to the server results",
+      "searching": "Finding the video…",
+      "noVideo": "No video found for this track.",
+      "pickVideo": "No sure match for “{title}”: pick the right video.",
+      "choose": "Choose",
+      "sent": "Request sent: the track joins the playlist once approved and imported.",
+      "sentAuto": "Request accepted: the track joins the playlist once imported.",
+      "albumSent": "Album “{album}” requested: its tracks join the playlist as they are imported."
+    }
   },
   "album": {
     "notFound": "Album not found."

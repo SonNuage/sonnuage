@@ -18,6 +18,9 @@
             <button class="icon-btn fav @(track.IsFavorite ? "on" : "")" title="@L["common.favorite"]" @onclick="() => Ui.ToggleFavoriteAsync(track)" @onclick:stopPropagation="true">
                 <Icon Name="@(track.IsFavorite ? "heart" : "heart-outline")" Size="20" />
             </button>
+            <button class="icon-btn" title="@L["track.addToPlaylist"]" @onclick="() => OpenPicker(track)" @onclick:stopPropagation="true">
+                <Icon Name="playlist-add" Size="20" />
+            </button>
         </div>
 
         <div class="pb-center">
@@ -67,8 +70,19 @@
     <NowPlaying />
 }
 
+<PlaylistPicker @bind-Open="_pickerOpen" TrackIds="_pickerTracks" />
+
 @code {
     private double _volumeBeforeMute = 1;
+    private bool _pickerOpen;
+    private IReadOnlyList<Guid> _pickerTracks = [];
+
+    // Le titre en cours au moment du clic : la fenêtre ne change pas de titre si la lecture passe au suivant.
+    private void OpenPicker(TrackDto track)
+    {
+        _pickerTracks = [track.Id];
+        _pickerOpen = true;
+    }
     private PlayerState State => Player.State;
     private int Max => (int)Math.Max(1, Math.Ceiling(State.DurationSeconds));
     private int Position => (int)Math.Min(State.PositionSeconds, Max);

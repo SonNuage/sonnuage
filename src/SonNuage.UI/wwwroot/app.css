@@ -978,3 +978,22 @@ pre.mono { white-space: pre-wrap; word-break: break-all; background: var(--log-b
 .check-pill > input { width: 1rem; height: 1rem; margin: 0; accent-color: var(--accent); }
 .check-pill:has(input:checked) { border-color: var(--accent); }
 .check-pill.empty { opacity: .55; }
+
+/* ---------- Ajout rapide à une playlist ---------- */
+.picker-item.held { cursor: default; opacity: .75; }
+.picker-item.held:hover { background: none; }
+.picker-item small.good-text { color: var(--ok-text); white-space: nowrap; }
+.picker-item small .icon { vertical-align: -3px; }
+.playlist-add-search { max-width: none; margin-bottom: 1rem; }
+.playlist-add-body { min-height: 6rem; max-height: 55vh; overflow-y: auto; }
+.playlist-add-list { list-style: none; padding: 0; margin: 0 0 .75rem; }
+.playlist-add-list li { display: flex; align-items: center; gap: .75rem; padding: .4rem .25rem; border-radius: 4px; }
+.playlist-add-list li:hover { background: var(--bg-hover); }
+.playlist-add-list .grow { flex: 1; min-width: 0; }
+.playlist-add-list .strong, .playlist-add-list .block { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.playlist-add-list .good-text { white-space: nowrap; }
+.playlist-add-list .good-text .icon { vertical-align: -4px; }
+.playlist-add-missing { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; }
+.playlist-add-more { margin: 0; }
+.catalog-cover.small { width: 40px; height: 40px; }
+.link-btn { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; cursor: pointer; text-decoration: underline; }

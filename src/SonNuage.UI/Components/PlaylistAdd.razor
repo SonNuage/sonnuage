@@ -1,0 +1,347 @@
+@implements IDisposable
+@inject ApiClient Api
+@inject AuthSession Auth
+@inject UiState Ui
+
+@* Ajout rapide à une playlist : on cherche sur le serveur ; ce qui n'y est pas se demande depuis le catalogue (Deezer) et
+   entre dans la playlist une fois importé. *@
+<Modal Open="Open" OpenChanged="OpenChanged" Title="@L["playlist.add.title", ("name", PlaylistName)]">
+    <div class="search-box playlist-add-search">
+        <Icon Name="search" />
+        <input @ref="_input" class="input" type="search" placeholder="@L["playlist.add.placeholder"]" value="@_query" autocomplete="off"
+               @oninput="QueryChanged" />
+    </div>
+
+    <div class="playlist-add-body">
+        @if (_choice is { } choice)
+        {
+            <p class="muted small">@L["playlist.add.pickVideo", ("title", choice.Track.Title)]</p>
+            <ul class="yt-list requests">
+                @foreach (var c in choice.Match.Candidates)
+                {
+                    <li @key="c.Video.VideoId">
+                        <img class="yt-thumb" src="@c.Video.ThumbnailUrl" alt="" loading="lazy" />
+                        <span class="grow">
+                            <span class="strong">@c.Video.Title</span>
+                            <span class="muted small block">@c.Video.Channel@(c.Video.DurationSeconds is { } d ? $" · {Format.Duration(d)}" : "")</span>
+                        </span>
+                        <span class="row-actions">
+                            <span class="badge @(c.Score >= 80 ? "good" : c.Score >= 50 ? "warn" : "bad")">@L["requests.score", ("score", c.Score)]</span>
+                            <PreviewButton VideoId="@c.Video.VideoId" DurationSeconds="c.Video.DurationSeconds" />
+                            <button class="btn compact primary" disabled="@(_busy is not null)" @onclick="() => AskVideoAsync(choice, c.Video)">@L["playlist.add.choose"]</button>
+                        </span>
+                    </li>
+                }
+            </ul>
+            <button class="btn" @onclick="() => _choice = null">@L["requests.catalogBack"]</button>
+        }
+        else if (_catalogMode)
+        {
+            <p class="muted small">@L["playlist.add.catalogHint"]</p>
+            @if (_catalog is null)
+            {
+                <p class="muted">@L["playlist.add.loading"]</p>
+            }
+            else if (_catalog.Tracks.Count == 0 && _catalog.Albums.Count == 0)
+            {
+                <p class="muted">@L["requests.catalogEmpty"]</p>
+            }
+            else
+            {
+                <ul class="playlist-add-list">
+                    @foreach (var (t, i) in _catalog.Tracks.Select((t, i) => (t, i)))
+                    {
+                        // Un même titre revient sur plusieurs albums (single, compilation…) : chaque ligne est la sienne.
+                        var key = TrackKey(t, i);
+                        <li @key="key">
+                            @Cover(t.CoverUrl)
+                            <span class="grow">
+                                <span class="strong">@t.Title</span>
+                                <span class="muted small block">@t.Artist@(t.Album is { } al ? $" · {al}" : "")@(t.DurationSeconds is { } d ? $" · {Format.Duration(d)}" : "")</span>
+                            </span>
+                            @if (t.InLibrary)
+                            {
+                                <span class="badge good">@L["requests.onServer"]</span>
+                            }
+                            else if (_asked.Contains(key))
+                            {
+                                <span class="badge info">@L["requests.asked"]</span>
+                            }
+                            else
+                            {
+                                <button class="btn compact primary" disabled="@(_busy is not null)" @onclick="() => AskTrackAsync(t, key)">
+                                    @(_busy == key ? L["playlist.add.searching"] : L["requests.ask"])
+                                </button>
+                            }
+                        </li>
+                    }
+                    @foreach (var a in _catalog.Albums)
+                    {
+                        var key = $"a:{a.Id}";
+                        <li @key="key">
+                            @Cover(a.CoverUrl)
+                            <span class="grow">
+                                <span class="strong">@a.Title</span>
+                                <span class="muted small block">@L["common.album"] · @a.Artist@(a.TrackCount is { } n ? $" · {L["requests.catalogTrackCount", ("count", n)]}" : "")</span>
+                            </span>
+                            @if (a.InLibrary)
+                            {
+                                <span class="badge good">@L["requests.onServer"]</span>
+                            }
+                            else if (_asked.Contains(key))
+                            {
+                                <span class="badge info">@L["requests.asked"]</span>
+                            }
+                            else
+                            {
+                                <button class="btn compact primary" disabled="@(_busy is not null)" @onclick="() => AskAlbumAsync(a)">@L["requests.catalogAlbum"]</button>
+                            }
+                        </li>
+                    }
+                </ul>
+            }
+            <button class="btn" @onclick="() => _catalogMode = false">@L["playlist.add.backToServer"]</button>
+        }
+        else if (string.IsNullOrWhiteSpace(_query))
+        {
+            <p class="muted small">@L["playlist.add.hint"]</p>
+        }
+        else if (_found is null)
+        {
+            <p class="muted">@L["playlist.add.loading"]</p>
+        }
+        else
+        {
+            @if (_found.Tracks.Count == 0 && _found.Albums.Count == 0)
+            {
+                <p class="playlist-add-missing">
+                    @L["playlist.add.notFound"]
+                    @if (Auth.CanRequest)
+                    {
+                        <span>@L["playlist.add.askQuestion"]</span>
+                        <button class="btn primary" @onclick="CatalogAsync">@L["playlist.add.askYes"]</button>
+                    }
+                </p>
+            }
+            else
+            {
+                <ul class="playlist-add-list">
+                    @foreach (var t in _found.Tracks)
+                    {
+                        var inside = Present.Contains(t.Id) || _added.Contains(t.Id);
+                        <li @key="t.Id">
+                            <Cover AlbumId="t.AlbumId" HasCover="t.HasCover" Size="96" Class="cover-xs" Seed="@t.AlbumTitle" />
+                            <span class="grow">
+                                <span class="strong">@t.Title</span>
+                                <span class="muted small block">@t.ArtistName · @t.AlbumTitle · @Format.Duration(t.DurationSeconds)</span>
+                            </span>
+                            @if (inside)
+                            {
+                                <span class="good-text small"><Icon Name="check" Size="18" /> @L["picker.alreadyIn"]</span>
+                            }
+                            else
+                            {
+                                <button class="icon-btn" title="@L["playlist.add.addOne"]" disabled="@(_busy is not null)" @onclick="() => AddAsync([t.Id])"><Icon Name="add" /></button>
+                            }
+                        </li>
+                    }
+                    @foreach (var a in _found.Albums)
+                    {
+                        <li @key="a.Id">
+                            <Cover AlbumId="a.Id" HasCover="a.HasCover" Size="96" Class="cover-xs" Seed="@a.Title" />
+                            <span class="grow">
+                                <span class="strong">@a.Title</span>
+                                <span class="muted small block">@L["common.album"] · @a.ArtistName · @L["common.tracks", ("count", a.TrackCount)]</span>
+                            </span>
+                            <button class="btn compact" disabled="@(_busy is not null)" @onclick="() => AddAlbumAsync(a)"><Icon Name="add" Size="16" /> @L["requests.catalogAlbum"]</button>
+                        </li>
+                    }
+                </ul>
+                @if (Auth.CanRequest)
+                {
+                    <p class="muted small playlist-add-more">
+                        @L["playlist.add.notThere"] <button class="link-btn" @onclick="CatalogAsync">@L["playlist.add.askLink"]</button>
+                    </p>
+                }
+            }
+        }
+    </div>
+</Modal>
+
+@code {
+    [Parameter] public bool Open { get; set; }
+    [Parameter] public EventCallback<bool> OpenChanged { get; set; }
+    [Parameter, EditorRequired] public Guid PlaylistId { get; set; }
+    [Parameter] public string PlaylistName { get; set; } = "";
+    /// <summary>Titres déjà dans la playlist : ils ne se rajoutent pas.</summary>
+    [Parameter] public IReadOnlyCollection<Guid> Present { get; set; } = [];
+    /// <summary>Des titres sont entrés dans la playlist : la page la recharge.</summary>
+    [Parameter] public EventCallback OnAdded { get; set; }
+
+    private const int Debounce = 300;
+
+    private ElementReference _input;
+    private string _query = "";
+    private SearchResultDto? _found;
+    private bool _catalogMode;
+    private CatalogSearchDto? _catalog;
+    private (CatalogTrackDto Track, string Key, MatchResultDto Match)? _choice;
+    private readonly HashSet<Guid> _added = [];
+    private readonly HashSet<string> _asked = [];
+    private string? _busy;
+    private CancellationTokenSource? _typing;
+    private bool _wasOpen;
+    private bool _focus;
+
+    protected override void OnParametersSet()
+    {
+        if (Open && !_wasOpen)
+        {
+            _query = "";
+            _found = null;
+            _catalogMode = false;
+            _catalog = null;
+            _choice = null;
+            _added.Clear();
+            _focus = true;
+        }
+        _wasOpen = Open;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_focus || !Open) return;
+        _focus = false;
+        try { await _input.FocusAsync(); } catch (InvalidOperationException) { }
+    }
+
+    private async Task QueryChanged(ChangeEventArgs e)
+    {
+        _query = e.Value?.ToString() ?? "";
+        _catalogMode = false;
+        _choice = null;
+        _typing?.Cancel();
+        var typing = _typing = new CancellationTokenSource();
+        try
+        {
+            await Task.Delay(Debounce, typing.Token);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+        await SearchAsync(_query, typing.Token);
+    }
+
+    private async Task SearchAsync(string query, CancellationToken typing)
+    {
+        if (string.IsNullOrWhiteSpace(query)) return;
+        _found = null;
+        StateHasChanged();
+        await RunAsync(async () =>
+        {
+            var found = await Api.SearchAsync(query.Trim(), 20);
+            if (!typing.IsCancellationRequested) _found = found ?? new SearchResultDto([], [], []);
+        });
+    }
+
+    private async Task CatalogAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_query)) return;
+        _catalogMode = true;
+        _catalog = null;
+        _choice = null;
+        await RunAsync(async () => _catalog = await Api.CatalogSearchAsync(_query.Trim()) ?? new CatalogSearchDto([], [], []));
+    }
+
+    private async Task AddAsync(IReadOnlyList<Guid> trackIds)
+    {
+        _busy = "add";
+        await Ui.AddToPlaylistAsync(PlaylistId, trackIds);
+        _added.UnionWith(trackIds);
+        _busy = null;
+        await OnAdded.InvokeAsync();
+    }
+
+    private async Task AddAlbumAsync(AlbumDto album)
+    {
+        _busy = "add";
+        await RunAsync(async () =>
+        {
+            if (await Api.AlbumAsync(album.Id) is { } detail) await AddAsync(detail.Tracks.Select(t => t.Id).ToList());
+        });
+        _busy = null;
+    }
+
+    // Titre du catalogue : sa vidéo est cherchée (YouTube Music et YouTube) ; une correspondance sûre est demandée
+    // d'office, sinon on choisit parmi les candidates.
+    private static string TrackKey(CatalogTrackDto t, int index) => $"t{index}:{t.Artist}|{t.Title}|{t.Album}";
+
+    private async Task AskTrackAsync(CatalogTrackDto track, string key)
+    {
+        _busy = key;
+        await RunAsync(async () =>
+        {
+            var match = await Api.RequestMatchAsync(track.Artist, track.Title, track.DurationSeconds);
+            if (match is null || match.Candidates.Count == 0) Ui.Notify(L["playlist.add.noVideo"], true);
+            else if (match.Sure) await SendAsync(track, key, match.Candidates[0].Video);
+            else _choice = (track, key, match);
+        });
+        _busy = null;
+    }
+
+    private async Task AskVideoAsync((CatalogTrackDto Track, string Key, MatchResultDto Match) choice, YoutubeVideoDto video)
+    {
+        _busy = video.VideoId;
+        await RunAsync(() => SendAsync(choice.Track, choice.Key, video));
+        _busy = null;
+        _choice = null;
+    }
+
+    private async Task SendAsync(CatalogTrackDto track, string key, YoutubeVideoDto video)
+    {
+        var created = await Api.CreateRequestAsync(new CreateDownloadRequest(video.VideoId, video.Title, video.Channel ?? track.Artist,
+            video.DurationSeconds ?? track.DurationSeconds, null, PlaylistId));
+        if (created is null) return;
+        _asked.Add(key);
+        Ui.Notify(created.AutoApproved ? L["playlist.add.sentAuto"] : L["playlist.add.sent"]);
+    }
+
+    private async Task AskAlbumAsync(CatalogAlbumDto album)
+    {
+        _busy = $"a:{album.Id}";
+        await RunAsync(async () =>
+        {
+            await Api.RequestAlbumAsync(new CreateAlbumRequest(album.Artist, album.Title, PlaylistId));
+            _asked.Add($"a:{album.Id}");
+            Ui.Notify(L["playlist.add.albumSent", ("album", album.Title)]);
+        });
+        _busy = null;
+    }
+
+    private static RenderFragment Cover(string? url) => __builder =>
+    {
+        if (url is null)
+        {
+            <span class="catalog-cover placeholder small"><Icon Name="album" Size="20" /></span>
+        }
+        else
+        {
+            <img class="catalog-cover small" src="@url" alt="" loading="lazy" />
+        }
+    };
+
+    private async Task RunAsync(Func<Task> action)
+    {
+        try
+        {
+            await action();
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            Ui.Notify(L.Server(ex.Message), true);
+        }
+    }
+
+    public void Dispose() => _typing?.Cancel();
+}

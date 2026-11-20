@@ -1,4 +1,5 @@
 @inject UiState Ui
+@inject ApiClient Api
 
 <Modal Open="Open" OpenChanged="OpenChanged" Title="@L["picker.title"]">
     <form class="inline-form" @onsubmit="CreateAsync" @onsubmit:preventDefault="true">
@@ -8,11 +9,24 @@
     <ul class="picker-list">
         @foreach (var p in Ui.Playlists)
         {
+            var held = _held.GetValueOrDefault(p.Id);
+            var full = TrackIds.Count > 0 && held >= TrackIds.Distinct().Count();
             <li>
-                <button class="picker-item" @onclick="() => AddAsync(p.Id)">
+                <button class="picker-item @(full ? "held" : null)" disabled="@full" @onclick="() => AddAsync(p.Id)">
                     <Cover AlbumId="p.CoverAlbumId" HasCover="p.CoverAlbumId is not null" Size="96" Class="cover-xs" Seed="@p.Name" />
                     <span>@p.Name</span>
-                    <small>@L["common.tracks", ("count", p.TrackCount)]</small>
+                    @if (full)
+                    {
+                        <small class="good-text"><Icon Name="check" Size="16" /> @L["picker.alreadyIn"]</small>
+                    }
+                    else if (held > 0)
+                    {
+                        <small>@L["picker.partlyIn", ("count", held)]</small>
+                    }
+                    else
+                    {
+                        <small>@L["common.tracks", ("count", p.TrackCount)]</small>
+                    }
                 </button>
             </li>
         }
@@ -25,10 +39,26 @@
     [Parameter] public IReadOnlyList<Guid> TrackIds { get; set; } = [];
 
     private string _newName = "";
+    // Combien des titres chaque playlist contient déjà : une playlist qui les a tous ne se choisit pas.
+    private Dictionary<Guid, int> _held = [];
+    private bool _wasOpen;
 
     protected override async Task OnParametersSetAsync()
     {
-        if (Open && Ui.Playlists.Count == 0) await Ui.RefreshPlaylistsAsync();
+        var opening = Open && !_wasOpen;
+        _wasOpen = Open;
+        if (!opening) return;
+        _held = [];
+        if (Ui.Playlists.Count == 0) await Ui.RefreshPlaylistsAsync();
+        if (TrackIds.Count == 0) return;
+        try
+        {
+            _held = (await Api.PlaylistsContainingAsync(TrackIds) ?? []).ToDictionary(c => c.PlaylistId, c => c.Count);
+        }
+        catch (Exception ex) when (ex is ApiException or HttpRequestException)
+        {
+            // Sans cette information, on peut toujours ajouter : le serveur ne remet pas un titre déjà présent.
+        }
     }
 
     private async Task AddAsync(Guid playlistId)

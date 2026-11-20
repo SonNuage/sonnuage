@@ -43,6 +43,9 @@
                 <button class="icon-btn fav @(track.IsFavorite ? "on" : "")" title="@L["common.favorite"]" @onclick="() => Ui.ToggleFavoriteAsync(track)">
                     <Icon Name="@(track.IsFavorite ? "heart" : "heart-outline")" Size="28" />
                 </button>
+                <button class="icon-btn" title="@L["track.addToPlaylist"]" @onclick="() => OpenPicker(track)">
+                    <Icon Name="playlist-add" Size="28" />
+                </button>
             </div>
         </div>
 
@@ -69,6 +72,8 @@
             <p class="pb-error">@error</p>
         }
     </div>
+
+    <PlaylistPicker @bind-Open="_pickerOpen" TrackIds="_pickerTracks" />
 }
 
 @code {
@@ -80,6 +85,14 @@
         $"--pct: {(max > 0 ? Math.Clamp(value / max * 100, 0, 100) : 0).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}%";
 
     private IDisposable? _backHandler;
+    private bool _pickerOpen;
+    private IReadOnlyList<Guid> _pickerTracks = [];
+
+    private void OpenPicker(TrackDto track)
+    {
+        _pickerTracks = [track.Id];
+        _pickerOpen = true;
+    }
 
     protected override void OnInitialized()
     {
@@ -87,7 +100,7 @@
         Ui.Changed += Refresh;
         // Retour (bouton du téléphone, geste, navigateur) : il referme le plein écran au lieu de quitter la page.
         // Les liens du plein écran le referment avant de naviguer, ils passent donc sans être retenus.
-        _backHandler = Nav.CloseOnBack(() => Ui.NowPlayingOpen, () => Ui.SetNowPlayingOpen(false));
+        _backHandler = Nav.CloseOnBack(() => Ui.NowPlayingOpen && !_pickerOpen, () => Ui.SetNowPlayingOpen(false));
     }
 
     private void Refresh() => InvokeAsync(StateHasChanged);

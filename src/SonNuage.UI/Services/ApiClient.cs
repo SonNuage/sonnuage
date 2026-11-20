@@ -91,8 +91,11 @@ public sealed class ApiClient(IHttpClientFactory httpFactory, IServerEndpoint en
     public Task UpdatePlaylistAsync(Guid id, string? name, string? description) =>
         SendAsync(HttpMethod.Patch, $"api/playlists/{id}", new UpdatePlaylistRequest(name, description));
     public Task DeletePlaylistAsync(Guid id) => SendAsync(HttpMethod.Delete, $"api/playlists/{id}");
-    public Task AddToPlaylistAsync(Guid id, IReadOnlyList<Guid> trackIds) =>
-        SendAsync(HttpMethod.Post, $"api/playlists/{id}/tracks", new AddPlaylistTracksRequest(trackIds, null));
+    public Task<AddPlaylistTracksResultDto?> AddToPlaylistAsync(Guid id, IReadOnlyList<Guid> trackIds) =>
+        SendAsync<AddPlaylistTracksResultDto>(HttpMethod.Post, $"api/playlists/{id}/tracks", new AddPlaylistTracksRequest(trackIds, null));
+    /// <summary>Combien de ces titres chaque playlist contient déjà (absente : aucun).</summary>
+    public Task<List<PlaylistContentsDto>?> PlaylistsContainingAsync(IReadOnlyList<Guid> trackIds) =>
+        GetAsync<List<PlaylistContentsDto>>("api/playlists/containing?" + string.Join('&', trackIds.Distinct().Select(t => $"track={t}")));
     public Task RemovePlaylistEntryAsync(Guid id, Guid entryId) => SendAsync(HttpMethod.Delete, $"api/playlists/{id}/entries/{entryId}");
     public Task MovePlaylistEntryAsync(Guid id, Guid entryId, int position) =>
         SendAsync(HttpMethod.Post, $"api/playlists/{id}/entries/{entryId}/move", new MovePlaylistEntryRequest(position));

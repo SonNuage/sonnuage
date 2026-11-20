@@ -120,7 +120,8 @@
     "thePlaylist": "la playlist",
     "playlistCreated": "Playlist « {name} » créée",
     "playNext": "Sera lu ensuite",
-    "queued": "Ajouté à la file d'attente"
+    "queued": "Ajouté à la file d'attente",
+    "alreadyIn": "Déjà dans {name}"
   },
   "errors": {
     "radio": {
@@ -362,7 +363,12 @@
   },
   "picker": {
     "title": "Ajouter à une playlist",
-    "newPlaceholder": "Nouvelle playlist…"
+    "newPlaceholder": "Nouvelle playlist…",
+    "alreadyIn": "Déjà dedans",
+    "partlyIn": {
+      "one": "{count} titre déjà dedans",
+      "other": "{count} titres déjà dedans"
+    }
   },
   "track": {
     "lossless": "Fichier source sans perte",
@@ -462,11 +468,33 @@
     "reorder": "Réordonner",
     "delete": "Supprimer la playlist",
     "deleteConfirm": "Supprimer la playlist ?",
-    "empty": "Playlist vide. Ajoutez des titres depuis un album ou la recherche (menu ⋮ → « Ajouter à une playlist »).",
+    "empty": "Playlist vide. Ajoutez des titres avec le bouton « Ajouter des titres », ou depuis un album (menu ⋮ → « Ajouter à une playlist »).",
     "moveUp": "Monter",
     "moveDown": "Descendre",
     "removeFrom": "Retirer de la playlist",
-    "notFound": "Playlist introuvable."
+    "notFound": "Playlist introuvable.",
+    "addTracks": "Ajouter des titres",
+    "add": {
+      "title": "Ajouter à « {name} »",
+      "placeholder": "Titre, album ou artiste…",
+      "hint": "Cherchez un titre ou un album du serveur.",
+      "loading": "Recherche…",
+      "addOne": "Ajouter à la playlist",
+      "notFound": "Titre ou album introuvable sur le serveur.",
+      "askQuestion": "Faire une demande ?",
+      "askYes": "Oui, chercher dans le catalogue",
+      "notThere": "Pas ce que vous cherchez ?",
+      "askLink": "Faire une demande",
+      "catalogHint": "Catalogue complet : un titre demandé sera ajouté à la playlist une fois importé.",
+      "backToServer": "Revenir aux résultats du serveur",
+      "searching": "Recherche de la vidéo…",
+      "noVideo": "Aucune vidéo trouvée pour ce titre.",
+      "pickVideo": "Pas de correspondance sûre pour « {title} » : choisissez la bonne vidéo.",
+      "choose": "Choisir",
+      "sent": "Demande envoyée : le titre sera ajouté à la playlist une fois validé et importé.",
+      "sentAuto": "Demande acceptée : le titre sera ajouté à la playlist une fois importé.",
+      "albumSent": "Album « {album} » demandé : ses titres seront ajoutés à la playlist au fil de l'import."
+    }
   },
   "album": {
     "notFound": "Album introuvable."

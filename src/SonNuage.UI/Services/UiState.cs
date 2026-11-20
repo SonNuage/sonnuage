@@ -116,9 +116,12 @@ public sealed class UiState(ApiClient api, IPlayer player, Localizer L)
     {
         try
         {
-            await api.AddToPlaylistAsync(playlistId, trackIds);
+            var result = await api.AddToPlaylistAsync(playlistId, trackIds);
+            var added = result?.Added ?? trackIds.Count;
             var name = Playlists.FirstOrDefault(p => p.Id == playlistId)?.Name ?? L["toast.thePlaylist"];
-            Notify(trackIds.Count == 1 ? L["toast.addedTo", ("name", name)] : L["toast.addedManyTo", ("count", trackIds.Count), ("name", name)]);
+            Notify(added == 0 ? L["toast.alreadyIn", ("name", name)]
+                : added == 1 ? L["toast.addedTo", ("name", name)]
+                : L["toast.addedManyTo", ("count", added), ("name", name)]);
             await RefreshPlaylistsAsync();
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)

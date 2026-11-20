@@ -38,6 +38,7 @@
             <div class="actions">
                 <button class="play-btn large" title="@L["common.play"]" disabled="@(_tracks.Count == 0)" @onclick="() => Player.PlayAsync(_tracks, 0, shuffle: false)"><Icon Name="play" Size="32" /></button>
                 <button class="icon-btn" title="@L["player.shuffle"]" disabled="@(_tracks.Count == 0)" @onclick="() => Player.PlayAsync(_tracks, -1, shuffle: true)"><Icon Name="shuffle" Size="28" /></button>
+                <button class="btn" @onclick="() => _adding = true"><Icon Name="add" Size="18" /> @L["playlist.addTracks"]</button>
                 <button class="icon-btn" title="@L["playlist.rename"]" @onclick="StartEdit"><Icon Name="edit" Size="24" /></button>
                 <button class="icon-btn" title="@(_reorder ? L["playlist.done"] : L["playlist.reorder"])" @onclick="() => _reorder = !_reorder"><Icon Name="@(_reorder ? "close" : "up")" Size="24" /></button>
                 <button class="icon-btn danger" title="@L["playlist.delete"]" @onclick="() => _confirmDelete = true"><Icon Name="delete" Size="24" /></button>
@@ -70,6 +71,8 @@
             }
         </div>
 
+        <PlaylistAdd @bind-Open="_adding" PlaylistId="Id" PlaylistName="@p.Playlist.Name" Present="_present" OnAdded="AddedAsync" />
+
         <Modal @bind-Open="_confirmDelete" Title="@L["playlist.deleteConfirm"]">
             <ChildContent><p>« @p.Playlist.Name » sera supprimée. Les titres restent dans la bibliothèque.</p></ChildContent>
             <Footer>
@@ -89,6 +92,8 @@
     private bool _editing;
     private bool _reorder;
     private bool _confirmDelete;
+    private bool _adding;
+    private HashSet<Guid> _present = [];
     private string _name = "";
     private string? _description;
     private Guid _loaded;
@@ -108,12 +113,22 @@
         {
             _playlist = await Api.PlaylistAsync(Id);
             if (_playlist is null) _error = L["playlist.notFound"];
-            else _tracks = _playlist.Entries.Select(e => e.Track).ToList();
+            else
+            {
+                _tracks = _playlist.Entries.Select(e => e.Track).ToList();
+                _present = _tracks.Select(t => t.Id).ToHashSet();
+            }
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
             _error = L.Server(ex.Message);
         }
+    }
+
+    private async Task AddedAsync()
+    {
+        await LoadAsync();
+        await Ui.RefreshPlaylistsAsync();
     }
 
     private void StartEdit()
