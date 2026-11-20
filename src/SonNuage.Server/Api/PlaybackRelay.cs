@@ -9,9 +9,10 @@ namespace SonNuage.Server.Api;
 /// Relais de lecture entre les appareils d'un même compte (voir <see cref="DeviceLink"/>) : chaque appareil connecté
 /// a sa boîte de messages, que son flux vide. Le relais ne lit des messages que l'expéditeur, le destinataire et le
 /// type, et y ajoute le nom de l'expéditeur ; le reste (état du lecteur, commandes) passe tel quel. En mémoire : un
-/// redémarrage du serveur coupe les flux, que les appareils rouvrent.
+/// redémarrage du serveur coupe les flux, que les appareils rouvrent. Les arrivées, départs, annonces (hello,
+/// claim) et messages refusés sont journalisés : de quoi comprendre pourquoi un appareil ne voit pas ce que joue un autre.
 /// </summary>
-public sealed class PlaybackRelay
+public sealed class PlaybackRelay(ILogger<PlaybackRelay> logger)
 {
     /// <summary>Un appareil lent ne retient pas les autres : au-delà, ses plus vieux messages sont perdus.</summary>
     private const int Backlog = 256;
@@ -38,13 +39,19 @@ public sealed class PlaybackRelay
     public Connection? Join(Guid userId, DeviceDto device)
     {
         var devices = _accounts.GetOrAdd(userId, _ => new());
-        if (!devices.ContainsKey(device.Id) && devices.Count >= MaxDevicesPerAccount) return null;
+        if (!devices.ContainsKey(device.Id) && devices.Count >= MaxDevicesPerAccount)
+        {
+            logger.LogWarning("Relais : {Device} ({Name}) refusé, {Count} appareils déjà connectés pour {User}", device.Id, device.Name, devices.Count, userId);
+            return null;
+        }
         var connection = new Connection(device);
         devices.AddOrUpdate(device.Id, connection, (_, old) =>
         {
             old.Outbox.Writer.TryComplete();
             return connection;
         });
+        logger.LogInformation("Relais : {Device} ({Name}, {Platform}) connecté pour {User}, {Count} appareil(s)",
+            device.Id, device.Name, device.Platform, userId, devices.Count);
         return connection;
     }
 
@@ -54,6 +61,7 @@ public sealed class PlaybackRelay
         if (!_accounts.TryGetValue(userId, out var devices)) return;
         if (!devices.TryRemove(KeyValuePair.Create(connection.Device.Id, connection))) return;
         connection.Outbox.Writer.TryComplete();
+        logger.LogInformation("Relais : {Device} ({Name}) parti pour {User}, {Count} appareil(s)", connection.Device.Id, connection.Device.Name, userId, devices.Count);
         var bye = new JsonObject { ["type"] = "bye", ["from"] = connection.Device.Id, ["fromName"] = connection.Device.Name };
         Deliver(devices, bye, from: connection.Device.Id, to: null);
     }
@@ -64,8 +72,14 @@ public sealed class PlaybackRelay
     /// <summary>Faux si l'expéditeur n'est pas connecté pour ce compte (message ignoré).</summary>
     public bool Relay(Guid userId, string from, string? to, JsonObject message)
     {
-        if (!_accounts.TryGetValue(userId, out var devices) || !devices.TryGetValue(from, out var sender)) return false;
+        if (!_accounts.TryGetValue(userId, out var devices) || !devices.TryGetValue(from, out var sender))
+        {
+            logger.LogInformation("Relais : message {Type} de {Device}, inconnu pour {User}, refusé", message["type"]?.ToString(), from, userId);
+            return false;
+        }
         message["fromName"] = sender.Device.Name;
+        if (message["type"]?.ToString() is "hello" or "claim")
+            logger.LogInformation("Relais : {Type} de {Device} ({Name}) vers {Count} autre(s) appareil(s)", message["type"]!.ToString(), from, sender.Device.Name, devices.Count - 1);
         Deliver(devices, message, from, to);
         return true;
     }

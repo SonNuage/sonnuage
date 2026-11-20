@@ -43,9 +43,13 @@ public static partial class DeviceEndpoints
             return new StreamResult(userId, connection, relay);
         });
 
-        g.MapPost("/link", async (HttpContext http, PlaybackRelay relay) =>
+        g.MapPost("/link", async (HttpContext http, PlaybackRelay relay, ILogger<PlaybackRelay> logger) =>
         {
-            if (http.Request.ContentLength > DeviceLink.MaxMessageBytes) return Results.StatusCode(StatusCodes.Status413PayloadTooLarge);
+            if (http.Request.ContentLength > DeviceLink.MaxMessageBytes)
+            {
+                logger.LogWarning("Relais : message de {Bytes} octets refusé (trop gros)", http.Request.ContentLength);
+                return Results.StatusCode(StatusCodes.Status413PayloadTooLarge);
+            }
             JsonObject? message;
             try
             {
