@@ -3,6 +3,9 @@
 @inject ApiClient Api
 @inject UiState Ui
 @inject NavigationManager Nav
+@inject PageMemory Memory
+@inject IJSRuntime JS
+@implements IDisposable
 
 <PageTitle>@L["nav.library"] · SonNuage</PageTitle>
 
@@ -104,14 +107,37 @@
     private readonly LoadGeneration _loads = new();
     private int _generation;
 
+    /// <summary>Albums ou artistes déjà chargés, tri et filtre : retrouvés par le retour arrière (voir PageMemory).</summary>
+    private sealed record Snapshot(string Sort, string Filter, List<AlbumDto> Albums, List<ArtistDto> Artists, int Total);
+
     protected override async Task OnParametersSetAsync()
     {
         if (_loadedTab == Current) return;
+        Keep();
         _loadedTab = Current;
         _filter = "";
         if (Current == "playlists") await Ui.RefreshPlaylistsAsync();
+        else if (await Memory.RecallAsync<Snapshot>(JS, $"library/{Current}") is { } kept)
+        {
+            _generation = _loads.Start();
+            (_sort, _filter, _total) = (kept.Sort, kept.Filter, kept.Total);
+            _albums.Clear();
+            _albums.AddRange(kept.Albums);
+            _artists.Clear();
+            _artists.AddRange(kept.Artists);
+            _loading = false;
+            _error = null;
+        }
         else await ReloadAsync();
     }
+
+    private void Keep()
+    {
+        if (_loadedTab is "albums" or "artists" && !_loading && _error is null)
+            Memory.Keep($"library/{_loadedTab}", new Snapshot(_sort, _filter, [.. _albums], [.. _artists], _total));
+    }
+
+    public void Dispose() => Keep();
 
     private async Task ChangeSortAsync(ChangeEventArgs e)
     {

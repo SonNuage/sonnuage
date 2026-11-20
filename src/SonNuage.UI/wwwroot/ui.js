@@ -14,6 +14,68 @@
   });
 })();
 
+// Position dans la page : une nouvelle page s'ouvre en haut ; un retour (ou une avance) dans l'historique retrouve
+// la position qu'on avait quittée, une fois le contenu revenu (il se recharge souvent après coup).
+(() => {
+  const box = () => document.querySelector('.content-scroll');
+  const keyOf = () => `${history.state && history.state._index != null ? history.state._index : ''}|${location.href}`;
+  const saved = new Map();
+  let current = keyOf();
+  let target = null;
+  let until = 0;
+  let movedAt = 0;
+
+  const apply = () => {
+    const el = box();
+    if (target == null || !el) return;
+    el.scrollTop = target;
+    if ((target === 0 && el.scrollTop === 0) || Date.now() > until) target = null;
+  };
+  const go = (top) => {
+    movedAt = Date.now();
+    target = top;
+    until = movedAt + (top > 0 ? 3000 : 400);
+    requestAnimationFrame(apply);
+  };
+  // Position gardée au fil du défilement de l'utilisateur. Juste après un changement de page, le défilement vient
+  // du contenu remplacé (ou de la position qu'on rend) : il ne compte pas. Blazor fait aussi des allers-retours
+  // dans l'historique avant d'accepter un retour : on ne lit donc jamais la position sur un « popstate ».
+  document.addEventListener('scroll', (e) => {
+    if (target == null && Date.now() - movedAt > 500 && e.target instanceof Element && e.target.classList.contains('content-scroll'))
+      saved.set(current, e.target.scrollTop);
+  }, { capture: true, passive: true });
+  // Le contenu de la page arrive par morceaux : on réapplique la position à chaque changement, tant qu'il faut.
+  new MutationObserver(() => { if (target != null) apply(); })
+    .observe(document.documentElement, { childList: true, subtree: true });
+  // Un geste de l'utilisateur l'emporte sur la position retrouvée.
+  for (const type of ['wheel', 'touchstart', 'keydown', 'mousedown'])
+    addEventListener(type, () => { target = null; }, { capture: true, passive: true });
+
+  const push = history.pushState.bind(history);
+  history.pushState = (...args) => {
+    // La page quittée est encore affichée : sa position est sûre.
+    const el = box();
+    if (el) saved.set(current, el.scrollTop);
+    push(...args);
+    current = keyOf();
+    window.__sonnuageBack = false;
+    go(0);
+  };
+  const replace = history.replaceState.bind(history);
+  history.replaceState = (...args) => {
+    // Même page (adresse mise à jour, par exemple la recherche tapée) : la position la suit.
+    const top = saved.get(current);
+    replace(...args);
+    current = keyOf();
+    if (top != null) saved.set(current, top);
+  };
+  addEventListener('popstate', () => {
+    window.__sonnuageBack = true;
+    current = keyOf();
+    go(saved.get(current) ?? 0);
+  });
+})();
+
 // « / » ouvre la recherche de l'en-tête, sauf pendant une saisie.
 document.addEventListener('keydown', (e) => {
   if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
@@ -117,6 +179,8 @@ window.sonnuage = {
     update();
   },
   setTheme: applyTheme,
+  // La page affichée vient-elle d'un retour (ou d'une avance) dans l'historique ? Voir PageMemory.
+  cameBack: () => !!window.__sonnuageBack,
   // Amène un élément en haut de la vue (par exemple l'en-tête d'une liste qui vient de remplacer une autre).
   reveal: el => el && el.scrollIntoView({ block: 'start' }),
   // Paroles : la ligne en cours au milieu de la liste, sans faire défiler le reste de la page.

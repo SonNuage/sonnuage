@@ -3,6 +3,9 @@
 @inject AuthSession Auth
 @inject UiState Ui
 @inject IJSRuntime JS
+@inject NavigationManager Nav
+@inject PageMemory Memory
+@implements IDisposable
 
 <PageTitle>@L["requests.title"] · SonNuage</PageTitle>
 
@@ -26,9 +29,9 @@
                 }
             </p>
             <div class="segmented request-mode" role="group" aria-label="@L["requests.modeLabel"]">
-                <button type="button" class="@(_mode == Mode.Catalog ? "on" : null)" @onclick="() => _mode = Mode.Catalog">@L["requests.modeCatalog"]</button>
-                <button type="button" class="@(_mode == Mode.Match ? "on" : null)" @onclick="() => _mode = Mode.Match">@L["requests.modeMatch"]</button>
-                <button type="button" class="@(_mode == Mode.Free ? "on" : null)" @onclick="() => _mode = Mode.Free">@L["requests.modeFree"]</button>
+                <button type="button" class="@(_mode == Mode.Catalog ? "on" : null)" @onclick="() => SetMode(Mode.Catalog)">@L["requests.modeCatalog"]</button>
+                <button type="button" class="@(_mode == Mode.Match ? "on" : null)" @onclick="() => SetMode(Mode.Match)">@L["requests.modeMatch"]</button>
+                <button type="button" class="@(_mode == Mode.Free ? "on" : null)" @onclick="() => SetMode(Mode.Free)">@L["requests.modeFree"]</button>
             </div>
             @if (_mode == Mode.Catalog)
             {
@@ -239,12 +242,36 @@
     private List<DownloadRequestDto> _mine = [];
     private int _total;
 
+    // Correspondance ouverte depuis un titre du catalogue : le retour ramène aux résultats du catalogue.
+    private bool _fromCatalog;
+    private IDisposable? _backHandler;
+
+    /// <summary>Ce que la page affichait, retrouvé par le retour arrière (voir PageMemory).</summary>
+    private sealed record Snapshot(Mode Mode, string CatalogQuery, CatalogSearchDto? Catalog, (CatalogArtistDto Artist, List<CatalogAlbumDto>? Albums)? Discography,
+        string Artist, string Title, double? Duration, MatchResultDto? Match, bool FromCatalog, string Query, bool Music, YoutubeListingDto? Results,
+        long[] AlbumsAsked, string[] Asked, string[] HiddenKinds, string[] HiddenTypes);
+
+    private const string MemoryKey = "requests";
+
+    private void SetMode(Mode mode)
+    {
+        _mode = mode;
+        _fromCatalog = false;
+    }
+
     [SupplyParameterFromQuery(Name = "artist")] public string? ArtistQuery { get; set; }
     [SupplyParameterFromQuery(Name = "title")] public string? TitleQuery { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         if (!Auth.CanRequest) return;
+        // Retour : la discographie ou la correspondance ouverte depuis le catalogue se referme sur ses résultats.
+        _backHandler = Nav.CloseOnBack(() => _mode == Mode.Catalog && _discography is not null || _mode == Mode.Match && _fromCatalog, () =>
+        {
+            if (_mode == Mode.Match) SetMode(Mode.Catalog);
+            else _discography = null;
+            InvokeAsync(StateHasChanged);
+        });
         if (!string.IsNullOrWhiteSpace(ArtistQuery) && !string.IsNullOrWhiteSpace(TitleQuery))
         {
             _mode = Mode.Match;
@@ -256,6 +283,10 @@
                 StateHasChanged();
             });
         }
+        else if (await Memory.RecallAsync<Snapshot>(JS, MemoryKey) is { } kept)
+        {
+            Restore(kept);
+        }
         await RunAsync(async () =>
         {
             _quota = await Api.RequestQuotaAsync();
@@ -263,6 +294,25 @@
             _mine = page?.Items.ToList() ?? [];
             _total = page?.Total ?? 0;
         });
+    }
+
+    private void Restore(Snapshot kept)
+    {
+        (_mode, _catalogQuery, _catalog, _discography) = (kept.Mode, kept.CatalogQuery, kept.Catalog, kept.Discography);
+        (_artist, _title, _duration, _match, _fromCatalog) = (kept.Artist, kept.Title, kept.Duration, kept.Match, kept.FromCatalog);
+        (_query, _music, _results) = (kept.Query, kept.Music, kept.Results);
+        _albumsAsked.UnionWith(kept.AlbumsAsked);
+        _asked.UnionWith(kept.Asked);
+        _hiddenKinds.UnionWith(kept.HiddenKinds);
+        _hiddenTypes.UnionWith(kept.HiddenTypes);
+    }
+
+    public void Dispose()
+    {
+        _backHandler?.Dispose();
+        if (!Auth.CanRequest) return;
+        Memory.Keep(MemoryKey, new Snapshot(_mode, _catalogQuery, _catalog, _discography, _artist, _title, _duration, _match, _fromCatalog,
+            _query, _music, _results, [.. _albumsAsked], [.. _asked], [.. _hiddenKinds], [.. _hiddenTypes]));
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -327,6 +377,7 @@
     private Task TypedMatchAsync()
     {
         _duration = null;
+        _fromCatalog = false;
         return MatchAsync();
     }
 
@@ -344,6 +395,7 @@
     private Task FindAsync(CatalogTrackDto track)
     {
         _mode = Mode.Match;
+        _fromCatalog = true;
         _artist = track.Artist;
         _title = track.Title;
         _duration = track.DurationSeconds;
