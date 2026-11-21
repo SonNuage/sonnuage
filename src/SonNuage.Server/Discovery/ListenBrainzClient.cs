@@ -13,7 +13,8 @@ public interface ISimilarArtistSource
     Task<IReadOnlyList<SimilarArtist>> SimilarArtistsAsync(string artistMbid, CancellationToken ct);
 }
 
-public sealed record TopRecording(string Title, string? RecordingMbid, double? LengthSeconds, string? ReleaseName);
+/// <param name="Artist">Artiste du titre quand il diffère de l'album (compilation, bande originale) ; sinon null.</param>
+public sealed record TopRecording(string Title, string? RecordingMbid, double? LengthSeconds, string? ReleaseName, string? Artist = null);
 
 /// <summary>Parution récente ou à venir selon ListenBrainz (« fresh releases »), avec les artistes MusicBrainz crédités.</summary>
 public sealed record FreshRelease(Guid ReleaseGroupId, string Title, IReadOnlyList<string> ArtistMbids, string? PrimaryType, string? SecondaryType, string? Date);

@@ -78,6 +78,8 @@ public sealed class ArtistDiscoveryTests(SonNuageFactory factory) : IClassFixtur
                      {"id":3,"duration":10}]}
             """);
         Assert.Equal([("One More Time", 320.0), ("Aerodynamic", 212.0)], tracks.Select(t => (t.Title, t.LengthSeconds!.Value)));
+        // L'artiste de chaque titre : sur une compilation ou une bande originale, ce n'est pas celui de l'album.
+        Assert.Equal(["Daft Punk", null], tracks.Select(t => t.Artist));
     }
 
     [Fact]

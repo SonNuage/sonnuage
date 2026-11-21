@@ -46,10 +46,12 @@ public sealed class AlbumRequestJob(DeezerClient deezer, YtDlp ytDlp, YoutubeToo
         {
             ctx.Report((double)i / tracks.Count);
             var track = tracks[i];
+            // Bande originale, compilation : l'album est à « EA Games Soundtrack », ses titres à leurs vrais artistes.
+            var artist = string.IsNullOrWhiteSpace(track.Artist) ? payload.Artist : track.Artist;
             RankedEntry? best;
             try
             {
-                best = (await ytDlp.MatchAsync(new MatchQuery(payload.Artist, track.Title, track.LengthSeconds), options.Value.MatchOfficialMinScore, ct))
+                best = (await ytDlp.MatchAsync(new MatchQuery(artist, track.Title, track.LengthSeconds), options.Value.MatchOfficialMinScore, ct))
                     .FirstOrDefault();
             }
             catch (YtDlpException ex) when (ex.Kind == YtDlpFailure.Throttled)
@@ -70,7 +72,7 @@ public sealed class AlbumRequestJob(DeezerClient deezer, YtDlp ytDlp, YoutubeToo
                 continue;
             }
 
-            var request = new CreateDownloadRequest(best.Entry.Id, best.Entry.Title, payload.Artist, track.LengthSeconds ?? best.Entry.DurationSeconds, payload.Album,
+            var request = new CreateDownloadRequest(best.Entry.Id, best.Entry.Title, artist, track.LengthSeconds ?? best.Entry.DurationSeconds, payload.Album,
                 payload.PlaylistId);
             var (outcome, _) = await DownloadRequestEndpoints.CreateAsync(db, importer, user, request, time.GetUtcNow(), ct);
             if (outcome == DownloadRequestEndpoints.CreateOutcome.Quota)
